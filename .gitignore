@@ -1,0 +1,34 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary
+tmp/
+temp/
+
+# Node.js
+node_modules/
+.next/
+out/
+coverage/
+
+# Java / Gradle
+.gradle/
+build/
+out/
+*.class
+
+# IntelliJ
+*.iml
