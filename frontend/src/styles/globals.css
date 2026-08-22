@@ -4,6 +4,11 @@
 @import "./typography.css";
 
 @theme inline {
+  --breakpoint-*: initial;
+  --breakpoint-tablet: 48rem;
+  --breakpoint-desktop: 64rem;
+  --breakpoint-wide: 90rem;
+
   --color-ink-950: var(--ink-950);
   --color-ink-900: var(--ink-900);
   --color-ink-800: var(--ink-800);
@@ -119,7 +124,7 @@
   --duration-520: var(--motion-duration-520);
   --duration-720: var(--motion-duration-720);
 
-  --max-width-content: var(--content-max-width);
+  --container-content: var(--content-max-width);
 }
 
 *,

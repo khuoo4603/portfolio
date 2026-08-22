@@ -3,19 +3,22 @@ import "../styles/globals.css";
 
 const themeInitScript = `
 (() => {
+  const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+  let theme = systemTheme;
+
   try {
     const storedTheme = window.localStorage.getItem("portfolio-theme");
-    const theme =
-      storedTheme === "light" || storedTheme === "dark"
-        ? storedTheme
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
 
-    document.documentElement.dataset.theme = theme;
+    if (storedTheme === "light" || storedTheme === "dark") {
+      theme = storedTheme;
+    }
   } catch {
-    document.documentElement.dataset.theme = "light";
+    // 시스템 테마 유지
   }
+
+  document.documentElement.dataset.theme = theme;
 })();
 `;
 
@@ -26,7 +29,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" data-theme="light" suppressHydrationWarning className="h-full antialiased">
+    <html lang="ko" data-theme="light" suppressHydrationWarning className="h-full antialiased">
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
