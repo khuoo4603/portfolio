@@ -3,6 +3,8 @@
 @import "./theme.css";
 @import "./typography.css";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme inline {
   --breakpoint-*: initial;
   --breakpoint-tablet: 48rem;
@@ -109,6 +111,7 @@
   --spacing-page: var(--page-padding);
   --spacing-section: var(--section-gap);
   --spacing-section-strong: var(--section-gap-strong);
+  --spacing-grid-gutter: var(--grid-gutter);
 
   --radius-xs: var(--radius-value-xs);
   --radius-sm: var(--radius-value-sm);
@@ -143,6 +146,17 @@ body {
   background-color: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-family-primary);
+}
+
+.content-container {
+  width: calc(100% - var(--page-padding) - var(--page-padding));
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--space-4);
 }
 
 @media (prefers-reduced-motion: reduce) {

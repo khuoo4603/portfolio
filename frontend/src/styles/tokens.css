@@ -100,6 +100,8 @@
 
   --content-max-width: 1080px;
   --page-padding: 20px;
+  --grid-columns: 4;
+  --grid-gutter: var(--space-16);
   --section-gap: 80px;
   --section-gap-strong: 96px;
 }
@@ -111,6 +113,8 @@
     --font-size-heading: 30px;
     --font-size-title: 20px;
     --page-padding: 28px;
+    --grid-columns: 8;
+    --grid-gutter: var(--space-20);
     --section-gap: 112px;
     --section-gap-strong: 128px;
   }
@@ -122,6 +126,8 @@
     --font-size-display-lg: 72px;
     --font-size-heading: 32px;
     --page-padding: 32px;
+    --grid-columns: 12;
+    --grid-gutter: var(--space-24);
     --section-gap: 128px;
     --section-gap-strong: 160px;
   }
