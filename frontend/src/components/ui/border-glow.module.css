@@ -1,0 +1,103 @@
+.root {
+  --glow-angle: 0deg;
+  --glow-proximity: 0;
+
+  position: relative;
+  display: grid;
+  height: 100%;
+  isolation: isolate;
+  overflow: visible;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-md);
+  background: var(--bg-surface);
+}
+
+.root::before {
+  position: absolute;
+  z-index: 1;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--glow-angle) at center,
+    transparent 0 42%,
+    var(--accent-secondary) 47%,
+    var(--accent-primary) 50%,
+    var(--accent-secondary) 53%,
+    transparent 58% 100%
+  );
+  content: "";
+  opacity: calc(var(--glow-proximity) * 0.9);
+  pointer-events: none;
+  transition: opacity var(--motion-duration-160) var(--motion-easing-default);
+  -webkit-mask:
+    linear-gradient(var(--text-primary) 0 0) content-box,
+    linear-gradient(var(--text-primary) 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.glow {
+  position: absolute;
+  z-index: 0;
+  inset: calc(var(--space-8) * -1);
+  border-radius: inherit;
+  opacity: calc(var(--glow-proximity) * 0.32);
+  pointer-events: none;
+  transition: opacity var(--motion-duration-240) var(--motion-easing-default);
+  -webkit-mask-image: conic-gradient(
+    from var(--glow-angle) at center,
+    var(--text-primary) 0 5%,
+    transparent 12% 88%,
+    var(--text-primary) 95% 100%
+  );
+  mask-image: conic-gradient(
+    from var(--glow-angle) at center,
+    var(--text-primary) 0 5%,
+    transparent 12% 88%,
+    var(--text-primary) 95% 100%
+  );
+}
+
+.glow::before {
+  position: absolute;
+  inset: var(--space-8);
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 var(--space-4) color-mix(in srgb, var(--accent-secondary) 40%, transparent),
+    0 0 var(--space-12) color-mix(in srgb, var(--accent-primary) 28%, transparent);
+  content: "";
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .root {
+    border-color: color-mix(in srgb, var(--border-default) 72%, var(--accent-secondary));
+    box-shadow: 0 0 var(--space-8) color-mix(in srgb, var(--accent-soft) 22%, transparent);
+  }
+
+  .root::before,
+  .glow {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    border-color: color-mix(in srgb, var(--border-default) 72%, var(--accent-primary));
+  }
+
+  .root::before,
+  .glow {
+    display: none;
+    transition: none;
+  }
+}

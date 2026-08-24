@@ -1,7 +1,7 @@
 :root {
-  --font-family-primary: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
-  --font-family-display: "Space Grotesk", "Pretendard Variable", Pretendard, sans-serif;
-  --font-family-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-family-primary: var(--font-instrument-sans), "Instrument Sans", "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  --font-family-display: var(--font-space-grotesk), "Space Grotesk", "Pretendard Variable", Pretendard, sans-serif;
+  --font-family-mono: var(--font-jetbrains-mono), "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 .type-display-xl,
@@ -23,9 +23,17 @@
 
 .type-heading,
 .type-title,
+.type-statement,
+.type-body-lg,
 .type-body,
 .type-small {
   font-family: var(--font-family-primary);
+}
+
+.type-statement {
+  font-size: var(--font-size-statement);
+  line-height: var(--line-height-statement);
+  letter-spacing: var(--letter-spacing-statement);
 }
 
 .type-heading {
@@ -38,6 +46,12 @@
   font-size: var(--font-size-title);
   line-height: var(--line-height-title);
   letter-spacing: var(--letter-spacing-title);
+}
+
+.type-body-lg {
+  font-size: var(--font-size-body-lg);
+  line-height: var(--line-height-body-lg);
+  letter-spacing: var(--letter-spacing-body-lg);
 }
 
 .type-body {
