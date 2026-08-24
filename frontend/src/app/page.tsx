@@ -51,25 +51,36 @@ const navigationItems = [
 const technologyGroups = [
   {
     category: "Language",
-    technologies: ["Java", "SQL"],
-    description: "서비스 로직 구현과 관계형 데이터 처리의 기본 언어",
+    technologies: [
+      { name: "Java", id: "java", iconSrc: "/icons/tech/java.svg" },
+      { name: "SQL", id: "sql", iconSrc: "/icons/tech/sql.svg" },
+    ],
   },
   {
     category: "Backend",
-    technologies: ["Spring Boot", "PostgreSQL", "MySQL"],
-    description: "API와 비즈니스 로직, 데이터 모델을 중심으로 Backend 서비스 구성",
+    technologies: [
+      { name: "Spring Boot", id: "spring-boot", iconSrc: "/icons/tech/spring-boot.svg" },
+      { name: "PostgreSQL", id: "postgresql", iconSrc: "/icons/tech/postgresql.svg" },
+      { name: "MySQL", id: "mysql", iconSrc: "/icons/tech/mysql.svg" },
+    ],
   },
   {
-    category: "Infra",
-    technologies: ["Docker", "Docker Compose", "Linux", "Kubernetes"],
-    description: "Container 기반 실행 환경과 서비스 배포 구조 구성",
+    category: "Infrastructure",
+    technologies: [
+      { name: "Docker", id: "docker", iconSrc: "/icons/tech/docker.svg" },
+      { name: "Linux", id: "linux", iconSrc: "/icons/tech/linux.svg" },
+      { name: "Kubernetes", id: "kubernetes", iconSrc: "/icons/tech/kubernetes.svg" },
+    ],
   },
   {
     category: "DevOps",
-    technologies: ["GitHub Actions", "GHCR", "Git"],
-    description: "Source 변경부터 Build, Image 생성과 배포까지 이어지는 개발 흐름 관리",
+    technologies: [
+      { name: "GitHub Actions", id: "github-actions", iconSrc: "/icons/tech/github-actions.svg" },
+      { name: "GHCR", id: "ghcr", iconSrc: "/icons/tech/ghcr.svg" },
+      { name: "Git", id: "git", iconSrc: "/icons/tech/git.svg" },
+    ],
   },
-];
+] as const;
 
 const projects = [
   {
@@ -280,7 +291,7 @@ function AboutSection() {
   );
 }
 
-// 핵심 기술의 Category 기반 Index 구성
+// 핵심 기술을 설명형 카드 대신 정제된 Index 행으로 구성
 function TechStackSection() {
   return (
     <section className="main-section tech-section" id="tech" aria-labelledby="tech-title">
@@ -288,17 +299,27 @@ function TechStackSection() {
         <header className="tech-heading">
           <p className="section-meta type-small">TECH STACK</p>
           <h2 className="section-title type-heading" id="tech-title">기술 스택</h2>
-          <p className="type-body">Backend / Infra 개발자로서 핵심적으로 사용하는 기술</p>
         </header>
 
         <ol className="tech-list">
           {technologyGroups.map((group) => (
             <li className="tech-row" key={group.category}>
-              <strong className="type-title">{group.category}</strong>
-              <span className="tech-names type-body">
-                {group.technologies.map((technology) => <span key={technology}>{technology}</span>)}
-              </span>
-              <p className="tech-description type-body">{group.description}</p>
+              <span className="tech-category type-small">{group.category}</span>
+              <ul className="tech-items" aria-label={`${group.category} 기술`}>
+                {group.technologies.map((technology) => (
+                  <li className="tech-item type-body" data-icon={technology.id} key={technology.name}>
+                    <Image
+                      alt=""
+                      className="tech-icon"
+                      src={technology.iconSrc}
+                      width={24}
+                      height={24}
+                      unoptimized
+                    />
+                    <span>{technology.name}</span>
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
         </ol>

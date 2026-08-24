@@ -816,13 +816,21 @@ describe("포트폴리오 메인", () => {
     expect(screen.queryByText("Backend Development")).not.toBeInTheDocument();
   });
 
-  it("기술군별 12개 기술과 역할 설명을 표시", () => {
+  it("기술군별 11개 기술을 아이콘 Index로 표시", () => {
     render(<Home />);
 
-    expect(screen.getAllByText("Kubernetes").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("GHCR").length).toBeGreaterThan(0);
-    expect(screen.getByText("서비스 로직 구현과 관계형 데이터 처리의 기본 언어")).toBeInTheDocument();
-    expect(screen.getByText(/Source 변경부터 Build, Image 생성과 배포/)).toBeInTheDocument();
+    const techSection = screen.getByRole("region", { name: "기술 스택" });
+
+    expect(within(techSection).getByText("Infrastructure")).toBeInTheDocument();
+    expect(within(techSection).getByText("Kubernetes")).toBeInTheDocument();
+    expect(within(techSection).getByText("GHCR")).toBeInTheDocument();
+    expect(within(techSection).queryByText("Docker Compose")).not.toBeInTheDocument();
+    expect(techSection.querySelectorAll(".tech-item")).toHaveLength(11);
+    expect(techSection.querySelectorAll("img.tech-icon")).toHaveLength(11);
+    expect(techSection.querySelectorAll("svg.tech-icon")).toHaveLength(0);
+    expect(within(techSection).queryByText("Backend / Infra 개발자로서 핵심적으로 사용하는 기술")).not.toBeInTheDocument();
+    expect(within(techSection).queryByText("서비스 로직 구현과 관계형 데이터 처리의 기본 언어")).not.toBeInTheDocument();
+    expect(within(techSection).queryByText(/Source 변경부터 Build, Image 생성과 배포/)).not.toBeInTheDocument();
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
   });
 

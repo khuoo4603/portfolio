@@ -395,7 +395,7 @@
   color: var(--text-secondary);
 }
 
-/* Tech Stack 구조형 Index */
+/* Tech Stack의 카드 없는 기술 Index 구성 */
 .tech-section {
   overflow: hidden;
   background: var(--bg-surface);
@@ -423,12 +423,6 @@
   padding-right: var(--space-24);
 }
 
-.tech-heading .type-body {
-  max-width: calc(var(--space-160) + var(--space-80));
-  margin: var(--space-32) 0 0;
-  color: var(--text-secondary);
-}
-
 .tech-list {
   grid-column: 5 / 13;
   margin: 0;
@@ -439,40 +433,67 @@
 
 .tech-row {
   display: grid;
-  grid-template-columns: minmax(var(--space-128), 1fr) minmax(0, 1.7fr) minmax(0, 2.2fr);
-  align-items: baseline;
+  grid-template-columns: minmax(var(--space-96), var(--space-128)) minmax(0, 1fr);
+  align-items: center;
   min-height: var(--space-112);
-  padding: var(--space-24) var(--space-16);
+  padding: var(--space-32) 0;
   border-bottom: 1px solid var(--border-default);
   column-gap: var(--space-24);
-  transition: background-color var(--motion-duration-160) var(--motion-easing-default);
+  transition: border-color var(--motion-duration-160) var(--motion-easing-default);
 }
 
 .tech-row:hover {
-  background: color-mix(in srgb, var(--accent-soft) 32%, transparent);
+  border-bottom-color: var(--border-accent);
 }
 
-.tech-row strong {
-  color: var(--text-primary);
+.tech-category {
+  align-self: start;
+  padding-top: var(--space-4);
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
   font-weight: 500;
+  letter-spacing: 0.06em;
 }
 
-.tech-names {
+.tech-items {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-8) var(--space-20);
-  color: var(--text-secondary);
-}
-
-.tech-names span:not(:last-child)::after {
-  margin-left: var(--space-20);
-  color: var(--border-accent);
-  content: "/";
-}
-
-.tech-description {
+  align-items: center;
+  gap: var(--space-24) var(--space-48);
   margin: 0;
-  color: var(--text-muted);
+  padding: 0;
+  list-style: none;
+}
+
+.tech-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-height: var(--space-32);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: color var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.tech-icon {
+  width: var(--space-24);
+  height: var(--space-24);
+  flex: 0 0 var(--space-24);
+  object-fit: contain;
+  transition: transform var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.tech-item:hover {
+  color: var(--text-primary);
+}
+
+.tech-item:hover .tech-icon {
+  transform: translateY(-1px);
+}
+
+.tech-item[data-icon="ghcr"] .tech-icon {
+  border-radius: var(--radius-value-pill);
+  background: var(--sand-200);
 }
 
 /* Projects 선택형 Showcase */
@@ -1164,12 +1185,12 @@
   }
 
   .tech-row {
-    grid-template-columns: minmax(var(--space-128), 1fr) minmax(0, 1.4fr);
+    grid-template-columns: minmax(var(--space-80), var(--space-96)) minmax(0, 1fr);
+    column-gap: var(--space-16);
   }
 
-  .tech-description {
-    grid-column: 2;
-    margin-top: var(--space-12);
+  .tech-items {
+    gap: var(--space-24) var(--space-32);
   }
 
   .projects-heading {
@@ -1389,33 +1410,23 @@
     padding-right: 0;
   }
 
-  .tech-heading .type-body {
-    margin-top: var(--space-24);
-  }
-
   .tech-list {
-    margin-top: var(--space-64);
+    margin-top: var(--space-48);
   }
 
   .tech-row {
     grid-template-columns: minmax(0, 1fr);
-    min-height: var(--space-112);
-    padding-inline: 0;
+    min-height: auto;
+    padding: var(--space-24) 0;
+    row-gap: var(--space-16);
   }
 
-  .tech-names {
-    grid-column: 1;
-    margin-top: var(--space-12);
-    gap: var(--space-4) var(--space-12);
+  .tech-category {
+    padding-top: 0;
   }
 
-  .tech-names span:not(:last-child)::after {
-    margin-left: var(--space-12);
-  }
-
-  .tech-description {
-    grid-column: 1;
-    margin-top: var(--space-20);
+  .tech-items {
+    gap: var(--space-24) var(--space-32);
   }
 
   .projects-section::before,
@@ -1609,6 +1620,8 @@
   }
 
   .tech-row,
+  .tech-item,
+  .tech-icon,
   .project-tab,
   .project-tab::before,
   .project-link span {
