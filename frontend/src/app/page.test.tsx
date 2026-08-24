@@ -68,7 +68,12 @@ describe("포트폴리오 메인", () => {
     render(<Home />);
 
     expect(screen.getByRole("heading", { level: 1, name: "김현우" })).toBeInTheDocument();
-    expect(document.querySelector(".hero-identity")).toHaveTextContent("BACKEND / INFRA");
+    expect(document.querySelector(".hero-intro")).toHaveTextContent("BACKEND / INFRA DEVELOPER");
+    expect(document.querySelector(".hero-intro")).toHaveClass("type-title");
+    const header = within(document.querySelector<HTMLElement>(".site-header")!);
+    const siteMark = header.getByRole("link", { name: "김현우 포트폴리오 Home" });
+    expect(siteMark).toHaveTextContent("KIM HYUNWOO");
+    expect(siteMark).not.toHaveTextContent("PORTFOLIO / 2026");
     expect(screen.getByRole("navigation", { name: "포트폴리오 주요 영역" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: /대한민국 Server/ })).toBeInTheDocument();
     expect(document.querySelector(".hero-network-canvas")).toBeInTheDocument();
@@ -102,7 +107,7 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelectorAll(".topology-resource")).toHaveLength(3);
     expect(screen.getByRole("link", { name: "홈" })).toHaveAttribute("href", "#home");
     expect(screen.getByRole("link", { name: "소개" })).toHaveAttribute("href", "#about");
-    expect(screen.getByRole("link", { name: "기술" })).toHaveAttribute("href", "#tech");
+    expect(screen.getByRole("link", { name: "기술스택" })).toHaveAttribute("href", "#tech");
     expect(screen.getByRole("link", { name: "프로젝트" })).toHaveAttribute("href", "#projects");
     expect(screen.getByRole("link", { name: "학력 및 성과" })).toHaveAttribute("href", "#education");
   });
@@ -781,7 +786,7 @@ describe("포트폴리오 메인", () => {
     expect(screen.getByRole("contentinfo")).toBeInTheDocument();
   });
 
-  it("프로필 사진과 자기소개, 개발 가치를 표시", () => {
+  it("프로필 사진과 자기소개, 개발 철학을 한 Composition에 표시", () => {
     render(<Home />);
 
     const aboutValues = document.querySelector<HTMLElement>(".about-values")!;
@@ -791,15 +796,18 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelectorAll(".about-introduction")).toHaveLength(1);
     expect(document.querySelectorAll(".about-transition-window")).toHaveLength(1);
     expect(document.querySelectorAll(".about-viewport")).toHaveLength(1);
-    expect(document.querySelectorAll(".about-details")).toHaveLength(1);
+    expect(document.querySelectorAll(".about-details")).toHaveLength(0);
+    expect(document.querySelector(".about-primary")).toContainElement(aboutValues);
     expect(screen.getByRole("img", { name: "김현우 프로필 사진" })).toHaveAttribute(
       "src",
       expect.stringContaining("kim-hyunwoo-profile.png"),
     );
-    expect(document.querySelector(".about-introduction")).toHaveTextContent(
-      /성공회대학교에 재학 중인 Backend \/ Infra 개발자/,
-    );
-    expect(within(aboutValues).getByRole("heading", { name: "개발 가치" })).toBeInTheDocument();
+    const introduction = document.querySelector<HTMLElement>(".about-introduction")!;
+    expect(within(introduction).getByText("BACKEND / INFRA DEVELOPER")).toHaveClass("type-title");
+    expect(introduction.querySelectorAll("p:not(.about-position)")).toHaveLength(2);
+    expect(introduction).toHaveTextContent(/성공회대학교에 재학 중인 김현우입니다/);
+    expect(introduction).toHaveTextContent(/실제로 운영 가능한 상태까지 완성하는 것을 중요하게 생각합니다/);
+    expect(within(aboutValues).getByRole("heading", { name: "개발 철학" })).toBeInTheDocument();
     expect(valueCards).toHaveLength(3);
     valueCards.forEach((card) => {
       expect(card.querySelector("[data-border-glow]")).toBeInTheDocument();

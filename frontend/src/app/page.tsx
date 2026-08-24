@@ -44,7 +44,7 @@ function applyTheme(theme: PortfolioTheme) {
 const navigationItems = [
   { label: "홈", href: "#home" },
   { label: "소개", href: "#about" },
-  { label: "기술", href: "#tech" },
+  { label: "기술스택", href: "#tech" },
   { label: "프로젝트", href: "#projects" },
   { label: "학력 및 성과", href: "#education" },
 ];
@@ -174,8 +174,8 @@ function Hero() {
     <section className="hero" id="home" aria-labelledby="hero-title">
       <div className="hero-inner">
         <div className="hero-identity">
-          <div className="hero-intro type-small">
-            <span>BACKEND / INFRA</span>
+          <div className="hero-intro type-title">
+            <span>BACKEND / INFRA DEVELOPER</span>
           </div>
 
           <div className="hero-name-block">
@@ -190,7 +190,7 @@ function Hero() {
 
           <div className="hero-copy">
             <p className="hero-statement type-title">
-              개발부터
+              Backend 개발부터
               <br />
               배포 / 운영까지 고려
             </p>
@@ -214,7 +214,7 @@ function Hero() {
   );
 }
 
-// 자기소개와 개발 가치 중심 About 편집형 구성
+// 자기소개와 개발 철학 중심 About 편집형 구성
 function AboutSection() {
   return (
     <section className="main-section about-section" id="about" aria-labelledby="about-title">
@@ -245,29 +245,27 @@ function AboutSection() {
             </figure>
 
             <div className="about-introduction type-body-lg">
-              <p>성공회대학교에 재학 중인 Backend / Infra 개발자 김현우입니다. 경기경영고등학교 스마트콘텐츠과에서 웹과 게임 개발을 접하고, 대회와 동아리 활동, 외부 교육 등 다양한 경험을 하면서 개발을 시작했습니다.</p>
-              <p>이후 대학과 군 복무 중에도 프로그래밍을 계속했고, 지금은 Spring Boot 기반 Backend 개발을 중심으로 Database 설계, Docker와 Linux 기반 실행 환경, CI/CD, 배포와 운영까지 하나의 서비스 흐름으로 다루는 데 관심을 두고 있습니다.</p>
-              <p>새로운 기술을 많이 사용하는 것보다 현재 문제와 서비스 규모에 맞는 구조를 선택하는 것을 중요하게 생각합니다. 기능이 동작하는 데서 끝내지 않고 실제로 배포하고 운영할 수 있는 상태까지 완성하는 것을 목표로 개발합니다.</p>
+              <p className="about-position type-title">BACKEND / INFRA DEVELOPER</p>
+              <p>성공회대학교에 재학 중인 김현우입니다. 경기경영고등학교 스마트콘텐츠과에서 웹과 게임 개발을 접한 뒤, 대회·동아리·외부 교육을 통해 개발 경험을 넓혀왔습니다.</p>
+              <p>현재는 Spring Boot 기반 Backend 개발을 중심으로 Database 설계, Docker·Linux 실행 환경, CI/CD와 배포·운영까지 하나의 서비스 흐름으로 다룹니다. 새로운 기술의 수보다 문제와 서비스 규모에 맞는 구조를 선택하고, 실제로 운영 가능한 상태까지 완성하는 것을 중요하게 생각합니다.</p>
+            </div>
+
+            <div className="about-values" aria-labelledby="values-title">
+              <h3 className="type-title" id="values-title">개발 철학</h3>
+              <ol className="value-list">
+                {DEVELOPMENT_VALUES.map((value) => (
+                  <li className="value-item" data-value-card key={value.title}>
+                    <BorderGlow className="value-card">
+                      <div className="value-card-content">
+                        <strong className="type-title">{value.title}</strong>
+                        <p className="type-body">{value.description}</p>
+                      </div>
+                    </BorderGlow>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="content-container about-details">
-        <div className="about-values" aria-labelledby="values-title">
-          <h3 className="type-title" id="values-title">개발 가치</h3>
-          <ol className="value-list">
-            {DEVELOPMENT_VALUES.map((value) => (
-              <li className="value-item" data-value-card key={value.title}>
-                <BorderGlow className="value-card">
-                  <div className="value-card-content">
-                    <strong className="type-title">{value.title}</strong>
-                    <p className="type-body">{value.description}</p>
-                  </div>
-                </BorderGlow>
-              </li>
-            ))}
-          </ol>
         </div>
       </div>
     </section>
@@ -719,8 +717,7 @@ export default function Home() {
       <header className="site-header">
         <div className="content-container header-inner">
           <a className="site-mark type-small" href="#home" aria-label="김현우 포트폴리오 Home">
-            <span>KH</span>
-            <span>PORTFOLIO / 2026</span>
+            <span>KIM HYUNWOO</span>
           </a>
 
           <nav className="primary-navigation" aria-label="포트폴리오 주요 영역">
