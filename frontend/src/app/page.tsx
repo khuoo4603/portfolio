@@ -25,7 +25,6 @@ const DEVELOPMENT_VALUES = [
 ] as const;
 
 const navigationItems = [
-  { label: "홈", href: "#home" },
   { label: "소개", href: "#about" },
   { label: "기술스택", href: "#tech" },
   { label: "프로젝트", href: "#projects" },
@@ -152,7 +151,8 @@ function Hero() {
 // 자기소개와 개발 철학 중심 About 편집형 구성
 function AboutSection() {
   return (
-    <section className="main-section about-section" id="about" aria-labelledby="about-title">
+    <section className="main-section about-section" aria-labelledby="about-title">
+      <span id="about" className="about-anchor" aria-hidden="true" />
       <div className="about-transition-window">
         <div className="about-viewport">
           <div className="content-container about-inner about-primary">

@@ -74,8 +74,10 @@ describe("포트폴리오 메인", () => {
     const header = within(document.querySelector<HTMLElement>(".site-header")!);
     const siteMark = header.getByRole("link", { name: "김현우 포트폴리오 Home" });
     expect(siteMark).toHaveTextContent("KIM HYUNWOO");
+    expect(siteMark).toHaveAttribute("href", "#home");
     expect(siteMark).not.toHaveTextContent("PORTFOLIO / 2026");
-    expect(screen.getByRole("navigation", { name: "포트폴리오 주요 영역" })).toBeInTheDocument();
+    const navigation = screen.getByRole("navigation", { name: "포트폴리오 주요 영역" });
+    expect(navigation).toBeInTheDocument();
     expect(screen.getByRole("group", { name: /대한민국 Server/ })).toBeInTheDocument();
     expect(document.querySelector(".hero-network-canvas")).toBeInTheDocument();
     expect(document.querySelectorAll(".hero-network-canvas")).toHaveLength(1);
@@ -118,11 +120,11 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelectorAll(".topology-korea-marker")).toHaveLength(1);
     expect(document.querySelector(".topology-server-layer")).not.toBeInTheDocument();
     expect(document.querySelectorAll(".topology-resource")).toHaveLength(3);
-    expect(screen.getByRole("link", { name: "홈" })).toHaveAttribute("href", "#home");
-    expect(screen.getByRole("link", { name: "소개" })).toHaveAttribute("href", "#about");
-    expect(screen.getByRole("link", { name: "기술스택" })).toHaveAttribute("href", "#tech");
-    expect(screen.getByRole("link", { name: "프로젝트" })).toHaveAttribute("href", "#projects");
-    expect(screen.getByRole("link", { name: "학력 및 성과" })).toHaveAttribute("href", "#education");
+    expect(within(navigation).queryByRole("link", { name: "홈" })).not.toBeInTheDocument();
+    expect(within(navigation).getByRole("link", { name: "소개" })).toHaveAttribute("href", "#about");
+    expect(within(navigation).getByRole("link", { name: "기술스택" })).toHaveAttribute("href", "#tech");
+    expect(within(navigation).getByRole("link", { name: "프로젝트" })).toHaveAttribute("href", "#projects");
+    expect(within(navigation).getByRole("link", { name: "학력 및 성과" })).toHaveAttribute("href", "#education");
   });
 
   it("대한민국 Server와 지정된 세 Resource만 표시", () => {
@@ -702,6 +704,35 @@ describe("포트폴리오 메인", () => {
     expect(metrics.sceneExitStart).toBeLessThan(metrics.sceneExitEnd);
   });
 
+  it("소개 Anchor를 색이 100%가 되는 Cross-fade 종료 시점으로 배치", async () => {
+    render(<Home />);
+
+    const hero = document.querySelector<HTMLElement>(".hero")!;
+    const aboutSection = document.querySelector<HTMLElement>(".about-section")!;
+    const aboutAnchor = document.querySelector<HTMLElement>(".about-anchor")!;
+    const getComputedStyle = window.getComputedStyle.bind(window);
+    vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
+      if (element === aboutAnchor) {
+        return { scrollMarginTop: "64px" } as CSSStyleDeclaration;
+      }
+
+      return getComputedStyle(element);
+    });
+    Object.defineProperty(hero, "offsetHeight", {
+      configurable: true,
+      value: window.innerHeight + 1000,
+    });
+
+    fireEvent.resize(window);
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+
+    const metrics = calculateHeroScrollMetrics(1000);
+    expect(calculateHeroSceneState(metrics.sceneExitEnd, metrics).aboutOpacity).toBe(1);
+    expect(aboutSection.style.getPropertyValue("--about-anchor-offset")).toBe(
+      `${metrics.sceneExitEnd - metrics.sceneExitStart + 64}px`,
+    );
+  });
+
   it("Full Map Hold부터 최종 Focus Hold와 기존 About Cross-fade까지 상태를 유지", () => {
     const metrics = calculateHeroScrollMetrics(1000);
     const atFullMap = calculateHeroSceneState(300, metrics);
@@ -816,6 +847,8 @@ describe("포트폴리오 메인", () => {
     const valueCards = aboutValues.querySelectorAll<HTMLElement>("[data-value-card]");
 
     expect(document.querySelectorAll("#about")).toHaveLength(1);
+    expect(document.querySelector("#about")).toHaveClass("about-anchor");
+    expect(document.querySelector(".about-section")).not.toHaveAttribute("id");
     expect(document.querySelectorAll(".about-introduction")).toHaveLength(1);
     expect(document.querySelectorAll(".about-transition-window")).toHaveLength(1);
     expect(document.querySelectorAll(".about-viewport")).toHaveLength(1);
@@ -1400,6 +1433,7 @@ describe("포트폴리오 메인", () => {
     );
     expect(document.querySelector<HTMLElement>(".about-section")).toHaveStyle({
       "--about-opacity": "1",
+      "--about-anchor-offset": "0px",
     });
   });
 });

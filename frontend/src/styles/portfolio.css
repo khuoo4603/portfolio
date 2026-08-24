@@ -317,6 +317,8 @@
   grid-column: 9 / 13;
   grid-row: 1 / span 2;
   align-self: start;
+  justify-self: end;
+  width: calc(100% - var(--space-32));
   margin: var(--space-16) 0 0;
   overflow: hidden;
   border: 1px solid var(--border-accent);
@@ -333,7 +335,7 @@
 }
 
 .about-introduction {
-  grid-column: 4 / 9;
+  grid-column: 1 / 8;
   grid-row: 2;
   margin-top: var(--space-48);
   color: var(--text-secondary);
@@ -790,6 +792,11 @@ a.project-thumbnail {
     background: var(--bg-base);
   }
 
+  .project-showcases:hover > .project-history-row:hover .project-node {
+    border-color: var(--accent-secondary);
+    background: var(--accent-secondary);
+  }
+
   .project-showcases:hover .project-tab.is-active {
     color: var(--text-muted);
   }
@@ -1142,6 +1149,8 @@ a.project-thumbnail {
   .profile-portrait {
     grid-column: 6 / 9;
     grid-row: 1;
+    justify-self: stretch;
+    width: auto;
   }
 
   .about-introduction {
@@ -1600,6 +1609,17 @@ a.project-thumbnail {
   margin-top: calc(0px - var(--about-transition-height));
   overflow: visible;
   background: transparent;
+}
+
+/* 실제 About 진입 위치 Anchor */
+.about-anchor {
+  position: absolute;
+  top: var(--about-anchor-offset, 0px);
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  scroll-margin-top: var(--hero-header-offset);
 }
 
 .about-transition-window {

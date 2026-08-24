@@ -731,6 +731,7 @@ export default function HeroSystemCard() {
     const hero = stage?.closest<HTMLElement>(".hero");
     const heroSystem = stage?.closest<HTMLElement>(".hero-system");
     const aboutSection = document.querySelector<HTMLElement>(".about-section");
+    const aboutAnchor = aboutSection?.querySelector<HTMLElement>(".about-anchor");
     const connectionSvg = graph?.querySelector<SVGSVGElement>(".topology-connection-lines");
     const flowSvg = graph?.querySelector<SVGSVGElement>(".topology-flow-overlay");
 
@@ -746,6 +747,7 @@ export default function HeroSystemCard() {
       || !hero
       || !heroSystem
       || !aboutSection
+      || !aboutAnchor
       || !connectionSvg
       || !flowSvg
     ) return;
@@ -943,7 +945,7 @@ export default function HeroSystemCard() {
       return Math.max(heroSystem.offsetHeight - stage.offsetHeight, 1);
     };
 
-    // 확대 거리와 About 중첩 구간을 반영한 Layout 높이 동기화
+    // 확대 거리와 About 중첩 구간·Anchor 진입 위치를 반영한 Layout 높이 동기화
     const updateScrollLayout = (isDesktop: boolean, stickyTop: number) => {
       const baseDistance = getBaseScrollDistance(isDesktop);
       const metrics = calculateHeroScrollMetrics(baseDistance);
@@ -962,8 +964,15 @@ export default function HeroSystemCard() {
       const sceneStart = isDesktop ? heroTop : window.scrollY + systemRect.top - stickyTop;
       const aboutTop = sceneStart + metrics.sceneExitStart + stickyTop;
       const overlap = Math.max(heroTop + hero.offsetHeight - aboutTop, 0);
+      const anchorScrollMargin = Number.parseFloat(window.getComputedStyle(aboutAnchor).scrollMarginTop) || 0;
+      // Fixed Header 보정 포함 Cross-fade 종료 시점 Anchor 위치
+      const aboutAnchorOffset = Math.max(
+        metrics.sceneExitEnd - metrics.sceneExitStart - stickyTop + anchorScrollMargin,
+        0,
+      );
 
       aboutSection.style.setProperty("--about-transition-height", `${overlap}px`);
+      aboutSection.style.setProperty("--about-anchor-offset", `${aboutAnchorOffset}px`);
 
       return { baseDistance, metrics, sceneStart };
     };
@@ -1011,6 +1020,7 @@ export default function HeroSystemCard() {
         hero.style.removeProperty("--hero-stage-height");
         heroSystem.style.removeProperty("--hero-stage-height");
         aboutSection.style.setProperty("--about-transition-height", "0px");
+        aboutSection.style.setProperty("--about-anchor-offset", "0px");
       }
 
       const scrollLayout = isReducedMotion ? null : updateScrollLayout(isDesktop, stickyTop);
@@ -1401,6 +1411,7 @@ export default function HeroSystemCard() {
       heroSystem.style.removeProperty("--hero-stage-height");
       aboutSection.style.removeProperty("--about-opacity");
       aboutSection.style.removeProperty("--about-transition-height");
+      aboutSection.style.removeProperty("--about-anchor-offset");
     };
   }, []);
 
