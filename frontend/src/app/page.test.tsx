@@ -67,7 +67,7 @@ describe("포트폴리오 메인", () => {
   it("이름, 포지션, 한글 Navigation, Server Topology를 표시", () => {
     render(<Home />);
 
-    expect(screen.getByRole("heading", { name: "김현우" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "김현우" })).toBeInTheDocument();
     expect(document.querySelector(".hero-identity")).toHaveTextContent("BACKEND / INFRA");
     expect(screen.getByRole("navigation", { name: "포트폴리오 주요 영역" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: /대한민국 Server/ })).toBeInTheDocument();
@@ -1043,6 +1043,17 @@ describe("포트폴리오 메인", () => {
 
     expect(screen.getByText("이력서 보기")).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByText("PDF 다운로드")).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("Footer Identity와 Copyright를 표시", () => {
+    render(<Home />);
+
+    const footer = within(screen.getByRole("contentinfo"));
+    expect(footer.getByRole("heading", { name: "김현우" })).toHaveClass("type-heading");
+    expect(footer.getByText("BACKEND / INFRA DEVELOPER")).toHaveClass("type-small");
+    expect(footer.queryByText("BACKEND /")).not.toBeInTheDocument();
+    expect(footer.getByText("PORTFOLIO / 2026")).toBeInTheDocument();
+    expect(footer.getByText("© 2026 Kim Hyunwoo. All rights reserved.")).toBeInTheDocument();
   });
 
   it("Theme 전환 선택값을 저장", () => {

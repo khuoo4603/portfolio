@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Github, Instagram, Linkedin, Mail } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import BorderGlow from "../components/ui/border-glow";
 import HeroNetworkBackground from "./hero-network-background";
@@ -597,22 +598,19 @@ function EducationSection() {
   );
 }
 
-// Position과 실제 Contact 중심의 대형 Footer Ending 구성
+// Footer Identity와 실제 Contact 중심의 페이지 Footer 구성
 function PortfolioFooter() {
   return (
     <footer className="portfolio-footer" id="footer">
-      <div className="footer-rules" aria-hidden="true"><span /><span /><span /></div>
       <div className="content-container footer-inner">
-        <div className="footer-closing">
-          <h2 className="footer-position type-display-xl">
-            <span>BACKEND /</span>
-            <span className="footer-infrastructure">INFRA</span>
-          </h2>
+        <div className="footer-identity">
+          <h2 className="footer-name type-heading">김현우</h2>
+          <p className="footer-role type-small">BACKEND / INFRA DEVELOPER</p>
         </div>
 
         <div className="footer-information">
           <div className="footer-info-group">
-            <p className="type-small">Resume</p>
+            <p className="type-small">RESUME</p>
             <div className="footer-disabled-actions">
               <span className="type-body-lg" aria-disabled="true">이력서 보기</span>
               <span className="type-body-lg" aria-disabled="true">PDF 다운로드</span>
@@ -620,19 +618,27 @@ function PortfolioFooter() {
           </div>
 
           <div className="footer-info-group footer-contact">
-            <p className="type-small">Contact</p>
-            <div className="footer-contact-links type-body-lg">
-              <a href="mailto:khuoo4603@gmail.com">khuoo4603@gmail.com</a>
-              <a href="https://www.instagram.com/hyun_woooooooooo/" target="_blank" rel="noopener noreferrer">Instagram</a>
-              <a href="https://github.com/khuoo4603" target="_blank" rel="noopener noreferrer">GitHub</a>
-              <a href="https://www.linkedin.com/in/%ED%98%84%EC%9A%B0-%EA%B9%80-b0201a414/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            <p className="type-small">CONTACT</p>
+            <div className="footer-contact-links">
+              <a href="mailto:khuoo4603@gmail.com" aria-label="khuoo4603@gmail.com">
+                <Mail aria-hidden="true" strokeWidth={1.75} />
+              </a>
+              <a href="https://www.instagram.com/hyun_woooooooooo/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <Instagram aria-hidden="true" strokeWidth={1.75} />
+              </a>
+              <a href="https://github.com/khuoo4603" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                <Github aria-hidden="true" strokeWidth={1.75} />
+              </a>
+              <a href="https://www.linkedin.com/in/%ED%98%84%EC%9A%B0-%EA%B9%80-b0201a414/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                <Linkedin aria-hidden="true" strokeWidth={1.75} />
+              </a>
             </div>
           </div>
         </div>
 
         <div className="footer-bottom type-small">
-          <span>KH / PORTFOLIO 2026</span>
-          <span>© 2026 Kim Hyunwoo</span>
+          <span>PORTFOLIO / 2026</span>
+          <span>© 2026 Kim Hyunwoo. All rights reserved.</span>
         </div>
       </div>
     </footer>
