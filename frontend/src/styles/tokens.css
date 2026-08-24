@@ -49,22 +49,28 @@
 
   --font-size-display-xl: 52px;
   --font-size-display-lg: 40px;
-  --font-size-heading: 28px;
-  --font-size-title: 18px;
+  --font-size-statement: 36px;
+  --font-size-heading: 30px;
+  --font-size-title: 20px;
+  --font-size-body-lg: 17px;
   --font-size-body: 16px;
   --font-size-small: 13px;
 
   --line-height-display-xl: 0.92;
   --line-height-display-lg: 0.96;
+  --line-height-statement: 1.08;
   --line-height-heading: 1.15;
   --line-height-title: 1.35;
+  --line-height-body-lg: 1.65;
   --line-height-body: 1.70;
   --line-height-small: 1.50;
 
   --letter-spacing-display-xl: -0.040em;
   --letter-spacing-display-lg: -0.035em;
+  --letter-spacing-statement: -0.030em;
   --letter-spacing-heading: -0.020em;
   --letter-spacing-title: -0.010em;
+  --letter-spacing-body-lg: 0;
   --letter-spacing-body: 0;
   --letter-spacing-small: 0.010em;
 
@@ -98,7 +104,7 @@
   --motion-duration-720: 720ms;
   --motion-easing-default: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --content-max-width: 1080px;
+  --content-max-width: 1200px;
   --page-padding: 20px;
   --grid-columns: 4;
   --grid-gutter: var(--space-16);
@@ -110,8 +116,11 @@
   :root {
     --font-size-display-xl: 80px;
     --font-size-display-lg: 56px;
-    --font-size-heading: 30px;
-    --font-size-title: 20px;
+    --font-size-statement: 42px;
+    --font-size-heading: 32px;
+    --font-size-title: 22px;
+    --font-size-body-lg: 18px;
+    --font-size-small: 14px;
     --page-padding: 28px;
     --grid-columns: 8;
     --grid-gutter: var(--space-20);
@@ -124,7 +133,11 @@
   :root {
     --font-size-display-xl: 104px;
     --font-size-display-lg: 72px;
-    --font-size-heading: 32px;
+    --font-size-statement: 48px;
+    --font-size-heading: 36px;
+    --font-size-title: 24px;
+    --font-size-body-lg: 18px;
+    --font-size-small: 14px;
     --page-padding: 32px;
     --grid-columns: 12;
     --grid-gutter: var(--space-24);
