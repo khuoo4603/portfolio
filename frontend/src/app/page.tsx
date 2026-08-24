@@ -45,7 +45,7 @@ const navigationItems = [
   { label: "소개", href: "#about" },
   { label: "기술", href: "#tech" },
   { label: "프로젝트", href: "#projects" },
-  { label: "이력", href: "#education" },
+  { label: "학력 및 성과", href: "#education" },
 ];
 
 const technologyGroups = [
@@ -133,7 +133,7 @@ const projects = [
 const educationItems = [
   {
     institution: "성공회대학교",
-    program: null,
+    program: "소프트웨어융합전공",
     period: "2023.03 — 현재",
     status: "재학",
   },
@@ -147,24 +147,24 @@ const educationItems = [
 
 const activities = [
   {
-    period: "2023.03 — 2023.12",
-    name: "One Think IT's",
-    description: "특성화고 졸업자 네트워크",
-  },
-  {
     period: "2026.04 — 현재",
     name: "QED",
     description: "성공회대학교 보안동아리",
   },
+  {
+    period: "2023.03 — 2023.12",
+    name: "One Think IT's",
+    description: "특성화고 졸업자 네트워크",
+  },
 ] as const;
 
 const awards = [
-  { year: "2026", name: "성공회대학교 소프트웨어경진대회", result: "1등" },
-  { year: "2026", name: "KFIP 2026", result: "Toss 특별상" },
-  { year: "2023", name: "성공회대학교 IT경진대회", result: "3등" },
-  { year: "2021", name: "현대오토에버 특성화 고교생 화이트해커 양성교육", result: "수료/입상" },
-  { year: "2021", name: "신나는 SW·AI 교육 수기 공모전", result: "최우수상 · 과학기술정보통신부 장관상" },
-  { year: "2021", name: "Hello New() World", result: "대상" },
+  { year: "2026", name: "성공회대학교 소프트웨어경진대회", project: "SKHUTRack", result: "1등" },
+  { year: "2026", name: "KFIP 2026", project: "KYvC", result: "Toss 특별상" },
+  { year: "2023", name: "성공회대학교 IT경진대회", project: "SKHURoad", result: "3등" },
+  { year: "2021", name: "현대오토에버 특성화 고교생 화이트해커 양성교육", project: "-", result: "수료/입상" },
+  { year: "2021", name: "SW·AI 교육 수기 공모전", project: "-", result: "최우수상 · 과학기술정보통신부 장관상" },
+  { year: "2021", name: "Hello New() World", project: "NewLife", result: "대상" },
 ] as const;
 
 // Hero의 Identity와 Server Topology, 다음 Section Cue 구성
@@ -540,52 +540,53 @@ function ProjectsSection() {
   );
 }
 
-// 학력과 주요 활동, 수상 이력 구성
+// 학력과 주요 활동, 수상 성과 구성
 function EducationSection() {
   return (
     <section className="main-section education-section" id="education" aria-labelledby="education-title">
       <div className="content-container education-inner">
         <header className="education-heading">
           <p className="section-meta type-small">EDUCATION &amp; ACHIEVEMENTS</p>
-          <h2 className="section-title type-heading" id="education-title">학력과 주요 이력</h2>
+          <h2 className="section-title type-heading" id="education-title">학력 및 성과</h2>
         </header>
 
         <div className="education-groups">
-          <section className="education-group" aria-labelledby="education-group-title">
+          <section className="education-group education-info-group" aria-labelledby="education-group-title">
             <h3 className="type-title" id="education-group-title">학력</h3>
-            <ol className="education-list">
+            <ol className="education-list education-info-list">
               {educationItems.map((item) => (
-                <li className="education-row" key={item.institution}>
-                  <span className="education-period type-body">{item.period}</span>
-                  <strong className="type-title">{item.institution}</strong>
-                  <span className="education-program type-body">{item.program ?? ""}</span>
-                  <span className="education-status type-body">{item.status}</span>
+                <li className="education-row education-info-row" key={item.institution}>
+                  <span className="education-period education-info-period type-small">{item.period}</span>
+                  <strong className="education-info-title type-title">{item.institution}</strong>
+                  <span className="education-program education-info-detail type-small">{item.program}</span>
+                  <span className="education-status education-info-outcome type-small">{item.status}</span>
                 </li>
               ))}
             </ol>
           </section>
 
-          <section className="activities-group" aria-labelledby="activities-title">
+          <section className="activities-group education-info-group" aria-labelledby="activities-title">
             <h3 className="type-title" id="activities-title">주요 활동</h3>
-            <ol className="activities-list">
+            <ol className="activities-list education-info-list">
               {activities.map((activity) => (
-                <li className="activity-row" key={`${activity.period}-${activity.name}`}>
-                  <span className="activity-period type-body">{activity.period}</span>
-                  <strong className="type-title">{activity.name}</strong>
-                  <span className="activity-description type-body">{activity.description}</span>
+                <li className="activity-row education-info-row" key={`${activity.period}-${activity.name}`}>
+                  <span className="activity-period education-info-period type-small">{activity.period}</span>
+                  <strong className="education-info-title type-title">{activity.name}</strong>
+                  <span className="activity-description education-info-detail type-small">{activity.description}</span>
                 </li>
               ))}
             </ol>
           </section>
 
-          <section className="awards-group" aria-labelledby="awards-title">
+          <section className="awards-group education-info-group" aria-labelledby="awards-title">
             <h3 className="type-title" id="awards-title">수상</h3>
-            <ol className="awards-list">
+            <ol className="awards-list education-info-list">
               {awards.map((award) => (
-                <li className="award-row" key={`${award.year}-${award.name}`}>
-                  <span className="award-year type-body">{award.year}</span>
-                  <strong className="type-title">{award.name}</strong>
-                  <span className="award-result type-body">{award.result}</span>
+                <li className="award-row education-info-row" key={`${award.year}-${award.name}`}>
+                  <span className="award-year education-info-period type-small">{award.year}</span>
+                  <strong className="education-info-title type-title">{award.name}</strong>
+                  <span className="award-project education-info-detail type-small">{award.project}</span>
+                  <span className="award-result education-info-outcome type-small">{award.result}</span>
                 </li>
               ))}
             </ol>

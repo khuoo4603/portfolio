@@ -104,7 +104,7 @@ describe("포트폴리오 메인", () => {
     expect(screen.getByRole("link", { name: "소개" })).toHaveAttribute("href", "#about");
     expect(screen.getByRole("link", { name: "기술" })).toHaveAttribute("href", "#tech");
     expect(screen.getByRole("link", { name: "프로젝트" })).toHaveAttribute("href", "#projects");
-    expect(screen.getByRole("link", { name: "이력" })).toHaveAttribute("href", "#education");
+    expect(screen.getByRole("link", { name: "학력 및 성과" })).toHaveAttribute("href", "#education");
   });
 
   it("대한민국 Server와 지정된 세 Resource만 표시", () => {
@@ -769,7 +769,7 @@ describe("포트폴리오 메인", () => {
     expect(screen.getByRole("heading", { name: "소개" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "기술 스택" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "프로젝트" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "학력과 주요 이력" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "학력 및 성과" })).toBeInTheDocument();
     expect(document.querySelector("#experience")).not.toBeInTheDocument();
     expect(screen.queryByText("01 / MAIN")).not.toBeInTheDocument();
     expect(screen.queryByText("02 / PROFILE")).not.toBeInTheDocument();
@@ -995,21 +995,35 @@ describe("포트폴리오 메인", () => {
     expect(projectHistory.style.getPropertyValue("--project-timeline-progress")).toBe("");
   });
 
-  it("학력과 주요 활동, 수상 이력을 표시", () => {
+  it("학력과 주요 활동, 수상 성과를 최신순으로 표시", () => {
     render(<Home />);
 
+    expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
     expect(screen.getByText("경기경영고등학교")).toBeInTheDocument();
     expect(screen.getByText("스마트콘텐츠과")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "주요 활동" })).toBeInTheDocument();
-    expect(screen.getByText("One Think IT's")).toBeInTheDocument();
+    const activityRows = Array.from(document.querySelectorAll(".activity-row"));
+    expect(activityRows[0]).toHaveTextContent("QED");
+    expect(activityRows[1]).toHaveTextContent("One Think IT's");
     expect(screen.getByText("특성화고 졸업자 네트워크")).toBeInTheDocument();
-    expect(screen.getByText("QED")).toBeInTheDocument();
     expect(screen.getByText("성공회대학교 보안동아리")).toBeInTheDocument();
     expect(screen.getByText("현대오토에버 특성화 고교생 화이트해커 양성교육")).toBeInTheDocument();
     expect(screen.getByText("수료/입상")).toBeInTheDocument();
     expect(screen.getByText("성공회대학교 소프트웨어경진대회")).toBeInTheDocument();
+    const awardRows = Array.from(document.querySelectorAll(".award-row"));
+    expect(awardRows[0]).toHaveTextContent("성공회대학교 소프트웨어경진대회SKHUTRack1등");
+    expect(awardRows[1]).toHaveTextContent("KFIP 2026KYvCToss 특별상");
+    expect(awardRows[2]).toHaveTextContent("성공회대학교 IT경진대회SKHURoad3등");
+    expect(awardRows[3]).toHaveTextContent("현대오토에버 특성화 고교생 화이트해커 양성교육-수료/입상");
+    expect(awardRows[4]).toHaveTextContent("SW·AI 교육 수기 공모전-최우수상 · 과학기술정보통신부 장관상");
+    expect(awardRows[5]).toHaveTextContent("Hello New() WorldNewLife대상");
     expect(screen.getByText("Toss 특별상")).toBeInTheDocument();
     expect(screen.getByText("최우수상 · 과학기술정보통신부 장관상")).toBeInTheDocument();
+    expect(screen.getByText("SW·AI 교육 수기 공모전")).toBeInTheDocument();
+    expect(screen.queryByText("신나는 SW·AI 교육 수기 공모전")).not.toBeInTheDocument();
+    expect(document.querySelectorAll(".education-info-row")).toHaveLength(10);
+    expect(document.querySelectorAll(".education-info-detail.type-small")).toHaveLength(10);
+    expect(document.querySelectorAll(".education-info-outcome.type-small")).toHaveLength(8);
     expect(screen.queryByRole("heading", { name: "학업 성과" })).not.toBeInTheDocument();
     expect(screen.queryByText("21학점 · 4.5 / 4.5")).not.toBeInTheDocument();
     expect(screen.queryByText("학기 교내 수석")).not.toBeInTheDocument();
