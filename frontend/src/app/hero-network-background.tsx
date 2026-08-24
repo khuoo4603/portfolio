@@ -21,7 +21,17 @@ type ProjectedParticle = {
   radius: number;
   opacity: number;
   tone: number;
+  cellX: number;
+  cellY: number;
 };
+
+type IdleWindow = Window & {
+  requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
+const DEPTH_THRESHOLD = 0.26;
+const MAX_CONNECTION_DISTANCE_MULTIPLIER = 1.1;
 
 // Hero 전체에서 생성과 해체를 반복하는 Canvas Network Cluster 배경
 export default function HeroNetworkBackground() {
@@ -41,22 +51,41 @@ export default function HeroNetworkBackground() {
     }
 
     const root = document.documentElement;
+    const idleWindow = window as IdleWindow;
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let particles: NetworkParticle[] = [];
+    const particles: NetworkParticle[] = [];
+    const projectedParticles: ProjectedParticle[] = [];
+    const spatialCells: number[][] = [];
+    let candidateMarks = new Uint32Array(0);
+    let candidateGeneration = 0;
+    let connectionCounts = new Uint8Array(0);
+    let connectionLimits = new Uint8Array(0);
     let width = 0;
     let height = 0;
     let frameId = 0;
+    let idleCallbackId = 0;
+    let startupTimeoutId = 0;
     let lastTime = performance.now();
     let isVisible = !document.hidden;
     let isIntersecting = true;
     let isReducedMotion = motionQuery.matches;
+    let isDark = root.dataset.theme !== "light";
+    let continuousAnimationReady = false;
     let particleColors = ["", "", ""];
     let connectionColor = "";
+    let gridColumns = 0;
+    let gridRows = 0;
+    let gridMinX = 0;
+    let gridMinY = 0;
 
+    // Theme 변경 시 Canvas 색상과 명암 상태 일괄 갱신
     const readColors = () => {
-      const styles = getComputedStyle(canvas);
-      particleColors = [styles.color, styles.borderTopColor, styles.outlineColor];
-      connectionColor = styles.borderTopColor;
+      const canvasStyles = getComputedStyle(canvas);
+      const rootStyles = getComputedStyle(root);
+
+      particleColors = [canvasStyles.color, canvasStyles.borderTopColor, canvasStyles.outlineColor];
+      connectionColor = canvasStyles.borderTopColor;
+      isDark = rootStyles.colorScheme === "dark";
     };
 
     // Viewport 구간별 가독성과 Rendering 비용을 고려한 Particle 밀도
@@ -105,6 +134,37 @@ export default function HeroNetworkBackground() {
       };
     };
 
+    // Particle 수 변경 시 Projection과 Connection Buffer 크기 동기화
+    const syncRenderBuffers = (targetCount: number) => {
+      while (projectedParticles.length < targetCount) {
+        projectedParticles.push({
+          x: 0,
+          y: 0,
+          z: 0,
+          radius: 0,
+          opacity: 0,
+          tone: 0,
+          cellX: 0,
+          cellY: 0,
+        });
+      }
+
+      projectedParticles.length = targetCount;
+
+      if (connectionCounts.length !== targetCount) {
+        connectionCounts = new Uint8Array(targetCount);
+        connectionLimits = new Uint8Array(targetCount);
+        candidateMarks = new Uint32Array(targetCount);
+      }
+
+      connectionLimits.fill(width < 1024 ? 2 : 3);
+      if (width >= 1024) {
+        for (let index = 0; index < targetCount; index += 6) {
+          connectionLimits[index] = 4;
+        }
+      }
+    };
+
     const syncParticles = (previousWidth: number, previousHeight: number) => {
       if (previousWidth > 0 && previousHeight > 0) {
         particles.forEach((particle) => {
@@ -120,8 +180,10 @@ export default function HeroNetworkBackground() {
       }
 
       if (particles.length > targetCount) {
-        particles = particles.slice(0, targetCount);
+        particles.length = targetCount;
       }
+
+      syncRenderBuffers(targetCount);
     };
 
     const resizeCanvas = () => {
@@ -143,29 +205,79 @@ export default function HeroNetworkBackground() {
       syncParticles(previousWidth, previousHeight);
     };
 
+    const getIdentityMask = (x: number, y: number) => (
+      x < width * 0.52 && y > height * 0.14 && y < height * 0.62 ? 0.66 : 1
+    );
+
+    // 재사용 Projection Buffer와 최대 연결 거리 기반 Spatial Grid 구성
+    const projectParticles = (cellSize: number) => {
+      let minX = Number.POSITIVE_INFINITY;
+      let minY = Number.POSITIVE_INFINITY;
+      let maxX = Number.NEGATIVE_INFINITY;
+      let maxY = Number.NEGATIVE_INFINITY;
+
+      for (let index = 0; index < particles.length; index += 1) {
+        const particle = particles[index];
+        const projected = projectedParticles[index];
+        const perspective = 0.72 + particle.z * 0.5;
+
+        projected.x = width / 2 + (particle.x - width / 2) * perspective;
+        projected.y = height / 2 + (particle.y - height / 2) * perspective;
+        projected.z = particle.z;
+        projected.radius = (
+          0.95 + particle.z * 1.35 + particle.z * particle.z * 1.55
+        ) * particle.sizeVariance;
+        projected.opacity = 0.28 + particle.z * 0.64;
+        projected.tone = particle.tone;
+        minX = Math.min(minX, projected.x);
+        minY = Math.min(minY, projected.y);
+        maxX = Math.max(maxX, projected.x);
+        maxY = Math.max(maxY, projected.y);
+      }
+
+      gridMinX = Math.floor(minX / cellSize) * cellSize;
+      gridMinY = Math.floor(minY / cellSize) * cellSize;
+      gridColumns = Math.max(1, Math.floor((maxX - gridMinX) / cellSize) + 1);
+      gridRows = Math.max(1, Math.floor((maxY - gridMinY) / cellSize) + 1);
+      const requiredCellCount = gridColumns * gridRows;
+
+      while (spatialCells.length < requiredCellCount) {
+        spatialCells.push([]);
+      }
+      for (let index = 0; index < requiredCellCount; index += 1) {
+        spatialCells[index].length = 0;
+      }
+
+      for (let index = 0; index < projectedParticles.length; index += 1) {
+        const projected = projectedParticles[index];
+
+        projected.cellX = Math.min(
+          gridColumns - 1,
+          Math.max(0, Math.floor((projected.x - gridMinX) / cellSize)),
+        );
+        projected.cellY = Math.min(
+          gridRows - 1,
+          Math.max(0, Math.floor((projected.y - gridMinY) / cellSize)),
+        );
+        spatialCells[projected.cellY * gridColumns + projected.cellX].push(index);
+      }
+    };
+
     const drawFrame = (time: number, delta: number) => {
       if (width === 0 || height === 0) {
         return;
       }
 
-      const isDark = getComputedStyle(root).colorScheme === "dark";
       const connectionDistance = width < 768 ? 104 : width < 1024 ? 128 : 156;
+      const cellSize = connectionDistance * MAX_CONNECTION_DISTANCE_MULTIPLIER;
       const connectionOpacity = isDark ? 0.38 : 0.26;
       const particleOpacity = isDark ? 0.8 : 0.62;
-      const connectionCounts = new Uint8Array(particles.length);
-      const getConnectionLimit = (index: number) => {
-        if (width < 1024) return 2;
 
-        return index % 6 === 0 ? 4 : 3;
-      };
-      const getIdentityMask = (x: number, y: number) => (
-        x < width * 0.52 && y > height * 0.14 && y < height * 0.62 ? 0.66 : 1
-      );
-
+      connectionCounts.fill(0);
       context.clearRect(0, 0, width, height);
 
       if (delta > 0) {
-        particles.forEach((particle) => {
+        for (const particle of particles) {
           const driftX = Math.sin(time * 0.00018 + particle.phase) * 1.25;
           const driftY = Math.cos(time * 0.00015 + particle.phase) * 1.25;
           const depthSpeed = 0.62 + particle.z * 0.78;
@@ -185,48 +297,72 @@ export default function HeroNetworkBackground() {
           if (particle.x > width * 1.12) particle.x = width * -0.12;
           if (particle.y < height * -0.12) particle.y = height * 1.12;
           if (particle.y > height * 1.12) particle.y = height * -0.12;
-        });
+        }
       }
 
-      const projectedParticles: ProjectedParticle[] = particles.map((particle) => {
-        const perspective = 0.72 + particle.z * 0.5;
-        const radius = (0.95 + particle.z * 1.35 + particle.z * particle.z * 1.55) * particle.sizeVariance;
-
-        return {
-          x: width / 2 + (particle.x - width / 2) * perspective,
-          y: height / 2 + (particle.y - height / 2) * perspective,
-          z: particle.z,
-          radius,
-          opacity: 0.28 + particle.z * 0.64,
-          tone: particle.tone,
-        };
-      });
-
+      projectParticles(cellSize);
       context.strokeStyle = connectionColor;
 
-      // 화면상 거리와 Depth 차이를 함께 반영한 Cluster Connection Fade
-      projectedParticles.forEach((particle, index) => {
-        for (let targetIndex = index + 1; targetIndex < projectedParticles.length; targetIndex += 1) {
-          if (connectionCounts[index] >= getConnectionLimit(index)) break;
-          if (connectionCounts[targetIndex] >= getConnectionLimit(targetIndex)) continue;
+      // 인접 Cell 후보만 기존 Index 순서로 검사하는 Cluster Connection Fade
+      for (let index = 0; index < projectedParticles.length; index += 1) {
+        const particle = projectedParticles[index];
+
+        if (candidateGeneration >= 0xfffffffe) {
+          candidateMarks.fill(0);
+          candidateGeneration = 0;
+        }
+        candidateGeneration += 1;
+        const candidateMark = candidateGeneration;
+
+        for (
+          let cellY = Math.max(0, particle.cellY - 1);
+          cellY <= Math.min(gridRows - 1, particle.cellY + 1);
+          cellY += 1
+        ) {
+          for (
+            let cellX = Math.max(0, particle.cellX - 1);
+            cellX <= Math.min(gridColumns - 1, particle.cellX + 1);
+            cellX += 1
+          ) {
+            const cell = spatialCells[cellY * gridColumns + cellX];
+
+            for (const targetIndex of cell) {
+              if (targetIndex > index) {
+                candidateMarks[targetIndex] = candidateMark;
+              }
+            }
+          }
+        }
+
+        for (
+          let targetIndex = index + 1;
+          targetIndex < projectedParticles.length;
+          targetIndex += 1
+        ) {
+          if (connectionCounts[index] >= connectionLimits[index]) break;
+          if (candidateMarks[targetIndex] !== candidateMark) continue;
+          if (connectionCounts[targetIndex] >= connectionLimits[targetIndex]) continue;
 
           const target = projectedParticles[targetIndex];
+          const depthDistance = Math.abs(target.z - particle.z);
+
+          if (depthDistance >= DEPTH_THRESHOLD) continue;
+
           const offsetX = target.x - particle.x;
           const offsetY = target.y - particle.y;
-          const screenDistance = Math.hypot(offsetX, offsetY);
-          const depthDistance = Math.abs(target.z - particle.z);
+          const screenDistanceSquared = offsetX * offsetX + offsetY * offsetY;
           const averageDepth = (particle.z + target.z) / 2;
-          const depthThreshold = 0.26;
           const distanceThreshold = connectionDistance * (0.84 + averageDepth * 0.26);
 
-          if (screenDistance >= distanceThreshold || depthDistance >= depthThreshold) continue;
+          if (screenDistanceSquared >= distanceThreshold * distanceThreshold) continue;
 
+          const screenDistance = Math.sqrt(screenDistanceSquared);
           const midpointX = (particle.x + target.x) / 2;
           const midpointY = (particle.y + target.y) / 2;
           const areaWeight = (0.68 + 0.32 * Math.min(1, midpointX / (width * 0.72)))
             * getIdentityMask(midpointX, midpointY);
           const distanceFade = 1 - screenDistance / distanceThreshold;
-          const depthFade = 1 - depthDistance / depthThreshold;
+          const depthFade = 1 - depthDistance / DEPTH_THRESHOLD;
           context.lineWidth = 0.62 + averageDepth * 0.58;
           context.globalAlpha = distanceFade * depthFade * connectionOpacity * areaWeight;
           context.beginPath();
@@ -236,9 +372,9 @@ export default function HeroNetworkBackground() {
           connectionCounts[index] += 1;
           connectionCounts[targetIndex] += 1;
         }
-      });
+      }
 
-      projectedParticles.forEach((particle) => {
+      for (const particle of projectedParticles) {
         const areaWeight = (0.7 + 0.3 * Math.min(1, particle.x / (width * 0.72)))
           * getIdentityMask(particle.x, particle.y);
         context.globalAlpha = particle.opacity * particleOpacity * areaWeight;
@@ -246,12 +382,14 @@ export default function HeroNetworkBackground() {
         context.beginPath();
         context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
         context.fill();
-      });
+      }
 
       context.globalAlpha = 1;
     };
 
-    const canAnimate = () => isVisible && isIntersecting && !isReducedMotion;
+    const canAnimate = () => (
+      continuousAnimationReady && isVisible && isIntersecting && !isReducedMotion
+    );
 
     const render = (time: number) => {
       frameId = 0;
@@ -276,6 +414,22 @@ export default function HeroNetworkBackground() {
       if (!frameId) {
         lastTime = performance.now();
         frameId = requestAnimationFrame(render);
+      }
+    };
+
+    // 최초 정적 Frame 이후 Idle 시점의 Continuous RAF 시작
+    const scheduleContinuousAnimation = () => {
+      const startAnimation = () => {
+        idleCallbackId = 0;
+        startupTimeoutId = 0;
+        continuousAnimationReady = true;
+        refreshAnimation();
+      };
+
+      if (idleWindow.requestIdleCallback) {
+        idleCallbackId = idleWindow.requestIdleCallback(startAnimation, { timeout: 80 });
+      } else {
+        startupTimeoutId = window.setTimeout(startAnimation, 0);
       }
     };
 
@@ -308,10 +462,12 @@ export default function HeroNetworkBackground() {
     themeObserver.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
     document.addEventListener("visibilitychange", handleVisibility);
     motionQuery.addEventListener("change", handleMotion);
-    refreshAnimation();
+    scheduleContinuousAnimation();
 
     return () => {
       if (frameId) cancelAnimationFrame(frameId);
+      if (idleCallbackId) idleWindow.cancelIdleCallback?.(idleCallbackId);
+      if (startupTimeoutId) window.clearTimeout(startupTimeoutId);
       resizeObserver.disconnect();
       intersectionObserver.disconnect();
       themeObserver.disconnect();

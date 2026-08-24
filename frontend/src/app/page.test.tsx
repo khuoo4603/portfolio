@@ -38,7 +38,8 @@ import {
   calculateVirtualZoomScale,
   dampGalleryValue,
 } from "./hero-system-card";
-import Home, { calculateThemeReveal } from "./page";
+import Home from "./page";
+import { calculateThemeReveal } from "./theme-toggle";
 
 describe("포트폴리오 메인", () => {
   afterEach(() => {
@@ -95,6 +96,18 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelectorAll(".topology-focus-map-svg")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-focus-map-dots")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-focus-map-zoom")).toHaveLength(1);
+    expect(document.querySelector(".topology-map-dots")).toHaveAttribute(
+      "href",
+      "/maps/world-map-dots.svg#world-map-dots",
+    );
+    expect(document.querySelector(".topology-narrative-world-map-dots")).toHaveAttribute(
+      "href",
+      "/maps/world-map-dots.svg#world-map-dots",
+    );
+    expect(document.querySelector(".topology-focus-map-dots")).toHaveAttribute(
+      "href",
+      "/maps/east-asia-map-dots.svg#east-asia-map-dots",
+    );
     const koreaAnchor = screen.getByTestId("korea-anchor");
     const koreaMarker = screen.getByTestId("korea-marker");
 
@@ -180,7 +193,7 @@ describe("포트폴리오 메인", () => {
     )).not.toBeInTheDocument();
   });
 
-  it("세 지도 Surface와 Project Zoom Gallery를 독립 Layer로 유지", () => {
+  it("세 지도 Surface와 Project Zoom Gallery를 독립 Layer로 유지", async () => {
     render(<Home />);
 
     const stage = document.querySelector<HTMLElement>(".hero-visual-stage");
@@ -188,7 +201,6 @@ describe("포트폴리오 메인", () => {
     const focusMapPlane = document.querySelector<HTMLElement>(".topology-focus-map-plane");
     const galleryPlane = document.querySelector<HTMLElement>(".topology-project-gallery-plane");
     const galleryFrames = galleryPlane?.querySelectorAll<HTMLElement>(".topology-project-gallery-frame");
-    const galleryImages = galleryPlane?.querySelectorAll<HTMLImageElement>(".topology-project-gallery-image");
     const serviceGraph = document.querySelector<HTMLElement>(".service-graph");
 
     expect(WORLD_MAP_GRID_HEIGHT).toBe(280);
@@ -216,8 +228,9 @@ describe("포트폴리오 메인", () => {
     expect(stage?.style.getPropertyValue("--gallery-origin-x")).not.toBe("");
     expect(stage?.style.getPropertyValue("--gallery-origin-y")).not.toBe("");
     expect(galleryFrames).toHaveLength(3);
-    expect(galleryImages).toHaveLength(3);
+    expect(galleryPlane?.querySelectorAll(".topology-project-gallery-image")).toHaveLength(0);
     galleryFrames?.forEach((frame) => {
+      expect(frame.style.aspectRatio).not.toBe("");
       expect(frame.style.getPropertyValue("--gallery-blur")).not.toBe("");
       expect(frame.style.getPropertyValue("--gallery-x")).not.toBe("");
       expect(frame.style.getPropertyValue("--gallery-y")).not.toBe("");
@@ -226,13 +239,23 @@ describe("포트폴리오 메인", () => {
       expect(frame.style.getPropertyValue("--gallery-translate-y")).toBe("");
       expect(frame.style.getPropertyValue("--gallery-rotate")).toBe("");
     });
+
+    vi.spyOn(window, "scrollY", "get").mockReturnValue(1000);
+    fireEvent.scroll(window);
+    await waitFor(() => {
+      expect(galleryPlane?.querySelectorAll(".topology-project-gallery-image")).toHaveLength(3);
+    });
+    const galleryImages = galleryPlane?.querySelectorAll<HTMLImageElement>(".topology-project-gallery-image");
+
     expect(Array.from(galleryImages ?? []).map((image) => image.getAttribute("src"))).toEqual([
-      expect.stringContaining("map-zoom-gallery-01.jpg"),
-      expect.stringContaining("map-zoom-gallery-02.jpg"),
-      expect.stringContaining("map-zoom-gallery-03.jpg"),
+      expect.stringContaining("map-zoom-gallery-01.webp"),
+      expect.stringContaining("map-zoom-gallery-02.webp"),
+      expect.stringContaining("map-zoom-gallery-03.webp"),
     ]);
     galleryImages?.forEach((image) => {
-      expect(image).not.toHaveAttribute("loading", "lazy");
+      expect(image).toHaveAttribute("loading", "lazy");
+      expect(image).toHaveAttribute("fetchpriority", "low");
+      expect(image).toHaveAttribute("decoding", "async");
     });
     expect(serviceGraph?.contains(narrativeMapPlane)).toBe(false);
     expect(serviceGraph?.contains(focusMapPlane)).toBe(false);
@@ -800,7 +823,7 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".about-primary")).toContainElement(aboutValues);
     expect(screen.getByRole("img", { name: "김현우 프로필 사진" })).toHaveAttribute(
       "src",
-      expect.stringContaining("kim-hyunwoo-profile.png"),
+      expect.stringContaining("kim-hyunwoo-profile.webp"),
     );
     const introduction = document.querySelector<HTMLElement>(".about-introduction")!;
     expect(within(introduction).getByText("BACKEND / INFRA DEVELOPER")).toHaveClass("type-title");
@@ -925,8 +948,8 @@ describe("포트폴리오 메인", () => {
 
     const kyvcImageSrc = within(projectsSection).getByRole("img", { name: "KYvC 프로젝트 대표 화면" }).getAttribute("src") ?? "";
     const shkuTrackImageSrc = within(projectsSection).getByRole("img", { name: "SHKUTrack 프로젝트 대표 화면" }).getAttribute("src") ?? "";
-    expect(decodeURIComponent(kyvcImageSrc)).toContain("/images/profile/project-intro-kyvc.png");
-    expect(decodeURIComponent(shkuTrackImageSrc)).toContain("/images/profile/project-intro-skhutrack.png");
+    expect(decodeURIComponent(kyvcImageSrc)).toContain("/images/profile/project-intro-kyvc.webp");
+    expect(decodeURIComponent(shkuTrackImageSrc)).toContain("/images/profile/project-intro-skhutrack.webp");
     const shkuLoadProject = projectsSection.querySelector<HTMLElement>("#project-shkuload")!;
     expect(shkuLoadProject.querySelector("img")).not.toBeInTheDocument();
     expect(shkuLoadProject.querySelector(".project-thumbnail-placeholder")).toBeInTheDocument();
@@ -968,6 +991,7 @@ describe("포트폴리오 메인", () => {
       vi.spyOn(node, "getBoundingClientRect").mockReturnValue(createRect(40 + index * 240, 8, 52, 8));
     });
 
+    fireEvent.resize(window);
     fireEvent.scroll(window);
 
     const shkuLoadTimelineLink = document.querySelector<HTMLAnchorElement>(
@@ -1240,7 +1264,7 @@ describe("포트폴리오 메인", () => {
 
   it("System Card Pointer 위치에 따라 최대 7도 범위 Tilt를 적용하고 복원", async () => {
     vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
-      matches: !query.includes("prefers-reduced-motion"),
+      matches: query.includes("min-width: 1024px") || query.includes("hover: hover"),
       media: query,
       onchange: null,
       addEventListener: vi.fn(),
@@ -1264,6 +1288,8 @@ describe("포트폴리오 메인", () => {
       y: 0,
       toJSON: () => ({}),
     });
+    fireEvent.resize(window);
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
 
     fireEvent.pointerMove(card!, { clientX: 300, clientY: 75, pointerType: "mouse" });
     await waitFor(() => {
@@ -1304,6 +1330,8 @@ describe("포트폴리오 메인", () => {
       y: 0,
       toJSON: () => ({}),
     });
+    fireEvent.resize(window);
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
 
     expect(document.querySelectorAll("[data-testid='korea-marker']")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-korea-motion")).toHaveLength(1);

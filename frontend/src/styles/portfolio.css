@@ -1660,7 +1660,7 @@ a.project-thumbnail {
   overflow: hidden;
   filter: var(--map-filter);
   pointer-events: none;
-  will-change: filter, opacity;
+  will-change: opacity;
 }
 
 .topology-narrative-world-map-plane {

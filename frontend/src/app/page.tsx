@@ -1,45 +1,28 @@
-"use client";
-
 import Image from "next/image";
 import { Github, Instagram, Linkedin, Mail } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 import BorderGlow from "../components/ui/border-glow";
 import HeroNetworkBackground from "./hero-network-background";
-import HeroSystemCard, { DEVELOPMENT_VALUES } from "./hero-system-card";
+import HeroSystemCard from "./hero-system-card";
+import ProjectsSection from "./projects-section";
+import ThemeToggle from "./theme-toggle";
 
-type PortfolioTheme = "light" | "dark";
-
-const THEME_TRANSITION_DURATION = 520;
-const THEME_TRANSITION_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
-
-// Theme 전환 Origin과 Viewport 전체를 덮는 반경 계산
-export function calculateThemeReveal(
-  rect: Pick<DOMRect, "left" | "top" | "width" | "height">,
-  viewportWidth: number,
-  viewportHeight: number,
-) {
-  const x = rect.left + rect.width / 2;
-  const y = rect.top + rect.height / 2;
-  const horizontalDistance = Math.max(x, viewportWidth - x);
-  const verticalDistance = Math.max(y, viewportHeight - y);
-
-  return {
-    x,
-    y,
-    radius: Math.hypot(horizontalDistance, verticalDistance),
-  };
-}
-
-// Theme DOM 반영과 사용자 선택값 저장
-function applyTheme(theme: PortfolioTheme) {
-  document.documentElement.dataset.theme = theme;
-
-  try {
-    window.localStorage.setItem("portfolio-theme", theme);
-  } catch {
-    // Browser 저장소 제한 환경의 Theme 전환 유지
-  }
-}
+const DEVELOPMENT_VALUES = [
+  {
+    title: "문서화의 가치",
+    description:
+      "구현 결과만 남기지 않습니다. 설계와 선택의 이유를 기록해 시간이 지나도 구조와 의도를 다시 이해할 수 있도록 합니다.",
+  },
+  {
+    title: "덜어냄의 미학",
+    description:
+      "기술과 기능을 더하는 것보다 필요한 것만 남기는 것을 중요하게 생각합니다. 불필요한 복잡성을 줄이고 명확하고 유지보수 가능한 구조를 선택합니다.",
+  },
+  {
+    title: "운영까지",
+    description:
+      "구현과 배포에서 끝내지 않습니다. 로그, 모니터링, 백업과 장애 대응까지 고려해 실제로 지속 운영할 수 있는 상태를 완성의 기준으로 봅니다.",
+  },
+] as const;
 
 const navigationItems = [
   { label: "홈", href: "#home" },
@@ -80,54 +63,6 @@ const technologyGroups = [
       { name: "GHCR", id: "ghcr", iconSrc: "/icons/tech/ghcr.svg" },
       { name: "Git", id: "git", iconSrc: "/icons/tech/git.svg" },
     ],
-  },
-] as const;
-
-const projects = [
-  {
-    id: "kyvc",
-    name: "KYvC",
-    year: 2026,
-    href: "/projects/kyvc",
-    external: false,
-    tagline: "법인 KYC 자동 심사 서비스",
-    description: "법인 서류를 기반으로 KYC 심사를 자동화하고 검증 결과를 전자 증명 형태로 연결하는 서비스",
-    role: "백엔드 · 인프라",
-    technologies: ["Java", "Spring Boot", "PostgreSQL", "Docker"],
-    imageSrc: "/images/profile/project-intro-kyvc.png",
-    imageAlt: "KYvC 프로젝트 대표 화면",
-    imageWidth: 2557,
-    imageHeight: 1264,
-  },
-  {
-    id: "shkutrack",
-    name: "SHKUTrack",
-    year: 2026,
-    href: "/projects/shkutrack",
-    external: false,
-    tagline: "성공회대학교 졸업 관리 서비스",
-    description: "졸업요건 확인과 졸업 자료, 마이크로전공, 수강 전략을 하나의 흐름으로 관리하는 서비스",
-    role: "풀스택 · 인프라",
-    technologies: ["Java", "Spring Boot", "PostgreSQL", "Docker", "Kubernetes", "Nginx"],
-    imageSrc: "/images/profile/project-intro-skhutrack.png",
-    imageAlt: "SHKUTrack 프로젝트 대표 화면",
-    imageWidth: 2539,
-    imageHeight: 1265,
-  },
-  {
-    id: "shkuload",
-    name: "SHKULoad",
-    year: 2023,
-    href: "https://github.com/woohyuk0428/SKHU_Contest",
-    external: true,
-    tagline: "길찾기·중간지점·지하철 정보 서비스",
-    description: "목적지 길찾기와 여러 위치의 중간지점 계산, 지하철 위치·지연정보를 제공하는 서비스",
-    role: "백엔드",
-    technologies: ["JavaScript", "Node.js", "Express", "EJS"],
-    imageSrc: null,
-    imageAlt: null,
-    imageWidth: null,
-    imageHeight: null,
   },
 ] as const;
 
@@ -237,7 +172,7 @@ function AboutSection() {
               <Image
                 alt="김현우 프로필 사진"
                 className="profile-image"
-                src="/images/profile/kim-hyunwoo-profile.png"
+                src="/images/profile/kim-hyunwoo-profile.webp"
                 width={1086}
                 height={1448}
                 sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) 38vw, 360px"
@@ -304,236 +239,6 @@ function TechStackSection() {
             </li>
           ))}
         </ol>
-      </div>
-    </section>
-  );
-}
-
-// 연도별 Project History와 Scroll Timeline을 연결한 Projects 구성
-function ProjectsSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const projectHistoryRef = useRef<HTMLOListElement>(null);
-  const projectRowRefs = useRef<Array<HTMLElement | null>>([]);
-  const projectNodeRefs = useRef<Array<HTMLSpanElement | null>>([]);
-  const [activeProject, setActiveProject] = useState<(typeof projects)[number]["id"]>(projects[0].id);
-
-  useEffect(() => {
-    let frameId: number | null = null;
-
-    // Viewport 중심 기준 Timeline 활성 상태와 Beam 진행도 동기화
-    const updateTimeline = () => {
-      const section = sectionRef.current;
-      const history = projectHistoryRef.current;
-      const rows = projectRowRefs.current.filter((row): row is HTMLElement => row !== null);
-      const nodes = projectNodeRefs.current.filter((node): node is HTMLSpanElement => node !== null);
-
-      if (!section || !history || rows.length === 0) {
-        return;
-      }
-
-      const viewportCenter = window.innerHeight / 2;
-      const rowCenters = rows.map((row) => {
-        const rect = row.getBoundingClientRect();
-
-        return rect.top + rect.height / 2;
-      });
-      let nearestIndex = 0;
-
-      rowCenters.forEach((center, index) => {
-        if (Math.abs(center - viewportCenter) < Math.abs(rowCenters[nearestIndex] - viewportCenter)) {
-          nearestIndex = index;
-        }
-      });
-
-      const firstCenter = rowCenters[0];
-      const lastCenter = rowCenters[rowCenters.length - 1];
-      const centerDistance = lastCenter - firstCenter;
-      const progress = centerDistance === 0
-        ? 0
-        : Math.min(1, Math.max(0, (viewportCenter - firstCenter) / centerDistance));
-
-      section.style.setProperty("--project-timeline-progress", String(progress));
-      setActiveProject(projects[nearestIndex].id);
-
-      if (nodes.length === rows.length && nodes.every((node) => node.getBoundingClientRect().width > 0)) {
-        const historyRect = history.getBoundingClientRect();
-        const nodeCenters = nodes.map((node) => {
-          const rect = node.getBoundingClientRect();
-
-          return {
-            x: rect.left - historyRect.left + rect.width / 2,
-            y: rect.top - historyRect.top + rect.height / 2,
-          };
-        });
-        const firstNode = nodeCenters[0];
-        const lastNode = nodeCenters[nodeCenters.length - 1];
-
-        history.style.setProperty("--project-timeline-left", `${firstNode.x}px`);
-        history.style.setProperty("--project-timeline-top", `${firstNode.y}px`);
-        history.style.setProperty("--project-timeline-height", `${Math.max(0, lastNode.y - firstNode.y)}px`);
-      }
-    };
-
-    const scheduleTimelineUpdate = () => {
-      if (frameId !== null) {
-        return;
-      }
-
-      if (typeof window.requestAnimationFrame !== "function") {
-        updateTimeline();
-        return;
-      }
-
-      frameId = window.requestAnimationFrame(() => {
-        frameId = null;
-        updateTimeline();
-      });
-    };
-
-    window.addEventListener("scroll", scheduleTimelineUpdate, { passive: true });
-    window.addEventListener("resize", scheduleTimelineUpdate);
-    scheduleTimelineUpdate();
-
-    return () => {
-      window.removeEventListener("scroll", scheduleTimelineUpdate);
-      window.removeEventListener("resize", scheduleTimelineUpdate);
-
-      if (frameId !== null && typeof window.cancelAnimationFrame === "function") {
-        window.cancelAnimationFrame(frameId);
-      }
-    };
-  }, []);
-
-  // Hover 항목 순서 기준 Timeline Beam 진행도 임시 적용
-  const setHoveredTimelineProgress = (index: number) => {
-    const lastIndex = projects.length - 1;
-    const progress = lastIndex === 0 ? 1 : index / lastIndex;
-
-    projectHistoryRef.current?.style.setProperty("--project-timeline-progress", String(progress));
-  };
-
-  // Hover 종료 시 Scroll 기준 Timeline Beam 진행도 복원
-  const restoreTimelineProgress = () => {
-    projectHistoryRef.current?.style.removeProperty("--project-timeline-progress");
-  };
-
-  return (
-    <section
-      className="main-section projects-section"
-      id="projects"
-      aria-labelledby="projects-title"
-      ref={sectionRef}
-    >
-      <div className="content-container projects-inner">
-        <header className="projects-heading">
-          <p className="section-meta type-small">PROJECTS</p>
-          <h2 className="section-title type-heading" id="projects-title">프로젝트</h2>
-        </header>
-
-        <div className="project-stage">
-          <ol
-            className="project-showcases"
-            aria-label="연도별 프로젝트"
-            ref={projectHistoryRef}
-            onMouseLeave={restoreTimelineProgress}
-          >
-            {projects.map((project, index) => {
-              const isActive = activeProject === project.id;
-              const showsYear = index === 0 || projects[index - 1].year !== project.year;
-
-              return (
-                <li
-                  className="project-history-row"
-                  key={project.id}
-                  onMouseEnter={() => setHoveredTimelineProgress(index)}
-                >
-                  <div className={`project-timeline-entry${showsYear ? " has-year" : ""}`}>
-                    <span className="project-year type-small">{showsYear ? project.year : null}</span>
-                    <span
-                      className={`project-node${isActive ? " is-active" : ""}`}
-                      aria-hidden="true"
-                      ref={(node) => {
-                        projectNodeRefs.current[index] = node;
-                      }}
-                    />
-                    <a
-                      aria-current={isActive ? "location" : undefined}
-                      className={`project-tab${isActive ? " is-active" : ""}`}
-                      href={`#project-${project.id}`}
-                    >
-                      <span className="project-tab-name type-body" id={`project-label-${project.id}`}>
-                        {project.name}
-                      </span>
-                    </a>
-                  </div>
-
-                  <article
-                    className="project-panel"
-                    id={`project-${project.id}`}
-                    aria-labelledby={`project-label-${project.id}`}
-                    ref={(row) => {
-                      projectRowRefs.current[index] = row;
-                    }}
-                  >
-                    {project.href && project.imageSrc && project.imageAlt && project.imageWidth && project.imageHeight ? (
-                      <a
-                        className="project-thumbnail"
-                        href={project.href}
-                        aria-label={`${project.name} 프로젝트 상세 보기`}
-                      >
-                        <Image
-                          alt={project.imageAlt}
-                          className="project-thumbnail-image"
-                          src={project.imageSrc}
-                          width={project.imageWidth}
-                          height={project.imageHeight}
-                          sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) 20vw, 260px"
-                        />
-                      </a>
-                    ) : (
-                      <div className="project-thumbnail project-thumbnail-placeholder" aria-hidden="true" />
-                    )}
-
-                    <div className="project-information">
-                      <div className="project-information-group">
-                        <div className="project-information-content">
-                          <p className="project-tagline type-title">{project.tagline}</p>
-                          <p className="project-description type-body">{project.description}</p>
-                          <div className="project-meta type-small">
-                            <span className="project-meta-badge project-role-badge">{project.role}</span>
-                            <span className="project-meta-badge project-tech-badge">
-                              {project.technologies.map((technology, technologyIndex) => (
-                                <span className="project-tech-item" key={technology}>
-                                  {technologyIndex > 0 ? (
-                                    <span className="project-tech-separator" aria-hidden="true">
-                                      {"\u00A0·\u00A0"}
-                                    </span>
-                                  ) : null}
-                                  <span>{technology}</span>
-                                </span>
-                              ))}
-                            </span>
-                          </div>
-                        </div>
-                        {project.href ? (
-                          <a
-                            className="project-detail-link type-body"
-                            href={project.href}
-                            aria-label={`${project.name} 자세히 보기`}
-                            target={project.external ? "_blank" : undefined}
-                            rel={project.external ? "noopener noreferrer" : undefined}
-                          >
-                            자세히 보기 <span aria-hidden="true">↗</span>
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-                  </article>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
       </div>
     </section>
   );
@@ -643,75 +348,8 @@ function PortfolioFooter() {
   );
 }
 
-// 포트폴리오 Main 전체 Composition과 Theme 제어
+// 포트폴리오 Main의 Server 중심 전체 Composition
 export default function Home() {
-  const themeToggleRef = useRef<HTMLButtonElement>(null);
-  const themeTransitionRunningRef = useRef(false);
-
-  // 현재 Theme 반전과 Circle Reveal 전환 제어
-  const handleThemeToggle = async () => {
-    if (themeTransitionRunningRef.current) {
-      return;
-    }
-
-    const root = document.documentElement;
-    const nextTheme: PortfolioTheme = root.dataset.theme === "dark" ? "light" : "dark";
-    const button = themeToggleRef.current;
-    const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (
-      typeof document.startViewTransition !== "function" ||
-      isReducedMotion ||
-      !button ||
-      typeof root.animate !== "function"
-    ) {
-      applyTheme(nextTheme);
-      return;
-    }
-
-    const { x, y, radius } = calculateThemeReveal(
-      button.getBoundingClientRect(),
-      window.innerWidth,
-      window.innerHeight,
-    );
-    let themeApplied = false;
-
-    themeTransitionRunningRef.current = true;
-
-    try {
-      const transition = document.startViewTransition(() => {
-        applyTheme(nextTheme);
-        themeApplied = true;
-      });
-      const transitionFinished = transition.finished.catch(() => undefined);
-
-      await transition.ready;
-
-      const animation = root.animate(
-        {
-          clipPath: [
-            `circle(0px at ${x}px ${y}px)`,
-            `circle(${radius}px at ${x}px ${y}px)`,
-          ],
-        },
-        {
-          duration: THEME_TRANSITION_DURATION,
-          easing: THEME_TRANSITION_EASING,
-          fill: "both",
-          pseudoElement: "::view-transition-new(root)",
-        },
-      );
-
-      await Promise.all([transitionFinished, animation.finished]);
-    } catch {
-      if (!themeApplied) {
-        applyTheme(nextTheme);
-      }
-    } finally {
-      themeTransitionRunningRef.current = false;
-    }
-  };
-
   return (
     <div className="portfolio-shell">
       <header className="site-header">
@@ -728,19 +366,7 @@ export default function Home() {
             ))}
           </nav>
 
-          <button
-            ref={themeToggleRef}
-            className="theme-toggle"
-            type="button"
-            onClick={handleThemeToggle}
-            aria-label="색상 테마 전환"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <circle className="theme-toggle-orbit" cx="12" cy="12" r="7.5" />
-              <path className="theme-toggle-half" d="M12 4.5a7.5 7.5 0 0 1 0 15Z" />
-              <path className="theme-toggle-axis" d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" />
-            </svg>
-          </button>
+          <ThemeToggle />
         </div>
       </header>
 

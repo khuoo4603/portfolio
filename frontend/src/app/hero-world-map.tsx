@@ -1,5 +1,3 @@
-import DottedMap from "dotted-map";
-
 export const WORLD_MAP_SIZE = {
   width: 800,
   height: 400,
@@ -84,61 +82,16 @@ export function projectEastAsiaPoint({ lat, lng }: GeoPoint) {
 export const EAST_ASIA_FOCUS_POINT = projectEastAsiaPoint(KOREA_ANCHOR);
 
 export const WORLD_MAP_GRID_HEIGHT = 280;
-
-const map = new DottedMap({
-  height: WORLD_MAP_GRID_HEIGHT,
-  grid: "diagonal",
-  projection: { name: "equirectangular" },
-  region: {
-    lat: { min: -90, max: 90 },
-    lng: { min: -180, max: 180 },
-  },
-});
-
-const gridSize = {
-  width: WORLD_MAP_GRID_HEIGHT * 2,
-  height: WORLD_MAP_GRID_HEIGHT,
-} as const;
-
-const mapPoints = map.getPoints();
-
-export const WORLD_MAP_DOT_COUNT = mapPoints.length;
-
-const dotPath = mapPoints
-  .map((point) => {
-    const x = (point.x / gridSize.width) * WORLD_MAP_SIZE.width;
-    const y = (point.y / gridSize.height) * WORLD_MAP_SIZE.height;
-
-    return `M${x.toFixed(2)} ${y.toFixed(2)}h0`;
-  })
-  .join("");
+export const WORLD_MAP_DOT_COUNT = 54643;
+const WORLD_MAP_DOT_ASSET = "/maps/world-map-dots.svg#world-map-dots";
 
 export const EAST_ASIA_GRID_HEIGHT = 240;
 export const EAST_ASIA_GRID_WIDTH = Math.round(
   EAST_ASIA_GRID_HEIGHT * (EAST_ASIA_MAP_SIZE.width / EAST_ASIA_MAP_SIZE.height),
 );
 
-const eastAsiaMap = new DottedMap({
-  height: EAST_ASIA_GRID_HEIGHT,
-  width: EAST_ASIA_GRID_WIDTH,
-  grid: "diagonal",
-  projection: { name: "equirectangular" },
-  region: EAST_ASIA_SOURCE_CROP,
-});
-
-const eastAsiaMapPoints = eastAsiaMap.getPoints();
-
-export const EAST_ASIA_DOT_COUNT = eastAsiaMapPoints.length;
-
-// dotted-map Region-local 격자 좌표의 Focus ViewBox 정규화
-const eastAsiaDotPath = eastAsiaMapPoints
-  .map((point) => {
-    const x = (point.x / EAST_ASIA_GRID_WIDTH) * EAST_ASIA_MAP_SIZE.width;
-    const y = (point.y / EAST_ASIA_GRID_HEIGHT) * EAST_ASIA_MAP_SIZE.height;
-
-    return `M${x.toFixed(2)} ${y.toFixed(2)}h0`;
-  })
-  .join("");
+export const EAST_ASIA_DOT_COUNT = 64775;
+const EAST_ASIA_DOT_ASSET = "/maps/east-asia-map-dots.svg#east-asia-map-dots";
 
 // Aceternity 계열의 실제 대륙 Dot Field 지도
 export default function HeroWorldMap() {
@@ -152,7 +105,11 @@ export default function HeroWorldMap() {
       viewBox={`0 0 ${WORLD_MAP_SIZE.width} ${WORLD_MAP_SIZE.height}`}
     >
       <g className="topology-map-zoom">
-        <path className="topology-map-dots" d={dotPath} />
+        <use
+          className="topology-map-dots"
+          data-dot-count={WORLD_MAP_DOT_COUNT}
+          href={WORLD_MAP_DOT_ASSET}
+        />
       </g>
     </svg>
   );
@@ -170,7 +127,11 @@ export function HeroNarrativeWorldMap() {
       viewBox={`0 0 ${WORLD_MAP_SIZE.width} ${WORLD_MAP_SIZE.height}`}
     >
       <g className="topology-narrative-world-map-zoom">
-        <path className="topology-narrative-world-map-dots" d={dotPath} />
+        <use
+          className="topology-narrative-world-map-dots"
+          data-dot-count={WORLD_MAP_DOT_COUNT}
+          href={WORLD_MAP_DOT_ASSET}
+        />
       </g>
     </svg>
   );
@@ -188,7 +149,11 @@ export function HeroEastAsiaMap() {
       viewBox={`0 0 ${EAST_ASIA_MAP_SIZE.width} ${EAST_ASIA_MAP_SIZE.height}`}
     >
       <g className="topology-focus-map-zoom">
-        <path className="topology-focus-map-dots" d={eastAsiaDotPath} />
+        <use
+          className="topology-focus-map-dots"
+          data-dot-count={EAST_ASIA_DOT_COUNT}
+          href={EAST_ASIA_DOT_ASSET}
+        />
       </g>
     </svg>
   );

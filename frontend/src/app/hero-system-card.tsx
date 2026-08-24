@@ -4,8 +4,8 @@ import Image from "next/image";
 import {
   useEffect,
   useRef,
+  useState,
   type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
 } from "react";
 import HeroWorldMap, {
   EAST_ASIA_FOCUS_POINT,
@@ -59,17 +59,17 @@ export const PROJECT_GALLERY_MOTIONS = [
 const projectGalleryFrames = [
   {
     height: 525,
-    src: "/images/profile/map-zoom-gallery-01.jpg",
+    src: "/images/profile/map-zoom-gallery-01.webp",
     width: 700,
   },
   {
-    height: 2732,
-    src: "/images/profile/map-zoom-gallery-02.jpg",
-    width: 4096,
+    height: 854,
+    src: "/images/profile/map-zoom-gallery-02.webp",
+    width: 1280,
   },
   {
     height: 520,
-    src: "/images/profile/map-zoom-gallery-03.jpg",
+    src: "/images/profile/map-zoom-gallery-03.webp",
     width: 960,
   },
 ] as const;
@@ -82,24 +82,6 @@ const vmResources = [
   {
     className: "topology-resource-application",
     items: ["Next.js", "Spring Boot", "PostgreSQL"],
-  },
-] as const;
-
-export const DEVELOPMENT_VALUES = [
-  {
-    title: "문서화의 가치",
-    description:
-      "구현 결과만 남기지 않습니다. 설계와 선택의 이유를 기록해 시간이 지나도 구조와 의도를 다시 이해할 수 있도록 합니다.",
-  },
-  {
-    title: "덜어냄의 미학",
-    description:
-      "기술과 기능을 더하는 것보다 필요한 것만 남기는 것을 중요하게 생각합니다. 불필요한 복잡성을 줄이고 명확하고 유지보수 가능한 구조를 선택합니다.",
-  },
-  {
-    title: "운영까지",
-    description:
-      "구현과 배포에서 끝내지 않습니다. 로그, 모니터링, 백업과 장애 대응까지 고려해 실제로 지속 운영할 수 있는 상태를 완성의 기준으로 봅니다.",
   },
 ] as const;
 
@@ -352,6 +334,35 @@ export function calculateGalleryFrameState(
 type GalleryPoint = { x: number; y: number };
 type GallerySize = { height: number; width: number };
 type GalleryMotionPath = (typeof PROJECT_GALLERY_MOTIONS)[number];
+
+type SceneRect = GallerySize & {
+  left: number;
+  top: number;
+};
+
+type SceneGeometry = {
+  anchorLocalY: number;
+  anchorViewportX: number;
+  focusTargetX: number;
+  focusTargetY: number;
+  focusTranslateX: number;
+  focusTranslateY: number;
+  galleryViewport: GalleryViewport;
+  graph: SceneRect;
+  isDesktop: boolean;
+  isReducedMotion: boolean;
+  narrativeTargetX: number;
+  narrativeTargetY: number;
+  scrollLayout: {
+    baseDistance: number;
+    metrics: ReturnType<typeof calculateHeroScrollMetrics>;
+    sceneStart: number;
+  } | null;
+  stage: SceneRect & { documentTop: number };
+  stickyTop: number;
+  worldUnitX: number;
+  worldUnitY: number;
+};
 
 type GalleryAnchorInput = {
   bounds: GallerySize;
@@ -703,10 +714,8 @@ export default function HeroSystemCard() {
   const galleryPlaneRef = useRef<HTMLDivElement>(null);
   const galleryFrameRefs = useRef<Array<HTMLDivElement | null>>([]);
   const progressRef = useRef(0);
-  const pointerFrameRef = useRef(0);
-  const pointerTiltRef = useRef({ rotateX: 0, rotateY: 0 });
-  const markerPointerFrameRef = useRef(0);
-  const markerPointerRef = useRef({ x: 0, y: 0 });
+  const galleryReadyRef = useRef(false);
+  const [galleryReady, setGalleryReady] = useState(false);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -749,24 +758,25 @@ export default function HeroSystemCard() {
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
     let animationFrame = 0;
+    let layoutFrame = 0;
     let galleryAnimationFrame = 0;
+    let pointerFrame = 0;
+    let markerPointerFrame = 0;
     let galleryLastTimestamp: number | null = null;
     let galleryInitialized = false;
     let galleryTargetProgress = 0;
     let galleryRenderedProgress = 0;
     let galleryTargetOrigin = { x: 0, y: 0 };
     let galleryRenderedOrigin = { x: 0, y: 0 };
+    let pointerTilt = { rotateX: 0, rotateY: 0 };
+    let markerPointer = { x: 0, y: 0 };
     let galleryLayout: {
       bounds: GallerySize;
       frameSizes: GallerySize[];
       viewport: GalleryViewport;
     } | null = null;
     let flowActive: boolean | null = null;
-    let scrollLayout: {
-      baseDistance: number;
-      metrics: ReturnType<typeof calculateHeroScrollMetrics>;
-      sceneStart: number;
-    } | null = null;
+    let sceneGeometry: SceneGeometry | null = null;
 
     // Responsive Resource 배치와 동일 Connection Path 좌표 동기화
     const updateConnectionLayout = () => {
@@ -784,11 +794,32 @@ export default function HeroSystemCard() {
 
     // Marker Pointer Offset 즉시 복원
     const resetMarkerPointer = () => {
-      window.cancelAnimationFrame(markerPointerFrameRef.current);
-      markerPointerFrameRef.current = 0;
-      markerPointerRef.current = { x: 0, y: 0 };
+      window.cancelAnimationFrame(markerPointerFrame);
+      markerPointerFrame = 0;
+      markerPointer = { x: 0, y: 0 };
       stage.style.setProperty("--marker-pointer-x", "0px");
       stage.style.setProperty("--marker-pointer-y", "0px");
+    };
+
+    // Cache된 Stage Local Geometry의 현재 Viewport 좌표 계산
+    const getInteractionBounds = (rect: SceneRect) => {
+      const geometry = sceneGeometry;
+
+      if (!geometry) return null;
+
+      const stageViewportTop = Math.max(
+        geometry.stickyTop,
+        geometry.stage.documentTop - window.scrollY,
+      );
+
+      return {
+        left: geometry.stage.left + rect.left,
+        top: stageViewportTop + rect.top,
+        right: geometry.stage.left + rect.left + rect.width,
+        bottom: stageViewportTop + rect.top + rect.height,
+        width: rect.width,
+        height: rect.height,
+      };
     };
 
     // Hero Pointer 위치 기반 단일 Korea Marker Parallax 갱신
@@ -802,12 +833,18 @@ export default function HeroSystemCard() {
         return;
       }
 
-      const bounds = progressRef.current <= HERO_SCROLL_TIMING.topologyExitEnd
-        ? graph.getBoundingClientRect()
-        : stage.getBoundingClientRect();
+      const geometry = sceneGeometry;
+      const bounds = geometry
+        ? getInteractionBounds(
+          progressRef.current <= HERO_SCROLL_TIMING.topologyExitEnd
+            ? geometry.graph
+            : { left: 0, top: 0, width: geometry.stage.width, height: geometry.stage.height },
+        )
+        : null;
 
       if (
-        !bounds.width
+        !bounds
+        || !bounds.width
         || !bounds.height
         || event.clientX < bounds.left
         || event.clientX > bounds.right
@@ -818,20 +855,68 @@ export default function HeroSystemCard() {
         return;
       }
 
-      markerPointerRef.current = {
+      markerPointer = {
         x: (clamp((event.clientX - bounds.left) / bounds.width) * 2 - 1) * 6,
         y: (clamp((event.clientY - bounds.top) / bounds.height) * 2 - 1) * 5,
       };
 
-      if (markerPointerFrameRef.current) {
+      if (markerPointerFrame) {
         return;
       }
 
-      markerPointerFrameRef.current = window.requestAnimationFrame(() => {
-        markerPointerFrameRef.current = 0;
-        stage.style.setProperty("--marker-pointer-x", `${markerPointerRef.current.x.toFixed(2)}px`);
-        stage.style.setProperty("--marker-pointer-y", `${markerPointerRef.current.y.toFixed(2)}px`);
+      markerPointerFrame = window.requestAnimationFrame(() => {
+        markerPointerFrame = 0;
+        stage.style.setProperty("--marker-pointer-x", `${markerPointer.x.toFixed(2)}px`);
+        stage.style.setProperty("--marker-pointer-y", `${markerPointer.y.toFixed(2)}px`);
       });
+    };
+
+    // Cache된 Graph Geometry 기반 초기 Topology Perspective 반영
+    const handleCardPointerMove = (event: globalThis.PointerEvent) => {
+      const geometry = sceneGeometry;
+      const bounds = geometry ? getInteractionBounds(geometry.graph) : null;
+
+      if (
+        !bounds
+        || event.pointerType !== "mouse"
+        || progressRef.current > HERO_SCROLL_TIMING.topologyExitEnd
+        || mobileQuery.matches
+        || !finePointerQuery.matches
+        || reducedMotionQuery.matches
+      ) {
+        return;
+      }
+
+      const offsetX = (event.clientX - bounds.left) / bounds.width - 0.5;
+      const offsetY = (event.clientY - bounds.top) / bounds.height - 0.5;
+      const tiltStrength = progressRef.current <= HERO_SCROLL_TIMING.topologyHoldEnd
+        ? 1
+        : (HERO_SCROLL_TIMING.topologyExitEnd - progressRef.current)
+          / (HERO_SCROLL_TIMING.topologyExitEnd - HERO_SCROLL_TIMING.topologyHoldEnd);
+
+      pointerTilt = {
+        rotateX: offsetY * -14 * tiltStrength,
+        rotateY: offsetX * 14 * tiltStrength,
+      };
+
+      if (pointerFrame) return;
+
+      pointerFrame = window.requestAnimationFrame(() => {
+        pointerFrame = 0;
+        graph.style.setProperty("--card-rotate-x", `${pointerTilt.rotateX}deg`);
+        graph.style.setProperty("--card-rotate-y", `${pointerTilt.rotateY}deg`);
+      });
+    };
+
+    // Pointer 이탈 시 Topology 각도와 초기 Marker 위치 복원
+    const resetCard = () => {
+      window.cancelAnimationFrame(pointerFrame);
+      pointerFrame = 0;
+      resetProperties.forEach((property) => graph.style.setProperty(property, "0deg"));
+
+      if (progressRef.current <= HERO_SCROLL_TIMING.topologyExitEnd) {
+        resetMarkerPointer();
+      }
     };
 
     // Scroll Phase에 따른 SVG Flow 재생 상태 전환
@@ -897,6 +982,10 @@ export default function HeroSystemCard() {
         stageRect.height,
         window.innerWidth,
       );
+      const frameSizes = galleryFrameRefs.current.map((frame) => ({
+        height: frame?.offsetHeight ?? 0,
+        width: frame?.offsetWidth ?? 0,
+      }));
 
       stage.style.setProperty("--gallery-plane-left", `${planeLayout.left}px`);
       stage.style.setProperty(
@@ -906,11 +995,78 @@ export default function HeroSystemCard() {
 
       return {
         bounds: planeLayout.bounds,
-        frameSizes: galleryFrameRefs.current.map((frame) => ({
-          height: frame?.offsetHeight ?? 0,
-          width: frame?.offsetWidth ?? 0,
-        })),
+        frameSizes,
         viewport,
+      };
+    };
+
+    // Resize·Breakpoint·Image Layout 변경 시 Hero Scene Geometry 일괄 측정
+    const measureSceneGeometry = () => {
+      const isDesktop = desktopQuery.matches;
+      const isReducedMotion = reducedMotionQuery.matches;
+      const galleryViewport = getGalleryViewport(isDesktop);
+      const stickyTop = Number.parseFloat(window.getComputedStyle(stage).top) || 0;
+
+      if (isReducedMotion) {
+        hero.style.removeProperty("--hero-stage-height");
+        heroSystem.style.removeProperty("--hero-stage-height");
+        aboutSection.style.setProperty("--about-transition-height", "0px");
+      }
+
+      const scrollLayout = isReducedMotion ? null : updateScrollLayout(isDesktop, stickyTop);
+      const stageRect = stage.getBoundingClientRect();
+      const graphRect = graph.getBoundingClientRect();
+      const narrativeMapRect = narrativeMapViewport.getBoundingClientRect();
+      const focusMapRect = focusMapViewport.getBoundingClientRect();
+      const mapWidth = mapLayer.offsetWidth;
+      const mapHeight = mapLayer.offsetHeight;
+      const graphLeft = graphRect.left - stageRect.left;
+      const graphTop = graphRect.top - stageRect.top;
+      const mapLeft = graphLeft + mapLayer.offsetLeft;
+      const mapTop = graphTop + mapLayer.offsetTop;
+      const anchorLocalX = mapLeft + mapWidth * (serverPoint.x / WORLD_MAP_SIZE.width);
+      const anchorLocalY = mapTop + mapHeight * (serverPoint.y / WORLD_MAP_SIZE.height);
+      const worldKoreaX = serverPoint.x / WORLD_MAP_SIZE.width;
+      const worldKoreaY = serverPoint.y / WORLD_MAP_SIZE.height;
+      const narrativeLeft = narrativeMapRect.left - stageRect.left;
+      const narrativeTop = narrativeMapRect.top - stageRect.top;
+      const narrativeTargetX = narrativeLeft + narrativeMapRect.width * worldKoreaX;
+      const narrativeTargetY = narrativeTop + narrativeMapRect.height * worldKoreaY;
+      const focusKoreaX = EAST_ASIA_FOCUS_POINT.x / EAST_ASIA_MAP_SIZE.width;
+      const focusKoreaY = EAST_ASIA_FOCUS_POINT.y / EAST_ASIA_MAP_SIZE.height;
+      const focusTargetX = focusMapRect.left - stageRect.left + focusMapRect.width * focusKoreaX;
+      const focusTargetY = focusMapRect.top - stageRect.top + focusMapRect.height * focusKoreaY;
+
+      galleryLayout = isReducedMotion ? null : measureGalleryLayout(stageRect, galleryViewport);
+      sceneGeometry = {
+        anchorLocalY,
+        anchorViewportX: stageRect.left + anchorLocalX,
+        focusTargetX,
+        focusTargetY,
+        focusTranslateX: focusTargetX - anchorLocalX,
+        focusTranslateY: focusTargetY - anchorLocalY,
+        galleryViewport,
+        graph: {
+          left: graphLeft,
+          top: graphTop,
+          width: graphRect.width,
+          height: graphRect.height,
+        },
+        isDesktop,
+        isReducedMotion,
+        narrativeTargetX,
+        narrativeTargetY,
+        scrollLayout,
+        stage: {
+          left: stageRect.left,
+          top: stageRect.top,
+          width: stageRect.width,
+          height: stageRect.height,
+          documentTop: window.scrollY + stageRect.top,
+        },
+        stickyTop,
+        worldUnitX: Math.max(narrativeMapRect.width / WORLD_MAP_SIZE.width, Number.EPSILON),
+        worldUnitY: Math.max(narrativeMapRect.height / WORLD_MAP_SIZE.height, Number.EPSILON),
       };
     };
 
@@ -1037,50 +1193,25 @@ export default function HeroSystemCard() {
     const updateScene = () => {
       animationFrame = 0;
 
-      const isDesktop = desktopQuery.matches;
-      const isReducedMotion = reducedMotionQuery.matches;
-      const stageRect = stage.getBoundingClientRect();
-      const galleryViewport = getGalleryViewport(isDesktop);
-      const graphRect = graph.getBoundingClientRect();
-      const narrativeMapRect = narrativeMapViewport.getBoundingClientRect();
-      const focusMapRect = focusMapViewport.getBoundingClientRect();
-      const mapWidth = mapLayer.offsetWidth;
-      const mapHeight = mapLayer.offsetHeight;
-      const mapLeft = graphRect.left + mapLayer.offsetLeft;
-      const mapTop = graphRect.top + mapLayer.offsetTop;
-      const anchorX = mapWidth * (serverPoint.x / WORLD_MAP_SIZE.width);
-      const anchorY = mapHeight * (serverPoint.y / WORLD_MAP_SIZE.height);
-      const anchorGlobalX = mapLeft + anchorX;
-      const anchorGlobalY = mapTop + anchorY;
-      const worldKoreaX = serverPoint.x / WORLD_MAP_SIZE.width;
-      const worldKoreaY = serverPoint.y / WORLD_MAP_SIZE.height;
-      const narrativeTargetX = narrativeMapRect.left + narrativeMapRect.width * worldKoreaX;
-      const narrativeTargetY = narrativeMapRect.top + narrativeMapRect.height * worldKoreaY;
-      const focusKoreaX = EAST_ASIA_FOCUS_POINT.x / EAST_ASIA_MAP_SIZE.width;
-      const focusKoreaY = EAST_ASIA_FOCUS_POINT.y / EAST_ASIA_MAP_SIZE.height;
-      const targetX = focusMapRect.left + focusMapRect.width * focusKoreaX;
-      const targetY = focusMapRect.top + focusMapRect.height * focusKoreaY;
-      const focusTranslateX = targetX - anchorGlobalX;
-      const focusTranslateY = targetY - anchorGlobalY;
+      const geometry = sceneGeometry;
 
-      if (!isReducedMotion) {
-        galleryLayout ??= measureGalleryLayout(stageRect, galleryViewport);
-      }
+      if (!geometry) return;
+
+      const { galleryViewport, isReducedMotion } = geometry;
 
       if (isReducedMotion) {
         cancelGalleryFrame();
         galleryInitialized = false;
         progressRef.current = 0;
-        scrollLayout = null;
-        hero.style.removeProperty("--hero-stage-height");
-        heroSystem.style.removeProperty("--hero-stage-height");
-        aboutSection.style.setProperty("--about-transition-height", "0px");
         stage.style.setProperty("--connection-depth", "0px");
         stage.style.setProperty("--flow-depth", "0px");
         stage.style.setProperty("--flow-opacity", "0");
         stage.style.setProperty("--frame-opacity", "0");
         stage.style.setProperty("--inner-depth", "0px");
-        stage.style.setProperty("--map-clip-inset", `${-Math.max(stageRect.width, stageRect.height) * 2}px`);
+        stage.style.setProperty(
+          "--map-clip-inset",
+          `${-Math.max(geometry.stage.width, geometry.stage.height) * 2}px`,
+        );
         narrativeMapZoom.setAttribute(
           "transform",
           `translate(${serverPoint.x} ${serverPoint.y}) scale(${FOCUS_HANDOFF_END_SCALE}) translate(${-serverPoint.x} ${-serverPoint.y})`,
@@ -1094,8 +1225,8 @@ export default function HeroSystemCard() {
         stage.style.setProperty("--world-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.worldHandoff));
         stage.style.setProperty("--focus-map-opacity", "1");
         stage.style.setProperty("--map-filter", "none");
-        stage.style.setProperty("--map-translate-x", `${focusTranslateX}px`);
-        stage.style.setProperty("--map-translate-y", `${focusTranslateY}px`);
+        stage.style.setProperty("--map-translate-x", `${geometry.focusTranslateX}px`);
+        stage.style.setProperty("--map-translate-y", `${geometry.focusTranslateY}px`);
         stage.style.setProperty("--marker-opacity", "1");
         stage.style.setProperty("--resource-depth", "0px");
         stage.style.setProperty("--server-opacity", "0");
@@ -1111,32 +1242,49 @@ export default function HeroSystemCard() {
         return;
       }
 
-      const stickyTop = Number.parseFloat(window.getComputedStyle(stage).top) || 0;
-      scrollLayout ??= updateScrollLayout(isDesktop, stickyTop);
+      const scrollLayout = geometry.scrollLayout;
+
+      if (!scrollLayout) return;
+
       const { baseDistance, metrics, sceneStart } = scrollLayout;
       const scrollPixels = Math.min(Math.max(window.scrollY - sceneStart, 0), metrics.totalDistance);
+
+      // Gallery 진입 전 저우선순위 이미지 요청 활성화
+      if (!galleryReadyRef.current && scrollPixels >= metrics.mapCenterStart) {
+        galleryReadyRef.current = true;
+        setGalleryReady(true);
+      }
 
       progressRef.current = scrollPixels / baseDistance;
       const state = calculateHeroSceneState(scrollPixels, metrics, galleryViewport);
 
       // World Camera와 Marker의 동일 Pan 좌표 적용
-      const worldCameraShiftX = (targetX - narrativeTargetX) * state.cameraPanProgress;
-      const worldCameraShiftY = (targetY - narrativeTargetY) * state.cameraPanProgress;
-      const worldUnitX = Math.max(narrativeMapRect.width / WORLD_MAP_SIZE.width, Number.EPSILON);
-      const worldUnitY = Math.max(narrativeMapRect.height / WORLD_MAP_SIZE.height, Number.EPSILON);
-      const worldShiftSvgX = worldCameraShiftX / worldUnitX;
-      const worldShiftSvgY = worldCameraShiftY / worldUnitY;
-      const translateX = (narrativeTargetX - anchorGlobalX) * state.centerProgress
+      const worldCameraShiftX = (
+        geometry.focusTargetX - geometry.narrativeTargetX
+      ) * state.cameraPanProgress;
+      const worldCameraShiftY = (
+        geometry.focusTargetY - geometry.narrativeTargetY
+      ) * state.cameraPanProgress;
+      const worldShiftSvgX = worldCameraShiftX / geometry.worldUnitX;
+      const worldShiftSvgY = worldCameraShiftY / geometry.worldUnitY;
+      const translateX = (
+        geometry.narrativeTargetX - (geometry.anchorViewportX - geometry.stage.left)
+      ) * state.centerProgress
         + worldCameraShiftX;
-      const translateY = (narrativeTargetY - anchorGlobalY) * state.centerProgress
+      const translateY = (
+        geometry.narrativeTargetY - geometry.anchorLocalY
+      ) * state.centerProgress
         + worldCameraShiftY;
-      const clipInset = -Math.max(stageRect.width, stageRect.height) * 2 * state.clipProgress;
+      const clipInset = -Math.max(
+        geometry.stage.width,
+        geometry.stage.height,
+      ) * 2 * state.clipProgress;
       const galleryOrigin = calculateGalleryOrigin(
-        anchorGlobalX,
-        anchorGlobalY,
+        geometry.anchorViewportX,
+        geometry.stage.top + geometry.anchorLocalY,
         translateX,
         translateY,
-        stageRect.top,
+        geometry.stage.top,
       );
 
       narrativeMapZoom.setAttribute(
@@ -1182,13 +1330,26 @@ export default function HeroSystemCard() {
       animationFrame = window.requestAnimationFrame(updateScene);
     };
 
+    const handleScroll = () => {
+      if (!reducedMotionQuery.matches) {
+        scheduleSceneUpdate();
+      }
+    };
+
     const handleLayoutChange = () => {
       cancelGalleryFrame();
       galleryLayout = null;
       galleryInitialized = false;
-      scrollLayout = null;
+      sceneGeometry = null;
       updateConnectionLayout();
-      scheduleSceneUpdate();
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = 0;
+      window.cancelAnimationFrame(layoutFrame);
+      layoutFrame = window.requestAnimationFrame(() => {
+        layoutFrame = 0;
+        measureSceneGeometry();
+        updateScene();
+      });
     };
 
     // Motion 또는 Pointer 환경 변경 시 Marker 복원과 Layout 재계산
@@ -1198,12 +1359,16 @@ export default function HeroSystemCard() {
     };
 
     updateConnectionLayout();
+    measureSceneGeometry();
     updateScene();
     galleryImages.forEach((image) => image.addEventListener("load", handleLayoutChange));
+    graph.addEventListener("pointermove", handleCardPointerMove, { passive: true });
+    graph.addEventListener("pointercancel", resetCard);
+    graph.addEventListener("pointerleave", resetCard);
     hero.addEventListener("pointermove", handleMarkerPointerMove, { passive: true });
     hero.addEventListener("pointerleave", resetMarkerPointer);
     window.addEventListener("blur", resetMarkerPointer);
-    window.addEventListener("scroll", scheduleSceneUpdate, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleLayoutChange);
     desktopQuery.addEventListener("change", handleLayoutChange);
     mobileQuery.addEventListener("change", handleLayoutChange);
@@ -1212,14 +1377,20 @@ export default function HeroSystemCard() {
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
+      window.cancelAnimationFrame(layoutFrame);
       cancelGalleryFrame();
-      window.cancelAnimationFrame(pointerFrameRef.current);
+      window.cancelAnimationFrame(pointerFrame);
+      window.cancelAnimationFrame(markerPointerFrame);
+      resetCard();
       resetMarkerPointer();
       galleryImages.forEach((image) => image.removeEventListener("load", handleLayoutChange));
+      graph.removeEventListener("pointermove", handleCardPointerMove);
+      graph.removeEventListener("pointercancel", resetCard);
+      graph.removeEventListener("pointerleave", resetCard);
       hero.removeEventListener("pointermove", handleMarkerPointerMove);
       hero.removeEventListener("pointerleave", resetMarkerPointer);
       window.removeEventListener("blur", resetMarkerPointer);
-      window.removeEventListener("scroll", scheduleSceneUpdate);
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleLayoutChange);
       desktopQuery.removeEventListener("change", handleLayoutChange);
       mobileQuery.removeEventListener("change", handleLayoutChange);
@@ -1232,62 +1403,6 @@ export default function HeroSystemCard() {
       aboutSection.style.removeProperty("--about-transition-height");
     };
   }, []);
-
-  // Fine Pointer 위치 기반 초기 Topology Perspective 반영
-  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const graph = graphRef.current;
-
-    if (
-      !graph ||
-      event.pointerType !== "mouse" ||
-      progressRef.current > HERO_SCROLL_TIMING.topologyExitEnd ||
-      !window.matchMedia("(min-width: 768px) and (hover: hover) and (pointer: fine)").matches ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return;
-    }
-
-    const bounds = graph.getBoundingClientRect();
-    const offsetX = (event.clientX - bounds.left) / bounds.width - 0.5;
-    const offsetY = (event.clientY - bounds.top) / bounds.height - 0.5;
-    const tiltStrength = progressRef.current <= HERO_SCROLL_TIMING.topologyHoldEnd
-      ? 1
-      : (HERO_SCROLL_TIMING.topologyExitEnd - progressRef.current)
-        / (HERO_SCROLL_TIMING.topologyExitEnd - HERO_SCROLL_TIMING.topologyHoldEnd);
-
-    pointerTiltRef.current = {
-      rotateX: offsetY * -14 * tiltStrength,
-      rotateY: offsetX * 14 * tiltStrength,
-    };
-
-    if (pointerFrameRef.current) return;
-
-    pointerFrameRef.current = window.requestAnimationFrame(() => {
-      pointerFrameRef.current = 0;
-      graph.style.setProperty("--card-rotate-x", `${pointerTiltRef.current.rotateX}deg`);
-      graph.style.setProperty("--card-rotate-y", `${pointerTiltRef.current.rotateY}deg`);
-    });
-  };
-
-  // Pointer 이탈 시 Topology 각도 복원
-  const resetCard = () => {
-    const graph = graphRef.current;
-    const stage = stageRef.current;
-
-    if (!graph) return;
-
-    window.cancelAnimationFrame(pointerFrameRef.current);
-    pointerFrameRef.current = 0;
-    resetProperties.forEach((property) => graph.style.setProperty(property, "0deg"));
-
-    if (stage && progressRef.current <= HERO_SCROLL_TIMING.topologyExitEnd) {
-      window.cancelAnimationFrame(markerPointerFrameRef.current);
-      markerPointerFrameRef.current = 0;
-      markerPointerRef.current = { x: 0, y: 0 };
-      stage.style.setProperty("--marker-pointer-x", "0px");
-      stage.style.setProperty("--marker-pointer-y", "0px");
-    }
-  };
 
   return (
     <div className="hero-visual-stage" ref={stageRef} style={initialStyle}>
@@ -1311,6 +1426,7 @@ export default function HeroSystemCard() {
         {projectGalleryFrames.map((frame, index) => {
           const initialFrameState = calculateGalleryFrameState(0, index);
           const frameStyle: GalleryFrameStyle = {
+            aspectRatio: `${frame.width} / ${frame.height}`,
             "--gallery-blur": `${initialFrameState.blur}px`,
             "--gallery-opacity": initialFrameState.opacity,
             "--gallery-scale": initialFrameState.scale,
@@ -1329,15 +1445,19 @@ export default function HeroSystemCard() {
               }}
               style={frameStyle}
             >
-              <Image
-                alt=""
-                className="topology-project-gallery-image"
-                height={frame.height}
-                preload
-                sizes="(max-width: 767px) 78vw, (max-width: 1023px) 50vw, 31vw"
-                src={frame.src}
-                width={frame.width}
-              />
+              {galleryReady ? (
+                <Image
+                  alt=""
+                  className="topology-project-gallery-image"
+                  decoding="async"
+                  fetchPriority="low"
+                  height={frame.height}
+                  loading="lazy"
+                  sizes="(max-width: 767px) 78vw, (max-width: 1023px) 50vw, 31vw"
+                  src={frame.src}
+                  width={frame.width}
+                />
+              ) : null}
             </div>
           );
         })}
@@ -1346,9 +1466,6 @@ export default function HeroSystemCard() {
       <div
         aria-label="세계지도 위 대한민국 Server와 VM 두 개, Storage가 연결된 Server Topology"
         className="service-graph"
-        onPointerCancel={resetCard}
-        onPointerLeave={resetCard}
-        onPointerMove={handlePointerMove}
         ref={graphRef}
         role="group"
       >
