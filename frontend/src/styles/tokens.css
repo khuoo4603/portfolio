@@ -104,7 +104,7 @@
   --motion-duration-720: 720ms;
   --motion-easing-default: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --content-max-width: 1200px;
+  --content-max-width: 1280px;
   --page-padding: 20px;
   --grid-columns: 4;
   --grid-gutter: var(--space-16);

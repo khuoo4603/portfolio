@@ -834,15 +834,165 @@ describe("포트폴리오 메인", () => {
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
   });
 
-  it("KYvC와 SHKUTrack의 실제 Static Project 정보를 표시", () => {
+  it("Project Identity와 설명, Metadata, Detail CTA를 역할별로 표시", () => {
     render(<Home />);
 
-    expect(screen.getByRole("heading", { name: "KYvC" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "SHKUTrack" })).toBeInTheDocument();
-    expect(screen.getAllByText("법인 KYC 자동 심사 서비스").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("성공회대학교 졸업 관리 서비스").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "KYvC 프로젝트 보기" })).toHaveAttribute("href", "/projects/kyvc");
-    expect(screen.getByRole("link", { name: "SHKUTrack 프로젝트 보기" })).toHaveAttribute("href", "/projects/shkutrack");
+    const projectsSection = document.querySelector<HTMLElement>(".projects-section")!;
+    const projectHistory = within(projectsSection).getByRole("list", { name: "연도별 프로젝트" });
+    expect(projectHistory.querySelector(".project-tab[href='#project-kyvc']")).toHaveTextContent("KYvC");
+    expect(projectHistory.querySelector(".project-tab[href='#project-shkutrack']")).toHaveTextContent("SHKUTrack");
+    expect(projectHistory.querySelector(".project-tab[href='#project-shkuload']")).toHaveTextContent("SHKULoad");
+    expect(within(projectsSection).getAllByText("2026")).toHaveLength(1);
+    expect(within(projectsSection).getAllByText("2023")).toHaveLength(1);
+    expect(within(projectsSection).getByText("법인 KYC 자동 심사 서비스")).toBeInTheDocument();
+    expect(within(projectsSection).getByText("성공회대학교 졸업 관리 서비스")).toBeInTheDocument();
+    expect(within(projectsSection).getByText("길찾기·중간지점·지하철 정보 서비스"))
+      .toBeInTheDocument();
+    expect(within(projectsSection).getByText(
+      "목적지 길찾기와 여러 위치의 중간지점 계산, 지하철 위치·지연정보를 제공하는 서비스",
+    )).toBeInTheDocument();
+    expect(within(projectsSection).queryByText("사용자가 현재 프로젝트 목록에 포함시키려는 2023 프로젝트"))
+      .not.toBeInTheDocument();
+    expect(within(projectsSection).queryByText("프로젝트 정보 정리 예정")).not.toBeInTheDocument();
+    expect(within(projectsSection).queryByText("제 시간표를 소개합니다.")).not.toBeInTheDocument();
+    expect(projectsSection.querySelectorAll(".project-information .project-name")).toHaveLength(0);
+    expect(within(projectsSection).queryByRole("heading", { name: "KYvC" })).not.toBeInTheDocument();
+    expect(within(projectsSection).queryByRole("heading", { name: "SHKUTrack" })).not.toBeInTheDocument();
+    expect(within(projectsSection).queryByRole("heading", { name: "SHKULoad" })).not.toBeInTheDocument();
+
+    expect(within(projectsSection).getByRole("link", { name: "KYvC 프로젝트 상세 보기" }))
+      .toHaveAttribute("href", "/projects/kyvc");
+    expect(within(projectsSection).getByRole("link", { name: "SHKUTrack 프로젝트 상세 보기" }))
+      .toHaveAttribute("href", "/projects/shkutrack");
+    expect(within(projectsSection).getByRole("link", { name: "KYvC 자세히 보기" }))
+      .toHaveAttribute("href", "/projects/kyvc");
+    expect(within(projectsSection).getByRole("link", { name: "KYvC 자세히 보기" }))
+      .toHaveClass("project-detail-link");
+    expect(within(projectsSection).getByRole("link", { name: "SHKUTrack 자세히 보기" }))
+      .toHaveAttribute("href", "/projects/shkutrack");
+    const expectedMetadata = [
+      {
+        id: "kyvc",
+        role: "백엔드 · 인프라",
+        technologies: "Java · Spring Boot · PostgreSQL · Docker",
+        technologyCount: 4,
+      },
+      {
+        id: "shkutrack",
+        role: "풀스택 · 인프라",
+        technologies: "Java · Spring Boot · PostgreSQL · Docker · Kubernetes · Nginx",
+        technologyCount: 6,
+      },
+      {
+        id: "shkuload",
+        role: "백엔드",
+        technologies: "JavaScript · Node.js · Express · EJS",
+        technologyCount: 4,
+      },
+    ];
+
+    expectedMetadata.forEach((metadata) => {
+      const project = projectsSection.querySelector<HTMLElement>(`#project-${metadata.id}`)!;
+
+      expect(project.querySelectorAll(".project-meta")).toHaveLength(1);
+      expect(project.querySelectorAll(".project-role-badge")).toHaveLength(1);
+      expect(project.querySelector(".project-role-badge")).toHaveTextContent(metadata.role);
+      expect(project.querySelectorAll(".project-tech-badge")).toHaveLength(1);
+      expect(project.querySelector(".project-tech-badge")).toHaveTextContent(metadata.technologies);
+      expect(project.querySelectorAll(".project-meta-badge")).toHaveLength(2);
+      expect(project.querySelectorAll(".project-tech-item")).toHaveLength(metadata.technologyCount);
+      expect(project.querySelectorAll(".project-tech-separator")).toHaveLength(metadata.technologyCount - 1);
+      expect(Array.from(project.querySelectorAll(".project-tech-separator")).every(
+        (separator) => separator.textContent === "\u00A0·\u00A0",
+      )).toBe(true);
+      expect(project.querySelectorAll(".project-tech-item.project-meta-badge")).toHaveLength(0);
+    });
+    expect(projectsSection.querySelectorAll(".project-meta")).toHaveLength(3);
+    expect(projectsSection.querySelectorAll(".project-role-badge")).toHaveLength(3);
+    expect(projectsSection.querySelectorAll(".project-tech-badge")).toHaveLength(3);
+    expect(projectsSection.querySelectorAll(".project-meta-separator")).toHaveLength(0);
+    expect(projectsSection.querySelectorAll(".project-tech-separator")).toHaveLength(11);
+    expect(projectsSection.querySelectorAll(".project-meta-badge")).toHaveLength(6);
+    expect(projectsSection.querySelectorAll(".project-technology")).toHaveLength(0);
+
+    const kyvcImageSrc = within(projectsSection).getByRole("img", { name: "KYvC 프로젝트 대표 화면" }).getAttribute("src") ?? "";
+    const shkuTrackImageSrc = within(projectsSection).getByRole("img", { name: "SHKUTrack 프로젝트 대표 화면" }).getAttribute("src") ?? "";
+    expect(decodeURIComponent(kyvcImageSrc)).toContain("/images/profile/project-intro-kyvc.png");
+    expect(decodeURIComponent(shkuTrackImageSrc)).toContain("/images/profile/project-intro-skhutrack.png");
+    const shkuLoadProject = projectsSection.querySelector<HTMLElement>("#project-shkuload")!;
+    expect(shkuLoadProject.querySelector("img")).not.toBeInTheDocument();
+    expect(shkuLoadProject.querySelector(".project-thumbnail-placeholder")).toBeInTheDocument();
+    const shkuLoadDetailLink = within(projectsSection).getByRole("link", { name: "SHKULoad 자세히 보기" });
+    expect(shkuLoadDetailLink).toHaveAttribute("href", "https://github.com/woohyuk0428/SKHU_Contest");
+    expect(shkuLoadDetailLink).toHaveAttribute("target", "_blank");
+    expect(shkuLoadDetailLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(within(shkuLoadProject).getAllByRole("link")).toHaveLength(1);
+    expect(projectsSection.querySelector("a[href='/projects/shkuload']")).not.toBeInTheDocument();
+    expect(document.querySelector(".project-visual")).not.toBeInTheDocument();
+    expect(document.querySelector(".kyvc-structure")).not.toBeInTheDocument();
+    expect(document.querySelector(".shkutrack-structure")).not.toBeInTheDocument();
+  });
+
+  it("Viewport 중심에 가까운 Project를 Timeline 현재 항목으로 표시", async () => {
+    render(<Home />);
+
+    const createRect = (top: number, height: number, left = 0, width = 700) => ({
+      bottom: top + height,
+      height,
+      left,
+      right: left + width,
+      top,
+      width,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    });
+    const [kyvcRow, shkuTrackRow, shkuLoadRow] = Array.from(
+      document.querySelectorAll<HTMLElement>(".project-panel"),
+    );
+    const projectHistory = document.querySelector<HTMLOListElement>(".project-showcases")!;
+    const projectNodes = Array.from(document.querySelectorAll<HTMLSpanElement>(".project-node"));
+    vi.spyOn(kyvcRow, "getBoundingClientRect").mockReturnValue(createRect(-1000, 400));
+    vi.spyOn(shkuTrackRow, "getBoundingClientRect").mockReturnValue(createRect(-400, 400));
+    vi.spyOn(shkuLoadRow, "getBoundingClientRect").mockReturnValue(createRect(200, 400));
+    vi.spyOn(projectHistory, "getBoundingClientRect").mockReturnValue(createRect(0, 900, 0, 1000));
+    projectNodes.forEach((node, index) => {
+      vi.spyOn(node, "getBoundingClientRect").mockReturnValue(createRect(40 + index * 240, 8, 52, 8));
+    });
+
+    fireEvent.scroll(window);
+
+    const shkuLoadTimelineLink = document.querySelector<HTMLAnchorElement>(
+      ".project-tab[href='#project-shkuload']",
+    )!;
+    await waitFor(() => {
+      expect(shkuLoadTimelineLink).toHaveAttribute("aria-current", "location");
+    });
+    expect(document.querySelector(".project-tab[href='#project-kyvc']")).not.toHaveAttribute("aria-current");
+    expect(projectHistory.style.getPropertyValue("--project-timeline-left")).toBe("56px");
+    expect(projectHistory.style.getPropertyValue("--project-timeline-top")).toBe("44px");
+    expect(projectHistory.style.getPropertyValue("--project-timeline-height")).toBe("480px");
+    expect(document.querySelector<HTMLElement>(".projects-section")!.style.getPropertyValue("--project-timeline-progress"))
+      .not.toBe("0");
+  });
+
+  it("Hover한 Project 위치까지만 Timeline Beam 진행도를 표시", () => {
+    render(<Home />);
+
+    const projectHistory = document.querySelector<HTMLOListElement>(".project-showcases")!;
+    const projectRows = Array.from(projectHistory.querySelectorAll<HTMLElement>(".project-history-row"));
+
+    fireEvent.mouseEnter(projectRows[0]);
+    expect(projectHistory.style.getPropertyValue("--project-timeline-progress")).toBe("0");
+
+    fireEvent.mouseEnter(projectRows[1]);
+    expect(projectHistory.style.getPropertyValue("--project-timeline-progress")).toBe("0.5");
+
+    fireEvent.mouseEnter(projectRows[2]);
+    expect(projectHistory.style.getPropertyValue("--project-timeline-progress")).toBe("1");
+
+    fireEvent.mouseLeave(projectHistory);
+    expect(projectHistory.style.getPropertyValue("--project-timeline-progress")).toBe("");
   });
 
   it("학력과 주요 활동, 수상 이력을 표시", () => {

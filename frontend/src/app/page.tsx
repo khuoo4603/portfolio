@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import BorderGlow from "../components/ui/border-glow";
 import HeroNetworkBackground from "./hero-network-background";
 import HeroSystemCard, { DEVELOPMENT_VALUES } from "./hero-system-card";
@@ -86,20 +86,47 @@ const projects = [
   {
     id: "kyvc",
     name: "KYvC",
+    year: 2026,
     href: "/projects/kyvc",
+    external: false,
     tagline: "법인 KYC 자동 심사 서비스",
     description: "법인 서류를 기반으로 KYC 심사를 자동화하고 검증 결과를 전자 증명 형태로 연결하는 서비스",
-    role: "Backend / Architecture / Infra",
+    role: "백엔드 · 인프라",
     technologies: ["Java", "Spring Boot", "PostgreSQL", "Docker"],
+    imageSrc: "/images/profile/project-intro-kyvc.png",
+    imageAlt: "KYvC 프로젝트 대표 화면",
+    imageWidth: 2557,
+    imageHeight: 1264,
   },
   {
     id: "shkutrack",
     name: "SHKUTrack",
+    year: 2026,
     href: "/projects/shkutrack",
+    external: false,
     tagline: "성공회대학교 졸업 관리 서비스",
     description: "졸업요건 확인과 졸업 자료, 마이크로전공, 수강 전략을 하나의 흐름으로 관리하는 서비스",
-    role: "Development / Infra / Operation",
+    role: "풀스택 · 인프라",
     technologies: ["Java", "Spring Boot", "PostgreSQL", "Docker", "Kubernetes", "Nginx"],
+    imageSrc: "/images/profile/project-intro-skhutrack.png",
+    imageAlt: "SHKUTrack 프로젝트 대표 화면",
+    imageWidth: 2539,
+    imageHeight: 1265,
+  },
+  {
+    id: "shkuload",
+    name: "SHKULoad",
+    year: 2023,
+    href: "https://github.com/woohyuk0428/SKHU_Contest",
+    external: true,
+    tagline: "길찾기·중간지점·지하철 정보 서비스",
+    description: "목적지 길찾기와 여러 위치의 중간지점 계산, 지하철 위치·지연정보를 제공하는 서비스",
+    role: "백엔드",
+    technologies: ["JavaScript", "Node.js", "Express", "EJS"],
+    imageSrc: null,
+    imageAlt: null,
+    imageWidth: null,
+    imageHeight: null,
   },
 ] as const;
 
@@ -139,51 +166,6 @@ const awards = [
   { year: "2021", name: "신나는 SW·AI 교육 수기 공모전", result: "최우수상 · 과학기술정보통신부 장관상" },
   { year: "2021", name: "Hello New() World", result: "대상" },
 ] as const;
-
-// 프로젝트별 실제 서비스 개념 중심 Technical Visual 구성
-function ProjectVisual({ projectId }: { projectId: (typeof projects)[number]["id"] }) {
-  if (projectId === "shkutrack") {
-    return (
-      <div className="project-visual project-visual-shkutrack" aria-hidden="true">
-        <div className="shkutrack-wordmark">
-          <span className="type-display-lg">SHKU</span>
-          <span className="type-title">TRACK</span>
-        </div>
-        <svg className="shkutrack-structure" viewBox="0 0 640 420">
-          <path d="M82 98H258V210H438V322H566" />
-          <path d="M258 210V322H146" />
-          <rect x="70" y="86" width="24" height="24" />
-          <rect x="246" y="198" width="24" height="24" />
-          <rect x="426" y="310" width="24" height="24" />
-          <circle cx="146" cy="322" r="11" />
-          <circle cx="566" cy="322" r="11" />
-          <text x="70" y="72">COURSE</text>
-          <text x="246" y="184">MAJOR</text>
-          <text x="426" y="296">CREDIT</text>
-          <text x="470" y="354">GRADUATION</text>
-        </svg>
-      </div>
-    );
-  }
-
-  return (
-    <div className="project-visual project-visual-kyvc" aria-hidden="true">
-      <div className="kyvc-wordmark">
-        <span className="type-display-xl">K</span>
-        <span className="type-display-lg">YvC</span>
-      </div>
-      <svg className="kyvc-structure" viewBox="0 0 640 420">
-        <path d="M76 90H264V210H476V330H570" />
-        <path d="M154 330H264V210" />
-        <rect x="64" y="78" width="24" height="24" />
-        <rect x="252" y="198" width="24" height="24" />
-        <rect x="464" y="318" width="24" height="24" />
-        <circle cx="570" cy="330" r="11" />
-        <circle cx="154" cy="330" r="11" />
-      </svg>
-    </div>
-  );
-}
 
 // Hero의 Identity와 Server Topology, 다음 Section Cue 구성
 function Hero() {
@@ -328,11 +310,121 @@ function TechStackSection() {
   );
 }
 
-// 두 프로젝트의 실제 정보를 연결한 Static Showcase 구성
+// 연도별 Project History와 Scroll Timeline을 연결한 Projects 구성
 function ProjectsSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const projectHistoryRef = useRef<HTMLOListElement>(null);
+  const projectRowRefs = useRef<Array<HTMLElement | null>>([]);
+  const projectNodeRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const [activeProject, setActiveProject] = useState<(typeof projects)[number]["id"]>(projects[0].id);
+
+  useEffect(() => {
+    let frameId: number | null = null;
+
+    // Viewport 중심 기준 Timeline 활성 상태와 Beam 진행도 동기화
+    const updateTimeline = () => {
+      const section = sectionRef.current;
+      const history = projectHistoryRef.current;
+      const rows = projectRowRefs.current.filter((row): row is HTMLElement => row !== null);
+      const nodes = projectNodeRefs.current.filter((node): node is HTMLSpanElement => node !== null);
+
+      if (!section || !history || rows.length === 0) {
+        return;
+      }
+
+      const viewportCenter = window.innerHeight / 2;
+      const rowCenters = rows.map((row) => {
+        const rect = row.getBoundingClientRect();
+
+        return rect.top + rect.height / 2;
+      });
+      let nearestIndex = 0;
+
+      rowCenters.forEach((center, index) => {
+        if (Math.abs(center - viewportCenter) < Math.abs(rowCenters[nearestIndex] - viewportCenter)) {
+          nearestIndex = index;
+        }
+      });
+
+      const firstCenter = rowCenters[0];
+      const lastCenter = rowCenters[rowCenters.length - 1];
+      const centerDistance = lastCenter - firstCenter;
+      const progress = centerDistance === 0
+        ? 0
+        : Math.min(1, Math.max(0, (viewportCenter - firstCenter) / centerDistance));
+
+      section.style.setProperty("--project-timeline-progress", String(progress));
+      setActiveProject(projects[nearestIndex].id);
+
+      if (nodes.length === rows.length && nodes.every((node) => node.getBoundingClientRect().width > 0)) {
+        const historyRect = history.getBoundingClientRect();
+        const nodeCenters = nodes.map((node) => {
+          const rect = node.getBoundingClientRect();
+
+          return {
+            x: rect.left - historyRect.left + rect.width / 2,
+            y: rect.top - historyRect.top + rect.height / 2,
+          };
+        });
+        const firstNode = nodeCenters[0];
+        const lastNode = nodeCenters[nodeCenters.length - 1];
+
+        history.style.setProperty("--project-timeline-left", `${firstNode.x}px`);
+        history.style.setProperty("--project-timeline-top", `${firstNode.y}px`);
+        history.style.setProperty("--project-timeline-height", `${Math.max(0, lastNode.y - firstNode.y)}px`);
+      }
+    };
+
+    const scheduleTimelineUpdate = () => {
+      if (frameId !== null) {
+        return;
+      }
+
+      if (typeof window.requestAnimationFrame !== "function") {
+        updateTimeline();
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        updateTimeline();
+      });
+    };
+
+    window.addEventListener("scroll", scheduleTimelineUpdate, { passive: true });
+    window.addEventListener("resize", scheduleTimelineUpdate);
+    scheduleTimelineUpdate();
+
+    return () => {
+      window.removeEventListener("scroll", scheduleTimelineUpdate);
+      window.removeEventListener("resize", scheduleTimelineUpdate);
+
+      if (frameId !== null && typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, []);
+
+  // Hover 항목 순서 기준 Timeline Beam 진행도 임시 적용
+  const setHoveredTimelineProgress = (index: number) => {
+    const lastIndex = projects.length - 1;
+    const progress = lastIndex === 0 ? 1 : index / lastIndex;
+
+    projectHistoryRef.current?.style.setProperty("--project-timeline-progress", String(progress));
+  };
+
+  // Hover 종료 시 Scroll 기준 Timeline Beam 진행도 복원
+  const restoreTimelineProgress = () => {
+    projectHistoryRef.current?.style.removeProperty("--project-timeline-progress");
+  };
+
   return (
-    <section className="main-section projects-section" id="projects" aria-labelledby="projects-title">
-      <div className="projects-backdrop" aria-hidden="true" />
+    <section
+      className="main-section projects-section"
+      id="projects"
+      aria-labelledby="projects-title"
+      ref={sectionRef}
+    >
       <div className="content-container projects-inner">
         <header className="projects-heading">
           <p className="section-meta type-small">PROJECTS</p>
@@ -340,47 +432,108 @@ function ProjectsSection() {
         </header>
 
         <div className="project-stage">
-          <ol className="project-index" aria-label="프로젝트 목록">
-            {projects.map((project, index) => (
-              <li key={project.id}>
-                <a className={`project-tab${index === 0 ? " is-active" : ""}`} href={`#project-${project.id}`}>
-                  <span className="project-tab-name type-body-lg">{project.name}</span>
-                  <span className="type-body">{project.tagline}</span>
-                </a>
-              </li>
-            ))}
-          </ol>
+          <ol
+            className="project-showcases"
+            aria-label="연도별 프로젝트"
+            ref={projectHistoryRef}
+            onMouseLeave={restoreTimelineProgress}
+          >
+            {projects.map((project, index) => {
+              const isActive = activeProject === project.id;
+              const showsYear = index === 0 || projects[index - 1].year !== project.year;
 
-          <div className="project-showcases">
-            {projects.map((project) => (
-              <article className="project-panel" id={`project-${project.id}`} key={project.id}>
-                <h3 className="sr-only">{project.name}</h3>
-                <ProjectVisual projectId={project.id} />
-
-                <div className="project-summary">
-                  <div className="project-summary-copy">
-                    <p className="project-tagline type-title">{project.tagline}</p>
-                    <p className="type-body-lg">{project.description}</p>
-                    <dl className="project-facts type-body">
-                      <div>
-                        <dt>ROLE</dt>
-                        <dd>{project.role}</dd>
-                      </div>
-                      <div>
-                        <dt>CORE</dt>
-                        <dd>{project.technologies.join(" · ")}</dd>
-                      </div>
-                    </dl>
+              return (
+                <li
+                  className="project-history-row"
+                  key={project.id}
+                  onMouseEnter={() => setHoveredTimelineProgress(index)}
+                >
+                  <div className={`project-timeline-entry${showsYear ? " has-year" : ""}`}>
+                    <span className="project-year type-small">{showsYear ? project.year : null}</span>
+                    <span
+                      className={`project-node${isActive ? " is-active" : ""}`}
+                      aria-hidden="true"
+                      ref={(node) => {
+                        projectNodeRefs.current[index] = node;
+                      }}
+                    />
+                    <a
+                      aria-current={isActive ? "location" : undefined}
+                      className={`project-tab${isActive ? " is-active" : ""}`}
+                      href={`#project-${project.id}`}
+                    >
+                      <span className="project-tab-name type-body" id={`project-label-${project.id}`}>
+                        {project.name}
+                      </span>
+                    </a>
                   </div>
 
-                  <a className="project-link type-body" href={project.href} aria-label={`${project.name} 프로젝트 보기`}>
-                    프로젝트 보기
-                    <span aria-hidden="true">↗</span>
-                  </a>
-                </div>
-              </article>
-            ))}
-          </div>
+                  <article
+                    className="project-panel"
+                    id={`project-${project.id}`}
+                    aria-labelledby={`project-label-${project.id}`}
+                    ref={(row) => {
+                      projectRowRefs.current[index] = row;
+                    }}
+                  >
+                    {project.href && project.imageSrc && project.imageAlt && project.imageWidth && project.imageHeight ? (
+                      <a
+                        className="project-thumbnail"
+                        href={project.href}
+                        aria-label={`${project.name} 프로젝트 상세 보기`}
+                      >
+                        <Image
+                          alt={project.imageAlt}
+                          className="project-thumbnail-image"
+                          src={project.imageSrc}
+                          width={project.imageWidth}
+                          height={project.imageHeight}
+                          sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) 20vw, 260px"
+                        />
+                      </a>
+                    ) : (
+                      <div className="project-thumbnail project-thumbnail-placeholder" aria-hidden="true" />
+                    )}
+
+                    <div className="project-information">
+                      <div className="project-information-group">
+                        <div className="project-information-content">
+                          <p className="project-tagline type-title">{project.tagline}</p>
+                          <p className="project-description type-body">{project.description}</p>
+                          <div className="project-meta type-small">
+                            <span className="project-meta-badge project-role-badge">{project.role}</span>
+                            <span className="project-meta-badge project-tech-badge">
+                              {project.technologies.map((technology, technologyIndex) => (
+                                <span className="project-tech-item" key={technology}>
+                                  {technologyIndex > 0 ? (
+                                    <span className="project-tech-separator" aria-hidden="true">
+                                      {"\u00A0·\u00A0"}
+                                    </span>
+                                  ) : null}
+                                  <span>{technology}</span>
+                                </span>
+                              ))}
+                            </span>
+                          </div>
+                        </div>
+                        {project.href ? (
+                          <a
+                            className="project-detail-link type-body"
+                            href={project.href}
+                            aria-label={`${project.name} 자세히 보기`}
+                            target={project.external ? "_blank" : undefined}
+                            rel={project.external ? "noopener noreferrer" : undefined}
+                          >
+                            자세히 보기 <span aria-hidden="true">↗</span>
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ol>
         </div>
       </div>
     </section>
