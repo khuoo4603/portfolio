@@ -1,0 +1,951 @@
+.authPage {
+  --auth-surface-top-base: color-mix(in srgb, var(--bg-elevated) 48%, var(--bg-surface));
+  --auth-surface-middle-base: color-mix(in srgb, var(--bg-surface) 72%, var(--bg-base));
+  --auth-surface-top: color-mix(in srgb, var(--auth-surface-top-base) 94%, transparent);
+  --auth-surface-middle: color-mix(in srgb, var(--auth-surface-middle-base) 91%, transparent);
+  --auth-surface-lower: color-mix(in srgb, var(--auth-surface-middle-base) 76%, transparent);
+  --auth-surface-bottom: transparent;
+  --auth-field: color-mix(in srgb, var(--bg-elevated) 68%, var(--bg-surface));
+  --auth-grid-line: color-mix(in srgb, var(--border-default) 34%, transparent);
+  --auth-grid-cell: color-mix(in srgb, var(--border-default) 18%, transparent);
+  --auth-page-grid-line: color-mix(in srgb, var(--border-default) 16%, transparent);
+  --auth-page-grid-center: color-mix(in srgb, var(--bg-surface) 18%, transparent);
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow-x: clip;
+  background: var(--bg-base);
+  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+
+:global([data-theme="dark"]) .authPage {
+  --auth-surface-top-base: color-mix(in srgb, var(--ink-900) 86%, var(--bg-base));
+  --auth-surface-middle-base: color-mix(in srgb, var(--ink-900) 58%, var(--bg-base));
+  --auth-field: color-mix(in srgb, var(--ink-800) 38%, var(--ink-900));
+  --auth-grid-line: color-mix(in srgb, var(--ink-500) 22%, transparent);
+  --auth-grid-cell: color-mix(in srgb, var(--ink-600) 24%, transparent);
+  --auth-page-grid-line: color-mix(in srgb, var(--ink-500) 14%, transparent);
+  --auth-page-grid-center: color-mix(in srgb, var(--bg-surface) 22%, transparent);
+}
+
+.authPage :global(.type-heading),
+.authPage :global(.type-title),
+.authPage :global(.type-body),
+.authPage :global(.type-small) {
+  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+
+/* 넓은 선형 Grid와 외곽 Fade 기반 인증 페이지 배경 */
+.pageBackgroundGrid {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-color: var(--auth-page-grid-center);
+  background-image:
+    linear-gradient(to right, var(--auth-page-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--auth-page-grid-line) 1px, transparent 1px);
+  background-position: center;
+  background-size: var(--space-48) var(--space-48);
+  -webkit-mask-image: radial-gradient(
+    ellipse 72% 68% at 50% 50%,
+    black 0%,
+    rgb(0 0 0 / 88%) 36%,
+    rgb(0 0 0 / 42%) 66%,
+    rgb(0 0 0 / 8%) 84%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 72% 68% at 50% 50%,
+    black 0%,
+    rgb(0 0 0 / 88%) 36%,
+    rgb(0 0 0 / 42%) 66%,
+    rgb(0 0 0 / 8%) 84%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.authHeader {
+  position: absolute;
+  z-index: 20;
+  top: var(--page-padding);
+  right: var(--page-padding);
+  left: var(--page-padding);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.authHeader > * {
+  pointer-events: auto;
+}
+
+.authBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-12);
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.authBrand span:first-child {
+  display: grid;
+  width: var(--space-40);
+  height: var(--space-40);
+  place-items: center;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-xs);
+  color: var(--text-primary);
+}
+
+.authContent {
+  position: relative;
+  z-index: 1;
+  width: calc(100% - var(--page-padding) * 2);
+  max-width: 1440px;
+  min-height: 100dvh;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(460px, 500px);
+  gap: clamp(var(--space-128), 12.5vw, calc(var(--space-160) + var(--space-40)));
+  padding-block: var(--space-96) var(--space-64);
+}
+
+.identityContent {
+  min-width: 0;
+  align-self: center;
+}
+
+.identityHeading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+/* Reference 기반 문자별 3D Flip과 Cursor 상태 표현 */
+.flipSegment {
+  position: relative;
+  display: inline-block;
+  margin-left: 0.2em;
+  perspective: 600px;
+  vertical-align: baseline;
+}
+
+.flipSizer {
+  display: block;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.flipAnimatedLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.flipCharacters {
+  display: inline-flex;
+  white-space: nowrap;
+}
+
+.flipCharacter {
+  display: inline-block;
+  backface-visibility: hidden;
+  transform-origin: center;
+  will-change: opacity, filter, transform;
+}
+
+.flipCharacterEntering {
+  animation: character-enter var(--motion-duration-360) var(--motion-easing-default) both;
+}
+
+.flipCharacterDeleting {
+  animation: character-exit var(--motion-duration-100) var(--motion-easing-default) both;
+}
+
+.cursorDot {
+  position: absolute;
+  bottom: 0.18em;
+  left: calc(100% + 0.1em);
+  width: 0.16em;
+  height: 0.16em;
+  border-radius: var(--radius-value-pill);
+  background: var(--accent-primary);
+}
+
+.cursorDot[data-phase="typing"] {
+  animation: cursor-typing var(--motion-duration-720) ease-in-out infinite;
+}
+
+.cursorDot[data-phase="pause"] {
+  animation: cursor-pause var(--motion-duration-720) ease-in-out infinite;
+}
+
+.cursorDot[data-phase="deleting"] {
+  opacity: 0.56;
+  transform: translateY(-0.04em) scale(0.72);
+}
+
+.identityDescription {
+  max-width: 480px;
+  margin: var(--space-32) 0 0;
+  color: var(--text-secondary);
+}
+
+/* 상단 반투명 Surface에서 페이지 배경으로 사라지는 무외곽선 Form Surface */
+.loginSurface {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  width: min(100%, 500px);
+  min-height: clamp(580px, 68dvh, 630px);
+  min-width: 0;
+  align-self: center;
+  justify-self: end;
+  overflow: hidden;
+  border-radius: var(--radius-value-lg) var(--radius-value-lg) 0 0;
+  background: linear-gradient(
+    to bottom,
+    var(--auth-surface-top) 0%,
+    color-mix(in srgb, var(--auth-surface-top) 88%, var(--auth-surface-middle)) 20%,
+    var(--auth-surface-middle) 48%,
+    var(--auth-surface-lower) 72%,
+    color-mix(in srgb, var(--auth-surface-lower) 48%, var(--auth-surface-bottom)) 88%,
+    var(--auth-surface-bottom) 96%,
+    var(--auth-surface-bottom) 100%
+  );
+}
+
+/* Reference 기반 Square Line Grid와 좌·하단 Fade */
+.surfaceGrid {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, var(--auth-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--auth-grid-line) 1px, transparent 1px);
+  background-position: var(--space-16) var(--space-16);
+  background-size: var(--space-20) var(--space-20);
+  -webkit-mask-image:
+    linear-gradient(
+      to right,
+      transparent 0%,
+      rgb(0 0 0 / 2%) 15%,
+      rgb(0 0 0 / 14%) 35%,
+      rgb(0 0 0 / 40%) 55%,
+      rgb(0 0 0 / 78%) 75%,
+      black 100%
+    ),
+    linear-gradient(
+      to bottom,
+      black 0%,
+      black 20%,
+      rgb(0 0 0 / 62%) 45%,
+      rgb(0 0 0 / 20%) 65%,
+      rgb(0 0 0 / 3%) 80%,
+      transparent 100%
+    );
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent 0%,
+      rgb(0 0 0 / 2%) 15%,
+      rgb(0 0 0 / 14%) 35%,
+      rgb(0 0 0 / 40%) 55%,
+      rgb(0 0 0 / 78%) 75%,
+      black 100%
+    ),
+    linear-gradient(
+      to bottom,
+      black 0%,
+      black 20%,
+      rgb(0 0 0 / 62%) 45%,
+      rgb(0 0 0 / 20%) 65%,
+      rgb(0 0 0 / 3%) 80%,
+      transparent 100%
+    );
+  mask-composite: intersect;
+  pointer-events: none;
+}
+
+/* Grid Pitch에 맞춘 상단 고정 Filled Cell */
+.gridCells {
+  position: absolute;
+  z-index: 0;
+  top: calc(var(--space-16) + 1px);
+  left: calc(var(--space-160) + var(--space-128) + var(--space-32) - var(--space-4) + 1px);
+  width: calc(var(--space-20) - 1px);
+  height: calc(var(--space-20) - 1px);
+  background: var(--auth-grid-cell);
+  box-shadow:
+    calc(0px - var(--space-40)) var(--space-20) 0 var(--auth-grid-cell),
+    calc(0px - var(--space-20)) var(--space-40) 0 var(--auth-grid-cell),
+    var(--space-20) var(--space-20) 0 var(--auth-grid-cell);
+  pointer-events: none;
+}
+
+.formLayer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: inherit;
+  padding: var(--space-40);
+  flex-direction: column;
+  justify-content: center;
+}
+
+.formContent {
+  animation: form-enter var(--motion-duration-360) var(--motion-easing-default) both;
+}
+
+.formLeaving {
+  animation: form-exit var(--motion-duration-160) var(--motion-easing-default) both;
+}
+
+.formContent form {
+  display: flex;
+  flex-direction: column;
+}
+
+.credentialsForm .fieldGroup:first-of-type {
+  margin-top: 0;
+}
+
+.formHeading {
+  margin-bottom: var(--space-32);
+}
+
+.formHeading h2 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.formHeading p:not(.maskedEmail) {
+  max-width: 390px;
+  margin: var(--space-12) 0 0;
+  color: var(--text-secondary);
+}
+
+.maskedEmail {
+  margin: var(--space-16) 0 0;
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+}
+
+.fieldGroup {
+  display: grid;
+  gap: var(--space-8);
+  margin-top: var(--space-40);
+}
+
+.fieldLabel {
+  color: var(--text-secondary);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  font-weight: 600;
+}
+
+.textInput,
+.otpInput {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--radius-value-sm);
+  background: var(--auth-field);
+  color: var(--text-primary);
+  transition:
+    border-color var(--motion-duration-160) var(--motion-easing-default),
+    background-color var(--motion-duration-160) var(--motion-easing-default),
+    box-shadow var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.textInput {
+  height: var(--space-40);
+  padding: 0 var(--space-16);
+}
+
+.textInput::placeholder {
+  color: var(--text-muted);
+  opacity: 0.72;
+}
+
+.textInput:hover,
+.otpInput:hover {
+  border-color: var(--border-default);
+}
+
+.textInput:focus,
+.otpInput:focus {
+  border-color: var(--focus-ring);
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.textInput:disabled,
+.otpInput:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.passwordField {
+  position: relative;
+}
+
+.passwordField .textInput {
+  padding-right: var(--space-48);
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 0;
+  right: var(--space-4);
+  display: grid;
+  width: var(--space-40);
+  height: var(--space-40);
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-value-xs);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.passwordToggle:hover {
+  color: var(--text-primary);
+}
+
+.passwordToggle svg {
+  width: var(--space-20);
+  height: var(--space-20);
+  stroke-width: 1.6;
+}
+
+.checkboxRow {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: var(--space-24);
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.checkboxRow input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.checkboxRow > span {
+  position: relative;
+  display: grid;
+  width: var(--space-20);
+  height: var(--space-20);
+  place-items: center;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-xs);
+  background: var(--auth-field);
+  transition:
+    border-color var(--motion-duration-160) var(--motion-easing-default),
+    background-color var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.checkboxRow > span::after {
+  width: var(--space-8);
+  height: var(--space-4);
+  border-bottom: 2px solid var(--bg-base);
+  border-left: 2px solid var(--bg-base);
+  content: "";
+  opacity: 0;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+.checkboxRow input:checked + span {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary);
+}
+
+.checkboxRow input:checked + span::after {
+  opacity: 1;
+}
+
+.checkboxRow input:focus-visible + span {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--space-4);
+}
+
+.formError {
+  min-height: calc(var(--font-size-small) * var(--line-height-small));
+  margin: var(--space-8) 0 var(--space-4);
+  color: var(--status-error);
+}
+
+.primaryButton {
+  display: flex;
+  width: fit-content;
+  min-width: var(--space-80);
+  min-height: var(--space-40);
+  padding: var(--space-4) var(--space-16);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  border: 1px solid transparent;
+  border-radius: var(--radius-value-sm);
+  background: var(--accent-strong);
+  color: var(--sand-50);
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    color var(--motion-duration-160) var(--motion-easing-default),
+    background-color var(--motion-duration-160) var(--motion-easing-default),
+    border-color var(--motion-duration-160) var(--motion-easing-default),
+    transform var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.loginSubmitButton {
+  width: 100%;
+  min-width: 0;
+}
+
+:global([data-theme="dark"]) .primaryButton {
+  background: color-mix(in srgb, var(--steel-700) 58%, var(--ink-800));
+  color: var(--sand-50);
+}
+
+:global([data-theme="dark"]) .primaryButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--steel-600) 64%, var(--ink-800));
+}
+
+.loaderIcon {
+  width: var(--space-20);
+  height: var(--space-20);
+  animation: loader-spin var(--motion-duration-720) linear infinite;
+}
+
+.backLink,
+.textButton,
+.resendButton {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.backLink {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: var(--space-32);
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.backLink svg {
+  width: var(--space-16);
+  height: var(--space-16);
+}
+
+.backLink:hover,
+.textButton:hover,
+.resendButton:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.textButton,
+.resendButton {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.textButton {
+  margin: var(--space-24) auto 0;
+}
+
+.resendButton {
+  align-self: flex-end;
+  margin-top: var(--space-16);
+}
+
+.resendButton:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.otpFieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.otpRow {
+  display: grid;
+  margin-top: var(--space-16);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-8);
+}
+
+.otpInput {
+  min-width: 0;
+  height: var(--space-48);
+  padding: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-title);
+  line-height: var(--line-height-title);
+  text-align: center;
+}
+
+.challengeMeta {
+  display: flex;
+  margin-top: var(--space-24);
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+}
+
+.challengeMeta strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@keyframes character-enter {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: rotateY(90deg);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: rotateY(0);
+  }
+}
+
+@keyframes character-exit {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: rotateY(0);
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(6px);
+    transform: rotateY(-90deg);
+  }
+}
+
+@keyframes cursor-typing {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: translateY(-0.04em) scale(0.82);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-0.04em) scale(1.12);
+  }
+}
+
+@keyframes cursor-pause {
+  0%,
+  100% {
+    opacity: 0.48;
+    transform: translateY(-0.04em) scale(0.86);
+  }
+
+  50% {
+    opacity: 0.86;
+    transform: translateY(-0.04em) scale(1);
+  }
+}
+
+@keyframes form-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-12));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes form-exit {
+  to {
+    opacity: 0;
+    transform: translateY(calc(0px - var(--space-8)));
+  }
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 800px) {
+  .authContent {
+    padding-block: var(--space-80) var(--space-40);
+  }
+
+  .loginSurface {
+    min-height: clamp(
+      560px,
+      calc(100dvh - var(--space-80) - var(--space-40)),
+      620px
+    );
+  }
+
+  .formLayer {
+    padding: var(--space-40);
+  }
+
+  .formHeading {
+    margin-bottom: var(--space-24);
+  }
+
+  .fieldGroup {
+    margin-top: var(--space-32);
+  }
+
+  .checkboxRow {
+    margin-top: var(--space-20);
+  }
+
+  .backLink {
+    margin-top: var(--space-24);
+  }
+
+  .otpRow {
+    margin-top: var(--space-12);
+  }
+
+  .challengeMeta {
+    margin-top: var(--space-20);
+  }
+
+  .resendButton {
+    margin-top: var(--space-12);
+  }
+
+  .textButton {
+    margin-top: var(--space-20);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .authContent {
+    grid-template-columns: minmax(0, 1fr) minmax(450px, 480px);
+    gap: var(--space-112);
+  }
+
+  .identityHeading {
+    font-size: var(--font-size-display-lg);
+    line-height: var(--line-height-display-lg);
+    letter-spacing: var(--letter-spacing-display-lg);
+  }
+
+  .loginSurface {
+    width: min(100%, 480px);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .authContent {
+    grid-template-columns: minmax(0, 0.8fr) minmax(390px, 1.2fr);
+    gap: var(--space-32);
+  }
+
+  .identityHeading {
+    flex-wrap: wrap;
+    font-size: var(--font-size-display-lg);
+    line-height: var(--line-height-display-lg);
+    letter-spacing: var(--letter-spacing-display-lg);
+  }
+
+  .formLayer {
+    padding: var(--space-40);
+  }
+
+  .loginSurface {
+    min-height: clamp(560px, 68dvh, 620px);
+  }
+
+  .gridCells {
+    left: calc(var(--space-160) + var(--space-64) + var(--space-12) + 1px);
+  }
+}
+
+@media (max-width: 767px) {
+  .authPage {
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .authHeader {
+    position: absolute;
+  }
+
+  .authBrand span:last-child {
+    display: none;
+  }
+
+  .authContent {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-48);
+    padding-block: var(--space-112) var(--space-48);
+  }
+
+  .identityContent {
+    margin-top: 0;
+  }
+
+  .identityHeading {
+    flex-wrap: wrap;
+    font-size: var(--font-size-display-lg);
+    line-height: var(--line-height-display-lg);
+    letter-spacing: var(--letter-spacing-display-lg);
+    white-space: normal;
+  }
+
+  .identityDescription {
+    max-width: 340px;
+    margin-top: var(--space-20);
+  }
+
+  .loginSurface {
+    width: 100%;
+    min-height: clamp(560px, 68dvh, 620px);
+    align-self: stretch;
+  }
+
+  .formLayer {
+    padding: var(--space-32) var(--space-24);
+  }
+
+  .fieldGroup {
+    margin-top: var(--space-32);
+  }
+
+  .checkboxRow {
+    margin-top: var(--space-20);
+  }
+
+  .backLink {
+    margin-top: var(--space-24);
+  }
+
+  .otpRow {
+    margin-top: var(--space-12);
+  }
+
+  .challengeMeta {
+    margin-top: var(--space-20);
+  }
+
+  .resendButton {
+    margin-top: var(--space-12);
+  }
+
+  .textButton {
+    margin-top: var(--space-20);
+  }
+
+  .gridCells {
+    left: calc(var(--space-160) + var(--space-64) + var(--space-12) + 1px);
+  }
+
+  .textInput {
+    height: var(--space-48);
+  }
+
+  .passwordToggle {
+    top: var(--space-4);
+  }
+
+  .formHeading {
+    margin-bottom: var(--space-32);
+  }
+
+  .otpRow {
+    gap: var(--space-4);
+  }
+
+  .otpInput {
+    height: var(--space-40);
+  }
+}
+
+@media (max-width: 389px) {
+  .formLayer {
+    padding-inline: var(--space-20);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flipCharacterEntering,
+  .flipCharacterDeleting,
+  .cursorDot,
+  .formContent,
+  .formLeaving,
+  .loaderIcon {
+    animation-duration: var(--motion-duration-100);
+  }
+
+  .flipCharacterEntering,
+  .flipCharacterDeleting {
+    filter: none;
+    transform: none;
+  }
+
+  .cursorDot,
+  .cursorDot[data-phase="deleting"] {
+    opacity: 1;
+    transform: translateY(-0.04em);
+  }
+
+  .primaryButton,
+  .textInput,
+  .otpInput,
+  .checkboxRow > span {
+    transition: none;
+  }
+
+  .primaryButton:hover:not(:disabled) {
+    transform: none;
+  }
+}
