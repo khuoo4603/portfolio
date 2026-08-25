@@ -62,11 +62,11 @@ const COMMON_CONTENTS: ContentDefinition[] = [
 
 const PROFILE_CONTENTS: ContentDefinition[] = [
   { category: "PROFILE", contentCode: "ABOUT", label: "상세 자기소개", multiline: true },
-  { category: "PROFILE", contentCode: "DEVELOPMENT_VALUES", label: "개발 가치", multiline: true },
-  { category: "PROFILE", contentCode: "INTEREST_AREAS", label: "관심 분야", multiline: true },
-  { category: "PROFILE", contentCode: "PREFERRED_WORK_STYLE", label: "선호 개발 방식", multiline: true },
-  { category: "PROFILE", contentCode: "CURRENT_FOCUS", label: "현재 집중 분야", multiline: true },
-  { category: "PROFILE", contentCode: "FUTURE_DIRECTION", label: "향후 방향", multiline: true },
+  { category: "PROFILE", contentCode: "DEVELOPMENT_VALUES", label: "개발 가치" },
+  { category: "PROFILE", contentCode: "INTEREST_AREAS", label: "관심 분야" },
+  { category: "PROFILE", contentCode: "PREFERRED_WORK_STYLE", label: "선호 개발 방식" },
+  { category: "PROFILE", contentCode: "CURRENT_FOCUS", label: "현재 집중 분야" },
+  { category: "PROFILE", contentCode: "FUTURE_DIRECTION", label: "향후 방향" },
   { category: "CONTACT", contentCode: "EMAIL", label: "공개 이메일" },
   { category: "EDUCATION", contentCode: "SCHOOL_NAME", label: "학교" },
   { category: "EDUCATION", contentCode: "MAJOR", label: "전공" },
@@ -451,7 +451,7 @@ function ProjectsPanel({ projects, onToggle }: { projects: SiteData["projects"];
   return (
     <section className={styles.operationalSection} aria-labelledby="projects-title">
       <div className={styles.sectionHeading}><div><h2 id="projects-title" className="type-title">프로젝트 공개 상태</h2><p className="type-body">프로젝트 생성·삭제·상세 콘텐츠 수정 없이 Registry 공개 상태만 변경합니다.</p></div></div>
-      {projects.length === 0 ? <EmptyState title="Registry 항목 없음" description="Mock 프로젝트 Registry 항목이 없습니다." /> : <div className={styles.registryRows}>{projects.map((project) => <div key={project.projectKey} className={styles.registryRow}><div><strong className="type-title">{project.projectKey}</strong><span className="type-small">마지막 변경 {formatDateTime(project.updatedAt)}</span></div><StatusLabel tone={project.enabled ? "success" : "neutral"}>{project.enabled ? "공개" : "비공개"}</StatusLabel><StateSwitch enabled={project.enabled} onClick={() => onToggle(project.projectKey, project.enabled)} label={`${project.projectKey} 프로젝트 ${project.enabled ? "비공개" : "공개"} 전환`} /></div>)}</div>}
+      {projects.length === 0 ? <EmptyState title="Registry 항목 없음" description="Mock 프로젝트 Registry 항목이 없습니다." /> : <div className={styles.registryRows}>{projects.map((project) => <div key={project.projectKey} className={styles.registryRow}><div><strong className="type-body">{project.projectKey}</strong><span className="type-small">마지막 변경 {formatDateTime(project.updatedAt)}</span></div><StatusLabel tone={project.enabled ? "success" : "neutral"}>{project.enabled ? "공개" : "비공개"}</StatusLabel><StateSwitch enabled={project.enabled} onClick={() => onToggle(project.projectKey, project.enabled)} label={`${project.projectKey} 프로젝트 ${project.enabled ? "비공개" : "공개"} 전환`} /></div>)}</div>}
     </section>
   );
 }
@@ -464,7 +464,7 @@ function ExternalLinksPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onDe
       {items.length === 0 ? <EmptyState title="외부 링크 없음" description="공개 영역에 연결할 외부 링크가 없습니다." /> : (
         <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>이름 / URL</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
           {items.map((item) => { const key = `link-${item.id}`; return (
-            <tr key={item.id}><td data-label="이름 / URL"><div className={styles.linkIdentity}><LinkIcon aria-hidden="true" /><div><strong>{item.name}</strong><span>{item.url}</span></div></div></td><td data-label="순서">{item.displayOrder}</td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 링크 ${item.enabled ? "비노출" : "노출"} 전환`} /></td><td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.name} 링크 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td></tr>
+            <tr key={item.id}><td data-label="이름 / URL"><div className={styles.linkIdentity}><LinkIcon aria-hidden="true" /><div><strong>{item.name}</strong><code>{item.url}</code></div></div></td><td data-label="순서">{item.displayOrder}</td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 링크 ${item.enabled ? "비노출" : "노출"} 전환`} /></td><td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.name} 링크 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td></tr>
           ); })}
         </tbody></table></div>
       )}
@@ -479,7 +479,7 @@ function ResumePanel({ data, file, error, onSelect, onSubmit }: { data: SiteData
       <div className={styles.sectionHeading}><div><h2 id="resume-title" className="type-title">이력서</h2><p className="type-body">현재 파일 1개만 유지하며 등록 또는 교체합니다.</p></div></div>
       <div className={styles.resumeCurrent}>
         <FileText aria-hidden="true" />
-        {data.resume ? <div><span className="type-small">현재 등록 파일</span><strong className="type-title">{data.resume.fileName}</strong><p className="type-small">{formatFileSize(data.resume.size)} · {formatDateTime(data.resume.updatedAt)}</p></div> : <div><span className="type-small">현재 등록 파일</span><strong className="type-title">미등록</strong><p className="type-small">공개 화면에는 Resume Action이 표시되지 않습니다.</p></div>}
+        {data.resume ? <div><span className="type-small">현재 등록 파일</span><strong className="type-body">{data.resume.fileName}</strong><p className="type-small">{formatFileSize(data.resume.size)} · {formatDateTime(data.resume.updatedAt)}</p></div> : <div><span className="type-small">현재 등록 파일</span><strong className="type-body">미등록</strong><p className="type-small">공개 화면에는 Resume Action이 표시되지 않습니다.</p></div>}
       </div>
       <div className={styles.filePicker}>
         <input id="resume-pdf" className={styles.srOnly} type="file" accept="application/pdf,.pdf" onChange={(event) => onSelect(event.currentTarget.files?.[0])} />

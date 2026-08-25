@@ -210,7 +210,7 @@ export default function ToolsScreen() {
                     <div className={styles.toolIdentity}>
                       <span className={styles.toolMark}>{tool.name.slice(0, 1).toUpperCase()}</span>
                       <div>
-                        <strong className="type-title">{tool.name}</strong>
+                        <strong className="type-body">{tool.name}</strong>
                         <code>{tool.toolKey}</code>
                       </div>
                     </div>
