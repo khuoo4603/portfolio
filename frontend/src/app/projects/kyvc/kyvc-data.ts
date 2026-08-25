@@ -40,8 +40,7 @@ export const kyvcProject = {
     { name: "FastAPI", mine: false, iconSrc: "/icons/tech/fastapi.svg", iconId: "fastapi" },
     { name: "PostgreSQL", mine: true, iconSrc: "/icons/tech/postgresql.svg", iconId: "postgresql" },
     { name: "MySQL", mine: true, iconSrc: "/icons/tech/mysql.svg", iconId: "mysql" },
-    { name: "Docker", mine: true, iconSrc: "/icons/tech/docker.svg", iconId: "docker" },
-    { name: "Docker Compose", mine: true, iconSrc: "/icons/tech/docker.svg", iconId: "docker-compose" },
+    { name: "Docker / Compose", mine: true, iconSrc: "/icons/tech/docker.svg", iconId: "docker" },
     { name: "Nginx", mine: true, iconSrc: "/icons/tech/nginx.svg", iconId: "nginx" },
     { name: "Linux", mine: true, iconSrc: "/icons/tech/linux.svg", iconId: "linux" },
     { name: "GitHub Actions", mine: true, iconSrc: "/icons/tech/github-actions.svg", iconId: "github-actions" },
@@ -51,17 +50,12 @@ export const kyvcProject = {
   results: [
     {
       title: "KFIP Toss 특별상 수상",
-      description: null,
     },
     {
-      title: "End-to-End 서비스 흐름 구현",
-      description:
-        "법인 KYC 신청부터 심사, VC 발급, Wallet 저장, VP 제출·검증까지 이어지는 서비스 흐름 구현",
+      title: "Toss PoC 협의 단계 진입",
     },
     {
-      title: "책임 분리형 서비스 구조 구성",
-      description:
-        "사용자 업무, 관리자 업무, Core 기술 기능, 배포 인프라의 책임을 분리한 서비스 구조 구성",
+      title: "BKL 법률 검토 단계 진입",
     },
   ],
   background: [
@@ -71,34 +65,22 @@ export const kyvcProject = {
   ],
   features: [
     {
-      title: "법인 KYC 신청 및 서류 제출",
-      description:
-        "법인 정보 등록, KYC 신청, 증빙서류 업로드, 보완 제출, 진행 상태 확인을 하나의 사용자 Flow로 제공",
+      title: "법인 KYC 신청·서류 제출",
     },
     {
-      title: "AI 및 관리자 KYC 심사",
-      description:
-        "제출 문서를 OCR / LLM 기반으로 분석하고 관리자 화면에서 추출 결과와 심사 정보를 확인하여 승인, 반려, 보완 요청 수행",
+      title: "AI·관리자 KYC 심사",
     },
     {
-      title: "Verifiable Credential 발급",
-      description:
-        "KYC 심사가 완료된 법인에 검증 가능한 자격증명을 발급하고 발급 상태와 Credential 이력을 관리",
+      title: "VC 발급",
     },
     {
       title: "Wallet Credential 저장",
-      description:
-        "발급된 VC를 Android Wallet에서 수락하고 저장하여 이후 필요한 인증 과정에서 활용",
     },
     {
-      title: "Verifiable Presentation 제출 및 검증",
-      description:
-        "금융사 등의 검증 요청에 QR 또는 Link 기반으로 VP를 제출하고 필요한 법인 정보를 검증",
+      title: "VP 제출·검증",
     },
     {
-      title: "DID / Credential 상태 관리",
-      description:
-        "DID와 Credential 상태 및 발급 관련 정보를 관리하고 XRPL을 이용한 상태 확인 구조를 제공",
+      title: "DID·Credential 상태 관리",
     },
   ],
   developmentAreas: [
@@ -146,11 +128,6 @@ export const kyvcProject = {
     ],
     runtime: ["Synology DSM Reverse Proxy", "Nginx", "Docker / Docker Compose"],
     delivery: ["GitHub Actions", "GHCR", "Self-hosted Runner", "Docker / Docker Compose"],
-    summary: [
-      "Backend는 사용자 인증, 법인 정보, KYC 신청, 제출문서, Credential 요청과 같은 업무 기능을 담당한다.",
-      "Core는 DID, VC, VP, SD-JWT, XRPL, AI 평가와 같은 기술 기능을 담당한다.",
-      "Backend Admin은 Core를 직접 호출하지 않고 업무 Database에 동기화된 결과를 기준으로 관리자 업무를 처리한다.",
-    ],
   },
   engineering: [
     {

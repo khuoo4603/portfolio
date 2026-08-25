@@ -5,9 +5,8 @@ import styles from "./kyvc-detail.module.css";
 
 export const projectSections = [
   { id: "detail-stack-result", label: "기술 스택 · 성과" },
-  { id: "detail-background", label: "문제 배경" },
-  { id: "detail-features", label: "주요 기능" },
-  { id: "detail-development", label: "개발 영역" },
+  { id: "detail-background", label: "문제 배경 · 주요 기능" },
+  { id: "detail-development", label: "직접 담당한 개발 영역" },
   { id: "detail-architecture", label: "아키텍처" },
   { id: "detail-engineering", label: "기술적 문제 해결" },
 ] as const;

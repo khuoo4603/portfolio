@@ -67,9 +67,8 @@ export default function KyvcProjectPage() {
               aria-labelledby="stack-result-title"
             >
               <header className={styles.sectionHeader}>
-                <p className={`${styles.sectionMeta} type-small`}>기술 스택 · 성과</p>
                 <h2 className={`${styles.sectionTitle} type-heading`} id="stack-result-title">
-                  기술 스택과 성과
+                  기술 스택 · 성과
                 </h2>
               </header>
 
@@ -110,15 +109,10 @@ export default function KyvcProjectPage() {
                   <ol className={styles.resultList}>
                     {kyvcProject.results.map((result, index) => (
                       <li className={styles.resultItem} key={result.title}>
-                        <span className={`${styles.resultNumber} type-display-lg`} aria-hidden="true">
+                        <span className={`${styles.resultNumber} type-small`} aria-hidden="true">
                           {String(index + 1).padStart(2, "0")}
                         </span>
-                        <div>
-                          <strong className={`${styles.resultTitle} type-title`}>{result.title}</strong>
-                          {result.description ? (
-                            <p className={`${styles.resultDescription} type-body`}>{result.description}</p>
-                          ) : null}
-                        </div>
+                        <strong className={`${styles.resultTitle} type-title`}>{result.title}</strong>
                       </li>
                     ))}
                   </ol>
@@ -129,38 +123,37 @@ export default function KyvcProjectPage() {
             <section
               className={`${styles.detailSection} ${styles.backgroundFeaturesSection}`}
               id="detail-background"
-              aria-labelledby="background-title"
+              aria-labelledby="background-features-title"
             >
-              <article className={styles.backgroundArea}>
-                <header className={styles.sectionHeader}>
-                  <p className={`${styles.sectionMeta} type-small`}>배경</p>
-                  <h2 className={`${styles.sectionTitle} type-heading`} id="background-title">문제 배경</h2>
-                </header>
-                <div className={styles.backgroundCopy}>
-                  {kyvcProject.background.map((paragraph) => (
-                    <p className="type-body" key={paragraph}>{paragraph}</p>
-                  ))}
-                </div>
-              </article>
+              <header className={styles.sectionHeader}>
+                <h2 className={`${styles.sectionTitle} type-heading`} id="background-features-title">
+                  문제 배경 · 주요 기능
+                </h2>
+              </header>
 
-              <div className={styles.featuresArea}>
-                <header className={styles.sectionHeader} id="detail-features">
-                  <p className={`${styles.sectionMeta} type-small`}>기능</p>
-                  <h2 className={`${styles.sectionTitle} type-heading`} id="features-title">주요 기능</h2>
-                </header>
-                <ol className={styles.featureList} aria-labelledby="features-title">
-                  {kyvcProject.features.map((feature, index) => (
-                    <li className={styles.featureItem} key={feature.title}>
-                      <span className={`${styles.featureNumber} type-small`}>
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <div>
-                        <h3 className={`${styles.featureTitle} type-title`}>{feature.title}</h3>
-                        <p className={`${styles.featureDescription} type-body`}>{feature.description}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+              <div className={styles.backgroundFeaturesGrid}>
+                <article className={styles.backgroundArea} aria-labelledby="background-title">
+                  <h3 className="type-title" id="background-title">문제 배경</h3>
+                  <div className={styles.backgroundCopy}>
+                    {kyvcProject.background.map((paragraph) => (
+                      <p className="type-body" key={paragraph}>{paragraph}</p>
+                    ))}
+                  </div>
+                </article>
+
+                <section className={styles.featuresArea} aria-labelledby="features-title">
+                  <h3 className="type-title" id="features-title">주요 기능</h3>
+                  <ol className={styles.featureList} aria-labelledby="features-title">
+                    {kyvcProject.features.map((feature, index) => (
+                      <li className={styles.featureItem} key={feature.title}>
+                        <span className={`${styles.featureNumber} type-small`}>
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        <h4 className={`${styles.featureTitle} type-title`}>{feature.title}</h4>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
               </div>
             </section>
 
@@ -170,7 +163,6 @@ export default function KyvcProjectPage() {
               aria-labelledby="development-title"
             >
               <header className={styles.sectionHeader}>
-                <p className={`${styles.sectionMeta} type-small`}>개발 영역</p>
                 <h2 className={`${styles.sectionTitle} type-heading`} id="development-title">
                   직접 담당한 개발 영역
                 </h2>
@@ -199,19 +191,12 @@ export default function KyvcProjectPage() {
               aria-labelledby="architecture-title"
             >
               <header className={styles.sectionHeader}>
-                <p className={`${styles.sectionMeta} type-small`}>아키텍처</p>
                 <h2 className={`${styles.sectionTitle} type-heading`} id="architecture-title">
-                  서비스 구조와 배포 흐름
+                  아키텍처
                 </h2>
               </header>
 
               <ProjectArchitecture />
-
-              <div className={styles.architectureSummary}>
-                {kyvcProject.architecture.summary.map((paragraph) => (
-                  <p className="type-body" key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
             </section>
 
             <section
@@ -220,7 +205,6 @@ export default function KyvcProjectPage() {
               aria-labelledby="engineering-title"
             >
               <header className={styles.sectionHeader}>
-                <p className={`${styles.sectionMeta} type-small`}>기술적 문제 해결</p>
                 <h2 className={`${styles.sectionTitle} type-heading`} id="engineering-title">
                   기술적 문제 해결
                 </h2>

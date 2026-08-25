@@ -159,8 +159,7 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
           onClick={movePrevious}
           aria-label="이전 프로젝트 미디어"
         >
-          <span aria-hidden="true">←</span>
-          PREV
+          ← PREV
         </button>
         <p className={`${styles.carouselCount} type-small`} aria-live="polite">
           {String(activeIndex + 1).padStart(2, "0")} / {String(media.length).padStart(2, "0")}
@@ -171,8 +170,7 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
           onClick={moveNext}
           aria-label="다음 프로젝트 미디어"
         >
-          NEXT
-          <span aria-hidden="true">→</span>
+          NEXT →
         </button>
       </div>
     </section>
