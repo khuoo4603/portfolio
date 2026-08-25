@@ -1,10 +1,9 @@
 import Image from "next/image";
-import { Github, Instagram, Linkedin, Mail } from "lucide-react";
 import BorderGlow from "../components/ui/border-glow";
 import HeroNetworkBackground from "./hero-network-background";
 import HeroSystemCard from "./hero-system-card";
+import { PortfolioFooter, SiteHeader } from "./portfolio-chrome";
 import ProjectsSection from "./projects-section";
-import ThemeToggle from "./theme-toggle";
 
 const DEVELOPMENT_VALUES = [
   {
@@ -23,13 +22,6 @@ const DEVELOPMENT_VALUES = [
       "구현과 배포에서 끝내지 않습니다. 로그, 모니터링, 백업과 장애 대응까지 고려해 실제로 지속 운영할 수 있는 상태를 완성의 기준으로 봅니다.",
   },
 ] as const;
-
-const navigationItems = [
-  { label: "소개", href: "#about" },
-  { label: "기술스택", href: "#tech" },
-  { label: "프로젝트", href: "#projects" },
-  { label: "학력 및 성과", href: "#education" },
-];
 
 const technologyGroups = [
   {
@@ -301,74 +293,11 @@ function EducationSection() {
   );
 }
 
-// Footer Identity와 실제 Contact 중심의 페이지 Footer 구성
-function PortfolioFooter() {
-  return (
-    <footer className="portfolio-footer" id="footer">
-      <div className="content-container footer-inner">
-        <div className="footer-identity">
-          <h2 className="footer-name type-heading">김현우</h2>
-          <p className="footer-role type-small">BACKEND / INFRA DEVELOPER</p>
-        </div>
-
-        <div className="footer-information">
-          <div className="footer-info-group">
-            <p className="type-small">RESUME</p>
-            <div className="footer-disabled-actions">
-              <span className="type-body-lg" aria-disabled="true">이력서 보기</span>
-              <span className="type-body-lg" aria-disabled="true">PDF 다운로드</span>
-            </div>
-          </div>
-
-          <div className="footer-info-group footer-contact">
-            <p className="type-small">CONTACT</p>
-            <div className="footer-contact-links">
-              <a href="mailto:khuoo4603@gmail.com" aria-label="khuoo4603@gmail.com">
-                <Mail aria-hidden="true" strokeWidth={1.75} />
-              </a>
-              <a href="https://www.instagram.com/hyun_woooooooooo/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <Instagram aria-hidden="true" strokeWidth={1.75} />
-              </a>
-              <a href="https://github.com/khuoo4603" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
-                <Github aria-hidden="true" strokeWidth={1.75} />
-              </a>
-              <a href="https://www.linkedin.com/in/%ED%98%84%EC%9A%B0-%EA%B9%80-b0201a414/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                <Linkedin aria-hidden="true" strokeWidth={1.75} />
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom type-small">
-          <span>PORTFOLIO / 2026</span>
-          <span>© 2026 Kim Hyunwoo. All rights reserved.</span>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
 // 포트폴리오 Main의 Server 중심 전체 Composition
 export default function Home() {
   return (
     <div className="portfolio-shell">
-      <header className="site-header">
-        <div className="content-container header-inner">
-          <a className="site-mark type-small" href="#home" aria-label="김현우 포트폴리오 Home">
-            <span>KIM HYUNWOO</span>
-          </a>
-
-          <nav className="primary-navigation" aria-label="포트폴리오 주요 영역">
-            {navigationItems.map((item) => (
-              <a className="navigation-link type-small" href={item.href} key={item.href}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
-
-          <ThemeToggle />
-        </div>
-      </header>
+      <SiteHeader />
 
       <main>
         <div className="hero-about-flow">
