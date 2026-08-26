@@ -1,4 +1,5 @@
 import { Github, Instagram, Linkedin, Mail } from "lucide-react";
+import type { ReactNode } from "react";
 import ThemeToggle from "./theme-toggle";
 
 const navigationItems = [
@@ -10,34 +11,66 @@ const navigationItems = [
 
 type SiteHeaderProps = {
   detail?: boolean;
+  mark?: string;
+  markHref?: string;
+  markLabel?: string;
+  navigation?: readonly HeaderNavigationItem[];
+  navigationLabel?: string;
+  navigationActions?: ReactNode;
+  utilityActions?: ReactNode;
 };
 
-// Main과 Project Detail에서 공유하는 Portfolio Header
-export function SiteHeader({ detail = false }: SiteHeaderProps) {
+export type HeaderNavigationItem = {
+  label: string;
+  href: string;
+  active?: boolean;
+};
+
+// Public과 인증 Workspace가 공유하는 Portfolio Header 구조
+export function SiteHeader({
+  detail = false,
+  mark = "KIM HYUNWOO",
+  markHref,
+  markLabel = "김현우 포트폴리오 Home",
+  navigation,
+  navigationLabel = "포트폴리오 주요 영역",
+  navigationActions,
+  utilityActions,
+}: SiteHeaderProps) {
+  const resolvedNavigation: readonly HeaderNavigationItem[] = navigation || navigationItems.map((item) => ({
+    ...item,
+    href: detail ? `/${item.href}` : item.href,
+  }));
+
   return (
     <header className="site-header">
       <div className="content-container header-inner">
         <a
           className="site-mark type-small"
-          href={detail ? "/" : "#home"}
-          aria-label="김현우 포트폴리오 Home"
+          href={markHref || (detail ? "/" : "#home")}
+          aria-label={markLabel}
         >
-          <span>KIM HYUNWOO</span>
+          <span>{mark}</span>
         </a>
 
-        <nav className="primary-navigation" aria-label="포트폴리오 주요 영역">
-          {navigationItems.map((item) => (
+        <nav className="primary-navigation" aria-label={navigationLabel}>
+          {resolvedNavigation.map((item) => (
             <a
               className="navigation-link type-small"
-              href={detail ? `/${item.href}` : item.href}
+              href={item.href}
               key={item.href}
+              aria-current={item.active ? "page" : undefined}
             >
               {item.label}
             </a>
           ))}
+          {navigationActions}
         </nav>
 
-        <ThemeToggle />
+        <div className="header-utilities" role="group" aria-label="Header 유틸리티">
+          <ThemeToggle />
+          {utilityActions}
+        </div>
       </div>
     </header>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import styles from "./admin.module.css";
 
 type DialogFrameProps = {
@@ -12,6 +12,9 @@ type DialogFrameProps = {
   children: React.ReactNode;
   footer?: React.ReactNode;
   secure?: boolean;
+  compact?: boolean;
+  closeOnBackdrop?: boolean;
+  closeOnEscape?: boolean;
 };
 
 const FOCUSABLE = "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])";
@@ -25,8 +28,13 @@ export default function DialogFrame({
   children,
   footer,
   secure = false,
+  compact = false,
+  closeOnBackdrop = true,
+  closeOnEscape = true,
 }: DialogFrameProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     if (!open) {
@@ -44,7 +52,7 @@ export default function DialogFrame({
     }, 0);
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && closeOnEscape) {
         event.preventDefault();
         onClose();
         return;
@@ -77,31 +85,31 @@ export default function DialogFrame({
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus();
     };
-  }, [onClose, open]);
+  }, [closeOnEscape, onClose, open]);
 
   if (!open) {
     return null;
   }
 
   return (
-    <div className={styles.dialogBackdrop} role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) {
+    <div className={`${styles.dialogBackdrop} ${compact ? styles.compactBackdrop : ""}`} role="presentation" onMouseDown={(event) => {
+      if (closeOnBackdrop && event.target === event.currentTarget) {
         onClose();
       }
     }}>
       <div
         ref={dialogRef}
-        className={`${styles.dialogFrame} ${secure ? styles.secureDialog : ""}`}
+        className={`${styles.dialogFrame} ${compact ? styles.compactDialog : ""} ${secure ? styles.secureDialog : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="admin-dialog-title"
-        aria-describedby={description ? "admin-dialog-description" : undefined}
+        aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
       >
         <header className={styles.dialogHeader}>
           <div>
-            <h2 id="admin-dialog-title" className="type-title">{title}</h2>
+            <h2 id={titleId} className="type-title">{title}</h2>
             {description && (
-              <p id="admin-dialog-description" className="type-body">{description}</p>
+              <p id={descriptionId} className="type-body">{description}</p>
             )}
           </div>
           <button className={styles.iconButton} type="button" onClick={onClose} aria-label="대화상자 닫기">

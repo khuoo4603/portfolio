@@ -22,7 +22,9 @@ export const MOCK_USER_ACCOUNT: MockAuthAccount = {
 
 export const MOCK_AUTH_ACCOUNTS = [MOCK_ADMIN_ACCOUNT, MOCK_USER_ACCOUNT];
 export const MOCK_CURRENT_ADMIN = MOCK_ADMIN_ACCOUNT;
+export const MOCK_CURRENT_TOOLS_USER = MOCK_USER_ACCOUNT;
 export const MOCK_LOGIN_PASSWORD = "password123";
 export const MOCK_ADMIN_OTP = "123456";
+export const MOCK_PASSWORD_OTP = "123456";
 export const MOCK_OTP_DURATION_MS = 5 * 60 * 1000;
 export const MOCK_RESEND_WAIT_MS = 60 * 1000;

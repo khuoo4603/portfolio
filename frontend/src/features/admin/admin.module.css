@@ -1178,6 +1178,10 @@
   animation: dialog-enter var(--motion-duration-240) var(--motion-easing-default) both;
 }
 
+.compactDialog {
+  width: min(calc(var(--space-160) * 3), 100%);
+}
+
 .secureDialog::before {
   position: absolute;
   inset: 0;
@@ -1996,6 +2000,18 @@
 
   .dialogFooter {
     padding: var(--space-12) var(--space-20) max(var(--space-16), env(safe-area-inset-bottom));
+  }
+
+  .compactBackdrop {
+    place-items: center;
+    padding: var(--space-20);
+  }
+
+  .compactBackdrop .compactDialog {
+    width: min(calc(var(--space-160) * 3), 100%);
+    max-height: calc(100dvh - var(--space-40));
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-value-md);
   }
 
   .formColumns,
