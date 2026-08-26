@@ -49,6 +49,14 @@
   gap: var(--space-24);
 }
 
+.header-utilities {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  min-width: 0;
+  gap: var(--space-12);
+}
+
 .navigation-link {
   position: relative;
   color: var(--text-secondary);
@@ -70,12 +78,14 @@
 }
 
 .navigation-link:hover,
-.navigation-link:focus-visible {
+.navigation-link:focus-visible,
+.navigation-link[aria-current="page"] {
   color: var(--text-primary);
 }
 
 .navigation-link:hover::after,
-.navigation-link:focus-visible::after {
+.navigation-link:focus-visible::after,
+.navigation-link[aria-current="page"]::after {
   transform: scaleX(1);
   transform-origin: left;
 }

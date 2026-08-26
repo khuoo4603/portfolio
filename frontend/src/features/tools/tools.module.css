@@ -1,0 +1,1522 @@
+.toolsShell {
+  min-height: 100dvh;
+  overflow-x: clip;
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.profileBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: var(--space-40);
+  padding: var(--space-4) var(--space-12) var(--space-4) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-pill);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color var(--motion-duration-160) var(--motion-easing-default),
+    background-color var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.profileBadge:hover,
+.profileBadge:focus-visible {
+  border-color: var(--border-accent);
+  background: var(--bg-elevated);
+}
+
+.profileBadgeAvatar {
+  display: grid;
+  width: var(--space-32);
+  height: var(--space-32);
+  place-items: center;
+  border-radius: var(--radius-value-pill);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.toolsPage {
+  padding-top: calc(var(--space-64) + var(--space-64));
+  padding-bottom: var(--space-80);
+}
+
+/* Launcher 본문에 한정된 정적 Grid 배경과 가장자리 Fade */
+.launcherPage {
+  --launcher-grid-line: color-mix(in srgb, var(--ink-700) 6%, transparent);
+  --preview-line: color-mix(in srgb, var(--ink-700) 24%, transparent);
+  --preview-line-strong: color-mix(in srgb, var(--ink-800) 42%, transparent);
+  --preview-surface: color-mix(in srgb, var(--ink-700) 4%, transparent);
+  --preview-beam-start: color-mix(in srgb, var(--ink-600) 72%, var(--bg-surface));
+  --preview-beam-stop: color-mix(in srgb, var(--sage-600) 54%, var(--ink-600));
+
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow: clip;
+  padding-top: var(--space-64);
+  padding-bottom: 0;
+  background: var(--bg-base);
+  box-sizing: border-box;
+}
+
+:global([data-theme="dark"]) .launcherPage {
+  --launcher-grid-line: color-mix(in srgb, var(--ink-300) 7%, transparent);
+  --preview-line: color-mix(in srgb, var(--ink-300) 18%, transparent);
+  --preview-line-strong: color-mix(in srgb, var(--ink-200) 34%, transparent);
+  --preview-surface: color-mix(in srgb, var(--ink-100) 4%, transparent);
+  --preview-beam-start: color-mix(in srgb, var(--ink-300) 72%, var(--bg-surface));
+  --preview-beam-stop: color-mix(in srgb, var(--sage-400) 48%, var(--ink-200));
+}
+
+.launcherPage::before {
+  position: absolute;
+  z-index: 0;
+  inset: var(--space-64) 0 0;
+  background-image:
+    linear-gradient(to right, var(--launcher-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--launcher-grid-line) 1px, transparent 1px);
+  background-position: center center;
+  background-size: 40px 40px;
+  content: "";
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    ellipse 64% 72% at 50% 50%,
+    black 0%,
+    black 38%,
+    rgb(0 0 0 / 72%) 64%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 64% 72% at 50% 50%,
+    black 0%,
+    black 38%,
+    rgb(0 0 0 / 72%) 64%,
+    transparent 100%
+  );
+}
+
+.launcherPage > :global(.content-container) {
+  position: relative;
+  z-index: 1;
+}
+
+/* 중앙 Title과 Bento 간격을 유지하는 Desktop Launcher Frame */
+.launcherLayout {
+  display: grid;
+  width: 100%;
+  max-width: 1080px;
+  height: clamp(880px, calc(100dvh - var(--space-64)), 980px);
+  margin-inline: auto;
+  align-content: center;
+  gap: var(--space-48);
+  box-sizing: border-box;
+  transform: translateY(calc(var(--space-32) * -1));
+}
+
+.launcherTitle {
+  z-index: 2;
+  width: 100%;
+  margin: 0;
+  color: var(--ink-950);
+  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  font-size: calc(var(--font-size-statement) + var(--space-4));
+  font-weight: 700;
+  line-height: var(--line-height-statement);
+  letter-spacing: var(--letter-spacing-statement);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.launcherCenter {
+  min-width: 0;
+}
+
+:global([data-theme="dark"]) .launcherTitle {
+  color: var(--ink-100);
+  text-shadow: 0 1px 20px color-mix(in srgb, var(--ink-950) 18%, transparent);
+}
+
+.pageHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-24);
+  margin-bottom: var(--space-48);
+  padding-bottom: var(--space-24);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.pageHeader h1,
+.pageHeader p {
+  margin: 0;
+}
+
+.pageHeader p {
+  max-width: calc(var(--space-160) * 4);
+  color: var(--text-secondary);
+}
+
+.primaryButton,
+.secondaryButton {
+  display: inline-flex;
+  min-height: var(--space-40);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  border-radius: var(--radius-value-sm);
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+  font-weight: 700;
+  transition:
+    background-color var(--motion-duration-160) var(--motion-easing-default),
+    border-color var(--motion-duration-160) var(--motion-easing-default),
+    color var(--motion-duration-160) var(--motion-easing-default),
+    transform var(--motion-duration-100) var(--motion-easing-default);
+}
+
+.primaryButton {
+  border: 1px solid var(--accent-strong);
+  background: var(--accent-strong);
+  color: var(--sand-50);
+}
+
+.secondaryButton {
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.primaryButton:hover:not(:disabled),
+.secondaryButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--accent-primary);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--border-accent);
+  background: var(--bg-elevated);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.primaryButton svg,
+.secondaryButton svg {
+  width: var(--space-20);
+  height: var(--space-20);
+}
+
+/* Magic UI 기본 Bento 기준의 3열 2행 Launcher Composition */
+.launcherGrid {
+  display: grid;
+  width: 100%;
+  max-width: 1080px;
+  margin-inline: auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 352px;
+  gap: var(--space-24);
+}
+
+.bentoCard {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  padding: 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bg-surface);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ink-950) 3%, transparent),
+    0 2px 4px color-mix(in srgb, var(--ink-950) 5%, transparent),
+    0 12px 24px color-mix(in srgb, var(--ink-950) 5%, transparent);
+}
+
+:global([data-theme="dark"]) .bentoCard {
+  border: 1px solid color-mix(in srgb, var(--ink-500) 22%, transparent);
+  background: var(--bg-surface);
+  box-shadow: inset 0 -20px 80px -20px color-mix(in srgb, var(--ink-100) 4%, transparent);
+}
+
+.toolCard {
+  color: var(--text-primary);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.toolCard:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* 하단 정보 블록과 분리된 카드별 장식 Preview 영역 */
+.cardVisual {
+  position: absolute;
+  z-index: 0;
+  top: var(--space-16);
+  right: var(--space-16);
+  bottom: 156px;
+  left: var(--space-16);
+  overflow: hidden;
+  color: var(--preview-line-strong);
+  opacity: 0.84;
+  pointer-events: none;
+}
+
+.toolCard .cardVisual {
+  bottom: 208px;
+}
+
+.quizCard .cardVisual {
+  top: var(--space-12);
+  right: var(--space-12);
+  bottom: auto;
+  left: var(--space-12);
+  height: 232px;
+}
+
+.linksCard .cardVisual {
+  top: var(--space-8);
+  right: var(--space-8);
+  bottom: auto;
+  left: var(--space-8);
+  height: 270px;
+}
+
+.comingCard .cardVisual {
+  top: var(--space-8);
+  bottom: 132px;
+}
+
+.quizPreview {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: var(--space-8);
+  padding-top: var(--space-8);
+  box-sizing: border-box;
+  opacity: 0.88;
+  transform: scale(0.96);
+  transform-origin: center top;
+  transition: transform 300ms var(--motion-easing-default);
+  -webkit-mask-image: linear-gradient(to top, transparent 10%, black 100%);
+  mask-image: linear-gradient(to top, transparent 10%, black 100%);
+}
+
+.quizPreviewRow {
+  display: grid;
+  width: min(calc(100% - 20px), 270px);
+  grid-template-columns: var(--space-32) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-16);
+  border: 1px solid var(--preview-line);
+  border-radius: var(--radius-value-sm);
+  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+  box-shadow: 0 10px 24px -20px color-mix(in srgb, var(--ink-950) 44%, transparent);
+  opacity: 0.6;
+  animation: quiz-preview-flow 4.8s var(--motion-easing-default) infinite;
+}
+
+.quizPreviewRow:nth-child(2) {
+  animation-delay: 1.6s;
+}
+
+.quizPreviewRow:nth-child(3) {
+  animation-delay: 3.2s;
+}
+
+.quizPreviewLabel {
+  color: var(--preview-line-strong);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+}
+
+.quizPreviewTrack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.quizPreviewTrack > span {
+  width: var(--space-8);
+  height: var(--space-8);
+  border: 1px solid var(--preview-line-strong);
+  border-radius: var(--radius-value-pill);
+}
+
+.quizPreviewTrack > .quizPreviewSelected {
+  border-color: transparent;
+  background: var(--preview-line-strong);
+  box-shadow: 0 0 0 var(--space-4) var(--preview-surface);
+}
+
+.linksBeamPreview {
+  display: grid;
+  place-items: start center;
+  opacity: 0.94;
+  transform: scale(0.95);
+  transform-origin: center top;
+  transition: transform 300ms var(--motion-easing-default);
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, black 22%, black 100%);
+  mask-image: linear-gradient(to top, transparent 0%, black 22%, black 100%);
+}
+
+.linksBeamInner {
+  position: relative;
+  display: grid;
+  width: 100%;
+  max-width: 540px;
+  height: 248px;
+  padding-inline: var(--space-32);
+  grid-template-columns: 48px 64px 48px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.linksBeamPath {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.linksBeamBase,
+.linksBeamMoving {
+  fill: none;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.linksBeamBase {
+  stroke: var(--preview-line-strong);
+  stroke-width: 1.25;
+  opacity: 0.22;
+}
+
+.linksBeamMoving {
+  stroke-width: 1.5;
+}
+
+.beamNodeSurface {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid var(--preview-line);
+  border-radius: var(--radius-value-pill);
+  background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+  box-shadow: 0 10px 24px -18px color-mix(in srgb, var(--ink-950) 46%, transparent);
+  color: var(--preview-line-strong);
+}
+
+.beamHub {
+  width: 64px;
+  height: 64px;
+  border-color: var(--preview-line-strong);
+}
+
+.beamNodeSurface svg {
+  width: var(--space-20);
+  height: var(--space-20);
+}
+
+.beamHub svg {
+  width: var(--space-24);
+  height: var(--space-24);
+}
+
+.beamOutputs {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ripplePreview {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.rippleGeometry {
+  position: absolute;
+  inset: 0;
+  transform: scale(1);
+  transform-origin: center center;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 64%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 64%, transparent 100%);
+}
+
+.rippleCompact .rippleGeometry {
+  transform: scale(0.72);
+}
+
+.rippleCircle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--ripple-size);
+  height: var(--ripple-size);
+  border: 1px solid var(--preview-line-strong);
+  border-radius: var(--radius-value-pill);
+  background: color-mix(in srgb, var(--preview-line) 4%, transparent);
+  opacity: var(--ripple-opacity);
+  transform: translate(-50%, -50%) scale(1);
+  animation: ripple-preview-pulse 2s ease-in-out var(--ripple-delay) infinite;
+}
+
+.rippleCore {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: var(--space-40);
+  height: var(--space-40);
+  place-items: center;
+  border: 1px solid var(--preview-line);
+  border-radius: var(--radius-value-pill);
+  background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
+}
+
+.rippleCore svg {
+  width: var(--space-20);
+  height: var(--space-20);
+}
+
+.rippleWide .rippleCore {
+  width: var(--space-48);
+  height: var(--space-48);
+}
+
+@keyframes quiz-preview-flow {
+  0%,
+  22%,
+  100% {
+    opacity: 0.58;
+    transform: translateY(var(--space-4)) scale(0.98);
+  }
+
+  38%,
+  70% {
+    opacity: 0.9;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ripple-preview-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+.cardContent {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  transform: translateY(0);
+  transition: transform 300ms ease-in-out;
+}
+
+.cardIcon {
+  display: block;
+  width: 48px;
+  height: 48px;
+  color: var(--ink-700);
+}
+
+.cardIcon svg {
+  display: block;
+  width: 48px;
+  height: 48px;
+  transform: scale(1);
+  transform-origin: left center;
+  transition: transform 300ms ease-in-out;
+}
+
+.cardTitle,
+.cardDescription {
+  margin: 0;
+  font-family: var(--font-family-primary);
+}
+
+.cardTitle {
+  color: var(--ink-950);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.cardDescription {
+  max-width: 480px;
+  color: var(--ink-600);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.cardCta {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--ink-700);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 300ms ease-in-out,
+    transform 300ms ease-in-out;
+}
+
+.cardCtaArrow {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.cardOverlay {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink-950) 3%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease-in-out;
+}
+
+:global([data-theme="dark"]) .cardTitle {
+  color: var(--ink-100);
+}
+
+:global([data-theme="dark"]) .cardDescription {
+  color: var(--ink-300);
+}
+
+:global([data-theme="dark"]) .cardIcon,
+:global([data-theme="dark"]) .cardCta {
+  color: var(--ink-200);
+}
+
+:global([data-theme="dark"]) .cardOverlay {
+  background: color-mix(in srgb, var(--ink-950) 24%, transparent);
+}
+
+/* Desktop BentoCard의 Content 이동과 CTA 교차 Motion */
+@media (min-width: 1024px) {
+  .cardCta {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    margin-top: 0;
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  .toolCard:is(:hover, :focus-visible, :focus-within) .cardContent {
+    transform: translateY(-40px);
+  }
+
+  .toolCard:is(:hover, :focus-visible, :focus-within) .cardIcon svg {
+    transform: scale(0.75);
+  }
+
+  .toolCard:is(:hover, :focus-visible, :focus-within) .cardCta {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toolCard:is(:hover, :focus-visible, :focus-within) .cardOverlay {
+    opacity: 1;
+  }
+
+  .toolCard:is(:hover, :focus-visible, :focus-within) .quizPreview,
+  .toolCard:is(:hover, :focus-visible, :focus-within) .linksBeamPreview {
+    transform: scale(1);
+  }
+}
+
+.quizCard {
+  grid-column: 1 / 2;
+  grid-row: 1;
+}
+
+.linksCard {
+  grid-column: 2 / 4;
+  grid-row: 1;
+}
+
+.comingCard {
+  cursor: default;
+}
+
+.comingWideCard {
+  grid-column: 1 / 3;
+  grid-row: 2;
+}
+
+.comingNarrowCard {
+  grid-column: 3 / 4;
+  grid-row: 2;
+}
+
+/* Card 높이를 유지하며 Title 겹침을 피하는 낮은 Desktop Flow */
+@media (min-width: 1024px) and (max-height: 980px) {
+  .launcherPage {
+    padding-bottom: var(--space-80);
+  }
+
+  .launcherLayout {
+    min-height: 0;
+    height: auto;
+    padding-block: var(--space-48);
+    align-content: start;
+    gap: var(--space-48);
+  }
+}
+
+/* Profile과 PASSWORD_CHANGE의 읽기 전용 계정 정보 */
+.profileDetails {
+  display: grid;
+  margin: 0 0 var(--space-24);
+  border-block: 1px solid var(--border-default);
+}
+
+.profileDetails > div {
+  display: grid;
+  grid-template-columns: minmax(var(--space-80), auto) minmax(0, 1fr);
+  gap: var(--space-16);
+  padding: var(--space-16) 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.profileDetails > div:last-child {
+  border-bottom: 0;
+}
+
+.profileDetails dt,
+.profileDetails dd {
+  margin: 0;
+}
+
+.profileDetails dt {
+  color: var(--text-muted);
+}
+
+.profileDetails dd {
+  min-width: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.profileDetails a {
+  color: inherit;
+  text-underline-offset: var(--space-4);
+}
+
+.profileActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-8);
+}
+
+.profileActions > button {
+  width: 100%;
+}
+
+.passwordForm {
+  display: grid;
+  gap: var(--space-20);
+}
+
+.readOnlyEmail {
+  display: grid;
+  gap: var(--space-4);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.readOnlyEmail span,
+.passwordPolicy {
+  color: var(--text-muted);
+}
+
+.readOnlyEmail strong {
+  overflow-wrap: anywhere;
+}
+
+.challengeMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  color: var(--text-secondary);
+}
+
+.challengeMeta button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-primary);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: var(--space-4);
+}
+
+.challengeMeta button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.formField {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-8);
+}
+
+.formField > span {
+  color: var(--text-secondary);
+}
+
+.formField input,
+.textArea,
+.answerInput,
+.answerTextArea,
+.answerPreview {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-family-primary);
+}
+
+.formField input {
+  min-height: var(--space-48);
+  padding: var(--space-8) var(--space-12);
+}
+
+.formField input:focus,
+.textArea:focus,
+.answerInput:focus,
+.answerTextArea:focus {
+  border-color: var(--border-accent);
+  outline: 0;
+  box-shadow: 0 0 0 var(--space-4) color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.passwordPolicy {
+  margin: calc(var(--space-8) * -1) 0 0;
+}
+
+.inlineError,
+.statusMessage {
+  min-height: var(--space-20);
+  margin: 0;
+  color: var(--status-error);
+}
+
+.statusSuccess {
+  color: var(--status-success);
+}
+
+/* Links 제목과 활성 Link 수만 유지하는 절제된 Header */
+.pageHeader.linksHeader {
+  align-items: baseline;
+  margin-bottom: var(--space-64);
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.linksTotal,
+.linkGroupCount {
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.02em;
+}
+
+/* Category별 독립 5열 Link Board */
+.linkGroups {
+  display: grid;
+  gap: var(--space-64);
+}
+
+.linkGroup {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.linkGroupHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.linkGroupHeading h2 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.linkGrid {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-16);
+  list-style: none;
+  overflow: visible;
+}
+
+.linkGrid li {
+  display: flex;
+  min-width: 0;
+}
+
+/* Cover와 정보 영역을 분리한 이미지 중심 Link Card */
+.linkCard {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--ink-950) 10%, transparent),
+    0 12px 24px -18px color-mix(in srgb, var(--ink-950) 36%, transparent);
+  text-decoration: none;
+  transition:
+    border-color var(--motion-duration-240) var(--motion-easing-default),
+    box-shadow var(--motion-duration-240) var(--motion-easing-default),
+    transform var(--motion-duration-240) var(--motion-easing-default);
+}
+
+.linkCard:is(:hover, :focus-visible) {
+  border-color: color-mix(in srgb, var(--border-accent) 76%, var(--border-default));
+}
+
+.linkCover {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+}
+
+.linkCoverImage {
+  object-fit: cover;
+  object-position: center;
+}
+
+.linkCardContent {
+  display: grid;
+  min-height: calc(var(--space-160) + var(--space-16));
+  flex: 1;
+  align-content: start;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  background: var(--bg-surface);
+}
+
+.linkCardMeta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.linkExternalIcon {
+  width: var(--space-16);
+  height: var(--space-16);
+  flex: none;
+  color: var(--text-muted);
+  opacity: 0.68;
+  transition:
+    color var(--motion-duration-160) var(--motion-easing-default),
+    opacity var(--motion-duration-160) var(--motion-easing-default),
+    transform var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.linkCard:is(:hover, :focus-visible) .linkExternalIcon {
+  color: var(--accent-primary);
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
+.linkDomain {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.02em;
+}
+
+.linkName {
+  display: -webkit-box;
+  min-height: calc(var(--space-24) * 2);
+  overflow: hidden;
+  color: var(--text-primary);
+  font-weight: 700;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.linkDescription {
+  display: -webkit-box;
+  min-height: calc(var(--space-20) * 2);
+  overflow: hidden;
+  color: var(--text-secondary);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .linkCard:hover {
+    z-index: 1;
+    box-shadow:
+      0 2px 4px color-mix(in srgb, var(--ink-950) 12%, transparent),
+      0 18px 32px -20px color-mix(in srgb, var(--ink-950) 44%, transparent);
+    transform: scale(1.02);
+  }
+}
+
+.emptyState,
+.pageError {
+  display: grid;
+  min-height: calc(var(--space-160) * 2);
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-12);
+  border-block: 1px solid var(--border-default);
+  text-align: center;
+}
+
+.emptyState h2,
+.emptyState p,
+.pageError h2,
+.pageError p {
+  margin: 0;
+}
+
+.emptyState p,
+.pageError p {
+  color: var(--text-secondary);
+}
+
+/* Quiz JSON 입력·문항·답안 미리보기 정보 계층 */
+.quizInputSection,
+.quizSummary,
+.answerPanel {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-md);
+  background: var(--bg-surface);
+}
+
+.quizInputSection {
+  padding: var(--space-24);
+}
+
+.sectionHeading,
+.examHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-24);
+}
+
+.sectionHeading h2,
+.sectionHeading p,
+.examHeading h2,
+.examHeading p {
+  margin: 0;
+}
+
+.sectionHeading p,
+.examHeading p {
+  margin-top: var(--space-4);
+  color: var(--text-secondary);
+}
+
+.textArea {
+  min-height: calc(var(--space-160) + var(--space-80));
+  padding: var(--space-16);
+  margin-top: var(--space-20);
+  resize: vertical;
+  font-family: var(--font-family-mono);
+  line-height: var(--line-height-body);
+  white-space: pre;
+  overflow: auto;
+}
+
+.actionBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-top: var(--space-16);
+}
+
+.formatHelp {
+  margin: var(--space-12) 0 0;
+  color: var(--text-muted);
+}
+
+.statusMessage {
+  margin-top: var(--space-8);
+}
+
+.quizWorkspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: var(--space-24);
+  margin-top: var(--space-48);
+}
+
+.questionColumn {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-16);
+}
+
+.quizSummary {
+  padding: var(--space-24);
+}
+
+.questionList {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-16);
+}
+
+.listHeading h2 {
+  margin: var(--space-16) 0 0;
+}
+
+.questionCard {
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--space-24);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-md);
+  background: var(--bg-surface);
+}
+
+.questionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  margin-bottom: var(--space-16);
+}
+
+.questionHeader strong {
+  font-weight: 700;
+}
+
+.questionType {
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+}
+
+.questionParts {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-12);
+}
+
+.questionText {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.codeWrap {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: var(--bg-base);
+}
+
+.codeLabel {
+  padding: var(--space-8) var(--space-12);
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+}
+
+.codeBlock {
+  max-width: 100%;
+  padding: var(--space-16);
+  margin: 0;
+  overflow-x: auto;
+  color: var(--text-primary);
+  font-family: var(--font-family-mono);
+  line-height: var(--line-height-body);
+  white-space: pre;
+}
+
+.choiceList,
+.answerField {
+  display: grid;
+  gap: var(--space-8);
+  margin-top: var(--space-20);
+}
+
+.choiceItem {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: var(--space-12);
+  padding: var(--space-12);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: var(--bg-base);
+  cursor: pointer;
+}
+
+.choiceItem:has(input:checked) {
+  border-color: var(--border-accent);
+  background: color-mix(in srgb, var(--bg-base) 78%, var(--accent-soft));
+}
+
+.choiceItem input {
+  flex: none;
+  margin-top: var(--space-4);
+  accent-color: var(--accent-primary);
+}
+
+.choiceItem span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.answerField > span {
+  color: var(--text-secondary);
+}
+
+.answerInput,
+.answerTextArea,
+.answerPreview {
+  padding: var(--space-12);
+}
+
+.answerInput {
+  min-height: var(--space-48);
+}
+
+.answerTextArea {
+  min-height: var(--space-160);
+  resize: vertical;
+  line-height: var(--line-height-body);
+}
+
+.answerPanel {
+  position: static;
+  min-width: 0;
+  padding: var(--space-24);
+}
+
+.answerPanel h2 {
+  margin: 0 0 var(--space-16);
+}
+
+.answerPreview {
+  min-height: calc(var(--space-160) * 2);
+  resize: vertical;
+  overflow: auto;
+  font-family: var(--font-family-mono);
+  line-height: var(--line-height-body);
+  white-space: pre;
+}
+
+@media (max-width: 1023px) {
+  .toolsPage {
+    padding-top: calc(var(--space-112) + var(--space-48));
+  }
+
+  .linkGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .launcherPage {
+    padding-top: calc(var(--space-112) + var(--space-48));
+    padding-bottom: var(--space-80);
+  }
+
+  .launcherLayout {
+    max-width: 760px;
+    min-height: 0;
+    height: auto;
+    align-content: start;
+    transform: none;
+  }
+
+  .launcherTitle {
+    font-size: var(--font-size-statement);
+    white-space: normal;
+  }
+
+  /* 동일 크기 4개 Cell로 재배치되는 Tablet Launcher */
+  .launcherGrid {
+    max-width: 760px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 300px;
+    gap: var(--space-24);
+  }
+
+  .launcherPage::before {
+    top: var(--space-112);
+  }
+
+  .toolCard .cardVisual,
+  .comingCard .cardVisual {
+    bottom: 148px;
+  }
+
+  .quizCard .cardVisual {
+    bottom: auto;
+    height: 220px;
+  }
+
+  .linksCard .cardVisual {
+    bottom: auto;
+    height: 230px;
+  }
+
+  .linksBeamInner {
+    transform: scale(0.82);
+    transform-origin: center top;
+  }
+
+  .quizCard {
+    grid-column: 1 / 2;
+    grid-row: 1;
+  }
+
+  .linksCard {
+    grid-column: 2 / 3;
+    grid-row: 1;
+  }
+
+  .comingWideCard {
+    grid-column: 1 / 2;
+    grid-row: 2;
+  }
+
+  .comingNarrowCard {
+    grid-column: 2 / 3;
+    grid-row: 2;
+  }
+
+  .quizWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .answerPanel {
+    position: static;
+  }
+}
+
+@media (max-width: 767px) {
+  .toolsShell :global(.primary-navigation) {
+    flex-wrap: wrap;
+  }
+
+  .pageHeader {
+    display: grid;
+    margin-bottom: var(--space-32);
+  }
+
+  .launcherGrid {
+    max-width: none;
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    gap: var(--space-20);
+  }
+
+  .launcherLayout {
+    gap: var(--space-48);
+  }
+
+  .quizCard,
+  .linksCard,
+  .comingWideCard,
+  .comingNarrowCard {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .bentoCard {
+    min-height: 280px;
+  }
+
+  .cardVisual {
+    opacity: 0.74;
+  }
+
+  .linksCard .cardVisual,
+  .comingCard .cardVisual {
+    bottom: 132px;
+  }
+
+  .quizCard .cardVisual {
+    bottom: auto;
+    height: 210px;
+  }
+
+  .linksCard .cardVisual {
+    bottom: auto;
+    height: 220px;
+  }
+
+  .linksBeamInner {
+    transform: scale(0.78);
+  }
+
+  .launcherPage {
+    --launcher-grid-line: color-mix(in srgb, var(--ink-950) 5%, transparent);
+  }
+
+  :global([data-theme="dark"]) .launcherPage {
+    --launcher-grid-line: color-mix(in srgb, var(--ink-300) 6%, transparent);
+  }
+
+  .profileDetails > div {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .profileActions {
+    grid-template-columns: 1fr;
+  }
+
+  .challengeMeta,
+  .sectionHeading,
+  .examHeading {
+    display: grid;
+  }
+
+  .pageHeader.linksHeader {
+    display: flex;
+    margin-bottom: var(--space-48);
+  }
+
+  .linkGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .linkCardContent {
+    min-height: calc(var(--space-160) + var(--space-24));
+    padding: var(--space-20);
+  }
+
+  .quizInputSection,
+  .quizSummary,
+  .questionCard,
+  .answerPanel {
+    padding: var(--space-20);
+  }
+
+  .actionBar > button {
+    width: 100%;
+  }
+
+  .textArea {
+    min-height: calc(var(--space-160) * 2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryButton,
+  .secondaryButton,
+  .linkCard,
+  .linkExternalIcon,
+  .cardContent,
+  .cardIcon svg,
+  .cardCta,
+  .cardOverlay {
+    transition: none;
+  }
+
+  .quizPreviewRow,
+  .rippleCircle {
+    animation: none;
+  }
+
+  .quizPreviewRow {
+    opacity: 0.58;
+    transform: none;
+  }
+
+  .linksBeamMoving {
+    display: none;
+  }
+
+  .rippleCircle {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  .primaryButton:hover:not(:disabled),
+  .secondaryButton:hover:not(:disabled),
+  .linkCard:hover,
+  .linkCard:is(:hover, :focus-visible) .linkExternalIcon {
+    transform: none;
+  }
+
+  .cardCta,
+  .quizPreview,
+  .linksBeamPreview,
+  .toolCard:is(:hover, :focus-visible, :focus-within) .cardContent,
+  .toolCard:is(:hover, :focus-visible, :focus-within) .cardIcon svg {
+    transform: none;
+  }
+}
