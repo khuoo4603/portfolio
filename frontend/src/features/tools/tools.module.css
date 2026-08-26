@@ -858,95 +858,174 @@
   color: var(--status-success);
 }
 
-/* Links의 Category별 행 중심 조회 구조 */
+/* Links 제목과 활성 Link 수만 유지하는 절제된 Header */
+.pageHeader.linksHeader {
+  align-items: baseline;
+  margin-bottom: var(--space-64);
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.linksTotal,
+.linkGroupCount {
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.02em;
+}
+
+/* Category별 독립 5열 Link Board */
 .linkGroups {
   display: grid;
-  gap: var(--space-48);
+  gap: var(--space-64);
 }
 
 .linkGroup {
   display: grid;
-  grid-template-columns: minmax(var(--space-160), 0.32fr) minmax(0, 1fr);
-  gap: var(--space-32);
-  padding-top: var(--space-20);
-  border-top: 1px solid var(--border-default);
+  gap: var(--space-16);
 }
 
-.linkGroup h2 {
+.linkGroupHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.linkGroupHeading h2 {
   margin: 0;
   color: var(--text-secondary);
-  font-family: var(--font-family-mono);
-  font-weight: 500;
+  font-weight: 600;
 }
 
-.linkList {
+.linkGrid {
+  display: grid;
   padding: 0;
   margin: 0;
-  border-top: 1px solid var(--border-default);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-16);
   list-style: none;
+  overflow: visible;
 }
 
-.linkList li {
-  border-bottom: 1px solid var(--border-default);
-}
-
-.linkRow {
-  display: grid;
+.linkGrid li {
+  display: flex;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-24);
-  padding: var(--space-20) var(--space-12);
+}
+
+/* Cover와 정보 영역을 분리한 이미지 중심 Link Card */
+.linkCard {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-md);
+  background: var(--bg-surface);
   color: var(--text-primary);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--ink-950) 10%, transparent),
+    0 12px 24px -18px color-mix(in srgb, var(--ink-950) 36%, transparent);
   text-decoration: none;
   transition:
-    background-color var(--motion-duration-160) var(--motion-easing-default),
-    color var(--motion-duration-160) var(--motion-easing-default);
+    border-color var(--motion-duration-240) var(--motion-easing-default),
+    box-shadow var(--motion-duration-240) var(--motion-easing-default),
+    transform var(--motion-duration-240) var(--motion-easing-default);
 }
 
-.linkRow:hover,
-.linkRow:focus-visible {
-  background: color-mix(in srgb, var(--bg-surface) 72%, transparent);
+.linkCard:is(:hover, :focus-visible) {
+  border-color: color-mix(in srgb, var(--border-accent) 76%, var(--border-default));
 }
 
-.linkContent {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(var(--space-128), 0.35fr) minmax(0, 1fr);
-  align-items: baseline;
-  gap: var(--space-24);
-}
-
-.linkIdentity {
-  display: grid;
-  min-width: 0;
-  gap: var(--space-4);
-}
-
-.linkIdentity strong {
+.linkCover {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 8 / 5;
   overflow: hidden;
-  font-weight: 600;
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+}
+
+.linkCoverImage {
+  object-fit: cover;
+  object-position: center;
+}
+
+.linkCardContent {
+  display: grid;
+  min-height: calc(var(--space-160) + var(--space-16));
+  flex: 1;
+  align-content: start;
+  gap: var(--space-8);
+  padding: var(--space-16);
+  background: var(--bg-surface);
+}
+
+.linkCardMeta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.linkExternalIcon {
+  width: var(--space-16);
+  height: var(--space-16);
+  flex: none;
+  color: var(--text-muted);
+  opacity: 0.68;
+  transition:
+    color var(--motion-duration-160) var(--motion-easing-default),
+    opacity var(--motion-duration-160) var(--motion-easing-default),
+    transform var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.linkCard:is(:hover, :focus-visible) .linkExternalIcon {
+  color: var(--accent-primary);
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
+.linkDomain {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.linkIdentity span {
-  overflow: hidden;
   color: var(--text-muted);
   font-family: var(--font-family-mono);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.linkName {
+  display: -webkit-box;
+  min-height: calc(var(--space-24) * 2);
+  overflow: hidden;
+  color: var(--text-primary);
+  font-weight: 700;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .linkDescription {
-  margin: 0;
+  display: -webkit-box;
+  min-height: calc(var(--space-20) * 2);
+  overflow: hidden;
   color: var(--text-secondary);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-.linkRow > svg {
-  width: var(--space-20);
-  height: var(--space-20);
-  color: var(--accent-primary);
+@media (hover: hover) and (pointer: fine) {
+  .linkCard:hover {
+    z-index: 1;
+    box-shadow:
+      0 2px 4px color-mix(in srgb, var(--ink-950) 12%, transparent),
+      0 18px 32px -20px color-mix(in srgb, var(--ink-950) 44%, transparent);
+    transform: scale(1.02);
+  }
 }
 
 .emptyState,
@@ -1204,6 +1283,10 @@
     padding-top: calc(var(--space-112) + var(--space-48));
   }
 
+  .linkGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .launcherPage {
     padding-top: calc(var(--space-112) + var(--space-48));
     padding-bottom: var(--space-80);
@@ -1362,18 +1445,18 @@
     display: grid;
   }
 
-  .linkGroup {
-    grid-template-columns: 1fr;
-    gap: var(--space-16);
+  .pageHeader.linksHeader {
+    display: flex;
+    margin-bottom: var(--space-48);
   }
 
-  .linkContent {
+  .linkGrid {
     grid-template-columns: 1fr;
-    gap: var(--space-8);
   }
 
-  .linkRow {
-    padding-inline: 0;
+  .linkCardContent {
+    min-height: calc(var(--space-160) + var(--space-24));
+    padding: var(--space-20);
   }
 
   .quizInputSection,
@@ -1395,7 +1478,8 @@
 @media (prefers-reduced-motion: reduce) {
   .primaryButton,
   .secondaryButton,
-  .linkRow,
+  .linkCard,
+  .linkExternalIcon,
   .cardContent,
   .cardIcon svg,
   .cardCta,
@@ -1422,7 +1506,9 @@
   }
 
   .primaryButton:hover:not(:disabled),
-  .secondaryButton:hover:not(:disabled) {
+  .secondaryButton:hover:not(:disabled),
+  .linkCard:hover,
+  .linkCard:is(:hover, :focus-visible) .linkExternalIcon {
     transform: none;
   }
 

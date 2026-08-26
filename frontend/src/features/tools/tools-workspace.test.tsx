@@ -4,7 +4,13 @@ import {
   MOCK_CURRENT_TOOLS_USER,
   MOCK_PASSWORD_OTP,
 } from "@/features/auth/mock-auth";
-import LinksScreen from "./links-screen";
+import LinksScreen, { getLinkMeta, groupActiveLinks, LinkCard } from "./links-screen";
+import {
+  DEFAULT_LINK_IMAGE_URL,
+  MOCK_TOOL_LINKS,
+  MOCK_TOOLS,
+  type ToolItem,
+} from "./mock-tools";
 import ToolsLauncher from "./tools-launcher";
 import ToolsShell from "./tools-shell";
 
@@ -175,18 +181,124 @@ describe("Tools Mock Workspace", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("활성 Mock Link를 Category 행으로 표시하고 빈 Category를 만들지 않음", () => {
+  it("사용자가 지정한 최종 Link 11개만 두 Category의 이미지 Card Grid로 표시", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     navigation.pathname = "/tools/links";
     render(<ToolsShell><LinksScreen /></ToolsShell>);
 
-    expect(screen.getByRole("heading", { name: "Reference" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Development" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Personal" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "My Services" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Spring Guides/ })).toHaveAttribute("target", "_blank");
-    expect(screen.getByText("spring.io")).toBeInTheDocument();
-    expect(screen.getByText("developer.mozilla.org")).toBeInTheDocument();
+    const reference = screen.getByRole("heading", { name: "Reference" }).closest("section");
+    const services = screen.getByRole("heading", { name: "My Services" }).closest("section");
+    const cards = document.querySelectorAll("[data-link-card]");
+    const expectedLinks = [
+      ["React Bits", "https://reactbits.dev/", "/images/tools/links/react-bits.webp"],
+      ["Aceternity UI", "https://ui.aceternity.com/", "/images/tools/links/aceternity-ui.webp"],
+      ["Magic UI", "https://magicui.design/", "/images/tools/links/magic-ui.webp"],
+      ["Color Hunt", "https://colorhunt.co/", "/images/tools/links/color-hunt.webp"],
+      ["Adobe Color", "https://color.adobe.com/", "/images/tools/links/adobe-color.webp"],
+      ["Happy Hues", "https://www.happyhues.co/", "/images/tools/links/happy-hues.webp"],
+      ["Realtime Colors", "https://www.realtimecolors.com/", "/images/tools/links/realtime-colors.webp"],
+      ["KYvC", "https://kyvc.kr/", "/images/profile/project-intro-kyvc.webp"],
+      ["KYvC Intro", "https://intro.kyvc.kr/", DEFAULT_LINK_IMAGE_URL],
+      ["SKHUTrack", "https://skhutrack.com/", "/images/profile/project-intro-skhutrack.webp"],
+      ["khuoo.synology.me", "https://khuoo.synology.me/", DEFAULT_LINK_IMAGE_URL],
+    ] as const;
+
+    expect(reference).not.toBeNull();
+    expect(services).not.toBeNull();
+    expect(screen.queryByRole("heading", { name: "Development" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Personal" })).not.toBeInTheDocument();
+    expect(screen.getByText("11 links")).toBeInTheDocument();
+    expect(within(reference as HTMLElement).getByLabelText("7 links")).toHaveTextContent("07");
+    expect(within(services as HTMLElement).getByLabelText("4 links")).toHaveTextContent("04");
+    expect(document.querySelectorAll("[data-link-grid]")).toHaveLength(2);
+    expect(cards).toHaveLength(11);
+    expect(document.querySelector("[data-glowing-effect]")).not.toBeInTheDocument();
+    expect(within(reference as HTMLElement).getAllByRole("img").map((image) => image.getAttribute("alt"))).toEqual([
+      "React Bits",
+      "Aceternity UI",
+      "Magic UI",
+      "Color Hunt",
+      "Adobe Color",
+      "Happy Hues",
+      "Realtime Colors",
+    ]);
+    expect(within(services as HTMLElement).getAllByRole("img").map((image) => image.getAttribute("alt"))).toEqual([
+      "KYvC",
+      "KYvC Intro",
+      "SKHUTrack",
+      "khuoo.synology.me",
+    ]);
+
+    expectedLinks.forEach(([name, href, imageUrl]) => {
+      const image = screen.getByRole("img", { name });
+      const link = image.closest("a");
+
+      expect(link).toHaveAttribute("href", href);
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
+      expect(decodeURIComponent(image.getAttribute("src") ?? "")).toContain(imageUrl);
+    });
+
+    expect(screen.queryByText("Spring Guides")).not.toBeInTheDocument();
+    expect(screen.queryByText("MDN Web Docs")).not.toBeInTheDocument();
+    expect(screen.queryByText("GitHub")).not.toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("대표 이미지 실패와 null Description을 공통 Default Image로 안전하게 처리", async () => {
+    const link = { ...MOCK_TOOL_LINKS[0], description: null };
+    const metadata = getLinkMeta(link.url);
+
+    expect(metadata).not.toBeNull();
+    render(<LinkCard link={link} metadata={metadata!} />);
+
+    const image = screen.getByRole("img", { name: "React Bits" });
+    const description = document.querySelector("[data-link-description]");
+
+    expect(decodeURIComponent(image.getAttribute("src") ?? "")).toContain(link.imageUrl);
+    expect(description).toHaveAttribute("aria-hidden", "true");
+    expect(description?.textContent).toBe("\u00a0");
+
+    fireEvent.error(image);
+
+    await waitFor(() => {
+      expect(decodeURIComponent(image.getAttribute("src") ?? "")).toContain(DEFAULT_LINK_IMAGE_URL);
+    });
+  });
+
+  it("Links Tool 비활성 상태에서 기존 안내 화면을 유지", () => {
+    const tools = MOCK_TOOLS as ToolItem[];
+    const linksIndex = tools.findIndex((tool) => tool.toolKey === "LINKS");
+    const [linksTool] = tools.splice(linksIndex, 1);
+
+    try {
+      navigation.pathname = "/tools/links";
+      render(<ToolsShell><LinksScreen /></ToolsShell>);
+
+      expect(screen.getByRole("heading", { name: "요청한 Tool을 찾을 수 없습니다" })).toBeInTheDocument();
+      expect(document.querySelector("[data-link-card]")).not.toBeInTheDocument();
+    } finally {
+      tools.splice(linksIndex, 0, linksTool);
+    }
+  });
+
+  it("비활성·잘못된 URL Link 제외와 안전한 Domain 파싱", () => {
+    const reactBits = MOCK_TOOL_LINKS.find((link) => link.name === "React Bits")!;
+    const magicUi = MOCK_TOOL_LINKS.find((link) => link.name === "Magic UI")!;
+    const kyvc = MOCK_TOOL_LINKS.find((link) => link.name === "KYvC")!;
+    const disabled = { ...reactBits, enabled: false };
+    const invalid = { ...reactBits, id: 99, url: "invalid-url" };
+    const groups = groupActiveLinks([disabled, magicUi, invalid, kyvc]);
+
+    expect(groups.flatMap((group) => group.items.map(({ link }) => link.name))).toEqual([
+      "Magic UI",
+      "KYvC",
+    ]);
+    expect(getLinkMeta("https://intro.kyvc.kr/about")).toEqual({
+      href: "https://intro.kyvc.kr/about",
+      domain: "intro.kyvc.kr",
+    });
+    expect(getLinkMeta("mailto:hello@example.com")).toBeNull();
+    expect(getLinkMeta("invalid-url")).toBeNull();
   });
 });
