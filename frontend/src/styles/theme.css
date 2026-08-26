@@ -1,0 +1,41 @@
+:root {
+  color-scheme: light;
+
+  --bg-base: var(--sand-50);
+  --bg-surface: var(--sand-100);
+  --bg-elevated: var(--sand-200);
+  --text-primary: var(--ink-950);
+  --text-secondary: var(--ink-700);
+  --text-muted: var(--steel-700);
+  --border-default: var(--sage-300);
+  --border-accent: var(--steel-400);
+  --accent-primary: var(--steel-700);
+  --accent-strong: var(--steel-800);
+  --accent-soft: var(--steel-100);
+  --accent-secondary: var(--sage-600);
+  --focus-ring: var(--steel-600);
+  --status-success: var(--sage-700);
+  --status-error: var(--sand-800);
+  --status-warning: var(--sand-700);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-base: var(--ink-950);
+  --bg-surface: var(--ink-900);
+  --bg-elevated: var(--ink-800);
+  --text-primary: var(--sand-200);
+  --text-secondary: var(--sage-400);
+  --text-muted: var(--ink-300);
+  --border-default: var(--ink-700);
+  --border-accent: var(--steel-600);
+  --accent-primary: var(--steel-400);
+  --accent-strong: var(--steel-500);
+  --accent-soft: var(--steel-800);
+  --accent-secondary: var(--sage-500);
+  --focus-ring: var(--steel-300);
+  --status-success: var(--sage-400);
+  --status-error: var(--sand-400);
+  --status-warning: var(--sand-500);
+}
