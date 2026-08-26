@@ -1,3 +1,33 @@
 spring:
   application:
     name: portfolio-backend
+  datasource:
+    hikari:
+      connection-init-sql: SET TIME ZONE 'Asia/Seoul'
+  flyway:
+    enabled: true
+  jackson:
+    time-zone: Asia/Seoul
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      enabled: true
+      probes:
+        enabled: true
+      show-details: never
