@@ -1,8 +1,8 @@
 package com.khuoo.portfolio.common.config;
 
-import com.khuoo.portfolio.account.domain.AccountRole;
 import com.khuoo.portfolio.common.security.RestAccessDeniedHandler;
 import com.khuoo.portfolio.common.security.RestAuthenticationEntryPoint;
+import com.khuoo.portfolio.common.util.PortfolioEnums;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -76,14 +76,18 @@ public class SecurityConfig {
                     if (!swaggerEnabled || swaggerPublicAccess) {
                         authorize.requestMatchers(SWAGGER_PATHS).permitAll();
                     } else {
-                        authorize.requestMatchers(SWAGGER_PATHS).hasRole(AccountRole.ADMIN.name());
+                        authorize.requestMatchers(SWAGGER_PATHS)
+                                .hasRole(PortfolioEnums.AccountRole.ADMIN.name());
                     }
 
                     authorize
                             .requestMatchers("/api/v1/tools/**")
-                            .hasAnyRole(AccountRole.USER.name(), AccountRole.ADMIN.name())
+                            .hasAnyRole(
+                                    PortfolioEnums.AccountRole.USER.name(),
+                                    PortfolioEnums.AccountRole.ADMIN.name()
+                            )
                             .requestMatchers("/api/v1/admin/**")
-                            .hasRole(AccountRole.ADMIN.name())
+                            .hasRole(PortfolioEnums.AccountRole.ADMIN.name())
                             .requestMatchers(
                                     "/api/v1/auth/logout",
                                     "/api/v1/auth/me",

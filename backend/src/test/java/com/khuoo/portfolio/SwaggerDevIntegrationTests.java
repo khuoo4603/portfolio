@@ -1,5 +1,6 @@
 package com.khuoo.portfolio;
 
+import com.khuoo.portfolio.common.util.PortfolioEnums;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,9 +30,11 @@ class SwaggerDevIntegrationTests extends PostgresIntegrationTest {
     void swaggerRequiresAdminRole() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/v3/api-docs").with(user("user").roles("USER")))
+        mockMvc.perform(get("/v3/api-docs").with(user("user")
+                        .roles(PortfolioEnums.AccountRole.USER.name())))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(get("/v3/api-docs").with(user("admin").roles("ADMIN")))
+        mockMvc.perform(get("/v3/api-docs").with(user("admin")
+                        .roles(PortfolioEnums.AccountRole.ADMIN.name())))
                 .andExpect(status().isOk());
         org.assertj.core.api.Assertions.assertThat(
                 environment.getProperty("server.servlet.session.cookie.secure", Boolean.class)

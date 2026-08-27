@@ -13,11 +13,17 @@ public final class TraceContext {
     private TraceContext() {
     }
 
+    // 현재 Thread의 Trace ID 조회
+    public static String get() {
+        return MDC.get(MDC_KEY);
+    }
+
+    // 현재 요청 또는 Thread의 Trace ID 조회
     public static String get(HttpServletRequest request) {
         Object traceId = request.getAttribute(REQUEST_ATTRIBUTE);
         if (traceId instanceof String value) {
             return value;
         }
-        return MDC.get(MDC_KEY);
+        return get();
     }
 }

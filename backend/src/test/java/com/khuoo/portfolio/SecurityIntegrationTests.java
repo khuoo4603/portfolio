@@ -1,5 +1,6 @@
 package com.khuoo.portfolio;
 
+import com.khuoo.portfolio.common.util.PortfolioEnums;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
@@ -52,18 +53,22 @@ class SecurityIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTH_UNAUTHORIZED"))
                 .andExpect(jsonPath("$.fieldErrors").isArray());
-        mockMvc.perform(get("/api/v1/tools/test").with(user("user").roles("USER")))
+        mockMvc.perform(get("/api/v1/tools/test").with(user("user")
+                        .roles(PortfolioEnums.AccountRole.USER.name())))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/v1/tools/test").with(user("admin").roles("ADMIN")))
+        mockMvc.perform(get("/api/v1/tools/test").with(user("admin")
+                        .roles(PortfolioEnums.AccountRole.ADMIN.name())))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/v1/admin/test"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTH_UNAUTHORIZED"));
-        mockMvc.perform(get("/api/v1/admin/test").with(user("user").roles("USER")))
+        mockMvc.perform(get("/api/v1/admin/test").with(user("user")
+                        .roles(PortfolioEnums.AccountRole.USER.name())))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
-        mockMvc.perform(get("/api/v1/admin/test").with(user("admin").roles("ADMIN")))
+        mockMvc.perform(get("/api/v1/admin/test").with(user("admin")
+                        .roles(PortfolioEnums.AccountRole.ADMIN.name())))
                 .andExpect(status().isOk());
     }
 
@@ -105,12 +110,13 @@ class SecurityIntegrationTests extends PostgresIntegrationTest {
         assertThat(csrfCookie).isNotNull();
         assertThat(csrfCookie.isHttpOnly()).isFalse();
 
-        mockMvc.perform(post("/api/v1/tools/test").with(user("user").roles("USER")))
+        mockMvc.perform(post("/api/v1/tools/test").with(user("user")
+                        .roles(PortfolioEnums.AccountRole.USER.name())))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
 
         mockMvc.perform(post("/api/v1/tools/test")
-                        .with(user("user").roles("USER"))
+                        .with(user("user").roles(PortfolioEnums.AccountRole.USER.name()))
                         .cookie(csrfCookie)
                         .header("X-XSRF-TOKEN", csrfCookie.getValue()))
                 .andExpect(status().isNoContent());
