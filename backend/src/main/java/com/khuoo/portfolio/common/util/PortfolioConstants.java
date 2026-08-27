@@ -1,9 +1,30 @@
 package com.khuoo.portfolio.common.util;
 
+import java.time.Duration;
+
 // DB 및 API 고정 문자열 Key 중앙 정의
 public final class PortfolioConstants {
 
     private PortfolioConstants() {
+    }
+
+    // 로그인 제한과 Session 수명 정책
+    public static final class Authentication {
+
+        public static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(10);
+        public static final int EMAIL_FAILURE_LIMIT = 5;
+        public static final int IP_FAILURE_LIMIT = 20;
+        public static final int SESSION_IDLE_TIMEOUT_SECONDS = (int) Duration.ofHours(8).toSeconds();
+        public static final int REMEMBER_ME_SECONDS = (int) Duration.ofDays(14).toSeconds();
+        public static final String REMEMBER_ME_REQUEST_ATTRIBUTE =
+                "com.khuoo.portfolio.authentication.REMEMBER_ME";
+        public static final String REMEMBER_ME_SESSION_ATTRIBUTE =
+                "portfolio.authentication.rememberMe";
+        public static final String AUTHENTICATED_AT_SESSION_ATTRIBUTE =
+                "portfolio.authentication.authenticatedAt";
+
+        private Authentication() {
+        }
     }
 
     // Tool 식별 Key
