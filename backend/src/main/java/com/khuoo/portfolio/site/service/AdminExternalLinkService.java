@@ -6,6 +6,7 @@ import com.khuoo.portfolio.common.error.ApiException;
 import com.khuoo.portfolio.common.error.ErrorCode;
 import com.khuoo.portfolio.common.util.PortfolioEnums.AdminActionOperation;
 import com.khuoo.portfolio.common.util.PortfolioEnums.AdminActionTarget;
+import com.khuoo.portfolio.common.validation.WebUrlValidator;
 import com.khuoo.portfolio.site.domain.ExternalLink;
 import com.khuoo.portfolio.site.dto.AdminExternalLinkResponse;
 import com.khuoo.portfolio.site.dto.ExternalLinkCreateRequest;
@@ -15,8 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
@@ -30,6 +29,7 @@ public class AdminExternalLinkService {
 
     private final SiteRepository siteRepository;
     private final AdminActionVerifier adminActionVerifier;
+    private final WebUrlValidator webUrlValidator;
 
     // Web URL 검증과 재인증 후 외부 링크 생성
     public AdminExternalLinkResponse create(
@@ -38,7 +38,7 @@ public class AdminExternalLinkService {
             UUID challengeId,
             String code
     ) {
-        validateWebUrl(request.url());
+        webUrlValidator.validate(request.url());
         adminActionVerifier.verifyAndConsume(
                 currentAdmin,
                 challengeId,
@@ -85,7 +85,7 @@ public class AdminExternalLinkService {
         boolean enabled = PatchValues.present(request.enabled())
                 ? PatchValues.booleanValue(request.enabled())
                 : link.isEnabled();
-        validateWebUrl(url);
+        webUrlValidator.validate(url);
 
         adminActionVerifier.verifyAndConsume(
                 currentAdmin,
@@ -117,21 +117,6 @@ public class AdminExternalLinkService {
     private ExternalLink requireLink(Long linkId) {
         return siteRepository.findExternalLink(linkId)
                 .orElseThrow(() -> new ApiException(ErrorCode.EXTERNAL_LINK_NOT_FOUND));
-    }
-
-    private void validateWebUrl(String value) {
-        try {
-            URI uri = new URI(value);
-            String scheme = uri.getScheme();
-            if (uri.isOpaque()
-                    || uri.getHost() == null
-                    || scheme == null
-                    || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
-                throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
-            }
-        } catch (URISyntaxException exception) {
-            throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR, exception);
-        }
     }
 
     private OffsetDateTime now() {
