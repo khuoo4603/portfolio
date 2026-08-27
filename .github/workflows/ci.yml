@@ -1,4 +1,4 @@
-name: Frontend CI
+name: CI
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
       - main
 
 concurrency:
-  group: frontend-ci-${{ github.event.pull_request.number }}
+  group: ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -69,3 +69,59 @@ jobs:
         if: steps.changes.outputs.frontend_changed == 'true'
         working-directory: frontend
         run: npm run build
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect backend changes
+        id: changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -Eq '^(backend/|\.github/workflows/ci\.yml$)'; then
+            echo "backend_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Java
+        if: steps.changes.outputs.backend_changed == 'true'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Prepare Gradle Wrapper
+        if: steps.changes.outputs.backend_changed == 'true'
+        working-directory: backend
+        run: chmod +x gradlew
+
+      - name: Compile
+        if: steps.changes.outputs.backend_changed == 'true'
+        working-directory: backend
+        run: ./gradlew compileJava compileTestJava
+
+      - name: Test
+        if: steps.changes.outputs.backend_changed == 'true'
+        working-directory: backend
+        run: ./gradlew test
+
+      - name: Build
+        if: steps.changes.outputs.backend_changed == 'true'
+        working-directory: backend
+        run: ./gradlew build
+
+      - name: BootJar
+        if: steps.changes.outputs.backend_changed == 'true'
+        working-directory: backend
+        run: ./gradlew bootJar
