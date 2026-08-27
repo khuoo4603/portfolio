@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: portfolio-backend
+  datasource:
+    hikari:
+      connection-init-sql: SET TIME ZONE 'Asia/Seoul'
+  flyway:
+    enabled: true
+  jackson:
+    time-zone: Asia/Seoul
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  session:
+    jdbc:
+      initialize-schema: never
+      table-name: spring_session
+    timeout: ${SESSION_IDLE_TIMEOUT:8h}
+
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+    session:
+      cookie:
+        http-only: true
+        name: ${SESSION_COOKIE_NAME:PORTFOLIO_SESSION}
+        path: /
+        same-site: Lax
+      timeout: ${SESSION_IDLE_TIMEOUT:8h}
+
+logging:
+  file:
+    path: ${LOG_PATH:build/logs}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+portfolio:
+  swagger:
+    enabled: false
+    public-access: false
+
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      enabled: true
+      probes:
+        enabled: true
+      show-details: never
