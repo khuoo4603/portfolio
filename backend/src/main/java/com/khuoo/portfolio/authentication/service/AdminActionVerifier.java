@@ -52,17 +52,7 @@ public class AdminActionVerifier {
                 targetId
         );
         if (!result.isSuccess()) {
-            throw verificationException(result);
+            throw new ApiException(ErrorCode.AUTH_ADMIN_ACTION_MISMATCH);
         }
-    }
-
-    private ApiException verificationException(ChallengeVerificationResult result) {
-        return switch (result.status()) {
-            case BINDING_MISMATCH -> new ApiException(ErrorCode.AUTH_ADMIN_ACTION_MISMATCH);
-            case INVALID_CODE -> new ApiException(ErrorCode.AUTH_VERIFICATION_FAILED);
-            case EXPIRED -> new ApiException(ErrorCode.AUTH_VERIFICATION_EXPIRED);
-            case LOCKED -> new ApiException(ErrorCode.AUTH_VERIFICATION_LOCKED);
-            default -> new ApiException(ErrorCode.AUTH_CHALLENGE_INVALID);
-        };
     }
 }

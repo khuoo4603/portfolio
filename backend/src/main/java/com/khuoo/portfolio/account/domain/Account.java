@@ -51,6 +51,51 @@ public class Account {
     @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
 
+    private Account(
+            String email,
+            String name,
+            String passwordHash,
+            AccountRole role,
+            boolean enabled
+    ) {
+        this.email = EmailNormalizer.normalize(email);
+        this.name = name;
+        this.passwordHash = passwordHash;
+        this.role = role;
+        this.enabled = enabled;
+    }
+
+    // 관리자 계정 관리용 신규 Account 생성
+    public static Account create(
+            String email,
+            String name,
+            String passwordHash,
+            AccountRole role,
+            boolean enabled
+    ) {
+        return new Account(email, name, passwordHash, role, enabled);
+    }
+
+    // 계정 활성 상태 변경 여부 반환
+    public boolean changeEnabled(boolean newEnabled, OffsetDateTime changedAt) {
+        if (enabled == newEnabled) {
+            return false;
+        }
+        enabled = newEnabled;
+        updatedAt = changedAt;
+        return true;
+    }
+
+    // 계정 권한 변경 여부 반환
+    public boolean changeRole(AccountRole newRole, OffsetDateTime changedAt) {
+        if (role == newRole) {
+            return false;
+        }
+        role = newRole;
+        updatedAt = changedAt;
+        return true;
+    }
+
     // 새 BCrypt Hash 기반 비밀번호 변경
     public void changePassword(String newPasswordHash, OffsetDateTime changedAt) {
         passwordHash = newPasswordHash;

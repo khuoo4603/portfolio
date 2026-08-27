@@ -7,6 +7,7 @@ import com.khuoo.portfolio.authentication.dto.PasswordChangeRequest;
 import com.khuoo.portfolio.common.error.ApiException;
 import com.khuoo.portfolio.common.error.ErrorCode;
 import com.khuoo.portfolio.common.util.PortfolioEnums.ChallengePurpose;
+import com.khuoo.portfolio.common.validation.PasswordPolicyValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class PasswordChangeService {
     private final AccountRepository accountRepository;
     private final ChallengeVerifier challengeVerifier;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicyValidator passwordPolicyValidator;
 
     // 비밀번호 정책과 Challenge 검증 성공 시 BCrypt Hash 변경
     @Transactional
@@ -32,7 +34,7 @@ public class PasswordChangeService {
         Account account = accountRepository.findById(accountId)
                 .filter(Account::isEnabled)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_UNAUTHORIZED));
-        validatePassword(account, request.newPassword());
+        passwordPolicyValidator.validate(account.getEmail(), request.newPassword());
 
         ChallengeVerificationResult result = challengeVerifier.verifyAndConsume(
                 request.challengeId(),
@@ -52,10 +54,4 @@ public class PasswordChangeService {
         return result;
     }
 
-    private void validatePassword(Account account, String newPassword) {
-        if (!newPassword.equals(newPassword.trim())
-                || newPassword.equalsIgnoreCase(account.getEmail())) {
-            throw new ApiException(ErrorCode.AUTH_PASSWORD_POLICY);
-        }
-    }
 }
