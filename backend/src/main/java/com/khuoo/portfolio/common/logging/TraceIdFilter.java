@@ -1,9 +1,11 @@
 package com.khuoo.portfolio.common.logging;
 
+import com.khuoo.portfolio.common.validation.TraceIdValidator;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -12,14 +14,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 // 요청 Trace ID 생성 및 전달
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
+@RequiredArgsConstructor
 public class TraceIdFilter extends OncePerRequestFilter {
 
-    private static final Pattern ALLOWED_TRACE_ID = Pattern.compile("^[A-Za-z0-9_-]{1,64}$");
+    private final TraceIdValidator traceIdValidator;
 
     // 요청 범위 Trace ID와 MDC 수명 관리
     @Override
@@ -41,7 +43,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
     }
 
     private String resolveTraceId(String requestedTraceId) {
-        if (requestedTraceId != null && ALLOWED_TRACE_ID.matcher(requestedTraceId).matches()) {
+        if (traceIdValidator.isValid(requestedTraceId)) {
             return requestedTraceId;
         }
         return UUID.randomUUID().toString();

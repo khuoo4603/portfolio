@@ -61,6 +61,18 @@ portfolio:
     resume-directory: ${RESUME_STORAGE_PATH:build/files/resume}
   mail:
     from: ${MAIL_FROM:${MAIL_USERNAME:}}
+  monitoring:
+    enabled: ${MONITORING_ENABLED:false}
+    connect-timeout: ${MONITORING_CONNECT_TIMEOUT:2s}
+    request-timeout: ${MONITORING_REQUEST_TIMEOUT:3s}
+    retry-delay: ${MONITORING_RETRY_DELAY:500ms}
+    targets:
+      portfolio-frontend: ${PORTFOLIO_FRONTEND_HEALTH_URL:}
+      portfolio-backend: ${PORTFOLIO_BACKEND_HEALTH_URL:}
+      kyvc-frontend: ${KYVC_FRONTEND_HEALTH_URL:}
+      kyvc-backend: ${KYVC_BACKEND_HEALTH_URL:}
+      kyvc-core: ${KYVC_CORE_HEALTH_URL:}
+      shkutrack: ${SHKUTRACK_HEALTH_URL:}
   swagger:
     enabled: false
     public-access: false

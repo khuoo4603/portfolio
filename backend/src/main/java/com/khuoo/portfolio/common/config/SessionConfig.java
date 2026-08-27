@@ -2,6 +2,7 @@ package com.khuoo.portfolio.common.config;
 
 import com.khuoo.portfolio.common.util.PortfolioConstants;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.session.web.http.CookieSerializer;
@@ -9,6 +10,7 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 
 // Spring Session Cookie 정책 구성
 @Configuration
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class SessionConfig {
 
     // 환경별 Session Cookie 속성 적용

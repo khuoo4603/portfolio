@@ -5,6 +5,7 @@ import com.khuoo.portfolio.common.security.RestAuthenticationEntryPoint;
 import com.khuoo.portfolio.authentication.security.SessionExpirationFilter;
 import com.khuoo.portfolio.common.util.PortfolioEnums;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -54,6 +55,7 @@ public class SecurityConfig {
 
     // API 영역별 인증과 CSRF 정책 구성
     @Bean
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             SecurityContextRepository securityContextRepository
