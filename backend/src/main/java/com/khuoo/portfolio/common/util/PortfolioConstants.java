@@ -65,6 +65,16 @@ public final class PortfolioConstants {
         }
     }
 
+    // 서비스 상태 확인의 변경 불가능한 실행 정책
+    public static final class Monitoring {
+
+        public static final long CHECK_INTERVAL_MS = 300_000L;
+        public static final int MAX_RETRIES = 1;
+
+        private Monitoring() {
+        }
+    }
+
     // 관리자 변경 작업 재인증 Header
     public static final class Header {
 

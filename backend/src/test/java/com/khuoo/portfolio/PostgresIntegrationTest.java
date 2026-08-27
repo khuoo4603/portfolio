@@ -26,12 +26,15 @@ public abstract class PostgresIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.hikari.maximum-pool-size", () -> 4);
+        registry.add("spring.datasource.hikari.minimum-idle", () -> 0);
         registry.add("logging.file.path", () -> "build/test-logs");
     }
 
-    // 테스트 간 JDBC Session 데이터 격리
+    // 테스트 간 JDBC Session 및 오류 요약 데이터 격리
     @AfterEach
     void clearSessions() {
         jdbcTemplate.update("DELETE FROM spring_session");
+        jdbcTemplate.update("DELETE FROM error_logs");
     }
 }
