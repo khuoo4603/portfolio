@@ -16,6 +16,9 @@ public interface ProjectQueryRepository {
     // 프로젝트 전체 연결 기술 조회
     List<ProjectTechnologyView> findTechnologies(Long projectId);
 
+    // 관리자 프로젝트 전체 연결 기술 조회
+    List<AdminProjectTechnologyView> findAdminTechnologies(Long projectId);
+
     // 프로젝트 고정 본문 조회
     Optional<ProjectContent> findContent(Long projectId);
 

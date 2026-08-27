@@ -30,7 +30,10 @@ public enum ErrorCode {
     PROFILE_ENTRY_NOT_FOUND(HttpStatus.NOT_FOUND, "프로필 항목을 찾을 수 없습니다."),
     TECHNOLOGY_NOT_FOUND(HttpStatus.NOT_FOUND, "기술 항목을 찾을 수 없습니다."),
     TECHNOLOGY_NAME_CONFLICT(HttpStatus.CONFLICT, "이미 사용 중인 기술명입니다."),
-    EXTERNAL_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "외부 링크를 찾을 수 없습니다.");
+    EXTERNAL_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "외부 링크를 찾을 수 없습니다."),
+    PROJECT_SLUG_CONFLICT(HttpStatus.CONFLICT, "이미 사용 중인 프로젝트 slug입니다."),
+    RESUME_NOT_FOUND(HttpStatus.NOT_FOUND, "등록된 이력서를 찾을 수 없습니다."),
+    RESUME_FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "이력서 파일 크기는 10MB 이하여야 합니다.");
 
     private final HttpStatus status;
     private final String message;

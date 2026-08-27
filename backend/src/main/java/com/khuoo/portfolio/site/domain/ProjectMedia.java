@@ -43,4 +43,29 @@ public class ProjectMedia {
 
     @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
+
+    private ProjectMedia(
+            Long projectId,
+            String imageUrl,
+            String label,
+            String altText,
+            int displayOrder
+    ) {
+        this.projectId = projectId;
+        this.imageUrl = imageUrl;
+        this.label = label;
+        this.altText = altText;
+        this.displayOrder = displayOrder;
+    }
+
+    // 프로젝트 이미지 갤러리 항목 생성
+    public static ProjectMedia create(
+            Long projectId,
+            String imageUrl,
+            String label,
+            String altText,
+            int displayOrder
+    ) {
+        return new ProjectMedia(projectId, imageUrl, label, altText, displayOrder);
+    }
 }

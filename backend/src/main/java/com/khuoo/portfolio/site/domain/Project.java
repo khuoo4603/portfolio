@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 // 프로젝트 카드와 상세 상단의 기본정보
 @Getter
@@ -71,4 +72,130 @@ public class Project {
 
     @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
+
+    private Project(
+            String slug,
+            String name,
+            short year,
+            String tagline,
+            String description,
+            String cardRole,
+            String summary,
+            String detailRole,
+            LocalDate startedAt,
+            LocalDate endedAt,
+            Short teamSize,
+            String thumbnailUrl,
+            int displayOrder,
+            boolean enabled
+    ) {
+        this.slug = slug;
+        this.name = name;
+        this.year = year;
+        this.tagline = tagline;
+        this.description = description;
+        this.cardRole = cardRole;
+        this.summary = summary;
+        this.detailRole = detailRole;
+        this.startedAt = startedAt;
+        this.endedAt = endedAt;
+        this.teamSize = teamSize;
+        this.thumbnailUrl = thumbnailUrl;
+        this.displayOrder = displayOrder;
+        this.enabled = enabled;
+    }
+
+    // 관리자 프로젝트 기본정보 생성
+    public static Project create(
+            String slug,
+            String name,
+            short year,
+            String tagline,
+            String description,
+            String cardRole,
+            String summary,
+            String detailRole,
+            LocalDate startedAt,
+            LocalDate endedAt,
+            Short teamSize,
+            String thumbnailUrl,
+            int displayOrder,
+            boolean enabled
+    ) {
+        return new Project(
+                slug,
+                name,
+                year,
+                tagline,
+                description,
+                cardRole,
+                summary,
+                detailRole,
+                startedAt,
+                endedAt,
+                teamSize,
+                thumbnailUrl,
+                displayOrder,
+                enabled
+        );
+    }
+
+    // 전달 필드 기반 프로젝트 기본정보 변경
+    public void update(
+            String newSlug,
+            String newName,
+            short newYear,
+            String newTagline,
+            String newDescription,
+            String newCardRole,
+            String newSummary,
+            String newDetailRole,
+            LocalDate newStartedAt,
+            LocalDate newEndedAt,
+            Short newTeamSize,
+            String newThumbnailUrl,
+            int newDisplayOrder,
+            OffsetDateTime changedAt
+    ) {
+        boolean changed = !Objects.equals(slug, newSlug)
+                || !Objects.equals(name, newName)
+                || year != newYear
+                || !Objects.equals(tagline, newTagline)
+                || !Objects.equals(description, newDescription)
+                || !Objects.equals(cardRole, newCardRole)
+                || !Objects.equals(summary, newSummary)
+                || !Objects.equals(detailRole, newDetailRole)
+                || !Objects.equals(startedAt, newStartedAt)
+                || !Objects.equals(endedAt, newEndedAt)
+                || !Objects.equals(teamSize, newTeamSize)
+                || !Objects.equals(thumbnailUrl, newThumbnailUrl)
+                || displayOrder != newDisplayOrder;
+        if (!changed) {
+            return;
+        }
+
+        slug = newSlug;
+        name = newName;
+        year = newYear;
+        tagline = newTagline;
+        description = newDescription;
+        cardRole = newCardRole;
+        summary = newSummary;
+        detailRole = newDetailRole;
+        startedAt = newStartedAt;
+        endedAt = newEndedAt;
+        teamSize = newTeamSize;
+        thumbnailUrl = newThumbnailUrl;
+        displayOrder = newDisplayOrder;
+        updatedAt = changedAt;
+    }
+
+    // 프로젝트 공개 상태 변경
+    public void changeStatus(boolean newEnabled, OffsetDateTime changedAt) {
+        if (enabled == newEnabled) {
+            return;
+        }
+        enabled = newEnabled;
+        updatedAt = changedAt;
+    }
 }

@@ -4,6 +4,9 @@ import com.khuoo.portfolio.common.error.ApiException;
 import com.khuoo.portfolio.common.error.ErrorCode;
 import tools.jackson.databind.JsonNode;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
 // Site PATCH 요청의 미전달·null·타입 값 판독
 final class PatchValues {
 
@@ -31,7 +34,7 @@ final class PatchValues {
             throw invalid();
         }
         String result = value.stringValue();
-        if (result.isBlank() || result.length() > maxLength) {
+        if (result.isBlank() || (maxLength > 0 && result.length() > maxLength)) {
             throw invalid();
         }
         return result;
@@ -70,6 +73,45 @@ final class PatchValues {
             throw invalid();
         }
         return result;
+    }
+
+    // null 불가 SMALLINT 범위 값 판독
+    static short shortValue(JsonNode value) {
+        if (value == null || !value.isIntegralNumber() || !value.canConvertToInt()) {
+            throw invalid();
+        }
+        int result = value.intValue();
+        if (result < Short.MIN_VALUE || result > Short.MAX_VALUE) {
+            throw invalid();
+        }
+        return (short) result;
+    }
+
+    // explicit null 허용 양수 SMALLINT 값 판독
+    static Short nullablePositiveShort(JsonNode value) {
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        short result = shortValue(value);
+        if (result <= 0) {
+            throw invalid();
+        }
+        return result;
+    }
+
+    // explicit null 허용 ISO 날짜 값 판독
+    static LocalDate nullableDate(JsonNode value) {
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        if (!value.isString()) {
+            throw invalid();
+        }
+        try {
+            return LocalDate.parse(value.stringValue());
+        } catch (DateTimeParseException exception) {
+            throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR, exception);
+        }
     }
 
     // null 불가 Enum 이름 값 판독

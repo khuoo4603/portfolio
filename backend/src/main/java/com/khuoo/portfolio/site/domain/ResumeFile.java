@@ -34,4 +34,44 @@ public class ResumeFile {
 
     @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
+
+    private ResumeFile(
+            Short id,
+            String originalName,
+            String storageKey,
+            long sizeBytes,
+            String contentType
+    ) {
+        this.id = id;
+        this.originalName = originalName;
+        this.storageKey = storageKey;
+        this.sizeBytes = sizeBytes;
+        this.contentType = contentType;
+    }
+
+    // 현재 이력서 메타데이터 최초 생성
+    public static ResumeFile create(
+            Short id,
+            String originalName,
+            String storageKey,
+            long sizeBytes,
+            String contentType
+    ) {
+        return new ResumeFile(id, originalName, storageKey, sizeBytes, contentType);
+    }
+
+    // 현재 이력서 메타데이터 교체
+    public void replace(
+            String newOriginalName,
+            String newStorageKey,
+            long newSizeBytes,
+            String newContentType,
+            OffsetDateTime changedAt
+    ) {
+        originalName = newOriginalName;
+        storageKey = newStorageKey;
+        sizeBytes = newSizeBytes;
+        contentType = newContentType;
+        updatedAt = changedAt;
+    }
 }

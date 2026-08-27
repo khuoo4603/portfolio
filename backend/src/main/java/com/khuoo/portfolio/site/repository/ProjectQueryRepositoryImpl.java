@@ -55,6 +55,28 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .getResultList();
     }
 
+    // 카드 노출 여부를 포함한 관리자 프로젝트 전체 기술 조회
+    @Override
+    public List<AdminProjectTechnologyView> findAdminTechnologies(Long projectId) {
+        return entityManager.createQuery("""
+                        SELECT new com.khuoo.portfolio.site.repository.AdminProjectTechnologyView(
+                            technology.id,
+                            technology.name,
+                            technology.category,
+                            technology.iconUrl,
+                            mapping.showOnCard,
+                            mapping.highlighted,
+                            mapping.displayOrder
+                        )
+                        FROM ProjectTechnology mapping
+                        JOIN Technology technology ON technology.id = mapping.technologyId
+                        WHERE mapping.projectId = :projectId
+                        ORDER BY mapping.displayOrder ASC, technology.id ASC
+                        """, AdminProjectTechnologyView.class)
+                .setParameter("projectId", projectId)
+                .getResultList();
+    }
+
     // 프로젝트 식별자 기반 고정 본문 조회
     @Override
     public Optional<ProjectContent> findContent(Long projectId) {

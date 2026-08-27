@@ -37,6 +37,31 @@ public class ProjectTechnology {
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
+    private ProjectTechnology(
+            Long projectId,
+            Long technologyId,
+            boolean showOnCard,
+            boolean highlighted,
+            int displayOrder
+    ) {
+        this.projectId = projectId;
+        this.technologyId = technologyId;
+        this.showOnCard = showOnCard;
+        this.highlighted = highlighted;
+        this.displayOrder = displayOrder;
+    }
+
+    // 프로젝트 기술 연결 항목 생성
+    public static ProjectTechnology create(
+            Long projectId,
+            Long technologyId,
+            boolean showOnCard,
+            boolean highlighted,
+            int displayOrder
+    ) {
+        return new ProjectTechnology(projectId, technologyId, showOnCard, highlighted, displayOrder);
+    }
+
     // 프로젝트와 기술의 복합 식별자
     @EqualsAndHashCode
     @NoArgsConstructor
