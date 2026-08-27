@@ -1,6 +1,7 @@
 package com.khuoo.portfolio.common.util;
 
 import java.time.Duration;
+import java.util.List;
 
 // DB 및 API 고정 문자열 Key 중앙 정의
 public final class PortfolioConstants {
@@ -51,6 +52,14 @@ public final class PortfolioConstants {
         public static final String KYVC_BACKEND = "KYVC_BACKEND";
         public static final String KYVC_CORE = "KYVC_CORE";
         public static final String SHKUTRACK = "SHKUTRACK";
+        public static final List<String> ORDERED = List.of(
+                PORTFOLIO_FRONTEND,
+                PORTFOLIO_BACKEND,
+                KYVC_FRONTEND,
+                KYVC_BACKEND,
+                KYVC_CORE,
+                SHKUTRACK
+        );
 
         private ServiceKey() {
         }
