@@ -2,6 +2,7 @@ package com.khuoo.portfolio.common.config;
 
 import com.khuoo.portfolio.common.security.RestAccessDeniedHandler;
 import com.khuoo.portfolio.common.security.RestAuthenticationEntryPoint;
+import com.khuoo.portfolio.authentication.security.SessionExpirationFilter;
 import com.khuoo.portfolio.common.util.PortfolioEnums;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
@@ -28,24 +34,30 @@ public class SecurityConfig {
 
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
+    private final SessionExpirationFilter sessionExpirationFilter;
     private final boolean swaggerEnabled;
     private final boolean swaggerPublicAccess;
 
     public SecurityConfig(
             RestAuthenticationEntryPoint authenticationEntryPoint,
             RestAccessDeniedHandler accessDeniedHandler,
+            SessionExpirationFilter sessionExpirationFilter,
             @Value("${portfolio.swagger.enabled:false}") boolean swaggerEnabled,
             @Value("${portfolio.swagger.public-access:false}") boolean swaggerPublicAccess
     ) {
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
+        this.sessionExpirationFilter = sessionExpirationFilter;
         this.swaggerEnabled = swaggerEnabled;
         this.swaggerPublicAccess = swaggerPublicAccess;
     }
 
     // API 영역별 인증과 CSRF 정책 구성
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            SecurityContextRepository securityContextRepository
+    ) throws Exception {
         CookieCsrfTokenRepository csrfRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         CsrfTokenRequestAttributeHandler csrfRequestHandler = new CsrfTokenRequestAttributeHandler();
 
@@ -53,6 +65,9 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .rememberMe(AbstractHttpConfigurer::disable)
+                .securityContext(security -> security
+                        .securityContextRepository(securityContextRepository)
+                        .requireExplicitSave(true))
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfRepository)
                         .csrfTokenRequestHandler(csrfRequestHandler)
@@ -94,7 +109,8 @@ public class SecurityConfig {
                                     "/api/v1/auth/password/**"
                             ).authenticated()
                             .anyRequest().denyAll();
-                });
+                })
+                .addFilterAfter(sessionExpirationFilter, SecurityContextHolderFilter.class);
 
         return http.build();
     }
@@ -103,6 +119,18 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
+    }
+
+    // Spring Session 기반 SecurityContext 저장소
+    @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
+
+    // 로그인 성공 시 기존 Session ID 교체 정책
+    @Bean
+    public SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+        return new ChangeSessionIdAuthenticationStrategy();
     }
 
     // 임의 기본 사용자 생성 차단용 빈 사용자 조회기

@@ -11,6 +11,17 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_APP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
   session:
     jdbc:
       initialize-schema: never
@@ -42,11 +53,16 @@ springdoc:
     enabled: false
 
 portfolio:
+  mail:
+    from: ${MAIL_FROM:${MAIL_USERNAME:}}
   swagger:
     enabled: false
     public-access: false
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     enabled-by-default: false
     web:
