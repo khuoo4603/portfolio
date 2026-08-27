@@ -20,4 +20,7 @@ public interface ToolQueryRepository {
 
     // 비활성 포함 Tool Link 전체 조회
     List<ToolLink> findLinks();
+
+    // 사용자 소유 Quiz 최근 수정순 요약 조회
+    List<QuizSummaryView> findQuizSummaries(Long accountId);
 }

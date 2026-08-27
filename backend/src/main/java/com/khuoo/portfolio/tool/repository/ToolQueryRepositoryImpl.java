@@ -74,4 +74,22 @@ public class ToolQueryRepositoryImpl implements ToolQueryRepository {
                         """, ToolLink.class)
                 .getResultList();
     }
+
+    // JSONB 본문을 제외한 사용자 소유 Quiz 최근 수정순 요약 조회
+    @Override
+    public List<QuizSummaryView> findQuizSummaries(Long accountId) {
+        return entityManager.createQuery("""
+                        SELECT new com.khuoo.portfolio.tool.repository.QuizSummaryView(
+                            quiz.id,
+                            quiz.title,
+                            quiz.createdAt,
+                            quiz.updatedAt
+                        )
+                        FROM ToolQuiz quiz
+                        WHERE quiz.accountId = :accountId
+                        ORDER BY quiz.updatedAt DESC
+                        """, QuizSummaryView.class)
+                .setParameter("accountId", accountId)
+                .getResultList();
+    }
 }
