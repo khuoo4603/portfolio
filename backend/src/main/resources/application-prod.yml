@@ -17,6 +17,8 @@ springdoc:
     enabled: false
 
 portfolio:
+  file:
+    resume-directory: ${RESUME_STORAGE_PATH:/opt/Portfolio/prod/files/resume}
   swagger:
     enabled: false
     public-access: false

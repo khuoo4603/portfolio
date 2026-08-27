@@ -2,8 +2,10 @@ package com.khuoo.portfolio.common.error;
 
 import com.khuoo.portfolio.common.logging.TraceContext;
 import jakarta.servlet.http.HttpServletRequest;
+import org.hibernate.exception.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -15,6 +17,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 
@@ -101,6 +104,31 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.from(errorCode, TraceContext.get(request)));
     }
 
+    // Multipart 최대 크기 초과 오류의 413 응답 변환
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(
+            MaxUploadSizeExceededException exception,
+            HttpServletRequest request
+    ) {
+        ErrorCode errorCode = ErrorCode.RESUME_FILE_TOO_LARGE;
+        return ResponseEntity.status(errorCode.status())
+                .body(ErrorResponse.from(errorCode, TraceContext.get(request)));
+    }
+
+    // 프로젝트 slug UNIQUE 경합의 409 응답 변환
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request
+    ) {
+        if (hasConstraint(exception, "uq_projects_slug")) {
+            ErrorCode errorCode = ErrorCode.PROJECT_SLUG_CONFLICT;
+            return ResponseEntity.status(errorCode.status())
+                    .body(ErrorResponse.from(errorCode, TraceContext.get(request)));
+        }
+        return handleUnexpected(exception, request);
+    }
+
     // 예상하지 못한 서버 오류의 안전한 응답 및 원인 기록
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(
@@ -134,5 +162,17 @@ public class GlobalExceptionHandler {
 
     private String safeMessage(MessageSourceResolvable error) {
         return error.getDefaultMessage() == null ? "올바른 값을 입력하세요." : error.getDefaultMessage();
+    }
+
+    private boolean hasConstraint(Throwable throwable, String expectedName) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof ConstraintViolationException constraint
+                    && expectedName.equalsIgnoreCase(constraint.getConstraintName())) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

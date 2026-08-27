@@ -22,6 +22,10 @@ spring:
           auth: ${MAIL_SMTP_AUTH:true}
           starttls:
             enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
   session:
     jdbc:
       initialize-schema: never
@@ -53,6 +57,8 @@ springdoc:
     enabled: false
 
 portfolio:
+  file:
+    resume-directory: ${RESUME_STORAGE_PATH:build/files/resume}
   mail:
     from: ${MAIL_FROM:${MAIL_USERNAME:}}
   swagger:

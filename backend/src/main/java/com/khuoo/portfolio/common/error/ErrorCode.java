@@ -24,7 +24,16 @@ public enum ErrorCode {
     AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "계정을 찾을 수 없습니다."),
     ACCOUNT_EMAIL_CONFLICT(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
-    ACCOUNT_LAST_ADMIN_PROTECTED(HttpStatus.CONFLICT, "마지막 활성 관리자 계정은 변경할 수 없습니다.");
+    ACCOUNT_LAST_ADMIN_PROTECTED(HttpStatus.CONFLICT, "마지막 활성 관리자 계정은 변경할 수 없습니다."),
+    PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
+    SITE_CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "포트폴리오 콘텐츠를 찾을 수 없습니다."),
+    PROFILE_ENTRY_NOT_FOUND(HttpStatus.NOT_FOUND, "프로필 항목을 찾을 수 없습니다."),
+    TECHNOLOGY_NOT_FOUND(HttpStatus.NOT_FOUND, "기술 항목을 찾을 수 없습니다."),
+    TECHNOLOGY_NAME_CONFLICT(HttpStatus.CONFLICT, "이미 사용 중인 기술명입니다."),
+    EXTERNAL_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "외부 링크를 찾을 수 없습니다."),
+    PROJECT_SLUG_CONFLICT(HttpStatus.CONFLICT, "이미 사용 중인 프로젝트 slug입니다."),
+    RESUME_NOT_FOUND(HttpStatus.NOT_FOUND, "등록된 이력서를 찾을 수 없습니다."),
+    RESUME_FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "이력서 파일 크기는 10MB 이하여야 합니다.");
 
     private final HttpStatus status;
     private final String message;
