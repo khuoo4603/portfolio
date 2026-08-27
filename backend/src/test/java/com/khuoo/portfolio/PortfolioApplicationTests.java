@@ -6,11 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.util.List;
 import java.util.Map;
@@ -18,9 +13,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 // 실제 PostgreSQL 기반 애플리케이션 Context와 초기 데이터 검증
-@Testcontainers
 @SpringBootTest
-class PortfolioApplicationTests {
+class PortfolioApplicationTests extends PostgresIntegrationTest {
 
     private static final List<String> CONTENT_SLOTS = List.of(
             "COMMON/SITE_MARK",
@@ -85,9 +79,6 @@ class PortfolioApplicationTests {
             "Git"
     );
 
-    @Container
-    static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
-
     @Autowired
     private Flyway flyway;
 
@@ -96,14 +87,6 @@ class PortfolioApplicationTests {
 
     @Autowired
     private Environment environment;
-
-    // Testcontainers PostgreSQL 연결 정보 등록
-    @DynamicPropertySource
-    static void postgresProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-    }
 
     // Flyway Schema와 PostgreSQL 실행 정책 검증
     @Test
