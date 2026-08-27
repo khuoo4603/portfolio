@@ -1,7 +1,9 @@
 package com.khuoo.portfolio.common.error;
 
 import com.khuoo.portfolio.common.logging.TraceContext;
+import com.khuoo.portfolio.monitoring.service.ErrorLogService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +25,12 @@ import java.util.List;
 
 // 공통 API 예외 응답 처리
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private final ErrorLogService errorLogService;
 
     // 업무 예외의 고정 오류 응답 변환
     @ExceptionHandler(ApiException.class)
@@ -34,6 +39,9 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         ErrorCode errorCode = exception.getErrorCode();
+        if (errorCode.status().is5xxServerError()) {
+            errorLogService.recordBackend(request, errorCode);
+        }
         return ResponseEntity.status(errorCode.status())
                 .body(ErrorResponse.from(errorCode, TraceContext.get(request)));
     }
@@ -138,6 +146,7 @@ public class GlobalExceptionHandler {
         String traceId = TraceContext.get(request);
         log.error("service=backend traceId={} message=\"처리되지 않은 예외 발생\"", traceId, exception);
         ErrorCode errorCode = ErrorCode.COMMON_INTERNAL_ERROR;
+        errorLogService.recordBackend(request, errorCode);
         return ResponseEntity.status(errorCode.status())
                 .body(ErrorResponse.from(errorCode, traceId));
     }
