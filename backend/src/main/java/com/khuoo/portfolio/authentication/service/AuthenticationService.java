@@ -3,10 +3,16 @@ package com.khuoo.portfolio.authentication.service;
 import com.khuoo.portfolio.account.domain.Account;
 import com.khuoo.portfolio.account.repository.AccountRepository;
 import com.khuoo.portfolio.authentication.domain.ClientInfo;
+import com.khuoo.portfolio.authentication.domain.ChallengeVerificationResult;
 import com.khuoo.portfolio.authentication.domain.LoginLog;
+import com.khuoo.portfolio.authentication.domain.VerificationChallenge;
+import com.khuoo.portfolio.authentication.dto.AdminLoginResendRequest;
+import com.khuoo.portfolio.authentication.dto.AdminLoginVerifyRequest;
+import com.khuoo.portfolio.authentication.dto.ChallengeResponse;
 import com.khuoo.portfolio.authentication.dto.CurrentUserResponse;
 import com.khuoo.portfolio.authentication.dto.LoginRequest;
 import com.khuoo.portfolio.authentication.dto.LoginResponse;
+import com.khuoo.portfolio.authentication.dto.PasswordChangeRequest;
 import com.khuoo.portfolio.authentication.repository.LoginLogQueryRepository;
 import com.khuoo.portfolio.authentication.repository.LoginLogRepository;
 import com.khuoo.portfolio.authentication.security.AccountPrincipal;
@@ -17,6 +23,7 @@ import com.khuoo.portfolio.common.logging.TraceContext;
 import com.khuoo.portfolio.common.util.EmailNormalizer;
 import com.khuoo.portfolio.common.util.PortfolioConstants;
 import com.khuoo.portfolio.common.util.PortfolioEnums.AccountRole;
+import com.khuoo.portfolio.common.util.PortfolioEnums.ChallengePurpose;
 import com.khuoo.portfolio.common.util.PortfolioEnums.LoginFailureReason;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,7 +45,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
-// Account Credential 검증과 USER Session 수명 관리
+// Account Credential·ADMIN 인증과 Spring Session 수명 관리
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -48,13 +55,17 @@ public class AuthenticationService {
     private final AccountRepository accountRepository;
     private final LoginLogRepository loginLogRepository;
     private final LoginLogQueryRepository loginLogQueryRepository;
+    private final VerificationChallengeService verificationChallengeService;
+    private final ChallengeVerifier challengeVerifier;
+    private final PasswordChangeService passwordChangeService;
+    private final AccountSessionService accountSessionService;
     private final ClientInfoResolver clientInfoResolver;
     private final PasswordEncoder passwordEncoder;
     private final SecurityContextRepository securityContextRepository;
     private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
     private final LogEventLogger logEventLogger;
 
-    // USER Credential 검증과 Spring Session 인증 생성
+    // USER Session 생성 또는 ADMIN_LOGIN Challenge 발급
     public LoginResponse login(
             LoginRequest loginRequest,
             HttpServletRequest request,
@@ -78,14 +89,17 @@ public class AuthenticationService {
             fail(account.getId(), email, LoginFailureReason.INVALID_CREDENTIALS, clientInfo, occurredAt, traceId);
         }
 
-        // ADMIN_LOGIN Challenge 미구현 단계의 Session 생성 차단
         if (account.getRole() == AccountRole.ADMIN) {
-            logEventLogger.warn(
-                    "authentication.login.deferred",
-                    "관리자 이메일 인증 단계 미완료",
+            VerificationChallenge challenge = verificationChallengeService.issueAdminLogin(
+                    account,
+                    loginRequest.rememberMe()
+            );
+            logEventLogger.info(
+                    "authentication.challenge.issued",
+                    "ADMIN_LOGIN 이메일 인증 발급",
                     Map.of("accountId", account.getId())
             );
-            throw new ApiException(ErrorCode.AUTH_ADMIN_VERIFICATION_UNAVAILABLE);
+            return LoginResponse.adminChallenge(challenge);
         }
 
         Authentication authentication = createAuthentication(account);
@@ -99,11 +113,89 @@ public class AuthenticationService {
         return LoginResponse.user();
     }
 
+    // ADMIN_LOGIN 인증번호 검증과 최종 ADMIN Session 생성
+    public LoginResponse verifyAdminLogin(
+            AdminLoginVerifyRequest verifyRequest,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        ClientInfo clientInfo = clientInfoResolver.resolve(request);
+        OffsetDateTime occurredAt = OffsetDateTime.now(SERVICE_ZONE);
+        String traceId = traceId(request);
+        ChallengeVerificationResult result = challengeVerifier.verifyAndConsume(
+                verifyRequest.challengeId(),
+                verifyRequest.code(),
+                ChallengePurpose.ADMIN_LOGIN,
+                null,
+                null,
+                null,
+                null
+        );
+        if (!result.isSuccess()) {
+            failAdminVerification(result, clientInfo, occurredAt, traceId);
+        }
+
+        Account account = accountRepository.findById(result.accountId()).orElse(null);
+        if (account == null || account.getRole() != AccountRole.ADMIN) {
+            throw new ApiException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+        }
+        if (!account.isEnabled()) {
+            fail(account.getId(), account.getEmail(), LoginFailureReason.ACCOUNT_DISABLED,
+                    clientInfo, occurredAt, traceId);
+        }
+
+        Authentication authentication = createAuthentication(account);
+        createSession(authentication, result.rememberMe(), request, response);
+        loginLogRepository.save(LoginLog.success(
+                occurredAt,
+                account.getId(),
+                account.getEmail(),
+                clientInfo,
+                traceId
+        ));
+        logEventLogger.info(
+                "authentication.login.success",
+                "ADMIN 이메일 인증 로그인 완료",
+                Map.of("accountId", account.getId(), "role", account.getRole())
+        );
+        return LoginResponse.admin();
+    }
+
+    // 기존 ADMIN_LOGIN Challenge 기반 인증번호 재발송
+    public ChallengeResponse resendAdminLogin(AdminLoginResendRequest resendRequest) {
+        return verificationChallengeService.resendAdminLogin(resendRequest.challengeId());
+    }
+
+    // 현재 로그인 계정 PASSWORD_CHANGE Challenge 발급
+    public ChallengeResponse issuePasswordChallenge(Authentication authentication) {
+        return verificationChallengeService.issuePasswordChange(principal(authentication).id());
+    }
+
+    // PASSWORD_CHANGE 검증과 전체 계정 Session 폐기
+    public void changePassword(
+            PasswordChangeRequest changeRequest,
+            Authentication authentication,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        AccountPrincipal principal = principal(authentication);
+        ChallengeVerificationResult result = passwordChangeService.change(principal.id(), changeRequest);
+        if (!result.isSuccess()) {
+            throw verificationException(result);
+        }
+
+        accountSessionService.expireAll(principal.id());
+        logout(request, response, authentication);
+        logEventLogger.info(
+                "authentication.password.changed",
+                "본인 비밀번호 변경과 전체 Session 폐기",
+                Map.of("accountId", principal.id())
+        );
+    }
+
     // 현재 인증 주체의 최신 계정 공개 정보 조회
     public CurrentUserResponse getCurrentUser(Authentication authentication) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof AccountPrincipal principal)) {
-            throw new ApiException(ErrorCode.AUTH_UNAUTHORIZED);
-        }
+        AccountPrincipal principal = principal(authentication);
 
         Account account = accountRepository.findById(principal.id())
                 .filter(Account::isEnabled)
@@ -175,6 +267,49 @@ public class AuthenticationService {
                 Map.of("failureReason", failureReason)
         );
         throw new ApiException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+    }
+
+    private void failAdminVerification(
+            ChallengeVerificationResult result,
+            ClientInfo clientInfo,
+            OffsetDateTime occurredAt,
+            String traceId
+    ) {
+        LoginFailureReason failureReason = switch (result.status()) {
+            case INVALID_CODE -> LoginFailureReason.VERIFICATION_FAILED;
+            case EXPIRED -> LoginFailureReason.VERIFICATION_EXPIRED;
+            case LOCKED -> LoginFailureReason.VERIFICATION_LOCKED;
+            default -> null;
+        };
+        if (failureReason != null && result.accountId() != null) {
+            accountRepository.findById(result.accountId()).ifPresent(account ->
+                    loginLogRepository.save(LoginLog.failure(
+                            occurredAt,
+                            account.getId(),
+                            account.getEmail(),
+                            failureReason,
+                            clientInfo,
+                            traceId
+                    ))
+            );
+        }
+        throw verificationException(result);
+    }
+
+    private ApiException verificationException(ChallengeVerificationResult result) {
+        return switch (result.status()) {
+            case INVALID_CODE -> new ApiException(ErrorCode.AUTH_VERIFICATION_FAILED);
+            case EXPIRED -> new ApiException(ErrorCode.AUTH_VERIFICATION_EXPIRED);
+            case LOCKED -> new ApiException(ErrorCode.AUTH_VERIFICATION_LOCKED);
+            default -> new ApiException(ErrorCode.AUTH_CHALLENGE_INVALID);
+        };
+    }
+
+    private AccountPrincipal principal(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AccountPrincipal principal)) {
+            throw new ApiException(ErrorCode.AUTH_UNAUTHORIZED);
+        }
+        return principal;
     }
 
     private Authentication createAuthentication(Account account) {

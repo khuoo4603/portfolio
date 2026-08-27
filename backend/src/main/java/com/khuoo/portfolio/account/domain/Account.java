@@ -48,8 +48,14 @@ public class Account {
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private OffsetDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false, insertable = false, updatable = false)
+    @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
+
+    // 새 BCrypt Hash 기반 비밀번호 변경
+    public void changePassword(String newPasswordHash, OffsetDateTime changedAt) {
+        passwordHash = newPasswordHash;
+        updatedAt = changedAt;
+    }
 
     // 저장 전 이메일 비교 기준 정규화
     @PrePersist

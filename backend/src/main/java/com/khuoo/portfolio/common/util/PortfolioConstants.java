@@ -14,6 +14,11 @@ public final class PortfolioConstants {
         public static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(10);
         public static final int EMAIL_FAILURE_LIMIT = 5;
         public static final int IP_FAILURE_LIMIT = 20;
+        public static final Duration CHALLENGE_VALIDITY = Duration.ofMinutes(5);
+        public static final Duration CHALLENGE_RESEND_DELAY = Duration.ofSeconds(60);
+        public static final Duration CHALLENGE_SEND_WINDOW = Duration.ofHours(1);
+        public static final int CHALLENGE_FAILURE_LIMIT = 5;
+        public static final int CHALLENGE_SEND_LIMIT = 30;
         public static final int SESSION_IDLE_TIMEOUT_SECONDS = (int) Duration.ofHours(8).toSeconds();
         public static final int REMEMBER_ME_SECONDS = (int) Duration.ofDays(14).toSeconds();
         public static final String REMEMBER_ME_REQUEST_ATTRIBUTE =

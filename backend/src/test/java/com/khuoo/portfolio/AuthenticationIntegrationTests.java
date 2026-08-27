@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +21,7 @@ import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Map;
@@ -57,10 +59,14 @@ class AuthenticationIntegrationTests extends PostgresIntegrationTest {
     @SuppressWarnings("rawtypes")
     private SessionRepository sessionRepository;
 
+    @MockitoBean
+    private JavaMailSender mailSender;
+
     @BeforeEach
     @AfterEach
     void clearAuthenticationData() {
         jdbcTemplate.update("DELETE FROM login_logs");
+        jdbcTemplate.update("DELETE FROM verification_challenges");
         jdbcTemplate.update("DELETE FROM accounts");
     }
 
@@ -273,7 +279,7 @@ class AuthenticationIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // 로그인 Validation·CSRF와 ADMIN Session 미생성 경계 검증
+    // 로그인 Validation·CSRF와 ADMIN_LOGIN Challenge Session 미생성 검증
     @Test
     void loginValidationAndAdminBoundaryRemainProtected() throws Exception {
         insertAccount("admin@example.com", "관리자", PASSWORD, "ADMIN", true);
@@ -296,11 +302,19 @@ class AuthenticationIntegrationTests extends PostgresIntegrationTest {
         jdbcTemplate.update("DELETE FROM spring_session");
 
         login("admin@example.com", PASSWORD, false, "198.51.100.60")
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.code").value("AUTH_ADMIN_VERIFICATION_UNAVAILABLE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(false))
+                .andExpect(jsonPath("$.adminVerificationRequired").value(true))
+                .andExpect(jsonPath("$.challengeId").isNotEmpty())
+                .andExpect(jsonPath("$.expiresAt").isNotEmpty())
+                .andExpect(jsonPath("$.role").doesNotExist())
+                .andExpect(jsonPath("$.redirect").doesNotExist())
                 .andExpect(cookie().doesNotExist("PORTFOLIO_SESSION"));
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM spring_session", Integer.class)).isZero();
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM login_logs", Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM verification_challenges", Integer.class
+        )).isOne();
     }
 
     private org.springframework.test.web.servlet.ResultActions login(

@@ -9,10 +9,17 @@ public enum ErrorCode {
     COMMON_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "요청 처리 중 오류가 발생했습니다."),
     AUTH_INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호를 확인하세요."),
     AUTH_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "로그인 시도가 제한되었습니다. 잠시 후 다시 시도하세요."),
-    AUTH_ADMIN_VERIFICATION_UNAVAILABLE(
-            HttpStatus.SERVICE_UNAVAILABLE,
-            "관리자 이메일 인증을 현재 사용할 수 없습니다."
-    ),
+    AUTH_CHALLENGE_INVALID(HttpStatus.BAD_REQUEST, "사용할 수 없는 인증 요청입니다."),
+    AUTH_CHALLENGE_NOT_FOUND(HttpStatus.NOT_FOUND, "인증 요청을 찾을 수 없습니다."),
+    AUTH_CHALLENGE_CONFLICT(HttpStatus.CONFLICT, "인증 요청을 다시 사용할 수 없습니다."),
+    AUTH_VERIFICATION_FAILED(HttpStatus.UNAUTHORIZED, "인증번호를 확인하세요."),
+    AUTH_VERIFICATION_EXPIRED(HttpStatus.GONE, "인증번호가 만료되었습니다."),
+    AUTH_VERIFICATION_LOCKED(HttpStatus.LOCKED, "인증 시도 횟수를 초과했습니다."),
+    AUTH_RESEND_TOO_SOON(HttpStatus.CONFLICT, "인증번호 재발송은 잠시 후 다시 시도하세요."),
+    AUTH_CHALLENGE_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "인증번호 발송 횟수를 초과했습니다."),
+    AUTH_MAIL_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "인증 이메일을 발송할 수 없습니다."),
+    AUTH_ADMIN_ACTION_MISMATCH(HttpStatus.FORBIDDEN, "관리자 재인증 정보가 작업과 일치하지 않습니다."),
+    AUTH_PASSWORD_POLICY(HttpStatus.BAD_REQUEST, "새 비밀번호 정책을 확인하세요."),
     AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
     AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
 
