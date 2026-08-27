@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 // 공개 포트폴리오 외부 연결 정보
 @Getter
@@ -40,4 +41,40 @@ public class ExternalLink {
 
     @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
+
+    private ExternalLink(String name, String url, int displayOrder, boolean enabled) {
+        this.name = name;
+        this.url = url;
+        this.displayOrder = displayOrder;
+        this.enabled = enabled;
+    }
+
+    // 관리자 외부 링크 생성
+    public static ExternalLink create(String name, String url, int displayOrder, boolean enabled) {
+        return new ExternalLink(name, url, displayOrder, enabled);
+    }
+
+    // 전달 필드 반영 후 실제 변경 여부 반환
+    public boolean update(
+            String newName,
+            String newUrl,
+            int newDisplayOrder,
+            boolean newEnabled,
+            OffsetDateTime changedAt
+    ) {
+        boolean changed = !Objects.equals(name, newName)
+                || !Objects.equals(url, newUrl)
+                || displayOrder != newDisplayOrder
+                || enabled != newEnabled;
+        if (!changed) {
+            return false;
+        }
+
+        name = newName;
+        url = newUrl;
+        displayOrder = newDisplayOrder;
+        enabled = newEnabled;
+        updatedAt = changedAt;
+        return true;
+    }
 }

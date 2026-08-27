@@ -5,6 +5,8 @@ import com.khuoo.portfolio.site.domain.PortfolioContent;
 import com.khuoo.portfolio.site.domain.ProfileEntry;
 import com.khuoo.portfolio.site.domain.Project;
 import com.khuoo.portfolio.site.domain.ResumeFile;
+import com.khuoo.portfolio.site.domain.Technology;
+import com.khuoo.portfolio.site.domain.PortfolioTechnology;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -119,5 +121,60 @@ public class SiteQueryRepositoryImpl implements SiteQueryRepository {
     @Override
     public Optional<ResumeFile> findCurrentResume() {
         return Optional.ofNullable(entityManager.find(ResumeFile.class, CURRENT_RESUME_ID));
+    }
+
+    // 비활성 포함 표시 순서 기반 전체 프로필 조회
+    @Override
+    public List<ProfileEntry> findProfileEntries() {
+        return entityManager.createQuery("""
+                        SELECT entry
+                        FROM ProfileEntry entry
+                        ORDER BY entry.displayOrder ASC, entry.id ASC
+                        """, ProfileEntry.class)
+                .getResultList();
+    }
+
+    // 비활성 포함 식별자 기반 전체 기술 사전 조회
+    @Override
+    public List<Technology> findTechnologyMaster() {
+        return entityManager.createQuery("""
+                        SELECT technology
+                        FROM Technology technology
+                        ORDER BY technology.id ASC
+                        """, Technology.class)
+                .getResultList();
+    }
+
+    // 표시 순서 기반 현재 메인 기술 구성 조회
+    @Override
+    public List<PortfolioTechnology> findPortfolioTechnologyMappings() {
+        return entityManager.createQuery("""
+                        SELECT mapping
+                        FROM PortfolioTechnology mapping
+                        ORDER BY mapping.displayOrder ASC, mapping.technologyId ASC
+                        """, PortfolioTechnology.class)
+                .getResultList();
+    }
+
+    // 비공개 포함 표시 순서 기반 프로젝트 관리 목록 조회
+    @Override
+    public List<Project> findProjects() {
+        return entityManager.createQuery("""
+                        SELECT project
+                        FROM Project project
+                        ORDER BY project.displayOrder ASC, project.id ASC
+                        """, Project.class)
+                .getResultList();
+    }
+
+    // 비활성 포함 표시 순서 기반 전체 외부 링크 조회
+    @Override
+    public List<ExternalLink> findExternalLinks() {
+        return entityManager.createQuery("""
+                        SELECT link
+                        FROM ExternalLink link
+                        ORDER BY link.displayOrder ASC, link.id ASC
+                        """, ExternalLink.class)
+                .getResultList();
     }
 }

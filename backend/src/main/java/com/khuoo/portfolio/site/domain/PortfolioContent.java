@@ -15,6 +15,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 // 공개 화면의 고정 위치 문구
 @Getter
@@ -43,4 +44,14 @@ public class PortfolioContent {
 
     @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
+
+    // 고정 Slot 표시 문구 변경 여부 반환
+    public boolean changeValue(String newValue, OffsetDateTime changedAt) {
+        if (Objects.equals(contentValue, newValue)) {
+            return false;
+        }
+        contentValue = newValue;
+        updatedAt = changedAt;
+        return true;
+    }
 }

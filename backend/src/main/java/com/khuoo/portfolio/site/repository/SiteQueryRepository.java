@@ -5,6 +5,8 @@ import com.khuoo.portfolio.site.domain.PortfolioContent;
 import com.khuoo.portfolio.site.domain.ProfileEntry;
 import com.khuoo.portfolio.site.domain.Project;
 import com.khuoo.portfolio.site.domain.ResumeFile;
+import com.khuoo.portfolio.site.domain.Technology;
+import com.khuoo.portfolio.site.domain.PortfolioTechnology;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,4 +34,19 @@ public interface SiteQueryRepository {
 
     // 현재 이력서 메타데이터 조회
     Optional<ResumeFile> findCurrentResume();
+
+    // 비활성 포함 전체 프로필 항목 조회
+    List<ProfileEntry> findProfileEntries();
+
+    // 비활성 포함 전체 기술 사전 조회
+    List<Technology> findTechnologyMaster();
+
+    // 현재 메인 기술 구성 Mapping 조회
+    List<PortfolioTechnology> findPortfolioTechnologyMappings();
+
+    // 비공개 포함 프로젝트 관리 목록 조회
+    List<Project> findProjects();
+
+    // 비활성 포함 전체 외부 링크 조회
+    List<ExternalLink> findExternalLinks();
 }
