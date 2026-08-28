@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
-import type { ProjectMedia } from "./kyvc-data";
+import type { ProjectMedia } from "@/types/api";
 import styles from "./kyvc-detail.module.css";
 
 type ProjectMediaCarouselProps = {
   media: readonly ProjectMedia[];
+  projectName: string;
 };
 
 const SWIPE_THRESHOLD = 48;
@@ -26,12 +27,17 @@ export function getCarouselOffset(index: number, activeIndex: number, length: nu
   return offset;
 }
 
-// Placeholder와 실제 이미지 경로를 동일 구조로 처리하는 Project Media Carousel
-export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProps) {
+// 실제 API Media와 Load 실패 상태를 처리하는 Project Media Carousel
+export default function ProjectMediaCarousel({ media, projectName }: ProjectMediaCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [failedMedia, setFailedMedia] = useState<ReadonlySet<number>>(new Set());
   const dragStartRef = useRef<number | null>(null);
+
+  if (media.length === 0) {
+    return null;
+  }
 
   const moveTo = (index: number) => {
     setActiveIndex((index + media.length) % media.length);
@@ -97,7 +103,7 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
   return (
     <section
       className={styles.carousel}
-      aria-label="KYvC 프로젝트 미디어"
+      aria-label={`${projectName} 프로젝트 미디어`}
       tabIndex={0}
       onKeyDown={(event) => {
         if (event.key === "ArrowLeft") {
@@ -129,22 +135,25 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
               data-carousel-slide
               data-offset={offset}
               aria-hidden={!isActive}
-              key={item.label}
+              key={item.id}
             >
-              {item.src ? (
+              {!failedMedia.has(item.id) ? (
                 <Image
-                  alt={item.alt}
+                  alt={item.altText ?? ""}
                   className={styles.carouselImage}
-                  src={item.src}
-                  width={item.width}
-                  height={item.height}
+                  src={item.imageUrl}
+                  fill
                   draggable={false}
+                  unoptimized
                   sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) 72vw, 820px"
+                  onError={() => setFailedMedia((current) => new Set(current).add(item.id))}
                 />
               ) : (
                 <div className={styles.mediaPlaceholder}>
-                  <span className={`${styles.placeholderProject} type-small`}>KYvC / 이미지 준비 중</span>
-                  <span className={`${styles.placeholderLabel} type-title`}>{item.label}</span>
+                  <span className={`${styles.placeholderProject} type-small`}>{projectName}</span>
+                  {item.label ? (
+                    <span className={`${styles.placeholderLabel} type-title`}>{item.label}</span>
+                  ) : null}
                 </div>
               )}
             </figure>
@@ -152,7 +161,7 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
         })}
       </div>
 
-      <div className={styles.carouselControls}>
+      {media.length > 1 ? <div className={styles.carouselControls}>
         <button
           className={`${styles.carouselButton} type-body`}
           type="button"
@@ -172,7 +181,7 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
         >
           NEXT →
         </button>
-      </div>
+      </div> : null}
     </section>
   );
 }

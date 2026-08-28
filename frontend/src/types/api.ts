@@ -76,6 +76,69 @@ export type PublicProjectCard = {
   technologies: PublicTechnology[];
 };
 
+export type PublicProjectTechnology = PublicTechnology & {
+  highlighted: boolean;
+};
+
+export type ProjectTitleItem = {
+  title: string;
+};
+
+export type ProjectDevelopmentItem = {
+  title: string;
+  items: string[];
+};
+
+export type ProjectArchitecture = {
+  clients?: string[];
+  services?: string[];
+  dataAndExternal?: string[];
+  runtime?: string[];
+  delivery?: string[];
+};
+
+export type ProjectEngineeringItem = {
+  title: string;
+  summary: string;
+  problem: string;
+  solution: string;
+  result: string;
+};
+
+export type ProjectContent = {
+  results: ProjectTitleItem[];
+  background: string[];
+  features: ProjectTitleItem[];
+  development: ProjectDevelopmentItem[];
+  architecture: ProjectArchitecture;
+  engineering: ProjectEngineeringItem[];
+};
+
+export type ProjectMedia = {
+  id: number;
+  imageUrl: string;
+  label: string | null;
+  altText: string | null;
+  displayOrder: number;
+};
+
+export type PublicProjectDetail = {
+  id: number;
+  slug: string;
+  name: string;
+  year: number;
+  tagline: string;
+  summary: string | null;
+  detailRole: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  teamSize: number | null;
+  thumbnailUrl: string | null;
+  technologies: PublicProjectTechnology[];
+  content: ProjectContent;
+  media: ProjectMedia[];
+};
+
 export type ExternalLink = {
   id: number;
   name: string;

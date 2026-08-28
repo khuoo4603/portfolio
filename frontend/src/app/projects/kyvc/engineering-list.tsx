@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { EngineeringItem } from "./kyvc-data";
+import type { ProjectEngineeringItem } from "@/types/api";
 import styles from "./kyvc-detail.module.css";
 
 type EngineeringListProps = {
-  items: readonly EngineeringItem[];
+  items: readonly ProjectEngineeringItem[];
 };
 
 const flowLabels = ["문제", "개선 방안", "결과"] as const;

@@ -821,6 +821,16 @@
   display: none;
 }
 
+/* KYvC 전용 Edge 없이 Backend Node Group만 표시하는 다른 프로젝트 구성 */
+.architectureGroups {
+  border-block: 1px solid var(--border-default);
+}
+
+.architectureGroups .infrastructureLabel {
+  margin: 0;
+  font-weight: 400;
+}
+
 .infrastructureFlows {
   border-bottom: 1px solid var(--border-default);
 }
