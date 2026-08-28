@@ -1,33 +1,59 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/lib/api/client";
+import { login, resendAdminLogin, verifyAdminLogin } from "@/lib/auth/auth-api";
 import LoginScreen from "./login-screen";
-import {
-  MOCK_ADMIN_ACCOUNT,
-  MOCK_ADMIN_OTP,
-  MOCK_LOGIN_PASSWORD,
-  MOCK_USER_ACCOUNT,
-} from "./mock-auth";
 
 const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+
+vi.mock("@/lib/auth/auth-api", () => ({
+  login: vi.fn(),
+  resendAdminLogin: vi.fn(),
+  verifyAdminLogin: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
-function fillCredentials(email: string, password = MOCK_LOGIN_PASSWORD) {
+const USER_EMAIL = "user@example.com";
+const ADMIN_EMAIL = "admin@example.com";
+const PASSWORD = "safe-test-password";
+const OTP = "123456";
+const CHALLENGE = {
+  authenticated: false,
+  adminVerificationRequired: true,
+  challengeId: "550e8400-e29b-41d4-a716-446655440000",
+  expiresAt: "2099-08-28T12:00:00+09:00",
+};
+
+function fillCredentials(email: string, password = PASSWORD) {
   fireEvent.change(screen.getByLabelText("이메일"), { target: { value: email } });
   fireEvent.change(screen.getByLabelText("비밀번호"), { target: { value: password } });
 }
 
 async function openOtpStep() {
-  fillCredentials(MOCK_ADMIN_ACCOUNT.email);
+  vi.mocked(login).mockResolvedValueOnce(CHALLENGE);
+  fillCredentials(ADMIN_EMAIL);
   fireEvent.click(screen.getByRole("button", { name: "로그인" }));
   return await screen.findByRole("heading", { name: "관리자 이메일 인증" });
 }
 
-describe("통합 로그인 Mock 화면", () => {
+function apiError(status: number, code: string, message: string) {
+  return new ApiError(status, {
+    code,
+    message,
+    traceId: `trace-${status}`,
+    fieldErrors: [],
+  });
+}
+
+describe("통합 로그인 실제 API 화면", () => {
   beforeEach(() => {
     pushMock.mockReset();
+    vi.mocked(login).mockReset();
+    vi.mocked(resendAdminLogin).mockReset();
+    vi.mocked(verifyAdminLogin).mockReset();
     document.documentElement.dataset.theme = "dark";
   });
 
@@ -78,48 +104,64 @@ describe("통합 로그인 Mock 화면", () => {
     }
   });
 
-  it("USER Mock 계정을 Tools 경로로 연결", async () => {
+  it("USER 로그인 응답을 Tools 경로로 연결", async () => {
+    vi.mocked(login).mockResolvedValue({ authenticated: true, role: "USER", redirect: "/tools" });
     render(<LoginScreen />);
 
-    fillCredentials(MOCK_USER_ACCOUNT.email);
+    fillCredentials(USER_EMAIL);
     fireEvent.click(screen.getByRole("checkbox", { name: "자동 로그인" }));
     fireEvent.click(screen.getByRole("button", { name: "로그인" }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/tools"));
+    expect(login).toHaveBeenCalledWith(USER_EMAIL, PASSWORD, true);
     expect(screen.getByRole("checkbox", { name: "자동 로그인" })).toBeChecked();
   });
 
-  it("잘못된 계정 정보를 통합 오류 문구로 표시", () => {
+  it("Login ErrorResponse의 Field Error와 traceId를 기존 오류 영역에 표시", async () => {
+    vi.mocked(login).mockRejectedValue(new ApiError(400, {
+      code: "COMMON_VALIDATION_ERROR",
+      message: "입력값을 확인하세요.",
+      traceId: "trace-login",
+      fieldErrors: [{ field: "email", message: "이메일 형식이 올바르지 않습니다." }],
+    }));
     render(<LoginScreen />);
 
-    fillCredentials(MOCK_ADMIN_ACCOUNT.email, `${MOCK_LOGIN_PASSWORD}-wrong`);
+    fillCredentials(ADMIN_EMAIL);
     fireEvent.click(screen.getByRole("button", { name: "로그인" }));
 
-    expect(screen.getByText("이메일 또는 비밀번호를 확인하세요.")).toBeInTheDocument();
+    expect(await screen.findByText("이메일 형식이 올바르지 않습니다. (추적 ID: trace-login)")).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("ADMIN Mock 계정을 동일 Surface의 OTP 단계로 전환", async () => {
+  it("ADMIN Challenge를 동일 Surface의 OTP 단계로 전환하고 입력 이메일을 표시", async () => {
     render(<LoginScreen />);
 
     expect(await openOtpStep()).toBeInTheDocument();
-    expect(screen.getByText(MOCK_ADMIN_ACCOUNT.email)).toBeInTheDocument();
+    expect(screen.getByText(ADMIN_EMAIL)).toBeInTheDocument();
+    expect(screen.queryByText(/maskedEmail/)).not.toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("올바른 Mock OTP를 관리자 경로로 연결", async () => {
+  it("ADMIN OTP 성공 응답을 관리자 경로로 연결", async () => {
+    vi.mocked(verifyAdminLogin).mockResolvedValue({ authenticated: true, role: "ADMIN", redirect: "/admin" });
     render(<LoginScreen />);
     await openOtpStep();
 
     fireEvent.paste(screen.getByLabelText("인증번호 1번째 숫자"), {
-      clipboardData: { getData: () => MOCK_ADMIN_OTP },
+      clipboardData: { getData: () => OTP },
     });
     fireEvent.click(screen.getByRole("button", { name: "인증 완료" }));
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/admin"));
+    expect(verifyAdminLogin).toHaveBeenCalledWith(CHALLENGE.challengeId, OTP);
   });
 
-  it("잘못된 Mock OTP를 인증 오류로 표시", async () => {
+  it.each([
+    [401, "AUTH_VERIFICATION_FAILED", "인증번호가 일치하지 않습니다."],
+    [410, "AUTH_VERIFICATION_EXPIRED", "인증번호가 만료되었습니다."],
+    [423, "AUTH_VERIFICATION_LOCKED", "인증 시도 횟수를 초과했습니다."],
+  ])("ADMIN OTP %s 오류를 Backend 메시지와 traceId로 표시", async (status, code, message) => {
+    vi.mocked(verifyAdminLogin).mockRejectedValue(apiError(status, code, message));
     render(<LoginScreen />);
     await openOtpStep();
 
@@ -128,7 +170,39 @@ describe("통합 로그인 Mock 화면", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "인증 완료" }));
 
-    expect(screen.getByText("인증번호를 확인해 주세요.")).toBeInTheDocument();
+    expect(await screen.findByText(`${message} (추적 ID: trace-${status})`)).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("60초 후 ADMIN OTP 재전송 응답의 새 Challenge를 반영", async () => {
+    vi.useFakeTimers({ now: new Date("2026-08-28T00:00:00Z") });
+    vi.mocked(login).mockResolvedValue(CHALLENGE);
+    vi.mocked(resendAdminLogin).mockResolvedValue({
+      challengeId: "660e8400-e29b-41d4-a716-446655440000",
+      expiresAt: "2099-08-28T12:05:00+09:00",
+    });
+
+    try {
+      render(<LoginScreen />);
+      fillCredentials(ADMIN_EMAIL);
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "로그인" }));
+        await Promise.resolve();
+      });
+      await act(async () => vi.advanceTimersByTimeAsync(160));
+      expect(screen.getByRole("button", { name: /재전송까지 6[01]초/ })).toBeDisabled();
+
+      await act(async () => vi.advanceTimersByTimeAsync(60_000));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "인증번호 재전송" }));
+        await Promise.resolve();
+      });
+
+      expect(resendAdminLogin).toHaveBeenCalledWith(CHALLENGE.challengeId);
+      expect(screen.getByRole("button", { name: /재전송까지 6[01]초/ })).toBeDisabled();
+    } finally {
+      cleanup();
+      vi.useRealTimers();
+    }
   });
 });
