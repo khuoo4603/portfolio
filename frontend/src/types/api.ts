@@ -139,6 +139,48 @@ export type PublicProjectDetail = {
   media: ProjectMedia[];
 };
 
+export type ToolKey = "QUIZ" | "LINKS";
+
+export type ToolItem = {
+  toolKey: ToolKey;
+  name: string;
+};
+
+export type ToolListResponse = {
+  items: ToolItem[];
+};
+
+export type ToolLinkCategory = "REFERENCE" | "MY_SERVICES";
+
+export type ToolLink = {
+  id: number;
+  name: string;
+  description: string | null;
+  url: string;
+  imageUrl: string | null;
+  category: ToolLinkCategory;
+};
+
+export type ToolLinkListResponse = {
+  items: ToolLink[];
+};
+
+export type QuizSummary = {
+  id: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type QuizListResponse = {
+  items: QuizSummary[];
+};
+
+export type SavedQuiz = QuizSummary & {
+  quizJson: unknown;
+  responseJson: unknown | null;
+};
+
 export type ExternalLink = {
   id: number;
   name: string;

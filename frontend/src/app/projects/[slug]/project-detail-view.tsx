@@ -76,8 +76,6 @@ export function ProjectErrorView({
 // 공개 Project Detail API ViewModel 기반 기존 KYvC Editorial Composition
 export default function ProjectDetailView({ project, portfolio }: ProjectDetailViewProps) {
   const { content } = project;
-  const hasStackResult = project.technologies.length > 0 || content.results.length > 0;
-  const hasBackgroundFeatures = content.background.length > 0 || content.features.length > 0;
 
   return (
     <ProjectChrome portfolio={portfolio}>
@@ -93,230 +91,214 @@ export default function ProjectDetailView({ project, portfolio }: ProjectDetailV
               <h1 className={`${styles.projectTitle} type-display-lg`} id="project-title">
                 {project.name}
               </h1>
-              {project.summaryText ? (
-                <p className={`${styles.projectSummary} type-title`}>{project.summaryText}</p>
-              ) : null}
+              <p className={`${styles.projectSummary} type-title`}>{project.summaryText || "-"}</p>
 
-              {project.detailRole || project.period || project.teamSize ? (
-                <dl className={styles.heroMetadata}>
-                  {project.detailRole ? (
-                    <div className={styles.heroMetadataItem}>
-                      <dt className="type-small">역할</dt>
-                      <dd className="type-body">{project.detailRole}</dd>
-                    </div>
-                  ) : null}
-                  {project.period ? (
-                    <div className={styles.heroMetadataItem}>
-                      <dt className="type-small">개발 기간</dt>
-                      <dd>
-                        <span className="type-body">{project.period.text}</span>
-                        {project.period.duration ? (
-                          <span className="type-small">/ {project.period.duration}</span>
-                        ) : null}
-                      </dd>
-                    </div>
-                  ) : null}
-                  {project.teamSize ? (
-                    <div className={styles.heroMetadataItem}>
-                      <dt className="type-small">참여 인원</dt>
-                      <dd className="type-body">{project.teamSize}명</dd>
-                    </div>
-                  ) : null}
-                </dl>
-              ) : null}
+              <dl className={styles.heroMetadata}>
+                <div className={styles.heroMetadataItem}>
+                  <dt className="type-small">역할</dt>
+                  <dd className="type-body">{project.detailRole || <span className={styles.emptyValue}>-</span>}</dd>
+                </div>
+                <div className={styles.heroMetadataItem}>
+                  <dt className="type-small">개발 기간</dt>
+                  <dd>
+                    <span className="type-body">{project.period?.text || "-"}</span>
+                    {project.period?.duration ? (
+                      <span className="type-small">/ {project.period.duration}</span>
+                    ) : null}
+                  </dd>
+                </div>
+                <div className={styles.heroMetadataItem}>
+                  <dt className="type-small">참여 인원</dt>
+                  <dd className="type-body">
+                    {project.teamSize && project.teamSize > 0
+                      ? `${project.teamSize}명`
+                      : <span className={styles.emptyValue}>-</span>}
+                  </dd>
+                </div>
+              </dl>
             </div>
 
-            {project.media.length > 0 ? (
-              <ProjectMediaCarousel media={project.media} projectName={project.name} />
-            ) : null}
+            <ProjectMediaCarousel media={project.media} projectName={project.name} />
           </div>
         </section>
 
-        {project.sections.length > 0 ? (
-          <div className={`content-container ${styles.detailLayout}`}>
-            <ProjectRail sections={project.sections} />
+        <div className={`content-container ${styles.detailLayout}`}>
+          <ProjectRail sections={project.sections} />
 
-            <div className={styles.detailContent}>
-              {hasStackResult ? (
-                <section
-                  className={`${styles.detailSection} ${styles.stackResultSection}`}
-                  id="detail-stack-result"
-                  aria-labelledby="stack-result-title"
-                >
-                  <header className={styles.sectionHeader}>
-                    <h2 className={`${styles.sectionTitle} type-heading`} id="stack-result-title">
-                      기술 스택 · 성과
-                    </h2>
-                  </header>
+          <div className={styles.detailContent}>
+            <section
+              className={`${styles.detailSection} ${styles.stackResultSection}`}
+              id="detail-stack-result"
+              aria-labelledby="stack-result-title"
+            >
+              <header className={styles.sectionHeader}>
+                <h2 className={`${styles.sectionTitle} type-heading`} id="stack-result-title">
+                  기술 스택 · 성과
+                </h2>
+              </header>
 
-                  <div className={styles.stackResultGrid}>
-                    {project.technologies.length > 0 ? (
-                      <section className={styles.stackArea} aria-labelledby="stack-title">
-                        <div className={styles.stackHeading}>
-                          <h3 className="type-title" id="stack-title">기술 스택</h3>
-                          {project.technologies.some((technology) => technology.highlighted) ? (
-                            <p className={styles.stackLegend}><strong>- 본인 개발 영역</strong></p>
-                          ) : null}
-                        </div>
-                        <ul className={styles.stackList} aria-label={`${project.name} 전체 기술 스택`}>
-                          {project.technologies.map((technology) => (
-                            <li
-                              className={styles.stackItem}
-                              data-icon={technologyIconId(technology.name)}
-                              data-mine={technology.highlighted ? "true" : "false"}
-                              key={technology.id}
-                            >
-                              <div className={styles.stackBlock} data-stack-block>
-                                {technology.iconUrl ? (
-                                  <Image
-                                    alt=""
-                                    className={styles.stackIcon}
-                                    src={technology.iconUrl}
-                                    width={20}
-                                    height={20}
-                                    unoptimized
-                                  />
-                                ) : null}
-                                <span className={styles.stackName}>{technology.name}</span>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </section>
-                    ) : null}
-
-                    {content.results.length > 0 ? (
-                      <section className={styles.resultArea} aria-labelledby="result-title">
-                        <h3 className="type-title" id="result-title">성과</h3>
-                        <ol className={styles.resultList}>
-                          {content.results.map((result, index) => (
-                            <li className={styles.resultItem} key={`${index}-${result.title}`}>
-                              <span className={`${styles.resultNumber} type-small`} aria-hidden="true">
-                                {String(index + 1).padStart(2, "0")}
-                              </span>
-                              <strong className={`${styles.resultTitle} type-title`}>{result.title}</strong>
-                            </li>
-                          ))}
-                        </ol>
-                      </section>
+              <div className={styles.stackResultGrid}>
+                <section className={styles.stackArea} aria-labelledby="stack-title">
+                  <div className={styles.stackHeading}>
+                    <h3 className="type-title" id="stack-title">기술 스택</h3>
+                    {project.technologies.some((technology) => technology.highlighted) ? (
+                      <p className={styles.stackLegend}><strong>- 본인 개발 영역</strong></p>
                     ) : null}
                   </div>
+                  {project.technologies.length > 0 ? (
+                    <ul className={styles.stackList} aria-label={`${project.name} 전체 기술 스택`}>
+                      {project.technologies.map((technology) => (
+                        <li
+                          className={styles.stackItem}
+                          data-icon={technologyIconId(technology.name)}
+                          data-mine={technology.highlighted ? "true" : "false"}
+                          key={technology.id}
+                        >
+                          <div className={styles.stackBlock} data-stack-block>
+                            {technology.iconUrl ? (
+                              <Image
+                                alt=""
+                                className={styles.stackIcon}
+                                src={technology.iconUrl}
+                                width={20}
+                                height={20}
+                                unoptimized
+                              />
+                            ) : null}
+                            <span className={styles.stackName}>{technology.name}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : <p className={`${styles.emptyValue} type-body`}>-</p>}
                 </section>
-              ) : null}
 
-              {hasBackgroundFeatures ? (
-                <section
-                  className={`${styles.detailSection} ${styles.backgroundFeaturesSection}`}
-                  id="detail-background"
-                  aria-labelledby="background-features-title"
-                >
-                  <header className={styles.sectionHeader}>
-                    <h2 className={`${styles.sectionTitle} type-heading`} id="background-features-title">
-                      문제 배경 · 주요 기능
-                    </h2>
-                  </header>
-
-                  <div className={styles.backgroundFeaturesGrid}>
-                    {content.background.length > 0 ? (
-                      <article className={styles.backgroundArea} aria-labelledby="background-title">
-                        <h3 className="type-title" id="background-title">문제 배경</h3>
-                        <div className={styles.backgroundCopy}>
-                          {content.background.map((paragraph, index) => (
-                            <p className="type-body" key={`${index}-${paragraph}`}>{paragraph}</p>
-                          ))}
-                        </div>
-                      </article>
-                    ) : null}
-
-                    {content.features.length > 0 ? (
-                      <section className={styles.featuresArea} aria-labelledby="features-title">
-                        <h3 className="type-title" id="features-title">주요 기능</h3>
-                        <ol className={styles.featureList} aria-labelledby="features-title">
-                          {content.features.map((feature, index) => (
-                            <li className={styles.featureItem} key={`${index}-${feature.title}`}>
-                              <span className={`${styles.featureNumber} type-small`}>
-                                {String(index + 1).padStart(2, "0")}
-                              </span>
-                              <h4 className={`${styles.featureTitle} type-title`}>{feature.title}</h4>
-                            </li>
-                          ))}
-                        </ol>
-                      </section>
-                    ) : null}
-                  </div>
+                <section className={styles.resultArea} aria-labelledby="result-title">
+                  <h3 className="type-title" id="result-title">성과</h3>
+                  {content.results.length > 0 ? (
+                    <ol className={styles.resultList}>
+                      {content.results.map((result, index) => (
+                        <li className={styles.resultItem} key={`${index}-${result.title}`}>
+                          <span className={`${styles.resultNumber} type-small`} aria-hidden="true">
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
+                          <strong className={`${styles.resultTitle} type-title`}>{result.title}</strong>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : <p className={`${styles.emptyValue} type-body`}>-</p>}
                 </section>
-              ) : null}
+              </div>
+            </section>
+
+            <section
+              className={`${styles.detailSection} ${styles.backgroundFeaturesSection}`}
+              id="detail-background"
+              aria-labelledby="background-features-title"
+            >
+              <header className={styles.sectionHeader}>
+                <h2 className={`${styles.sectionTitle} type-heading`} id="background-features-title">
+                  문제 배경 · 주요 기능
+                </h2>
+              </header>
+
+              <div className={styles.backgroundFeaturesGrid}>
+                <article className={styles.backgroundArea} aria-labelledby="background-title">
+                  <h3 className="type-title" id="background-title">문제 배경</h3>
+                  {content.background.length > 0 ? (
+                    <div className={styles.backgroundCopy}>
+                      {content.background.map((paragraph, index) => (
+                        <p className="type-body" key={`${index}-${paragraph}`}>{paragraph}</p>
+                      ))}
+                    </div>
+                  ) : <p className={`${styles.emptyValue} type-body`}>-</p>}
+                </article>
+
+                <section className={styles.featuresArea} aria-labelledby="features-title">
+                  <h3 className="type-title" id="features-title">주요 기능</h3>
+                  {content.features.length > 0 ? (
+                    <ol className={styles.featureList} aria-labelledby="features-title">
+                      {content.features.map((feature, index) => (
+                        <li className={styles.featureItem} key={`${index}-${feature.title}`}>
+                          <span className={`${styles.featureNumber} type-small`}>
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
+                          <h4 className={`${styles.featureTitle} type-title`}>{feature.title}</h4>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : <p className={`${styles.emptyValue} type-body`}>-</p>}
+                </section>
+              </div>
+            </section>
+
+            <section
+              className={`${styles.detailSection} ${styles.developmentSection}`}
+              id="detail-development"
+              aria-labelledby="development-title"
+            >
+              <header className={styles.sectionHeader}>
+                <h2 className={`${styles.sectionTitle} type-heading`} id="development-title">
+                  직접 담당한 개발 영역
+                </h2>
+              </header>
 
               {content.development.length > 0 ? (
-                <section
-                  className={`${styles.detailSection} ${styles.developmentSection}`}
-                  id="detail-development"
-                  aria-labelledby="development-title"
-                >
-                  <header className={styles.sectionHeader}>
-                    <h2 className={`${styles.sectionTitle} type-heading`} id="development-title">
-                      직접 담당한 개발 영역
-                    </h2>
-                  </header>
+                <ol className={styles.developmentList}>
+                  {content.development.map((area, index) => (
+                    <li className={styles.developmentItem} key={`${index}-${area.title}`}>
+                      <span className={`${styles.developmentNode} type-small`} aria-hidden="true">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <h3 className={`${styles.developmentTitle} type-title`}>{area.title}</h3>
+                      {area.items.length > 0 ? (
+                        <ul className={styles.developmentTasks}>
+                          {area.items.map((item, itemIndex) => (
+                            <li className="type-body" key={`${itemIndex}-${item}`}>{item}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+              ) : <p className={`${styles.emptyValue} type-body`}>-</p>}
+            </section>
 
-                  <ol className={styles.developmentList}>
-                    {content.development.map((area, index) => (
-                      <li className={styles.developmentItem} key={`${index}-${area.title}`}>
-                        <span className={`${styles.developmentNode} type-small`} aria-hidden="true">
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-                        <h3 className={`${styles.developmentTitle} type-title`}>{area.title}</h3>
-                        {area.items.length > 0 ? (
-                          <ul className={styles.developmentTasks}>
-                            {area.items.map((item, itemIndex) => (
-                              <li className="type-body" key={`${itemIndex}-${item}`}>{item}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ol>
-                </section>
-              ) : null}
+            <section
+              className={`${styles.detailSection} ${styles.architectureSection}`}
+              id="detail-architecture"
+              aria-labelledby="architecture-title"
+            >
+              <header className={styles.sectionHeader}>
+                <h2 className={`${styles.sectionTitle} type-heading`} id="architecture-title">
+                  아키텍처
+                </h2>
+              </header>
 
-              {project.sections.some((section) => section.id === "detail-architecture") ? (
-                <section
-                  className={`${styles.detailSection} ${styles.architectureSection}`}
-                  id="detail-architecture"
-                  aria-labelledby="architecture-title"
-                >
-                  <header className={styles.sectionHeader}>
-                    <h2 className={`${styles.sectionTitle} type-heading`} id="architecture-title">
-                      아키텍처
-                    </h2>
-                  </header>
+              <ProjectArchitecture
+                slug={project.slug}
+                projectName={project.name}
+                architecture={content.architecture}
+              />
+            </section>
 
-                  <ProjectArchitecture
-                    slug={project.slug}
-                    projectName={project.name}
-                    architecture={content.architecture}
-                  />
-                </section>
-              ) : null}
+            <section
+              className={`${styles.detailSection} ${styles.engineeringSection}`}
+              id="detail-engineering"
+              aria-labelledby="engineering-title"
+            >
+              <header className={styles.sectionHeader}>
+                <h2 className={`${styles.sectionTitle} type-heading`} id="engineering-title">
+                  기술적 문제 해결
+                </h2>
+              </header>
 
-              {content.engineering.length > 0 ? (
-                <section
-                  className={`${styles.detailSection} ${styles.engineeringSection}`}
-                  id="detail-engineering"
-                  aria-labelledby="engineering-title"
-                >
-                  <header className={styles.sectionHeader}>
-                    <h2 className={`${styles.sectionTitle} type-heading`} id="engineering-title">
-                      기술적 문제 해결
-                    </h2>
-                  </header>
-
-                  <EngineeringList items={content.engineering} />
-                </section>
-              ) : null}
-            </div>
+              {content.engineering.length > 0
+                ? <EngineeringList items={content.engineering} />
+                : <p className={`${styles.emptyValue} type-body`}>-</p>}
+            </section>
           </div>
-        ) : null}
+        </div>
       </main>
     </ProjectChrome>
   );

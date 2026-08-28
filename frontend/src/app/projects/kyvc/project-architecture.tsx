@@ -1,4 +1,5 @@
 import type { ProjectArchitecture as ProjectArchitectureData } from "@/types/api";
+import { hasProjectArchitecture } from "@/features/portfolio/project-detail";
 import styles from "./kyvc-detail.module.css";
 
 type ProjectArchitectureProps = {
@@ -53,6 +54,10 @@ export default function ProjectArchitecture({
   projectName,
   architecture,
 }: ProjectArchitectureProps) {
+  if (!hasProjectArchitecture(architecture)) {
+    return <p className={`${styles.emptyValue} type-body`}>-</p>;
+  }
+
   if (slug !== "kyvc" || !supportsKyvcVisual(architecture)) {
     return <ArchitectureGroups architecture={architecture} />;
   }

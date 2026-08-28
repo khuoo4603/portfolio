@@ -53,11 +53,17 @@ describe("Project Detail Mapping", () => {
     ]);
   });
 
-  it("Summary가 없으면 실제 tagline을 사용하고 빈 Content Section을 생략", () => {
+  it("Summary가 없으면 실제 tagline을 사용하고 빈 Content에도 고정 Section을 유지", () => {
     const model = mapProjectDetail(EMPTY_PROJECT_FIXTURE);
 
     expect(model.summaryText).toBe("실제 Fixture tagline");
-    expect(model.sections).toEqual([]);
+    expect(model.sections.map((section) => section.id)).toEqual([
+      "detail-stack-result",
+      "detail-background",
+      "detail-development",
+      "detail-architecture",
+      "detail-engineering",
+    ]);
     expect(model.media).toEqual([]);
     expect(model.period).toBeNull();
   });

@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiRequest, clearCsrfToken } from "@/lib/api/client";
-import { getCurrentUser, login, logout, resendAdminLogin, verifyAdminLogin } from "./auth-api";
+import {
+  changePassword,
+  getCurrentUser,
+  issuePasswordChallenge,
+  login,
+  logout,
+  resendAdminLogin,
+  verifyAdminLogin,
+} from "./auth-api";
 
 vi.mock("@/lib/api/client", () => ({
   apiRequest: vi.fn(),
@@ -43,5 +51,28 @@ describe("Authentication API", () => {
 
     expect(apiRequest).toHaveBeenCalledWith("/auth/logout", { method: "POST" });
     expect(clearCsrfToken).toHaveBeenCalledTimes(2);
+  });
+
+  it("비밀번호 최초 발급과 재발급에 같은 Challenge Endpoint를 사용", async () => {
+    await issuePasswordChallenge();
+    await issuePasswordChallenge();
+
+    expect(apiRequest).toHaveBeenNthCalledWith(1, "/auth/password/challenge", { method: "POST" });
+    expect(apiRequest).toHaveBeenNthCalledWith(2, "/auth/password/challenge", { method: "POST" });
+    expect(apiRequest).not.toHaveBeenCalledWith(expect.stringContaining("resend"), expect.anything());
+  });
+
+  it("비밀번호 변경은 기존 PATCH 계약과 Challenge ID를 사용", async () => {
+    await changePassword("challenge-password", "123456", "new-password");
+
+    expect(apiRequest).toHaveBeenCalledWith("/auth/password", {
+      method: "PATCH",
+      json: {
+        challengeId: "challenge-password",
+        code: "123456",
+        newPassword: "new-password",
+      },
+    });
+    expect(clearCsrfToken).toHaveBeenCalled();
   });
 });

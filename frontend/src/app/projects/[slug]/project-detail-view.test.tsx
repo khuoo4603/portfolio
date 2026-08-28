@@ -45,7 +45,49 @@ describe("동적 Project Detail View", () => {
     expect(within(screen.getByRole("navigation", { name: "포트폴리오 주요 영역" }))
       .getByRole("link", { name: "프로젝트" })).toHaveAttribute("href", "/#projects");
     expect(screen.getByRole("contentinfo")).toHaveTextContent("© Test Portfolio");
-    expect(screen.queryByRole("region", { name: "KYvC 프로젝트 미디어" })).not.toBeInTheDocument();
+    const media = screen.getByRole("region", { name: "KYvC 프로젝트 미디어" });
+    expect(media.querySelectorAll('[data-carousel-demo="true"]')).toHaveLength(5);
+    expect(within(media).queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it("Media 0건은 기존 Demo 5개와 모든 순환 Interaction을 복원", () => {
+    render(<ProjectDetailView project={mapProjectDetail(KYVC_PROJECT_FIXTURE)} portfolio={portfolio} />);
+
+    const carousel = screen.getByRole("region", { name: "KYvC 프로젝트 미디어" });
+    const slides = carousel.querySelectorAll("[data-carousel-slide]");
+    const previous = within(carousel).getByRole("button", { name: "이전 프로젝트 미디어" });
+    const next = within(carousel).getByRole("button", { name: "다음 프로젝트 미디어" });
+    expect(slides).toHaveLength(5);
+    expect(carousel.querySelectorAll('[data-carousel-demo="true"]')).toHaveLength(5);
+    expect(carousel.querySelectorAll('[data-carousel-media="true"]')).toHaveLength(0);
+    expect(carousel.querySelector("[data-carousel-placeholder]")).not.toBeInTheDocument();
+    expect(slides[0]).toHaveAttribute("data-active", "true");
+    expect(within(carousel).getAllByText("KYvC / 이미지 준비 중")).toHaveLength(5);
+    expect(within(carousel).getByText("KYvC 화면 01")).toBeInTheDocument();
+    expect(within(carousel).getByText("KYvC 화면 05")).toBeInTheDocument();
+    expect(within(carousel).getByText("01 / 05")).toBeInTheDocument();
+    expect(within(carousel).queryByRole("img")).not.toBeInTheDocument();
+
+    fireEvent.click(next);
+    expect(within(carousel).getByText("02 / 05")).toBeInTheDocument();
+    fireEvent.click(previous);
+    expect(within(carousel).getByText("01 / 05")).toBeInTheDocument();
+    fireEvent.keyDown(carousel, { key: "ArrowRight" });
+    expect(within(carousel).getByText("02 / 05")).toBeInTheDocument();
+    fireEvent.keyDown(carousel, { key: "ArrowLeft" });
+    expect(within(carousel).getByText("01 / 05")).toBeInTheDocument();
+
+    const stage = carousel.querySelector("[data-dragging]")!;
+    fireEvent.pointerDown(stage, { isPrimary: true, pointerId: 1, pointerType: "touch", clientX: 180 });
+    fireEvent.pointerMove(stage, { isPrimary: true, pointerId: 1, pointerType: "touch", clientX: 100 });
+    fireEvent.pointerUp(stage, { isPrimary: true, pointerId: 1, pointerType: "touch", clientX: 100 });
+    expect(within(carousel).getByText("02 / 05")).toBeInTheDocument();
+
+    fireEvent.keyDown(carousel, { key: "ArrowLeft" });
+    fireEvent.click(previous);
+    expect(within(carousel).getByText("05 / 05")).toBeInTheDocument();
+    fireEvent.click(next);
+    expect(within(carousel).getByText("01 / 05")).toBeInTheDocument();
   });
 
   it("실제 Technology와 6개 typed Content 영역을 기존 순서로 표시", () => {
@@ -102,6 +144,8 @@ describe("동적 Project Detail View", () => {
     const carousel = screen.getByRole("region", { name: "Media Project 프로젝트 미디어" });
     const slides = carousel.querySelectorAll("[data-carousel-slide]");
     expect(slides).toHaveLength(2);
+    expect(carousel.querySelectorAll('[data-carousel-demo="true"]')).toHaveLength(0);
+    expect(carousel.querySelectorAll('[data-carousel-media="true"]')).toHaveLength(2);
     expect(within(carousel).getByRole("img", { name: "첫 화면" }).getAttribute("src"))
       .toContain("/fixture/one.webp");
     expect(within(carousel).getByText("01 / 02")).toBeInTheDocument();
@@ -110,18 +154,98 @@ describe("동적 Project Detail View", () => {
     expect(within(carousel).getByText("02 / 02")).toBeInTheDocument();
     fireEvent.keyDown(carousel, { key: "ArrowLeft" });
     expect(within(carousel).getByText("01 / 02")).toBeInTheDocument();
+    const stage = carousel.querySelector("[data-dragging]")!;
+    fireEvent.pointerDown(stage, { isPrimary: true, pointerId: 1, pointerType: "touch", clientX: 180 });
+    fireEvent.pointerMove(stage, { isPrimary: true, pointerId: 1, pointerType: "touch", clientX: 100 });
+    fireEvent.pointerUp(stage, { isPrimary: true, pointerId: 1, pointerType: "touch", clientX: 100 });
+    expect(within(carousel).getByText("02 / 02")).toBeInTheDocument();
+    fireEvent.keyDown(carousel, { key: "ArrowLeft" });
+    expect(within(carousel).getByText("01 / 02")).toBeInTheDocument();
 
     fireEvent.error(within(carousel).getByRole("img", { name: "첫 화면" }));
     expect(within(carousel).getByText("화면 1")).toBeInTheDocument();
   });
 
-  it("빈 Content·Media는 Placeholder나 빈 Section 없이 실제 tagline만 유지", () => {
+  it("Media 1건은 실제 이미지만 표시하고 Carousel Control을 만들지 않음", () => {
+    const singleMedia = mapProjectDetail({
+      ...MEDIA_PROJECT_FIXTURE,
+      media: [MEDIA_PROJECT_FIXTURE.media[0]],
+    });
+    render(<ProjectDetailView project={singleMedia} portfolio={portfolio} />);
+
+    const carousel = screen.getByRole("region", { name: "Media Project 프로젝트 미디어" });
+    expect(carousel.querySelectorAll("img")).toHaveLength(1);
+    expect(carousel.querySelectorAll('[data-carousel-demo="true"]')).toHaveLength(0);
+    expect(carousel.querySelectorAll('[data-carousel-media="true"]')).toHaveLength(1);
+    expect(within(carousel).queryByRole("button", { name: "이전 프로젝트 미디어" })).not.toBeInTheDocument();
+    expect(within(carousel).queryByRole("button", { name: "다음 프로젝트 미디어" })).not.toBeInTheDocument();
+    expect(within(carousel).queryByText(/01 \/ 01/)).not.toBeInTheDocument();
+  });
+
+  it("Media 5건은 Demo를 섞지 않고 실제 API 이미지만 표시", () => {
+    const actualMedia = mapProjectDetail({
+      ...MEDIA_PROJECT_FIXTURE,
+      media: Array.from({ length: 5 }, (_, index) => ({
+        id: 100 + index,
+        imageUrl: `/fixture/actual-${index + 1}.webp`,
+        label: `실제 화면 ${index + 1}`,
+        altText: `실제 이미지 ${index + 1}`,
+        displayOrder: index + 1,
+      })),
+    });
+    render(<ProjectDetailView project={actualMedia} portfolio={portfolio} />);
+
+    const carousel = screen.getByRole("region", { name: "Media Project 프로젝트 미디어" });
+    expect(carousel.querySelectorAll('[data-carousel-demo="true"]')).toHaveLength(0);
+    expect(carousel.querySelectorAll('[data-carousel-media="true"]')).toHaveLength(5);
+    expect(carousel.querySelectorAll("img")).toHaveLength(5);
+    expect(within(carousel).getByText("01 / 05")).toBeInTheDocument();
+    expect(within(carousel).queryByText(/이미지 준비 중/)).not.toBeInTheDocument();
+  });
+
+  it("빈 Content·Media에서도 Metadata·Media·Rail·5개 Detail Section 구조를 유지", () => {
     render(<ProjectDetailView project={mapProjectDetail(EMPTY_PROJECT_FIXTURE)} portfolio={portfolio} />);
 
+    expect(screen.getByRole("heading", { level: 1, name: "Empty Project" })).toBeInTheDocument();
     expect(screen.getByText("실제 Fixture tagline")).toBeInTheDocument();
-    expect(screen.queryByRole("complementary", { name: "프로젝트 상세 영역" })).not.toBeInTheDocument();
-    expect(within(screen.getByRole("main")).queryByRole("heading", { level: 2 })).not.toBeInTheDocument();
-    expect(screen.queryByText(/준비 중|정보 없음|Placeholder/i)).not.toBeInTheDocument();
+    const metadata = screen.getByText("역할").closest("dl")!;
+    expect(metadata.querySelectorAll("div")).toHaveLength(3);
+    expect(metadata).toHaveTextContent("역할-");
+    expect(metadata).toHaveTextContent("개발 기간-");
+    expect(metadata).toHaveTextContent("참여 인원-");
+
+    const media = screen.getByRole("region", { name: "Empty Project 프로젝트 미디어" });
+    expect(within(media).queryByRole("img")).not.toBeInTheDocument();
+    expect(media.querySelectorAll('[data-carousel-demo="true"]')).toHaveLength(5);
+    expect(media.querySelectorAll('[data-carousel-media="true"]')).toHaveLength(0);
+    expect(within(media).getByRole("button", { name: "이전 프로젝트 미디어" })).toBeInTheDocument();
+    expect(within(media).getByRole("button", { name: "다음 프로젝트 미디어" })).toBeInTheDocument();
+    expect(within(media).getByText("01 / 05")).toBeInTheDocument();
+
+    const rail = screen.getByRole("complementary", { name: "프로젝트 상세 영역" });
+    expect(within(rail).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "#detail-stack-result",
+      "#detail-background",
+      "#detail-development",
+      "#detail-architecture",
+      "#detail-engineering",
+    ]);
+
+    const main = screen.getByRole("main");
+    expect(main.querySelectorAll('section[id^="detail-"]')).toHaveLength(5);
+    [
+      "기술 스택 · 성과",
+      "기술 스택",
+      "성과",
+      "문제 배경 · 주요 기능",
+      "문제 배경",
+      "주요 기능",
+      "직접 담당한 개발 영역",
+      "아키텍처",
+      "기술적 문제 해결",
+    ].forEach((heading) => expect(within(main).getByRole("heading", { name: heading })).toBeInTheDocument());
+    expect(within(main).getAllByText("-", { exact: true })).toHaveLength(10);
+    expect(screen.queryByText(/정보 없음|Coming Soon|Placeholder/i)).not.toBeInTheDocument();
   });
 
   it("진행 중 기간은 종료일·총 일수 없이 진행 상태만 표시", () => {

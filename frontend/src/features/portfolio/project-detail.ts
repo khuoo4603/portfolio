@@ -118,7 +118,7 @@ function mapArchitecture(architecture: ProjectArchitecture): ProjectArchitecture
   };
 }
 
-// 공개 프로젝트 상세의 빈 값 제거와 기존 Editorial Section 구성
+// 공개 프로젝트 상세의 데이터 정리와 고정 Editorial Section 구성
 export function mapProjectDetail(project: PublicProjectDetail): ProjectDetailModel {
   const technologies = [...project.technologies]
     .flatMap((technology) => {
@@ -167,23 +167,13 @@ export function mapProjectDetail(project: PublicProjectDetail): ProjectDetailMod
       }] : [];
     })
     .sort((left, right) => left.displayOrder - right.displayOrder);
-  const sections: ProjectSection[] = [];
-
-  if (technologies.length > 0 || content.results.length > 0) {
-    sections.push(SECTION_LABELS.stackResult);
-  }
-  if (content.background.length > 0 || content.features.length > 0) {
-    sections.push(SECTION_LABELS.background);
-  }
-  if (content.development.length > 0) {
-    sections.push(SECTION_LABELS.development);
-  }
-  if (hasProjectArchitecture(architecture)) {
-    sections.push(SECTION_LABELS.architecture);
-  }
-  if (content.engineering.length > 0) {
-    sections.push(SECTION_LABELS.engineering);
-  }
+  const sections: ProjectSection[] = [
+    SECTION_LABELS.stackResult,
+    SECTION_LABELS.background,
+    SECTION_LABELS.development,
+    SECTION_LABELS.architecture,
+    SECTION_LABELS.engineering,
+  ];
 
   return {
     ...project,

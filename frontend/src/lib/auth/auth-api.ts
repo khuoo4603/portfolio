@@ -38,3 +38,17 @@ export async function logout() {
     clearCsrfToken();
   }
 }
+
+// 현재 Session 계정의 PASSWORD_CHANGE Challenge 발급
+export function issuePasswordChallenge() {
+  return apiRequest<ChallengeResponse>("/auth/password/challenge", { method: "POST" });
+}
+
+// PASSWORD_CHANGE 검증과 Backend 전체 Session 폐기 반영
+export async function changePassword(challengeId: string, code: string, newPassword: string) {
+  await apiRequest("/auth/password", {
+    method: "PATCH",
+    json: { challengeId, code, newPassword },
+  });
+  clearCsrfToken();
+}
