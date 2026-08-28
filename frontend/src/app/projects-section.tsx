@@ -2,66 +2,31 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-
-const projects = [
-  {
-    id: "kyvc",
-    name: "KYvC",
-    year: 2026,
-    href: "/projects/kyvc",
-    external: false,
-    tagline: "법인 KYC 자동 심사 서비스",
-    description: "법인 서류를 기반으로 KYC 심사를 자동화하고 검증 결과를 전자 증명 형태로 연결하는 서비스",
-    role: "백엔드 · 인프라",
-    technologies: ["Java", "Spring Boot", "PostgreSQL", "Docker"],
-    imageSrc: "/images/profile/project-intro-kyvc.webp",
-    imageAlt: "KYvC 프로젝트 대표 화면",
-    imageWidth: 1280,
-    imageHeight: 633,
-  },
-  {
-    id: "shkutrack",
-    name: "SHKUTrack",
-    year: 2026,
-    href: "/projects/shkutrack",
-    external: false,
-    tagline: "성공회대학교 졸업 관리 서비스",
-    description: "졸업요건 확인과 졸업 자료, 마이크로전공, 수강 전략을 하나의 흐름으로 관리하는 서비스",
-    role: "풀스택 · 인프라",
-    technologies: ["Java", "Spring Boot", "PostgreSQL", "Docker", "Kubernetes", "Nginx"],
-    imageSrc: "/images/profile/project-intro-skhutrack.webp",
-    imageAlt: "SHKUTrack 프로젝트 대표 화면",
-    imageWidth: 1280,
-    imageHeight: 638,
-  },
-  {
-    id: "shkuload",
-    name: "SHKULoad",
-    year: 2023,
-    href: "https://github.com/woohyuk0428/SKHU_Contest",
-    external: true,
-    tagline: "길찾기·중간지점·지하철 정보 서비스",
-    description: "목적지 길찾기와 여러 위치의 중간지점 계산, 지하철 위치·지연정보를 제공하는 서비스",
-    role: "백엔드",
-    technologies: ["JavaScript", "Node.js", "Express", "EJS"],
-    imageSrc: null,
-    imageAlt: null,
-    imageWidth: null,
-    imageHeight: null,
-  },
-] as const;
+import type { PublicProjectCard } from "@/types/api";
 
 type TimelineGeometry = {
   rowCenters: number[];
 };
 
+type ProjectsSectionProps = {
+  projects: PublicProjectCard[];
+  sectionLabel?: string;
+  sectionTitle?: string;
+  detailLabel?: string;
+};
+
 // 연도별 Project History와 근접 Viewport 전용 Scroll Timeline 구성
-export default function ProjectsSection() {
+export default function ProjectsSection({
+  projects,
+  sectionLabel,
+  sectionTitle,
+  detailLabel,
+}: ProjectsSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const projectHistoryRef = useRef<HTMLOListElement>(null);
   const projectRowRefs = useRef<Array<HTMLElement | null>>([]);
   const projectNodeRefs = useRef<Array<HTMLSpanElement | null>>([]);
-  const [activeProject, setActiveProject] = useState<(typeof projects)[number]["id"]>(projects[0].id);
+  const [activeProject, setActiveProject] = useState<string | null>(projects[0]?.slug ?? null);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -138,7 +103,7 @@ export default function ProjectsSection() {
         : Math.min(1, Math.max(0, (viewportCenter - firstCenter) / centerDistance));
 
       section.style.setProperty("--project-timeline-progress", String(progress));
-      setActiveProject(projects[nearestIndex].id);
+      setActiveProject(projects[nearestIndex]?.slug ?? null);
     };
 
     const scheduleTimelineUpdate = () => {
@@ -199,12 +164,12 @@ export default function ProjectsSection() {
       intersectionObserver?.disconnect();
       resizeObserver?.disconnect();
     };
-  }, []);
+  }, [projects]);
 
   // Hover 항목 순서 기준 Timeline Beam 진행도 임시 적용
   const setHoveredTimelineProgress = (index: number) => {
     const lastIndex = projects.length - 1;
-    const progress = lastIndex === 0 ? 1 : index / lastIndex;
+    const progress = lastIndex <= 0 ? 1 : index / lastIndex;
 
     projectHistoryRef.current?.style.setProperty("--project-timeline-progress", String(progress));
   };
@@ -218,13 +183,13 @@ export default function ProjectsSection() {
     <section
       className="main-section projects-section"
       id="projects"
-      aria-labelledby="projects-title"
+      aria-labelledby={sectionTitle ? "projects-title" : undefined}
       ref={sectionRef}
     >
       <div className="content-container projects-inner">
         <header className="projects-heading">
-          <p className="section-meta type-small">PROJECTS</p>
-          <h2 className="section-title type-heading" id="projects-title">프로젝트</h2>
+          {sectionLabel ? <p className="section-meta type-small">{sectionLabel}</p> : null}
+          {sectionTitle ? <h2 className="section-title type-heading" id="projects-title">{sectionTitle}</h2> : null}
         </header>
 
         <div className="project-stage">
@@ -235,7 +200,7 @@ export default function ProjectsSection() {
             onMouseLeave={restoreTimelineProgress}
           >
             {projects.map((project, index) => {
-              const isActive = activeProject === project.id;
+              const isActive = activeProject === project.slug;
               const showsYear = index === 0 || projects[index - 1].year !== project.year;
 
               return (
@@ -256,9 +221,9 @@ export default function ProjectsSection() {
                     <a
                       aria-current={isActive ? "location" : undefined}
                       className={`project-tab${isActive ? " is-active" : ""}`}
-                      href={`#project-${project.id}`}
+                      href={`#project-${project.slug}`}
                     >
-                      <span className="project-tab-name type-body" id={`project-label-${project.id}`}>
+                      <span className="project-tab-name type-body" id={`project-label-${project.slug}`}>
                         {project.name}
                       </span>
                     </a>
@@ -266,24 +231,24 @@ export default function ProjectsSection() {
 
                   <article
                     className="project-panel"
-                    id={`project-${project.id}`}
-                    aria-labelledby={`project-label-${project.id}`}
+                    id={`project-${project.slug}`}
+                    aria-labelledby={`project-label-${project.slug}`}
                     ref={(row) => {
                       projectRowRefs.current[index] = row;
                     }}
                   >
-                    {project.href && project.imageSrc && project.imageAlt && project.imageWidth && project.imageHeight ? (
+                    {project.thumbnailUrl ? (
                       <a
                         className="project-thumbnail"
-                        href={project.href}
+                        href={`/projects/${project.slug}`}
                         aria-label={`${project.name} 프로젝트 상세 보기`}
                       >
                         <Image
-                          alt={project.imageAlt}
+                          alt={`${project.name} 프로젝트 대표 화면`}
                           className="project-thumbnail-image"
-                          src={project.imageSrc}
-                          width={project.imageWidth}
-                          height={project.imageHeight}
+                          src={project.thumbnailUrl}
+                          width={1280}
+                          height={720}
                           sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) 20vw, 260px"
                         />
                       </a>
@@ -294,33 +259,37 @@ export default function ProjectsSection() {
                     <div className="project-information">
                       <div className="project-information-group">
                         <div className="project-information-content">
-                          <p className="project-tagline type-title">{project.tagline}</p>
-                          <p className="project-description type-body">{project.description}</p>
-                          <div className="project-meta type-small">
-                            <span className="project-meta-badge project-role-badge">{project.role}</span>
-                            <span className="project-meta-badge project-tech-badge">
+                          {project.tagline ? <p className="project-tagline type-title">{project.tagline}</p> : null}
+                          {project.description ? <p className="project-description type-body">{project.description}</p> : null}
+                          {project.cardRole || project.technologies.length > 0 ? (
+                            <div className="project-meta type-small">
+                              {project.cardRole ? (
+                                <span className="project-meta-badge project-role-badge">{project.cardRole}</span>
+                              ) : null}
+                              {project.technologies.length > 0 ? (
+                                <span className="project-meta-badge project-tech-badge">
                               {project.technologies.map((technology, technologyIndex) => (
-                                <span className="project-tech-item" key={technology}>
+                                <span className="project-tech-item" key={technology.id}>
                                   {technologyIndex > 0 ? (
                                     <span className="project-tech-separator" aria-hidden="true">
                                       {"\u00A0·\u00A0"}
                                     </span>
                                   ) : null}
-                                  <span>{technology}</span>
+                                  <span>{technology.name}</span>
                                 </span>
                               ))}
-                            </span>
-                          </div>
+                                </span>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </div>
-                        {project.href ? (
+                        {detailLabel ? (
                           <a
                             className="project-detail-link type-body"
-                            href={project.href}
-                            aria-label={`${project.name} 자세히 보기`}
-                            target={project.external ? "_blank" : undefined}
-                            rel={project.external ? "noopener noreferrer" : undefined}
+                            href={`/projects/${project.slug}`}
+                            aria-label={`${project.name} ${detailLabel}`}
                           >
-                            자세히 보기 <span aria-hidden="true">↗</span>
+                            {detailLabel} <span aria-hidden="true">↗</span>
                           </a>
                         ) : null}
                       </div>

@@ -1,5 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
+import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
 import {
   EAST_ASIA_CROP,
   EAST_ASIA_DOT_COUNT,
@@ -38,8 +40,14 @@ import {
   calculateVirtualZoomScale,
   dampGalleryValue,
 } from "./hero-system-card";
-import Home from "./page";
+import { HomeView } from "./home-view";
 import { calculateThemeReveal } from "./theme-toggle";
+
+const PUBLIC_MODEL = mapPublicPortfolio(PUBLIC_PORTFOLIO_FIXTURE);
+
+function Home() {
+  return <HomeView model={PUBLIC_MODEL} />;
+}
 
 describe("포트폴리오 메인", () => {
   afterEach(() => {
@@ -880,17 +888,19 @@ describe("포트폴리오 메인", () => {
     expect(screen.queryByText("Backend Development")).not.toBeInTheDocument();
   });
 
-  it("기술군별 11개 기술을 아이콘 Index로 표시", () => {
+  it("6개 기술군의 독립 Fixture 기술을 아이콘 Index로 표시", () => {
     render(<Home />);
 
     const techSection = screen.getByRole("region", { name: "기술 스택" });
 
     expect(within(techSection).getByText("Infrastructure")).toBeInTheDocument();
+    expect(within(techSection).getByText("Frontend")).toBeInTheDocument();
+    expect(within(techSection).getByText("React")).toBeInTheDocument();
     expect(within(techSection).getByText("Kubernetes")).toBeInTheDocument();
     expect(within(techSection).getByText("GHCR")).toBeInTheDocument();
-    expect(within(techSection).queryByText("Docker Compose")).not.toBeInTheDocument();
-    expect(techSection.querySelectorAll(".tech-item")).toHaveLength(11);
-    expect(techSection.querySelectorAll("img.tech-icon")).toHaveLength(11);
+    expect(within(techSection).getByText("Docker Compose")).toBeInTheDocument();
+    expect(techSection.querySelectorAll(".tech-item")).toHaveLength(13);
+    expect(techSection.querySelectorAll("img.tech-icon")).toHaveLength(13);
     expect(techSection.querySelectorAll("svg.tech-icon")).toHaveLength(0);
     expect(within(techSection).queryByText("Backend / Infra 개발자로서 핵심적으로 사용하는 기술")).not.toBeInTheDocument();
     expect(within(techSection).queryByText("서비스 로직 구현과 관계형 데이터 처리의 기본 언어")).not.toBeInTheDocument();
@@ -987,11 +997,10 @@ describe("포트폴리오 메인", () => {
     expect(shkuLoadProject.querySelector("img")).not.toBeInTheDocument();
     expect(shkuLoadProject.querySelector(".project-thumbnail-placeholder")).toBeInTheDocument();
     const shkuLoadDetailLink = within(projectsSection).getByRole("link", { name: "SHKULoad 자세히 보기" });
-    expect(shkuLoadDetailLink).toHaveAttribute("href", "https://github.com/woohyuk0428/SKHU_Contest");
-    expect(shkuLoadDetailLink).toHaveAttribute("target", "_blank");
-    expect(shkuLoadDetailLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(shkuLoadDetailLink).toHaveAttribute("href", "/projects/shkuload");
+    expect(shkuLoadDetailLink).not.toHaveAttribute("target");
     expect(within(shkuLoadProject).getAllByRole("link")).toHaveLength(1);
-    expect(projectsSection.querySelector("a[href='/projects/shkuload']")).not.toBeInTheDocument();
+    expect(projectsSection.querySelector("a[href='https://github.com/woohyuk0428/SKHU_Contest']")).not.toBeInTheDocument();
     expect(document.querySelector(".project-visual")).not.toBeInTheDocument();
     expect(document.querySelector(".kyvc-structure")).not.toBeInTheDocument();
     expect(document.querySelector(".shkutrack-structure")).not.toBeInTheDocument();
@@ -1069,7 +1078,8 @@ describe("포트폴리오 메인", () => {
     expect(screen.getByRole("heading", { name: "주요 활동" })).toBeInTheDocument();
     const activityRows = Array.from(document.querySelectorAll(".activity-row"));
     expect(activityRows[0]).toHaveTextContent("QED");
-    expect(activityRows[1]).toHaveTextContent("One Think IT's");
+    expect(activityRows[1]).toHaveTextContent("Backend Internship");
+    expect(activityRows[2]).toHaveTextContent("One Think IT's");
     expect(screen.getByText("특성화고 졸업자 네트워크")).toBeInTheDocument();
     expect(screen.getByText("성공회대학교 보안동아리")).toBeInTheDocument();
     expect(screen.getByText("현대오토에버 특성화 고교생 화이트해커 양성교육")).toBeInTheDocument();
@@ -1079,15 +1089,15 @@ describe("포트폴리오 메인", () => {
     expect(awardRows[0]).toHaveTextContent("성공회대학교 소프트웨어경진대회SKHUTRack1등");
     expect(awardRows[1]).toHaveTextContent("KFIP 2026KYvCToss 특별상");
     expect(awardRows[2]).toHaveTextContent("성공회대학교 IT경진대회SKHURoad3등");
-    expect(awardRows[3]).toHaveTextContent("현대오토에버 특성화 고교생 화이트해커 양성교육-수료/입상");
-    expect(awardRows[4]).toHaveTextContent("SW·AI 교육 수기 공모전-최우수상 · 과학기술정보통신부 장관상");
+    expect(awardRows[3]).toHaveTextContent("현대오토에버 특성화 고교생 화이트해커 양성교육수료/입상");
+    expect(awardRows[4]).toHaveTextContent("SW·AI 교육 수기 공모전최우수상 · 과학기술정보통신부 장관상");
     expect(awardRows[5]).toHaveTextContent("Hello New() WorldNewLife대상");
     expect(screen.getByText("Toss 특별상")).toBeInTheDocument();
     expect(screen.getByText("최우수상 · 과학기술정보통신부 장관상")).toBeInTheDocument();
     expect(screen.getByText("SW·AI 교육 수기 공모전")).toBeInTheDocument();
     expect(screen.queryByText("신나는 SW·AI 교육 수기 공모전")).not.toBeInTheDocument();
-    expect(document.querySelectorAll(".education-info-row")).toHaveLength(10);
-    expect(document.querySelectorAll(".education-info-detail.type-small")).toHaveLength(10);
+    expect(document.querySelectorAll(".education-info-row")).toHaveLength(11);
+    expect(document.querySelectorAll(".education-info-detail.type-small")).toHaveLength(9);
     expect(document.querySelectorAll(".education-info-outcome.type-small")).toHaveLength(8);
     expect(screen.queryByRole("heading", { name: "학업 성과" })).not.toBeInTheDocument();
     expect(screen.queryByText("21학점 · 4.5 / 4.5")).not.toBeInTheDocument();
@@ -1097,10 +1107,11 @@ describe("포트폴리오 메인", () => {
   it("실제 Contact Link를 표시", () => {
     render(<Home />);
 
-    expect(screen.getByRole("link", { name: "khuoo4603@gmail.com" })).toHaveAttribute("href", "mailto:khuoo4603@gmail.com");
-    expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute("href", "https://www.instagram.com/hyun_woooooooooo/");
-    expect(screen.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", "https://github.com/khuoo4603");
+    expect(screen.getByRole("link", { name: "test-contact@example.com" })).toHaveAttribute("href", "mailto:test-contact@example.com");
+    expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute("href", "https://instagram.com/example");
+    expect(screen.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", "https://github.com/example");
     expect(screen.getByRole("link", { name: "LinkedIn" })).toHaveAttribute("target", "_blank");
+    expect(screen.getByRole("link", { name: "Portfolio Notes" })).toHaveTextContent("Portfolio Notes");
   });
 
   it("Footer 이력서 Action을 한글로 표시", () => {
@@ -1117,8 +1128,8 @@ describe("포트폴리오 메인", () => {
     expect(footer.getByRole("heading", { name: "김현우" })).toHaveClass("type-heading");
     expect(footer.getByText("BACKEND / INFRA DEVELOPER")).toHaveClass("type-small");
     expect(footer.queryByText("BACKEND /")).not.toBeInTheDocument();
-    expect(footer.getByText("PORTFOLIO / 2026")).toBeInTheDocument();
-    expect(footer.getByText("© 2026 Kim Hyunwoo. All rights reserved.")).toBeInTheDocument();
+    expect(footer.getByText("PORTFOLIO / TEST")).toBeInTheDocument();
+    expect(footer.getByText("© Test Portfolio")).toBeInTheDocument();
   });
 
   it("Theme 전환 선택값을 저장", () => {

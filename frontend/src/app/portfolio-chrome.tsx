@@ -1,5 +1,7 @@
 import { Github, Instagram, Linkedin, Mail } from "lucide-react";
 import type { ReactNode } from "react";
+import type { ContentMap } from "@/features/portfolio/public-portfolio";
+import type { ExternalLink, ResumeMetadata } from "@/types/api";
 import ThemeToggle from "./theme-toggle";
 
 const navigationItems = [
@@ -25,6 +27,49 @@ export type HeaderNavigationItem = {
   href: string;
   active?: boolean;
 };
+
+type PortfolioFooterProps = {
+  content?: ContentMap;
+  externalLinks?: ExternalLink[];
+  resume?: ResumeMetadata | null;
+};
+
+const LEGACY_FOOTER_CONTENT: ContentMap = {
+  FOOTER_NAME: "김현우",
+  FOOTER_ROLE: "BACKEND / INFRA DEVELOPER",
+  RESUME_LABEL: "RESUME",
+  RESUME_VIEW_LABEL: "이력서 보기",
+  RESUME_DOWNLOAD_LABEL: "PDF 다운로드",
+  CONTACT_LABEL: "CONTACT",
+  EMAIL: "khuoo4603@gmail.com",
+  PORTFOLIO_LABEL: "PORTFOLIO / 2026",
+  COPYRIGHT: "© 2026 Kim Hyunwoo. All rights reserved.",
+};
+
+const LEGACY_EXTERNAL_LINKS: ExternalLink[] = [
+  { id: 1, name: "Instagram", url: "https://www.instagram.com/hyun_woooooooooo/", displayOrder: 1 },
+  { id: 2, name: "GitHub", url: "https://github.com/khuoo4603", displayOrder: 2 },
+  {
+    id: 3,
+    name: "LinkedIn",
+    url: "https://www.linkedin.com/in/%ED%98%84%EC%9A%B0-%EA%B9%80-b0201a414/",
+    displayOrder: 3,
+  },
+];
+
+function externalLinkIcon(name: string) {
+  const service = name.trim().toLowerCase();
+  if (service === "github") {
+    return <Github aria-hidden="true" strokeWidth={1.75} />;
+  }
+  if (service === "instagram") {
+    return <Instagram aria-hidden="true" strokeWidth={1.75} />;
+  }
+  if (service === "linkedin" || service === "linked in") {
+    return <Linkedin aria-hidden="true" strokeWidth={1.75} />;
+  }
+  return null;
+}
 
 // Public과 인증 Workspace가 공유하는 Portfolio Header 구조
 export function SiteHeader({
@@ -77,61 +122,92 @@ export function SiteHeader({
 }
 
 // Main과 Project Detail에서 공유하는 Portfolio Footer
-export function PortfolioFooter() {
+export function PortfolioFooter({ content, externalLinks, resume = null }: PortfolioFooterProps = {}) {
+  const resolvedContent = content ?? LEGACY_FOOTER_CONTENT;
+  const resolvedLinks = externalLinks ?? LEGACY_EXTERNAL_LINKS;
+  const hasContact = Boolean(resolvedContent.EMAIL) || resolvedLinks.length > 0;
+
   return (
     <footer className="portfolio-footer" id="footer">
       <div className="content-container footer-inner">
         <div className="footer-identity">
-          <h2 className="footer-name type-heading">김현우</h2>
-          <p className="footer-role type-small">BACKEND / INFRA DEVELOPER</p>
+          {resolvedContent.FOOTER_NAME ? (
+            <h2 className="footer-name type-heading">{resolvedContent.FOOTER_NAME}</h2>
+          ) : null}
+          {resolvedContent.FOOTER_ROLE ? (
+            <p className="footer-role type-small">{resolvedContent.FOOTER_ROLE}</p>
+          ) : null}
         </div>
 
         <div className="footer-information">
-          <div className="footer-info-group">
-            <p className="type-small">RESUME</p>
-            <div className="footer-disabled-actions">
-              <span className="type-body-lg" aria-disabled="true">이력서 보기</span>
-              <span className="type-body-lg" aria-disabled="true">PDF 다운로드</span>
+          {resolvedContent.RESUME_LABEL ? (
+            <div className="footer-info-group">
+              <p className="type-small">{resolvedContent.RESUME_LABEL}</p>
+              <div className="footer-resume-actions">
+                {resume ? (
+                  <>
+                    {resolvedContent.RESUME_VIEW_LABEL ? (
+                      <a
+                        className="type-body-lg"
+                        href="/api/v1/public/resume"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {resolvedContent.RESUME_VIEW_LABEL}
+                      </a>
+                    ) : null}
+                    {resolvedContent.RESUME_DOWNLOAD_LABEL ? (
+                      <a className="type-body-lg" href="/api/v1/public/resume" download={resume.fileName}>
+                        {resolvedContent.RESUME_DOWNLOAD_LABEL}
+                      </a>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    {resolvedContent.RESUME_VIEW_LABEL ? (
+                      <span className="type-body-lg" aria-disabled="true">{resolvedContent.RESUME_VIEW_LABEL}</span>
+                    ) : null}
+                    {resolvedContent.RESUME_DOWNLOAD_LABEL ? (
+                      <span className="type-body-lg" aria-disabled="true">{resolvedContent.RESUME_DOWNLOAD_LABEL}</span>
+                    ) : null}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          ) : null}
 
-          <div className="footer-info-group footer-contact">
-            <p className="type-small">CONTACT</p>
-            <div className="footer-contact-links">
-              <a href="mailto:khuoo4603@gmail.com" aria-label="khuoo4603@gmail.com">
-                <Mail aria-hidden="true" strokeWidth={1.75} />
-              </a>
-              <a
-                href="https://www.instagram.com/hyun_woooooooooo/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-              >
-                <Instagram aria-hidden="true" strokeWidth={1.75} />
-              </a>
-              <a
-                href="https://github.com/khuoo4603"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="GitHub"
-              >
-                <Github aria-hidden="true" strokeWidth={1.75} />
-              </a>
-              <a
-                href="https://www.linkedin.com/in/%ED%98%84%EC%9A%B0-%EA%B9%80-b0201a414/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="LinkedIn"
-              >
-                <Linkedin aria-hidden="true" strokeWidth={1.75} />
-              </a>
+          {hasContact ? (
+            <div className="footer-info-group footer-contact">
+              {resolvedContent.CONTACT_LABEL ? <p className="type-small">{resolvedContent.CONTACT_LABEL}</p> : null}
+              <div className="footer-contact-links">
+                {resolvedContent.EMAIL ? (
+                  <a href={`mailto:${resolvedContent.EMAIL}`} aria-label={resolvedContent.EMAIL}>
+                    <Mail aria-hidden="true" strokeWidth={1.75} />
+                  </a>
+                ) : null}
+                {resolvedLinks.map((link) => {
+                  const icon = externalLinkIcon(link.name);
+                  return (
+                    <a
+                      className={icon ? undefined : "footer-text-link type-small"}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={link.name}
+                      key={link.id}
+                    >
+                      {icon ?? link.name}
+                    </a>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
 
         <div className="footer-bottom type-small">
-          <span>PORTFOLIO / 2026</span>
-          <span>© 2026 Kim Hyunwoo. All rights reserved.</span>
+          {resolvedContent.PORTFOLIO_LABEL ? <span>{resolvedContent.PORTFOLIO_LABEL}</span> : null}
+          {resolvedContent.COPYRIGHT ? <span>{resolvedContent.COPYRIGHT}</span> : null}
         </div>
       </div>
     </footer>
