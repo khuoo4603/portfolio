@@ -12,7 +12,7 @@ import type {
   Technology,
   TechnologyInput,
 } from "./admin-types";
-import AdminActionDialog from "./admin-action-dialog";
+import LocalActionDialog from "./local-action-dialog";
 import {
   EmptyState,
   PageHeader,
@@ -130,8 +130,8 @@ function ContentPanel({
           </label>
         ))}
         <div className={styles.formActionRow}>
-          <p className="type-small">저장 시 이 묶음에 대한 새 관리자 이메일 인증을 진행합니다.</p>
-          <SubmitButton busy={false}>인증 후 저장</SubmitButton>
+          <p className="type-small">현재 변경은 화면의 로컬 미리보기에만 반영됩니다.</p>
+          <SubmitButton busy={false}>로컬 저장</SubmitButton>
         </div>
       </form>
     </section>
@@ -151,7 +151,7 @@ export default function SiteScreen() {
   const [fileError, setFileError] = useState("");
   const [feedback, setFeedback] = useState("");
 
-  // 고정 콘텐츠 묶음의 로컬 상태 수정용 재인증 대기열
+  // 고정 콘텐츠 묶음의 로컬 상태 수정 대기열
   const queueContentSave = (items: Array<Pick<SiteContent, "category" | "contentCode" | "contentValue">>) => {
     setPending({
       label: `${tab === "common" ? "메인·공통" : "프로필·학력·연락처"} 콘텐츠 저장`,
@@ -170,7 +170,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 프로필 반복 항목의 로컬 추가·수정용 재인증 대기열
+  // 프로필 반복 항목의 로컬 추가·수정 대기열
   const queueProfileSave = (input: ProfileEntryInput, item?: ProfileEntry) => {
     setProfileEditor(null);
     setPending(item ? {
@@ -196,7 +196,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 프로필 반복 항목의 로컬 삭제용 재인증 대기열
+  // 프로필 반복 항목의 로컬 삭제 대기열
   const queueProfileDelete = (item: ProfileEntry) => {
     setMenuKey(null);
     setPending({
@@ -208,7 +208,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 프로필 노출 상태의 로컬 변경용 재인증 대기열
+  // 프로필 노출 상태의 로컬 변경 대기열
   const queueProfileStatus = (item: ProfileEntry) => {
     setPending({
       label: `${item.title} 항목 ${item.enabled ? "비노출" : "노출"} 전환`,
@@ -223,7 +223,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 기술 항목의 로컬 추가·수정용 재인증 대기열
+  // 기술 항목의 로컬 추가·수정 대기열
   const queueTechnologySave = (input: TechnologyInput, item?: Technology) => {
     setTechnologyEditor(null);
     setPending(item ? {
@@ -243,7 +243,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 기술 항목의 로컬 삭제용 재인증 대기열
+  // 기술 항목의 로컬 삭제 대기열
   const queueTechnologyDelete = (item: Technology) => {
     setMenuKey(null);
     setPending({
@@ -255,7 +255,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 기술 노출 상태의 로컬 변경용 재인증 대기열
+  // 기술 노출 상태의 로컬 변경 대기열
   const queueTechnologyStatus = (item: Technology) => {
     setPending({
       label: `${item.name} 기술 ${item.enabled ? "비노출" : "노출"} 전환`,
@@ -268,7 +268,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 고정 프로젝트 공개 상태의 로컬 변경용 재인증 대기열
+  // 고정 프로젝트 공개 상태의 로컬 변경 대기열
   const queueProjectStatus = (projectKey: string, enabled: boolean) => {
     setPending({
       label: `${projectKey} 프로젝트 ${enabled ? "비공개" : "공개"} 전환`,
@@ -283,7 +283,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 외부 링크의 로컬 추가·수정용 재인증 대기열
+  // 외부 링크의 로컬 추가·수정 대기열
   const queueLinkSave = (input: ExternalLinkInput, item?: ExternalLink) => {
     setLinkEditor(null);
     setPending(item ? {
@@ -303,7 +303,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 외부 링크의 로컬 삭제용 재인증 대기열
+  // 외부 링크의 로컬 삭제 대기열
   const queueLinkDelete = (item: ExternalLink) => {
     setMenuKey(null);
     setPending({
@@ -315,7 +315,7 @@ export default function SiteScreen() {
     });
   };
 
-  // 외부 링크 노출 상태의 로컬 변경용 재인증 대기열
+  // 외부 링크 노출 상태의 로컬 변경 대기열
   const queueLinkStatus = (item: ExternalLink) => {
     setPending({
       label: `${item.name} 외부 링크 ${item.enabled ? "비노출" : "노출"} 전환`,
@@ -348,7 +348,7 @@ export default function SiteScreen() {
     setFileError("");
   };
 
-  // 선택 PDF 메타데이터의 로컬 등록·교체용 재인증 대기열
+  // 선택 PDF 메타데이터의 로컬 등록·교체 대기열
   const queueResume = () => {
     if (!resumeFile) {
       return;
@@ -390,7 +390,7 @@ export default function SiteScreen() {
       {technologyEditor && <TechnologyEditor key={technologyEditor.item?.id || "new"} state={technologyEditor} onClose={() => setTechnologyEditor(null)} onSubmit={queueTechnologySave} />}
       {linkEditor && <ExternalLinkEditor key={linkEditor.item?.id || "new"} state={linkEditor} onClose={() => setLinkEditor(null)} onSubmit={queueLinkSave} />}
       {pending && (
-        <AdminActionDialog
+        <LocalActionDialog
           key={pending.label}
           open
           actionLabel={pending.label}
@@ -485,7 +485,7 @@ function ResumePanel({ data, file, error, onSelect, onSubmit }: { data: SiteData
         <input id="resume-pdf" className={styles.srOnly} type="file" accept="application/pdf,.pdf" onChange={(event) => onSelect(event.currentTarget.files?.[0])} />
         <label htmlFor="resume-pdf"><Upload aria-hidden="true" /><span><strong className="type-body">PDF 파일 선택</strong><small>최대 10MB</small></span></label>
         <div className={styles.selectedFile}><span className="type-small">선택 파일</span><strong className="type-body">{file ? `${file.name} · ${formatFileSize(file.size)}` : "선택되지 않음"}</strong></div>
-        <button className={`${styles.primaryButton} type-body`} type="button" disabled={!file} onClick={onSubmit}>{data.resume ? "인증 후 교체" : "인증 후 등록"}</button>
+        <button className={`${styles.primaryButton} type-body`} type="button" disabled={!file} onClick={onSubmit}>{data.resume ? "로컬 교체" : "로컬 등록"}</button>
       </div>
       <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
     </section>

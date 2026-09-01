@@ -70,7 +70,7 @@ export function ProfileEditor({
       footer={(
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>인증 후 저장</SubmitButton>
+          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>로컬 저장</SubmitButton>
         </>
       )}
     >
@@ -162,7 +162,7 @@ export function TechnologyEditor({
       footer={(
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>인증 후 저장</SubmitButton>
+          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>로컬 저장</SubmitButton>
         </>
       )}
     >
@@ -234,7 +234,7 @@ export function ExternalLinkEditor({
       footer={(
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>인증 후 저장</SubmitButton>
+          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>로컬 저장</SubmitButton>
         </>
       )}
     >

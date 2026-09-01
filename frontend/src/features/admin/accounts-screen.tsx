@@ -3,7 +3,7 @@
 import { MoreHorizontal, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { AccountInput, AccountItem, AccountRole } from "./admin-types";
-import AdminActionDialog from "./admin-action-dialog";
+import LocalActionDialog from "./local-action-dialog";
 import DialogFrame from "./dialog-frame";
 import {
   EmptyState,
@@ -74,7 +74,7 @@ function AccountCreateDialog({
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
           <SubmitButton busy={false} type="submit" onClick={() => (document.getElementById("account-create-form") as HTMLFormElement | null)?.requestSubmit()}>
-            인증 후 생성
+            로컬 생성
           </SubmitButton>
         </>
       )}
@@ -145,7 +145,7 @@ function PasswordDialog({
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
           <SubmitButton busy={false} type="submit" onClick={() => (document.getElementById("password-reset-form") as HTMLFormElement | null)?.requestSubmit()}>
-            인증 후 초기화
+            로컬 초기화
           </SubmitButton>
         </>
       )}
@@ -162,7 +162,7 @@ function PasswordDialog({
   );
 }
 
-// 검색·운영 Action·Mock 관리자 재인증을 포함한 계정 관리 화면
+// 검색·운영 Action의 로컬 미리보기를 포함한 Mock 계정 관리 화면
 export default function AccountsScreen() {
   const [accounts, setAccounts] = useState<AccountItem[]>(MOCK_ACCOUNTS);
   const [filters, setFilters] = useState({ keyword: "", role: "", enabled: "" });
@@ -192,7 +192,7 @@ export default function AccountsScreen() {
     setAppliedFilters({ ...filters });
   };
 
-  // Mock 계정 로컬 생성용 재인증 대기열
+  // Mock 계정 로컬 생성 대기열
   const queueCreate = (input: AccountInput) => {
     const { email, name, role, enabled } = input;
     setCreateOpen(false);
@@ -212,7 +212,7 @@ export default function AccountsScreen() {
     });
   };
 
-  // Mock 계정 활성 상태의 로컬 변경용 재인증 대기열
+  // Mock 계정 활성 상태의 로컬 변경 대기열
   const queueStatus = (account: AccountItem) => {
     setMenuId(null);
     setPending({
@@ -223,7 +223,7 @@ export default function AccountsScreen() {
     });
   };
 
-  // Mock 계정 권한의 로컬 변경용 재인증 대기열
+  // Mock 계정 권한의 로컬 변경 대기열
   const queueRole = (account: AccountItem) => {
     const nextRole: AccountRole = account.role === "ADMIN" ? "USER" : "ADMIN";
     setMenuId(null);
@@ -235,7 +235,7 @@ export default function AccountsScreen() {
     });
   };
 
-  // 비밀번호 미저장 Mock 초기화 성공 처리용 재인증 대기열
+  // 비밀번호 미저장 Mock 초기화 성공 처리 대기열
   const queuePassword = () => {
     if (!passwordAccount) {
       return;
@@ -350,7 +350,7 @@ export default function AccountsScreen() {
       <AccountCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={queueCreate} />
       <PasswordDialog account={passwordAccount} onClose={() => setPasswordAccount(null)} onSubmit={queuePassword} />
       {pending && (
-        <AdminActionDialog
+        <LocalActionDialog
           key={pending.label}
           open
           actionLabel={pending.label}

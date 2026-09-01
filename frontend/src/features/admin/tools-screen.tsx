@@ -8,7 +8,7 @@ import type {
   ToolLinkCategory,
   ToolLinkInput,
 } from "./admin-types";
-import AdminActionDialog from "./admin-action-dialog";
+import LocalActionDialog from "./local-action-dialog";
 import DialogFrame from "./dialog-frame";
 import {
   EmptyState,
@@ -85,7 +85,7 @@ function LinkEditor({
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
           <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("tool-link-form") as HTMLFormElement | null)?.requestSubmit()}>
-            인증 후 저장
+            로컬 저장
           </SubmitButton>
         </>
       )}
@@ -137,7 +137,7 @@ export default function ToolsScreen() {
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [feedback, setFeedback] = useState("");
 
-  // Tool 활성 상태의 로컬 변경용 재인증 대기열
+  // Tool 활성 상태의 로컬 변경 대기열
   const queueTool = (tool: ToolItem) => {
     setPending({
       label: `${tool.name} Tool ${tool.enabled ? "비활성화" : "활성화"}`,
@@ -149,7 +149,7 @@ export default function ToolsScreen() {
     });
   };
 
-  // Link의 로컬 추가·수정용 재인증 대기열
+  // Link의 로컬 추가·수정 대기열
   const queueLinkSave = (input: ToolLinkInput, item?: ToolLink) => {
     setEditor(null);
     setPending(item ? {
@@ -166,7 +166,7 @@ export default function ToolsScreen() {
     });
   };
 
-  // Link의 로컬 삭제용 재인증 대기열
+  // Link의 로컬 삭제 대기열
   const queueLinkDelete = (item: ToolLink) => {
     setMenuId(null);
     setPending({
@@ -175,7 +175,7 @@ export default function ToolsScreen() {
     });
   };
 
-  // Link 노출 상태의 로컬 변경용 재인증 대기열
+  // Link 노출 상태의 로컬 변경 대기열
   const queueLinkStatus = (item: ToolLink) => {
     setPending({
       label: `${item.name} Link ${item.enabled ? "비노출" : "노출"} 전환`,
@@ -300,7 +300,7 @@ export default function ToolsScreen() {
 
       {editor && <LinkEditor key={editor.item?.id || "new"} state={editor} onClose={() => setEditor(null)} onSubmit={queueLinkSave} />}
       {pending && (
-        <AdminActionDialog
+        <LocalActionDialog
           key={pending.label}
           open
           actionLabel={pending.label}

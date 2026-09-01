@@ -15,7 +15,10 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "@/app/theme-toggle";
-import { MOCK_CURRENT_ADMIN, type MockAuthAccount } from "@/features/auth/mock-auth";
+import { ApiError, formatApiError } from "@/lib/api/client";
+import { logout as logoutRequest } from "@/lib/auth/auth-api";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
+import type { CurrentUser } from "@/types/api";
 import styles from "./admin.module.css";
 
 const NAV_ITEMS = [
@@ -31,10 +34,12 @@ function isActivePath(pathname: string, href: string) {
 }
 
 type NavigationProps = {
-  account: MockAuthAccount;
+  account: CurrentUser;
   pathname: string;
   onNavigate?: () => void;
   onLogout: () => void;
+  logoutPending: boolean;
+  logoutError: string;
 };
 
 // Desktop Rail과 Mobile Drawer가 공유하는 관리자 Navigation 내용
@@ -43,14 +48,16 @@ function Navigation({
   pathname,
   onNavigate,
   onLogout,
+  logoutPending,
+  logoutError,
 }: NavigationProps) {
   return (
     <div className={styles.navigationInner}>
       <div className={styles.adminIdentity}>
-        <span className={styles.identityMark}>KH</span>
+        <span className={styles.identityMark}>{account.name.trim().charAt(0).toUpperCase() || "A"}</span>
         <span className={styles.identityCopy}>
-          <strong>KIM HYUNWOO</strong>
-          <small>ADMIN</small>
+          <strong>{account.name}</strong>
+          <small>{account.role}</small>
         </span>
       </div>
 
@@ -91,11 +98,13 @@ function Navigation({
           className={styles.logoutButton}
           type="button"
           onClick={onLogout}
+          disabled={logoutPending}
           aria-label="로그아웃"
         >
           <LogOut aria-hidden="true" />
-          <span>Logout</span>
+          <span>{logoutPending ? "Logging out" : "Logout"}</span>
         </button>
+        <p className={`${styles.inlineError} type-small`} role="alert" aria-live="polite">{logoutError}</p>
       </div>
     </div>
   );
@@ -112,13 +121,25 @@ function DesktopSidebar(props: NavigationProps) {
   );
 }
 
-// 명시적 Mock 관리자 정보와 Responsive Admin Layout 조합
+// 실제 관리자 Session Gate와 Responsive Admin Layout 조합
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const auth = useAuthSession();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [logoutPending, setLogoutPending] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
+  const logoutInFlight = useRef(false);
+
+  useEffect(() => {
+    if (auth.status === "unauthenticated") {
+      router.replace("/login");
+    } else if (auth.status === "authenticated" && auth.user.role !== "ADMIN") {
+      router.replace("/tools");
+    }
+  }, [auth.status, auth.user, router]);
 
   useEffect(() => {
     if (!drawerOpen) {
@@ -168,15 +189,67 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     };
   }, [drawerOpen]);
 
-  // Mock 관리자 화면 종료와 로그인 화면 복귀
-  const handleLogout = () => {
-    router.replace("/login");
+  // 실제 Logout 요청과 Local Auth Session 초기화
+  const handleLogout = async () => {
+    if (logoutInFlight.current) {
+      return;
+    }
+
+    logoutInFlight.current = true;
+    setLogoutPending(true);
+    setLogoutError("");
+    try {
+      await logoutRequest();
+      auth.clear();
+      router.replace("/login");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        auth.clear();
+        router.replace("/login");
+      } else {
+        setLogoutError(formatApiError(error));
+      }
+    } finally {
+      logoutInFlight.current = false;
+      setLogoutPending(false);
+    }
   };
 
+  if (auth.status === "loading"
+      || auth.status === "unauthenticated"
+      || (auth.status === "authenticated" && auth.user.role !== "ADMIN")) {
+    return (
+      <main className={styles.shellGate} aria-busy="true">
+        <span className={styles.gateMark}>KH / ADMIN</span>
+        <div className={styles.gateLoading} role="status" aria-label="관리자 Session 확인 중">
+          <span aria-hidden="true" />
+          <p className="type-body">Session 확인 중</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (auth.status === "error") {
+    return (
+      <main className={styles.shellGate}>
+        <span className={styles.gateMark}>KH / ADMIN</span>
+        <div className={styles.gateError} role="alert">
+          <h1 className="type-title">Session을 확인하지 못했습니다</h1>
+          <p className="type-body">{formatApiError(auth.error)}</p>
+          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => void auth.refresh()}>
+            다시 시도
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   const navigationProps = {
-    account: MOCK_CURRENT_ADMIN,
+    account: auth.user,
     pathname,
-    onLogout: handleLogout,
+    onLogout: () => void handleLogout(),
+    logoutPending,
+    logoutError,
   };
 
   return (
@@ -195,7 +268,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         >
           <Menu aria-hidden="true" />
         </button>
-        <span>KH / ADMIN</span>
+        <span>{auth.user.name} / {auth.user.role}</span>
         <ThemeToggle />
       </header>
 
