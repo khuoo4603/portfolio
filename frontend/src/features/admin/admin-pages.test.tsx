@@ -7,6 +7,7 @@ import ToolsScreen from "./tools-screen";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ replace: vi.fn() }),
 }));
 
 vi.mock("./admin-read-api", async (importOriginal) => {
@@ -15,6 +16,23 @@ vi.mock("./admin-read-api", async (importOriginal) => {
     ...actual,
     getLoginLogs: vi.fn().mockResolvedValue({ items: [], page: 0, size: 50, totalElements: 0 }),
     getErrorLogs: vi.fn().mockResolvedValue({ items: [], page: 0, size: 50, totalElements: 0 }),
+  };
+});
+
+vi.mock("./admin-account-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./admin-account-api")>();
+  return {
+    ...actual,
+    getAdminAccounts: vi.fn().mockResolvedValue({
+      items: [{
+        id: 1,
+        email: "admin@example.com",
+        name: "관리자",
+        role: "ADMIN",
+        enabled: true,
+        recentLoginAt: null,
+      }],
+    }),
   };
 });
 
@@ -33,13 +51,13 @@ describe("Admin Page Header와 주요 화면", () => {
     expect(screen.getByRole("button", { name: "관리 작업" })).toBeInTheDocument();
   });
 
-  it("Accounts 제목·설명과 관리 목록을 유지", () => {
+  it("Accounts 제목·설명과 관리 목록을 유지", async () => {
     render(<AccountsScreen />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Accounts" })).toBeInTheDocument();
     expect(screen.getByText("관리자와 Tools 사용 계정의 권한, 활성 상태와 최근 로그인을 관리합니다.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "계정 생성" })).toBeInTheDocument();
-    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(await screen.findByRole("table")).toBeInTheDocument();
   });
 
   it("Tools 제목·설명과 두 운영 영역을 유지", () => {

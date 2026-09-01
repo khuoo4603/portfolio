@@ -31,14 +31,63 @@ export type DashboardData = {
   };
 };
 
+export type PortfolioContentCategory = "COMMON" | "MAIN" | "PROFILE" | "CONTACT" | "FOOTER";
+
+export type PortfolioContentCode =
+  | "SITE_MARK"
+  | "NAME"
+  | "ENGLISH_NAME"
+  | "POSITION"
+  | "AFFILIATION"
+  | "NAV_ABOUT"
+  | "NAV_TECH"
+  | "NAV_PROJECTS"
+  | "NAV_EDUCATION"
+  | "HERO_POSITION"
+  | "HERO_STATEMENT"
+  | "HERO_DESCRIPTION"
+  | "HERO_CUE"
+  | "ABOUT_SECTION_LABEL"
+  | "ABOUT_SECTION_TITLE"
+  | "TECH_SECTION_LABEL"
+  | "TECH_SECTION_TITLE"
+  | "PROJECTS_SECTION_LABEL"
+  | "PROJECTS_SECTION_TITLE"
+  | "PROJECT_DETAIL_CTA"
+  | "ACHIEVEMENTS_SECTION_LABEL"
+  | "ACHIEVEMENTS_SECTION_TITLE"
+  | "EDUCATION_GROUP_TITLE"
+  | "ACTIVITY_GROUP_TITLE"
+  | "AWARD_GROUP_TITLE"
+  | "ABOUT_STATEMENT"
+  | "ABOUT_POSITION"
+  | "ABOUT_DESCRIPTION_1"
+  | "ABOUT_DESCRIPTION_2"
+  | "DEVELOPMENT_VALUES_TITLE"
+  | "DEVELOPMENT_VALUE_1_TITLE"
+  | "DEVELOPMENT_VALUE_1_DESCRIPTION"
+  | "DEVELOPMENT_VALUE_2_TITLE"
+  | "DEVELOPMENT_VALUE_2_DESCRIPTION"
+  | "DEVELOPMENT_VALUE_3_TITLE"
+  | "DEVELOPMENT_VALUE_3_DESCRIPTION"
+  | "EMAIL"
+  | "FOOTER_NAME"
+  | "FOOTER_ROLE"
+  | "RESUME_LABEL"
+  | "RESUME_VIEW_LABEL"
+  | "RESUME_DOWNLOAD_LABEL"
+  | "CONTACT_LABEL"
+  | "PORTFOLIO_LABEL"
+  | "COPYRIGHT";
+
 export type SiteContent = {
-  category: string;
-  contentCode: string;
+  category: PortfolioContentCategory;
+  contentCode: PortfolioContentCode;
   contentValue: string;
   updatedAt: string;
 };
 
-export type ProfileEntryType = "EXPERIENCE" | "ACTIVITY" | "AWARD" | "CERTIFICATE";
+export type ProfileEntryType = "EDUCATION" | "EXPERIENCE" | "ACTIVITY" | "AWARD" | "CERTIFICATE";
 
 export type ProfileEntry = {
   id: number;
@@ -52,27 +101,40 @@ export type ProfileEntry = {
   featured: boolean;
   displayOrder: number;
   enabled: boolean;
-  createdAt?: string;
+  createdAt: string;
   updatedAt: string;
 };
 
 export type ProfileEntryInput = Omit<ProfileEntry, "id" | "createdAt" | "updatedAt">;
 
-export type TechnologyCategory = "LANGUAGE" | "BACKEND" | "INFRA" | "DEVOPS";
+export type TechnologyCategory = "LANGUAGE" | "BACKEND" | "DATABASE" | "FRONTEND" | "INFRA" | "DEVOPS";
 
 export type Technology = {
   id: number;
   name: string;
   category: TechnologyCategory;
-  iconKey: string | null;
-  displayOrder: number;
+  iconUrl: string | null;
   enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
-export type TechnologyInput = Omit<Technology, "id">;
+export type TechnologyInput = Omit<Technology, "id" | "createdAt" | "updatedAt">;
 
-export type ProjectStatus = {
-  projectKey: string;
+export type PortfolioTechnology = {
+  technologyId: number;
+  displayOrder: number;
+};
+
+export type ProjectSummary = {
+  id: number;
+  slug: string;
+  name: string;
+  year: number;
+  tagline: string;
+  cardRole: string;
+  thumbnailUrl: string | null;
+  displayOrder: number;
   enabled: boolean;
   updatedAt: string;
 };
@@ -83,21 +145,23 @@ export type ExternalLink = {
   url: string;
   displayOrder: number;
   enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
-export type ExternalLinkInput = Omit<ExternalLink, "id">;
+export type ExternalLinkInput = Omit<ExternalLink, "id" | "createdAt" | "updatedAt">;
 
 export type ResumeInfo = {
   fileName: string;
-  size: number;
   updatedAt: string;
 };
 
 export type SiteData = {
-  siteContents: SiteContent[];
+  portfolioContents: SiteContent[];
   profileEntries: ProfileEntry[];
-  technologies: Technology[];
-  projects: ProjectStatus[];
+  technologyMaster: Technology[];
+  portfolioTechnologies: PortfolioTechnology[];
+  projects: ProjectSummary[];
   externalLinks: ExternalLink[];
   resume: ResumeInfo | null;
 };
@@ -117,6 +181,14 @@ export type AccountInput = {
   password: string;
   role: AccountRole;
   enabled: boolean;
+};
+
+export type AccountListResponse = {
+  items: AccountItem[];
+};
+
+export type AccountCreateResult = Omit<AccountItem, "recentLoginAt"> & {
+  createdAt: string;
 };
 
 export type ToolItem = {

@@ -1,32 +1,44 @@
 "use client";
 
 import { MoreHorizontal, Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { formatApiError } from "@/lib/api/client";
 import type { AccountInput, AccountItem, AccountRole } from "./admin-types";
-import LocalActionDialog from "./local-action-dialog";
+import AdminActionDialog from "./admin-action-dialog";
+import {
+  accountActionBindings,
+  createAccount,
+  getAdminAccounts,
+  resetAccountPassword,
+  updateAccountRole,
+  updateAccountStatus,
+  type AccountQuery,
+} from "./admin-account-api";
 import DialogFrame from "./dialog-frame";
 import {
   EmptyState,
+  PageError,
   PageHeader,
+  PageLoading,
   StatusLabel,
   SubmitButton,
   formatDateTime,
 } from "./admin-ui";
-import { MOCK_ACCOUNTS } from "./mock-data";
+import { useAdminAction } from "./use-admin-action";
 import styles from "./admin.module.css";
 
-type PendingAction = {
-  label: string;
-  run: () => void;
+type AccountFilters = {
+  keyword: string;
+  role: "" | AccountRole;
+  enabled: "" | "true" | "false";
 };
 
-// Mock 계정 화면 Field만 사용하는 계정 생성 Form
+const EMPTY_FILTERS: AccountFilters = { keyword: "", role: "", enabled: "" };
+
 function AccountCreateDialog({
-  open,
   onClose,
   onSubmit,
 }: {
-  open: boolean;
   onClose: () => void;
   onSubmit: (input: AccountInput) => void;
 }) {
@@ -39,42 +51,38 @@ function AccountCreateDialog({
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
       setError("이메일 형식을 확인해 주세요.");
       return;
     }
-
     if (!name.trim()) {
       setError("이름을 입력해 주세요.");
       return;
     }
-
     if (password.length < 8 || password.length > 64 || password.trim() !== password) {
       setError("비밀번호는 앞뒤 공백 없이 8~64자로 입력해 주세요.");
       return;
     }
+    if (password.toLowerCase() === normalizedEmail) {
+      setError("비밀번호는 이메일과 같을 수 없습니다.");
+      return;
+    }
 
-    onSubmit({
-      email: email.trim().toLowerCase(),
-      name: name.trim(),
-      password,
-      role,
-      enabled,
-    });
+    onSubmit({ email: normalizedEmail, name: name.trim(), password, role, enabled });
   };
 
   return (
     <DialogFrame
-      open={open}
+      open
       title="계정 생성"
       description="회원가입 없이 관리자만 새 계정을 등록할 수 있습니다."
       onClose={onClose}
       footer={(
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="submit" onClick={() => (document.getElementById("account-create-form") as HTMLFormElement | null)?.requestSubmit()}>
-            로컬 생성
+          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("account-create-form") as HTMLFormElement | null)?.requestSubmit()}>
+            계정 생성
           </SubmitButton>
         </>
       )}
@@ -111,141 +119,164 @@ function AccountCreateDialog({
   );
 }
 
-// 관리자 초기화 정책에 맞는 새 비밀번호 입력 Form
 function PasswordDialog({
   account,
   onClose,
   onSubmit,
 }: {
-  account: AccountItem | null;
+  account: AccountItem;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (password: string) => void;
 }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     if (password.length < 8 || password.length > 64 || password.trim() !== password) {
       setError("비밀번호는 앞뒤 공백 없이 8~64자로 입력해 주세요.");
       return;
     }
-
-    onSubmit();
+    if (password.toLowerCase() === account.email.toLowerCase()) {
+      setError("비밀번호는 이메일과 같을 수 없습니다.");
+      return;
+    }
+    onSubmit(password);
   };
 
   return (
     <DialogFrame
-      open={account !== null}
+      open
       title="비밀번호 초기화"
-      description={account ? `${account.email} 계정의 새 비밀번호를 설정합니다.` : undefined}
+      description={`${account.email} 계정의 새 비밀번호를 설정합니다.`}
       onClose={onClose}
       footer={(
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="submit" onClick={() => (document.getElementById("password-reset-form") as HTMLFormElement | null)?.requestSubmit()}>
-            로컬 초기화
+          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("password-reset-form") as HTMLFormElement | null)?.requestSubmit()}>
+            비밀번호 초기화
           </SubmitButton>
         </>
       )}
     >
-      <form id="password-reset-form" className={styles.editorForm} onSubmit={handleSubmit}>
+      <form id="password-reset-form" className={styles.editorForm} onSubmit={handleSubmit} noValidate>
         <label className={styles.formField}>
           <span className="type-small">새 비밀번호</span>
           <input className="type-body" type="password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} autoComplete="new-password" />
         </label>
-        <p className={`${styles.fieldHint} type-small`}>8~64자 형식만 확인하며 Mock 화면에 값을 저장하지 않음</p>
+        <p className={`${styles.fieldHint} type-small`}>앞뒤 공백 없는 8~64자이며 이메일과 다르게 입력합니다.</p>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
       </form>
     </DialogFrame>
   );
 }
 
-// 검색·운영 Action의 로컬 미리보기를 포함한 Mock 계정 관리 화면
+// Backend Filter와 작업별 ADMIN_ACTION을 사용하는 계정 관리 화면
 export default function AccountsScreen() {
-  const [accounts, setAccounts] = useState<AccountItem[]>(MOCK_ACCOUNTS);
-  const [filters, setFilters] = useState({ keyword: "", role: "", enabled: "" });
-  const [appliedFilters, setAppliedFilters] = useState(filters);
+  const [accounts, setAccounts] = useState<AccountItem[] | null>(null);
+  const [filters, setFilters] = useState<AccountFilters>(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<AccountFilters>(EMPTY_FILTERS);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [passwordAccount, setPasswordAccount] = useState<AccountItem | null>(null);
   const [menuId, setMenuId] = useState<number | null>(null);
-  const [pending, setPending] = useState<PendingAction | null>(null);
   const [feedback, setFeedback] = useState("");
+  const requestSequence = useRef(0);
+  const adminAction = useAdminAction();
 
-  const filteredAccounts = useMemo(() => {
-    const keyword = appliedFilters.keyword.trim().toLowerCase();
-    return accounts.filter((account) => {
-      const matchesKeyword = !keyword
-        || account.email.toLowerCase().includes(keyword)
-        || account.name.toLowerCase().includes(keyword);
-      const matchesRole = !appliedFilters.role || account.role === appliedFilters.role;
-      const matchesStatus = appliedFilters.enabled === ""
-        || account.enabled === (appliedFilters.enabled === "true");
-      return matchesKeyword && matchesRole && matchesStatus;
+  const loadAccounts = useCallback(async () => {
+    const requestId = ++requestSequence.current;
+    setLoading(true);
+    setError("");
+    const query: AccountQuery = {
+      keyword: appliedFilters.keyword.trim() || undefined,
+      role: appliedFilters.role || undefined,
+      enabled: appliedFilters.enabled === "" ? undefined : appliedFilters.enabled === "true",
+    };
+    try {
+      const response = await getAdminAccounts(query);
+      if (requestSequence.current === requestId) {
+        setAccounts(response.items);
+      }
+    } catch (caught) {
+      if (requestSequence.current === requestId) {
+        setAccounts(null);
+        setError(formatApiError(caught));
+      }
+    } finally {
+      if (requestSequence.current === requestId) {
+        setLoading(false);
+      }
+    }
+  }, [appliedFilters]);
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (active) {
+        void loadAccounts();
+      }
     });
-  }, [accounts, appliedFilters]);
+    return () => {
+      active = false;
+      requestSequence.current += 1;
+    };
+  }, [loadAccounts]);
 
-  // 현재 입력 Filter의 로컬 목록 반영
   const handleFilter = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAppliedFilters({ ...filters });
   };
 
-  // Mock 계정 로컬 생성 대기열
+  const completeMutation = (message: string) => {
+    setFeedback(message);
+    setMenuId(null);
+    void loadAccounts();
+  };
+
   const queueCreate = (input: AccountInput) => {
-    const { email, name, role, enabled } = input;
     setCreateOpen(false);
-    setPending({
-      label: `${email} 계정 생성`,
-      run: () => setAccounts((current) => [
-        ...current,
-        {
-          id: current.reduce((largest, item) => Math.max(largest, item.id), 0) + 1,
-          email,
-          name,
-          role,
-          enabled,
-          recentLoginAt: null,
-        },
-      ]),
+    void adminAction.start({
+      ...accountActionBindings.create(),
+      actionLabel: `${input.email} 계정 생성`,
+      mutation: (verification) => createAccount(input, verification),
+      onSuccess: () => completeMutation("계정을 생성했습니다."),
     });
   };
 
-  // Mock 계정 활성 상태의 로컬 변경 대기열
   const queueStatus = (account: AccountItem) => {
     setMenuId(null);
-    setPending({
-      label: `${account.email} 계정 ${account.enabled ? "비활성화" : "활성화"}`,
-      run: () => setAccounts((current) => current.map((item) => (
-        item.id === account.id ? { ...item, enabled: !item.enabled } : item
-      ))),
+    void adminAction.start({
+      ...accountActionBindings.status(account.id),
+      actionLabel: `${account.email} 계정 ${account.enabled ? "비활성화" : "활성화"}`,
+      mutation: (verification) => updateAccountStatus(account.id, !account.enabled, verification),
+      onSuccess: () => completeMutation("계정 활성 상태를 변경했습니다."),
     });
   };
 
-  // Mock 계정 권한의 로컬 변경 대기열
   const queueRole = (account: AccountItem) => {
     const nextRole: AccountRole = account.role === "ADMIN" ? "USER" : "ADMIN";
     setMenuId(null);
-    setPending({
-      label: `${account.email} 권한을 ${nextRole}로 변경`,
-      run: () => setAccounts((current) => current.map((item) => (
-        item.id === account.id ? { ...item, role: nextRole } : item
-      ))),
+    void adminAction.start({
+      ...accountActionBindings.role(account.id),
+      actionLabel: `${account.email} 권한을 ${nextRole}로 변경`,
+      mutation: (verification) => updateAccountRole(account.id, nextRole, verification),
+      onSuccess: () => completeMutation("계정 권한을 변경했습니다."),
     });
   };
 
-  // 비밀번호 미저장 Mock 초기화 성공 처리 대기열
-  const queuePassword = () => {
+  const queuePassword = (newPassword: string) => {
     if (!passwordAccount) {
       return;
     }
-
     const account = passwordAccount;
     setPasswordAccount(null);
-    setPending({
-      label: `${account.email} 비밀번호 초기화`,
-      run: () => undefined,
+    void adminAction.start({
+      ...accountActionBindings.password(account.id),
+      actionLabel: `${account.email} 비밀번호 초기화`,
+      mutation: (verification) => resetAccountPassword(account.id, newPassword, verification),
+      onSuccess: () => completeMutation("계정 비밀번호를 초기화했습니다."),
     });
   };
 
@@ -267,18 +298,12 @@ export default function AccountsScreen() {
           <span className="type-small">계정 검색</span>
           <div className={styles.searchField}>
             <Search aria-hidden="true" />
-            <input
-              className="type-body"
-              type="search"
-              value={filters.keyword}
-              onChange={(event) => setFilters((current) => ({ ...current, keyword: event.currentTarget.value }))}
-              placeholder="이메일 또는 이름"
-            />
+            <input className="type-body" type="search" value={filters.keyword} onChange={(event) => setFilters({ ...filters, keyword: event.currentTarget.value })} placeholder="이메일 또는 이름" />
           </div>
         </label>
         <label>
           <span className="type-small">권한</span>
-          <select className="type-body" value={filters.role} onChange={(event) => setFilters((current) => ({ ...current, role: event.currentTarget.value }))}>
+          <select className="type-body" value={filters.role} onChange={(event) => setFilters({ ...filters, role: event.currentTarget.value as AccountFilters["role"] })}>
             <option value="">전체</option>
             <option value="ADMIN">ADMIN</option>
             <option value="USER">USER</option>
@@ -286,7 +311,7 @@ export default function AccountsScreen() {
         </label>
         <label>
           <span className="type-small">활성 상태</span>
-          <select className="type-body" value={filters.enabled} onChange={(event) => setFilters((current) => ({ ...current, enabled: event.currentTarget.value }))}>
+          <select className="type-body" value={filters.enabled} onChange={(event) => setFilters({ ...filters, enabled: event.currentTarget.value as AccountFilters["enabled"] })}>
             <option value="">전체</option>
             <option value="true">활성</option>
             <option value="false">비활성</option>
@@ -296,72 +321,40 @@ export default function AccountsScreen() {
       </form>
 
       {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
+      {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
 
-      {filteredAccounts.length === 0 ? (
+      {loading ? (
+        <PageLoading rows={5} />
+      ) : error ? (
+        <PageError message={error} onRetry={() => void loadAccounts()} />
+      ) : accounts?.length === 0 ? (
         <EmptyState title="계정 없음" description="현재 조건에 해당하는 계정이 없습니다." />
-      ) : (
+      ) : accounts ? (
         <div className={styles.dataTableWrap}>
           <table className={styles.dataTable}>
-            <thead>
-              <tr>
-                <th>계정</th>
-                <th>이름</th>
-                <th>권한</th>
-                <th>상태</th>
-                <th>최근 로그인</th>
-                <th><span className={styles.srOnly}>작업</span></th>
-              </tr>
-            </thead>
+            <thead><tr><th>계정</th><th>이름</th><th>권한</th><th>상태</th><th>최근 로그인</th><th><span className={styles.srOnly}>작업</span></th></tr></thead>
             <tbody>
-              {filteredAccounts.map((account) => (
+              {accounts.map((account) => (
                 <tr key={account.id}>
                   <td data-label="계정"><strong>{account.email}</strong></td>
                   <td data-label="이름">{account.name}</td>
                   <td data-label="권한"><span className={styles.roleBadge}>{account.role}</span></td>
-                  <td data-label="상태">
-                    <StatusLabel tone={account.enabled ? "success" : "neutral"}>{account.enabled ? "활성" : "비활성"}</StatusLabel>
-                  </td>
+                  <td data-label="상태"><StatusLabel tone={account.enabled ? "success" : "neutral"}>{account.enabled ? "활성" : "비활성"}</StatusLabel></td>
                   <td data-label="최근 로그인"><time>{formatDateTime(account.recentLoginAt)}</time></td>
                   <td className={styles.actionCell}>
-                    <button
-                      className={styles.iconButton}
-                      type="button"
-                      onClick={() => setMenuId((current) => current === account.id ? null : account.id)}
-                      aria-label={`${account.email} 계정 작업`}
-                      aria-expanded={menuId === account.id}
-                    >
-                      <MoreHorizontal aria-hidden="true" />
-                    </button>
-                    {menuId === account.id && (
-                      <div className={styles.rowMenu}>
-                        <button type="button" onClick={() => queueStatus(account)}>{account.enabled ? "비활성화" : "활성화"}</button>
-                        <button type="button" onClick={() => queueRole(account)}>{account.role === "ADMIN" ? "USER로 변경" : "ADMIN으로 변경"}</button>
-                        <button type="button" onClick={() => { setMenuId(null); setPasswordAccount(account); }}>비밀번호 초기화</button>
-                      </div>
-                    )}
+                    <button className={styles.iconButton} type="button" onClick={() => setMenuId((current) => current === account.id ? null : account.id)} aria-label={`${account.email} 계정 작업`} aria-expanded={menuId === account.id}><MoreHorizontal aria-hidden="true" /></button>
+                    {menuId === account.id && <div className={styles.rowMenu}><button type="button" onClick={() => queueStatus(account)}>{account.enabled ? "비활성화" : "활성화"}</button><button type="button" onClick={() => queueRole(account)}>{account.role === "ADMIN" ? "USER로 변경" : "ADMIN으로 변경"}</button><button type="button" onClick={() => { setMenuId(null); setPasswordAccount(account); }}>비밀번호 초기화</button></div>}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
 
-      <AccountCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={queueCreate} />
-      <PasswordDialog account={passwordAccount} onClose={() => setPasswordAccount(null)} onSubmit={queuePassword} />
-      {pending && (
-        <LocalActionDialog
-          key={pending.label}
-          open
-          actionLabel={pending.label}
-          onCancel={() => setPending(null)}
-          onConfirm={() => {
-            pending.run();
-            setPending(null);
-            setFeedback("계정 변경을 반영했습니다.");
-          }}
-        />
-      )}
+      {createOpen && <AccountCreateDialog onClose={() => setCreateOpen(false)} onSubmit={queueCreate} />}
+      {passwordAccount && <PasswordDialog account={passwordAccount} onClose={() => setPasswordAccount(null)} onSubmit={queuePassword} />}
+      {adminAction.dialog && <AdminActionDialog {...adminAction.dialog} />}
     </>
   );
 }
