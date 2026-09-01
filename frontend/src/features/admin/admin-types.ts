@@ -20,12 +20,12 @@ export type DashboardData = {
     todayPageViews: number;
     monthVisitors: number;
     monthPageViews: number;
-    trends: Record<6 | 12, TrafficPoint[]>;
+    trend: TrafficPoint[];
   };
   serviceStatus: ServiceStatus[];
   siteSummary: {
     publicProjects: number;
-    technologies: number;
+    portfolioTechnologies: number;
     activeTools: number;
     activeAccounts: number;
   };
@@ -147,9 +147,9 @@ export type LoginLog = {
   result: "SUCCESS" | "FAILURE";
   failureReason: string | null;
   ip: string;
-  browser: string;
-  os: string;
-  device: string;
+  browser: string | null;
+  os: string | null;
+  device: string | null;
   traceId: string;
 };
 
@@ -157,10 +157,20 @@ export type ErrorLog = {
   id: number;
   occurredAt: string;
   service: "FRONTEND" | "BACKEND";
-  method: string;
-  path: string;
+  method: string | null;
+  path: string | null;
   statusCode: number;
   errorCode: string | null;
   message: string;
   traceId: string;
 };
+
+export type PageResponse<T> = {
+  items: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+};
+
+export type LoginLogPage = PageResponse<LoginLog>;
+export type ErrorLogPage = PageResponse<ErrorLog>;

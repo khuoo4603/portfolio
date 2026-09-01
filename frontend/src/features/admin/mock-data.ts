@@ -1,62 +1,11 @@
 import type {
   AccountItem,
-  DashboardData,
-  ErrorLog,
-  LoginLog,
   SiteData,
   ToolItem,
   ToolLink,
 } from "./admin-types";
 
 const MOCK_UPDATED_AT = "2026-08-25T12:00:00+09:00";
-
-// Dashboard의 기간별 방문 추이와 운영 상태 Sample
-export const MOCK_DASHBOARD: DashboardData = {
-  traffic: {
-    todayVisitors: 184,
-    todayPageViews: 463,
-    monthVisitors: 3_842,
-    monthPageViews: 9_716,
-    trends: {
-      6: [
-        { month: "2026-03", visitors: 1_980, pageViews: 4_220 },
-        { month: "2026-04", visitors: 2_340, pageViews: 5_110 },
-        { month: "2026-05", visitors: 2_760, pageViews: 6_480 },
-        { month: "2026-06", visitors: 3_120, pageViews: 7_260 },
-        { month: "2026-07", visitors: 3_490, pageViews: 8_610 },
-        { month: "2026-08", visitors: 3_842, pageViews: 9_716 },
-      ],
-      12: [
-        { month: "2025-09", visitors: 920, pageViews: 1_840 },
-        { month: "2025-10", visitors: 1_080, pageViews: 2_210 },
-        { month: "2025-11", visitors: 1_240, pageViews: 2_680 },
-        { month: "2025-12", visitors: 1_410, pageViews: 3_060 },
-        { month: "2026-01", visitors: 1_560, pageViews: 3_380 },
-        { month: "2026-02", visitors: 1_730, pageViews: 3_760 },
-        { month: "2026-03", visitors: 1_980, pageViews: 4_220 },
-        { month: "2026-04", visitors: 2_340, pageViews: 5_110 },
-        { month: "2026-05", visitors: 2_760, pageViews: 6_480 },
-        { month: "2026-06", visitors: 3_120, pageViews: 7_260 },
-        { month: "2026-07", visitors: 3_490, pageViews: 8_610 },
-        { month: "2026-08", visitors: 3_842, pageViews: 9_716 },
-      ],
-    },
-  },
-  serviceStatus: [
-    { serviceKey: "PORTFOLIO_FRONTEND", status: "UP", responseTimeMs: 42, httpStatus: 200, lastCheckedAt: "2026-08-25T11:59:30+09:00" },
-    { serviceKey: "PORTFOLIO_BACKEND", status: "DOWN", responseTimeMs: null, httpStatus: 503, lastCheckedAt: "2026-08-25T11:59:28+09:00" },
-    { serviceKey: "KYVC_FRONTEND", status: "UP", responseTimeMs: 86, httpStatus: 200, lastCheckedAt: "2026-08-25T11:59:25+09:00" },
-    { serviceKey: "KYVC_BACKEND", status: "UP", responseTimeMs: 134, httpStatus: 200, lastCheckedAt: "2026-08-25T11:59:23+09:00" },
-    { serviceKey: "KYVC_CORE", status: "DOWN", responseTimeMs: 1_504, httpStatus: 502, lastCheckedAt: "2026-08-25T11:59:20+09:00" },
-    { serviceKey: "SHKUTRACK", status: "UP", responseTimeMs: 97, httpStatus: 200, lastCheckedAt: "2026-08-25T11:59:18+09:00" },
-  ],
-  siteSummary: {
-    publicProjects: 2,
-    technologies: 10,
-    activeTools: 1,
-    activeAccounts: 4,
-  },
-};
 
 // 현재 Public 정적 콘텐츠 기반 Site 관리 초기값
 export const MOCK_SITE_DATA: SiteData = {
@@ -136,48 +85,3 @@ export const MOCK_TOOL_LINKS: ToolLink[] = [
   { id: 3, name: "KYvC", description: "법인 KYC 자동 심사 프로젝트", url: "https://github.com/khuoo4603", category: "MY_SERVICES", displayOrder: 3, enabled: false },
   { id: 4, name: "GitHub", description: "김현우 GitHub", url: "https://github.com/khuoo4603", category: "PERSONAL", displayOrder: 4, enabled: true },
 ];
-
-const MOCK_LOGIN_EMAILS = ["admin@portfolio.local", "user@portfolio.local", "editor@portfolio.local", "viewer@example.test"];
-const MOCK_LOGIN_FAILURES = ["INVALID_CREDENTIALS", "RATE_LIMITED", "VERIFICATION_FAILED", "VERIFICATION_EXPIRED"] as const;
-const MOCK_BROWSERS = ["Chrome 140", "Firefox 142", "Edge 140", "Safari 19"];
-const MOCK_SYSTEMS = ["Windows 11", "Ubuntu 24.04", "macOS 16", "Android 16"];
-
-// 필터와 Client Pagination 검증에 충분한 로그인 기록
-export const MOCK_LOGIN_LOGS: LoginLog[] = Array.from({ length: 72 }, (_, index) => {
-  const result: LoginLog["result"] = index % 3 === 1 ? "FAILURE" : "SUCCESS";
-
-  return {
-    id: index + 1,
-    occurredAt: new Date(Date.UTC(2026, 7, 25, 3) - index * 3 * 60 * 60 * 1000).toISOString(),
-    email: MOCK_LOGIN_EMAILS[index % MOCK_LOGIN_EMAILS.length],
-    result,
-    failureReason: result === "FAILURE" ? MOCK_LOGIN_FAILURES[index % MOCK_LOGIN_FAILURES.length] : null,
-    ip: `192.0.2.${10 + (index % 90)}`,
-    browser: MOCK_BROWSERS[index % MOCK_BROWSERS.length],
-    os: MOCK_SYSTEMS[index % MOCK_SYSTEMS.length],
-    device: index % 4 === 3 ? "MOBILE" : "DESKTOP",
-    traceId: `mock-login-${String(index + 1).padStart(4, "0")}`,
-  };
-});
-
-const MOCK_ERROR_STATUSES = [500, 502, 503] as const;
-const MOCK_ERROR_PATHS = ["/", "/projects/kyvc", "/projects/shkutrack", "/admin", "/admin/site"];
-const MOCK_ERROR_CODES = ["MOCK_INTERNAL_ERROR", "MOCK_UPSTREAM_ERROR", "MOCK_SERVICE_UNAVAILABLE"];
-const MOCK_ERROR_MESSAGES = ["Sample 내부 처리 오류", "Sample 상위 서비스 응답 오류", "Sample 서비스 일시 중단"];
-
-// 서비스·상태별 필터와 Client Pagination 검증에 충분한 5xx 기록
-export const MOCK_ERROR_LOGS: ErrorLog[] = Array.from({ length: 64 }, (_, index) => {
-  const variant = index % MOCK_ERROR_STATUSES.length;
-
-  return {
-    id: index + 1,
-    occurredAt: new Date(Date.UTC(2026, 7, 25, 2) - index * 5 * 60 * 60 * 1000).toISOString(),
-    service: index % 2 === 0 ? "FRONTEND" : "BACKEND",
-    method: index % 3 === 0 ? "GET" : index % 3 === 1 ? "POST" : "PATCH",
-    path: MOCK_ERROR_PATHS[index % MOCK_ERROR_PATHS.length],
-    statusCode: MOCK_ERROR_STATUSES[variant],
-    errorCode: MOCK_ERROR_CODES[variant],
-    message: MOCK_ERROR_MESSAGES[variant],
-    traceId: `mock-error-${String(index + 1).padStart(4, "0")}`,
-  };
-});

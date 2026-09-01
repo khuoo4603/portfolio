@@ -9,6 +9,15 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+vi.mock("./admin-read-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./admin-read-api")>();
+  return {
+    ...actual,
+    getLoginLogs: vi.fn().mockResolvedValue({ items: [], page: 0, size: 50, totalElements: 0 }),
+    getErrorLogs: vi.fn().mockResolvedValue({ items: [], page: 0, size: 50, totalElements: 0 }),
+  };
+});
+
 describe("Admin Page Header와 주요 화면", () => {
   afterEach(() => cleanup());
 
