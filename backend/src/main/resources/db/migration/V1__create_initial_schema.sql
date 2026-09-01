@@ -213,7 +213,7 @@ CREATE TABLE tool_links (
     name VARCHAR(100) NOT NULL,
     description VARCHAR(500),
     url TEXT NOT NULL,
-    image_url TEXT,
+    image_storage_key VARCHAR(255),
     category VARCHAR(50) NOT NULL,
     display_order INTEGER NOT NULL DEFAULT 0,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,

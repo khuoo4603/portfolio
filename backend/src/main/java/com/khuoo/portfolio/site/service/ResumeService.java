@@ -161,7 +161,7 @@ public class ResumeService {
     private void deletePrevious(String storageKey) {
         try {
             resumeStorage.delete(storageKey);
-        } catch (IOException | ApiException exception) {
+        } catch (ApiException exception) {
             logEventLogger.error(
                     "site.resume.previous-file-delete.failure",
                     "이력서 교체 후 기존 파일 정리 실패",
@@ -174,7 +174,7 @@ public class ResumeService {
     private void deleteNew(String storageKey) {
         try {
             resumeStorage.delete(storageKey);
-        } catch (IOException | ApiException exception) {
+        } catch (ApiException exception) {
             logEventLogger.error(
                     "site.resume.new-file-cleanup.failure",
                     "이력서 Metadata 저장 실패 후 신규 파일 정리 실패",

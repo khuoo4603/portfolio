@@ -346,16 +346,16 @@ VALUES
     ('LINKS', 'Links', TRUE);
 
 -- Links Tool 초기값
-INSERT INTO tool_links (name, description, url, image_url, category, display_order, enabled)
+INSERT INTO tool_links (name, description, url, category, display_order, enabled)
 VALUES
-    ('React Bits', 'Public Background / Shader / Noise / Hover / Text Interaction 레퍼런스', 'https://reactbits.dev/', '/images/tools/links/react-bits.webp', 'REFERENCE', 1, TRUE),
-    ('Aceternity UI', 'Public UI / Interaction / Project Showcase 레퍼런스', 'https://ui.aceternity.com/', '/images/tools/links/aceternity-ui.webp', 'REFERENCE', 2, TRUE),
-    ('Magic UI', 'Admin / Tools UI Component 레퍼런스', 'https://magicui.design/', '/images/tools/links/magic-ui.webp', 'REFERENCE', 3, TRUE),
-    ('Color Hunt', '컬러 팔레트 탐색 및 색 조합 레퍼런스', 'https://colorhunt.co/', '/images/tools/links/color-hunt.webp', 'REFERENCE', 4, TRUE),
-    ('Adobe Color', '컬러 팔레트 생성 및 색 조합 탐색', 'https://color.adobe.com/', '/images/tools/links/adobe-color.webp', 'REFERENCE', 5, TRUE),
-    ('Happy Hues', '컬러 팔레트와 실제 UI 적용 예시', 'https://www.happyhues.co/', '/images/tools/links/happy-hues.webp', 'REFERENCE', 6, TRUE),
-    ('Realtime Colors', '웹 화면에서 색 조합을 실시간으로 확인하는 도구', 'https://www.realtimecolors.com/', '/images/tools/links/realtime-colors.webp', 'REFERENCE', 7, TRUE),
-    ('KYvC', 'KYvC 서비스', 'https://kyvc.kr/', '/images/profile/project-intro-kyvc.webp', 'MY_SERVICES', 1, TRUE),
-    ('KYvC Intro', 'KYvC 소개 페이지', 'https://intro.kyvc.kr/', NULL, 'MY_SERVICES', 2, TRUE),
-    ('SKHUTrack', 'SKHUTrack 서비스', 'https://skhutrack.com/', '/images/profile/project-intro-skhutrack.webp', 'MY_SERVICES', 3, TRUE),
-    ('khuoo.synology.me', '개인 서비스', 'https://khuoo.synology.me/', NULL, 'MY_SERVICES', 4, TRUE);
+    ('React Bits', 'Public Background / Shader / Noise / Hover / Text Interaction 레퍼런스', 'https://reactbits.dev/', 'REFERENCE', 1, TRUE),
+    ('Aceternity UI', 'Public UI / Interaction / Project Showcase 레퍼런스', 'https://ui.aceternity.com/', 'REFERENCE', 2, TRUE),
+    ('Magic UI', 'Admin / Tools UI Component 레퍼런스', 'https://magicui.design/', 'REFERENCE', 3, TRUE),
+    ('Color Hunt', '컬러 팔레트 탐색 및 색 조합 레퍼런스', 'https://colorhunt.co/', 'REFERENCE', 4, TRUE),
+    ('Adobe Color', '컬러 팔레트 생성 및 색 조합 탐색', 'https://color.adobe.com/', 'REFERENCE', 5, TRUE),
+    ('Happy Hues', '컬러 팔레트와 실제 UI 적용 예시', 'https://www.happyhues.co/', 'REFERENCE', 6, TRUE),
+    ('Realtime Colors', '웹 화면에서 색 조합을 실시간으로 확인하는 도구', 'https://www.realtimecolors.com/', 'REFERENCE', 7, TRUE),
+    ('KYvC', 'KYvC 서비스', 'https://kyvc.kr/', 'MY_SERVICES', 1, TRUE),
+    ('KYvC Intro', 'KYvC 소개 페이지', 'https://intro.kyvc.kr/', 'MY_SERVICES', 2, TRUE),
+    ('SKHUTrack', 'SKHUTrack 서비스', 'https://skhutrack.com/', 'MY_SERVICES', 3, TRUE),
+    ('khuoo.synology.me', '개인 서비스', 'https://khuoo.synology.me/', 'MY_SERVICES', 4, TRUE);

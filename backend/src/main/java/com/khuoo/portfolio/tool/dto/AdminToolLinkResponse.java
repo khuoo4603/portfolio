@@ -38,7 +38,7 @@ public record AdminToolLinkResponse(
                 link.getName(),
                 link.getDescription(),
                 link.getUrl(),
-                link.getImageUrl(),
+                link.getImageStorageKey(),
                 link.getCategory(),
                 link.getDisplayOrder(),
                 link.isEnabled()

@@ -32,7 +32,7 @@ public record ToolLinkResponse(
                 link.getName(),
                 link.getDescription(),
                 link.getUrl(),
-                link.getImageUrl(),
+                link.getImageStorageKey(),
                 link.getCategory()
         );
     }

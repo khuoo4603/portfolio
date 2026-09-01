@@ -74,16 +74,18 @@ class ResumeIntegrationTests extends SiteIntegrationTestSupport {
     // Test별 OS Temp Resume 경로 등록
     @DynamicPropertySource
     static void resumeProperties(DynamicPropertyRegistry registry) {
-        registry.add("portfolio.file.resume-directory", STORAGE_ROOT::toString);
+        registry.add("portfolio.file.storage-root", STORAGE_ROOT::toString);
     }
 
     // Test별 Storage 파일과 Spy 동작 초기화
     @BeforeEach
     void clearResumeStorage() throws IOException {
         Mockito.reset(resumeStorage);
-        try (var files = Files.list(STORAGE_ROOT)) {
-            for (Path file : files.toList()) {
-                Files.deleteIfExists(file);
+        try (var paths = Files.walk(STORAGE_ROOT)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                if (!path.equals(STORAGE_ROOT)) {
+                    Files.deleteIfExists(path);
+                }
             }
         }
     }
@@ -115,7 +117,7 @@ class ResumeIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(jsonPath("$.size").value(PDF_A.length))
                 .andExpect(jsonPath("$.updatedAt").value(org.hamcrest.Matchers.endsWith("+09:00")));
         String firstKey = storageKey();
-        assertThat(firstKey).matches("[0-9a-f-]{36}\\.pdf");
+        assertThat(firstKey).matches("resume/[0-9a-f-]{36}\\.pdf");
         assertThat(firstKey).doesNotContain("이력서");
         assertThat(Files.readAllBytes(STORAGE_ROOT.resolve(firstKey))).isEqualTo(PDF_A);
         assertPublicPdf(PDF_A, "경력 이력서 A.pdf");
@@ -178,7 +180,7 @@ class ResumeIntegrationTests extends SiteIntegrationTestSupport {
 
         ActionChallenge traversal = challenge("RESUME_REPLACE", "RESUME", null);
         upload(pdf("../../resume.pdf", PDF_A), traversal, true, admin()).andExpect(status().isOk());
-        assertThat(storageKey()).matches("[0-9a-f-]{36}\\.pdf");
+        assertThat(storageKey()).matches("resume/[0-9a-f-]{36}\\.pdf");
         assertThat(STORAGE_ROOT.resolve(storageKey()).normalize().startsWith(STORAGE_ROOT)).isTrue();
         assertThatThrownBy(() -> resumeStorage.open("../outside.pdf"))
                 .isInstanceOf(ApiException.class);
@@ -214,7 +216,7 @@ class ResumeIntegrationTests extends SiteIntegrationTestSupport {
         assertThat(storageFileCount()).isEqualTo(filesBeforeDbFailure);
         assertThat(Files.readAllBytes(STORAGE_ROOT.resolve(firstKey))).isEqualTo(PDF_A);
 
-        doThrow(new IOException("forced previous delete failure"))
+        doThrow(new ApiException(ErrorCode.COMMON_INTERNAL_ERROR))
                 .when(resumeStorage).delete(eq(firstKey));
         ActionChallenge deleteFailure = challenge("RESUME_REPLACE", "RESUME", null);
         upload(pdf("current.pdf", PDF_B), deleteFailure, true, admin()).andExpect(status().isOk());
@@ -300,8 +302,8 @@ class ResumeIntegrationTests extends SiteIntegrationTestSupport {
     }
 
     private int storageFileCount() throws IOException {
-        try (var files = Files.list(STORAGE_ROOT)) {
-            return (int) files.filter(Files::isRegularFile).count();
+        try (var paths = Files.walk(STORAGE_ROOT)) {
+            return (int) paths.filter(Files::isRegularFile).count();
         }
     }
 

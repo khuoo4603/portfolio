@@ -188,7 +188,7 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
                 .containsEntry("name", "Spring Docs")
                 .containsEntry("description", "공식 문서")
                 .containsEntry("url", "https://spring.io")
-                .containsEntry("image_url", "/images/spring.webp")
+                .containsEntry("image_storage_key", "/images/spring.webp")
                 .containsEntry("category", "REFERENCE")
                 .containsEntry("display_order", 10)
                 .containsEntry("enabled", true);
@@ -225,7 +225,7 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
     void linkUpdateAndDeletePreservePatchMeaningAndOwnershipBinding() throws Exception {
         jdbcTemplate.update("DELETE FROM tool_links");
         Long linkId = insertLink("Original", "REFERENCE", 20, true);
-        jdbcTemplate.update("UPDATE tool_links SET description = 'Original description', image_url = '/original.webp' WHERE id = ?",
+        jdbcTemplate.update("UPDATE tool_links SET description = 'Original description', image_storage_key = '/original.webp' WHERE id = ?",
                 linkId);
 
         ActionChallenge rename = challenge("TOOL_LINK_UPDATE", "TOOL_LINK", linkId.toString());
@@ -234,13 +234,13 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(jsonPath("$.name").value("Updated"))
                 .andExpect(jsonPath("$.description").value("Original description"))
                 .andExpect(jsonPath("$.imageUrl").value("/original.webp"));
-        assertThat(linkValue(linkId, "image_url")).isEqualTo("/original.webp");
+        assertThat(linkValue(linkId, "image_storage_key")).isEqualTo("/original.webp");
 
         ActionChallenge clearImage = challenge("TOOL_LINK_UPDATE", "TOOL_LINK", linkId.toString());
         change(patch(ADMIN_TOOLS_PATH + "/links/" + linkId), clearImage, "{\"imageUrl\":null}", true)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.imageUrl").value((Object) null));
-        assertThat(linkValue(linkId, "image_url")).isNull();
+        assertThat(linkValue(linkId, "image_storage_key")).isNull();
 
         ActionChallenge disable = challenge("TOOL_LINK_UPDATE", "TOOL_LINK", linkId.toString());
         change(patch(ADMIN_TOOLS_PATH + "/links/" + linkId), disable, "{\"enabled\":false}", true)
@@ -308,7 +308,7 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
     }
 
     private Object linkValue(Long linkId, String column) {
-        return jdbcTemplate.queryForMap("SELECT image_url, enabled, display_order FROM tool_links WHERE id = ?", linkId)
+        return jdbcTemplate.queryForMap("SELECT image_storage_key, enabled, display_order FROM tool_links WHERE id = ?", linkId)
                 .get(column);
     }
 

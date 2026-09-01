@@ -135,7 +135,7 @@ public class AdminToolService {
                 : link.getUrl();
         String imageUrl = PatchValues.present(request.imageUrl())
                 ? PatchValues.nullableString(request.imageUrl(), Integer.MAX_VALUE)
-                : link.getImageUrl();
+                : link.getImageStorageKey();
         ToolLinkCategory category = PatchValues.present(request.category())
                 ? PatchValues.enumValue(request.category(), ToolLinkCategory.class)
                 : link.getCategory();
