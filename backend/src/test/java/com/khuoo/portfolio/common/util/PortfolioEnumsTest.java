@@ -32,10 +32,10 @@ class PortfolioEnumsTest {
                 + PortfolioEnums.ErrorService.values().length;
 
         assertThat(enumGroupCount).isEqualTo(15);
-        assertThat(totalCodeCount).isEqualTo(122);
+        assertThat(totalCodeCount).isEqualTo(116);
         assertThat(PortfolioEnums.AccountRole.values())
                 .containsExactly(PortfolioEnums.AccountRole.ADMIN, PortfolioEnums.AccountRole.USER);
-        assertThat(PortfolioEnums.AdminActionOperation.values()).hasSize(24);
+        assertThat(PortfolioEnums.AdminActionOperation.values()).hasSize(20);
         assertThat(PortfolioEnums.ErrorService.values())
                 .containsExactly(PortfolioEnums.ErrorService.FRONTEND, PortfolioEnums.ErrorService.BACKEND);
     }

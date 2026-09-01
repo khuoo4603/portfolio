@@ -1,6 +1,5 @@
 package com.khuoo.portfolio.tool.repository;
 
-import com.khuoo.portfolio.common.util.PortfolioEnums.ToolLinkCategory;
 import com.khuoo.portfolio.tool.domain.Tool;
 import com.khuoo.portfolio.tool.domain.ToolLink;
 
@@ -15,8 +14,8 @@ public interface ToolQueryRepository {
     // 비활성 포함 Tool Registry 전체 조회
     List<Tool> findTools();
 
-    // 공개 상태와 선택 분류 기반 Tool Link 조회
-    List<ToolLink> findEnabledLinks(ToolLinkCategory category);
+    // 공개 상태 Tool Link 전체 조회
+    List<ToolLink> findEnabledLinks();
 
     // 비활성 포함 Tool Link 전체 조회
     List<ToolLink> findLinks();

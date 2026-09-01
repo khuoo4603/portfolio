@@ -91,7 +91,7 @@ public class ToolLink {
             String newName,
             String newDescription,
             String newUrl,
-            String newImageUrl,
+            String newImageStorageKey,
             ToolLinkCategory newCategory,
             int newDisplayOrder,
             boolean newEnabled,
@@ -100,7 +100,7 @@ public class ToolLink {
         boolean changed = !Objects.equals(name, newName)
                 || !Objects.equals(description, newDescription)
                 || !Objects.equals(url, newUrl)
-                || !Objects.equals(imageStorageKey, newImageUrl)
+                || !Objects.equals(imageStorageKey, newImageStorageKey)
                 || category != newCategory
                 || displayOrder != newDisplayOrder
                 || enabled != newEnabled;
@@ -111,7 +111,7 @@ public class ToolLink {
         name = newName;
         description = newDescription;
         url = newUrl;
-        imageStorageKey = newImageUrl;
+        imageStorageKey = newImageStorageKey;
         category = newCategory;
         displayOrder = newDisplayOrder;
         enabled = newEnabled;

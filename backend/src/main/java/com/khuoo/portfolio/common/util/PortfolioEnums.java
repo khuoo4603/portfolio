@@ -48,11 +48,7 @@ public final class PortfolioEnums {
         ACCOUNT_CREATE,
         ACCOUNT_STATUS_UPDATE,
         ACCOUNT_ROLE_UPDATE,
-        ACCOUNT_PASSWORD_RESET,
-        TOOL_STATUS_UPDATE,
-        TOOL_LINK_CREATE,
-        TOOL_LINK_UPDATE,
-        TOOL_LINK_DELETE
+        ACCOUNT_PASSWORD_RESET
     }
 
     // 관리자 재인증 대상 코드
@@ -64,9 +60,7 @@ public final class PortfolioEnums {
         PORTFOLIO_TECHNOLOGY,
         PROJECT,
         EXTERNAL_LINK,
-        ACCOUNT,
-        TOOL,
-        TOOL_LINK
+        ACCOUNT
     }
 
     // 로그인 이벤트 유형 코드

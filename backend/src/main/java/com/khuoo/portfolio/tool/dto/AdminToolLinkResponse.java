@@ -38,10 +38,16 @@ public record AdminToolLinkResponse(
                 link.getName(),
                 link.getDescription(),
                 link.getUrl(),
-                link.getImageStorageKey(),
+                imageUrl(link),
                 link.getCategory(),
                 link.getDisplayOrder(),
                 link.isEnabled()
         );
+    }
+
+    private static String imageUrl(ToolLink link) {
+        return link.getImageStorageKey() == null
+                ? null
+                : "/api/v1/tools/media/links/" + link.getId();
     }
 }
