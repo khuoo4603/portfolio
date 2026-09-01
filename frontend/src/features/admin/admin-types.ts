@@ -1,3 +1,7 @@
+import type { PortfolioContentCategory, PortfolioContentCode } from "@/types/api";
+
+export type { PortfolioContentCategory, PortfolioContentCode } from "@/types/api";
+
 export type AccountRole = "ADMIN" | "USER";
 
 export type TrafficPoint = {
@@ -30,55 +34,6 @@ export type DashboardData = {
     activeAccounts: number;
   };
 };
-
-export type PortfolioContentCategory = "COMMON" | "MAIN" | "PROFILE" | "CONTACT" | "FOOTER";
-
-export type PortfolioContentCode =
-  | "SITE_MARK"
-  | "NAME"
-  | "ENGLISH_NAME"
-  | "POSITION"
-  | "AFFILIATION"
-  | "NAV_ABOUT"
-  | "NAV_TECH"
-  | "NAV_PROJECTS"
-  | "NAV_EDUCATION"
-  | "HERO_POSITION"
-  | "HERO_STATEMENT"
-  | "HERO_DESCRIPTION"
-  | "HERO_CUE"
-  | "ABOUT_SECTION_LABEL"
-  | "ABOUT_SECTION_TITLE"
-  | "TECH_SECTION_LABEL"
-  | "TECH_SECTION_TITLE"
-  | "PROJECTS_SECTION_LABEL"
-  | "PROJECTS_SECTION_TITLE"
-  | "PROJECT_DETAIL_CTA"
-  | "ACHIEVEMENTS_SECTION_LABEL"
-  | "ACHIEVEMENTS_SECTION_TITLE"
-  | "EDUCATION_GROUP_TITLE"
-  | "ACTIVITY_GROUP_TITLE"
-  | "AWARD_GROUP_TITLE"
-  | "ABOUT_STATEMENT"
-  | "ABOUT_POSITION"
-  | "ABOUT_DESCRIPTION_1"
-  | "ABOUT_DESCRIPTION_2"
-  | "DEVELOPMENT_VALUES_TITLE"
-  | "DEVELOPMENT_VALUE_1_TITLE"
-  | "DEVELOPMENT_VALUE_1_DESCRIPTION"
-  | "DEVELOPMENT_VALUE_2_TITLE"
-  | "DEVELOPMENT_VALUE_2_DESCRIPTION"
-  | "DEVELOPMENT_VALUE_3_TITLE"
-  | "DEVELOPMENT_VALUE_3_DESCRIPTION"
-  | "EMAIL"
-  | "FOOTER_NAME"
-  | "FOOTER_ROLE"
-  | "RESUME_LABEL"
-  | "RESUME_VIEW_LABEL"
-  | "RESUME_DOWNLOAD_LABEL"
-  | "CONTACT_LABEL"
-  | "PORTFOLIO_LABEL"
-  | "COPYRIGHT";
 
 export type SiteContent = {
   category: PortfolioContentCategory;
@@ -240,7 +195,6 @@ export type SiteData = {
   profileEntries: ProfileEntry[];
   technologyMaster: Technology[];
   portfolioTechnologies: PortfolioTechnology[];
-  projects: ProjectSummary[];
   externalLinks: ExternalLink[];
   resume: ResumeInfo | null;
 };

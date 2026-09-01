@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
+import { PUBLIC_COPY, mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
 import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
 import {
   EAST_ASIA_CROP,
@@ -1128,8 +1128,8 @@ describe("포트폴리오 메인", () => {
     expect(footer.getByRole("heading", { name: "김현우" })).toHaveClass("type-heading");
     expect(footer.getByText("BACKEND / INFRA DEVELOPER")).toHaveClass("type-small");
     expect(footer.queryByText("BACKEND /")).not.toBeInTheDocument();
-    expect(footer.getByText("PORTFOLIO / TEST")).toBeInTheDocument();
-    expect(footer.getByText("© Test Portfolio")).toBeInTheDocument();
+    expect(footer.getByText(PUBLIC_COPY.footer.portfolio)).toBeInTheDocument();
+    expect(footer.getByText(PUBLIC_COPY.footer.copyright)).toBeInTheDocument();
   });
 
   it("Theme 전환 선택값을 저장", () => {

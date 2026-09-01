@@ -1,7 +1,17 @@
-import type { PortfolioContent, PublicPortfolio, PublicTechnology } from "@/types/api";
+import type {
+  PortfolioContent,
+  PortfolioContentCategory,
+  PortfolioContentCode,
+  PublicPortfolio,
+  PublicTechnology,
+} from "@/types/api";
 
-function content(contentCode: string, contentValue: string): PortfolioContent {
-  return { category: "TEST", contentCode, contentValue };
+function content(
+  category: PortfolioContentCategory,
+  contentCode: PortfolioContentCode,
+  contentValue: string,
+): PortfolioContent {
+  return { category, contentCode, contentValue };
 }
 
 const technologies: PublicTechnology[] = [
@@ -23,51 +33,22 @@ const technologies: PublicTechnology[] = [
 // LOCAL 관찰 개수와 독립된 Public 화면 Test Fixture
 export const PUBLIC_PORTFOLIO_FIXTURE: PublicPortfolio = {
   portfolioContents: [
-    content("SITE_MARK", "KIM HYUNWOO"),
-    content("NAME", "김현우"),
-    content("ENGLISH_NAME", "KIM HYUNWOO"),
-    content("POSITION", "BACKEND / INFRA DEVELOPER"),
-    content("AFFILIATION", "성공회대학교 소프트웨어융합전공"),
-    content("NAV_ABOUT", "소개"),
-    content("NAV_TECH", "기술스택"),
-    content("NAV_PROJECTS", "프로젝트"),
-    content("NAV_EDUCATION", "학력 및 성과"),
-    content("HERO_POSITION", "BACKEND / INFRA DEVELOPER"),
-    content("HERO_STATEMENT", "Backend 개발부터\n배포 / 운영까지 고려"),
-    content("HERO_DESCRIPTION", "문제에 맞는 기술 선택\n서비스 설계 · 구현 · 실제 운영"),
-    content("HERO_CUE", "소개로 이동 ↘"),
-    content("ABOUT_SECTION_LABEL", "ABOUT"),
-    content("ABOUT_SECTION_TITLE", "소개"),
-    content("TECH_SECTION_LABEL", "TECH STACK"),
-    content("TECH_SECTION_TITLE", "기술 스택"),
-    content("PROJECTS_SECTION_LABEL", "PROJECTS"),
-    content("PROJECTS_SECTION_TITLE", "프로젝트"),
-    content("PROJECT_DETAIL_CTA", "자세히 보기"),
-    content("ACHIEVEMENTS_SECTION_LABEL", "EDUCATION & ACHIEVEMENTS"),
-    content("ACHIEVEMENTS_SECTION_TITLE", "학력 및 성과"),
-    content("EDUCATION_GROUP_TITLE", "학력"),
-    content("ACTIVITY_GROUP_TITLE", "주요 활동"),
-    content("AWARD_GROUP_TITLE", "수상"),
-    content("ABOUT_STATEMENT", "많은 기술보다\n문제에 맞는\n기술 선택"),
-    content("ABOUT_POSITION", "BACKEND / INFRA DEVELOPER"),
-    content("ABOUT_DESCRIPTION_1", "성공회대학교에 재학 중인 김현우입니다. 경기경영고등학교 스마트콘텐츠과에서 웹과 게임 개발을 접한 뒤, 대회·동아리·외부 교육을 통해 개발 경험을 넓혀왔습니다."),
-    content("ABOUT_DESCRIPTION_2", "현재는 Spring Boot 기반 Backend 개발을 중심으로 Database 설계, Docker·Linux 실행 환경, CI/CD와 배포·운영까지 하나의 서비스 흐름으로 다룹니다. 새로운 기술의 수보다 문제와 서비스 규모에 맞는 구조를 선택하고, 실제로 운영 가능한 상태까지 완성하는 것을 중요하게 생각합니다."),
-    content("DEVELOPMENT_VALUES_TITLE", "개발 철학"),
-    content("DEVELOPMENT_VALUE_1_TITLE", "문서화의 가치"),
-    content("DEVELOPMENT_VALUE_1_DESCRIPTION", "구현 결과만 남기지 않습니다. 설계와 선택의 이유를 기록해 시간이 지나도 구조와 의도를 다시 이해할 수 있도록 합니다."),
-    content("DEVELOPMENT_VALUE_2_TITLE", "덜어냄의 미학"),
-    content("DEVELOPMENT_VALUE_2_DESCRIPTION", "기술과 기능을 더하는 것보다 필요한 것만 남기는 것을 중요하게 생각합니다. 불필요한 복잡성을 줄이고 명확하고 유지보수 가능한 구조를 선택합니다."),
-    content("DEVELOPMENT_VALUE_3_TITLE", "운영까지"),
-    content("DEVELOPMENT_VALUE_3_DESCRIPTION", "구현과 배포에서 끝내지 않습니다. 로그, 모니터링, 백업과 장애 대응까지 고려해 실제로 지속 운영할 수 있는 상태를 완성의 기준으로 봅니다."),
-    content("EMAIL", "test-contact@example.com"),
-    content("FOOTER_NAME", "김현우"),
-    content("FOOTER_ROLE", "BACKEND / INFRA DEVELOPER"),
-    content("RESUME_LABEL", "RESUME"),
-    content("RESUME_VIEW_LABEL", "이력서 보기"),
-    content("RESUME_DOWNLOAD_LABEL", "PDF 다운로드"),
-    content("CONTACT_LABEL", "CONTACT"),
-    content("PORTFOLIO_LABEL", "PORTFOLIO / TEST"),
-    content("COPYRIGHT", "© Test Portfolio"),
+    content("COMMON", "NAME", "김현우"),
+    content("COMMON", "ENGLISH_NAME", "KIM HYUNWOO"),
+    content("COMMON", "POSITION", "BACKEND / INFRA DEVELOPER"),
+    content("COMMON", "AFFILIATION", "성공회대학교 소프트웨어융합전공"),
+    content("MAIN", "HERO_STATEMENT", "Backend 개발부터\n배포 / 운영까지 고려"),
+    content("MAIN", "HERO_DESCRIPTION", "문제에 맞는 기술 선택\n서비스 설계 · 구현 · 실제 운영"),
+    content("PROFILE", "ABOUT_STATEMENT", "많은 기술보다\n문제에 맞는\n기술 선택"),
+    content("PROFILE", "ABOUT_DESCRIPTION_1", "성공회대학교에 재학 중인 김현우입니다. 경기경영고등학교 스마트콘텐츠과에서 웹과 게임 개발을 접한 뒤, 대회·동아리·외부 교육을 통해 개발 경험을 넓혀왔습니다."),
+    content("PROFILE", "ABOUT_DESCRIPTION_2", "현재는 Spring Boot 기반 Backend 개발을 중심으로 Database 설계, Docker·Linux 실행 환경, CI/CD와 배포·운영까지 하나의 서비스 흐름으로 다룹니다. 새로운 기술의 수보다 문제와 서비스 규모에 맞는 구조를 선택하고, 실제로 운영 가능한 상태까지 완성하는 것을 중요하게 생각합니다."),
+    content("PROFILE", "DEVELOPMENT_VALUE_1_TITLE", "문서화의 가치"),
+    content("PROFILE", "DEVELOPMENT_VALUE_1_DESCRIPTION", "구현 결과만 남기지 않습니다. 설계와 선택의 이유를 기록해 시간이 지나도 구조와 의도를 다시 이해할 수 있도록 합니다."),
+    content("PROFILE", "DEVELOPMENT_VALUE_2_TITLE", "덜어냄의 미학"),
+    content("PROFILE", "DEVELOPMENT_VALUE_2_DESCRIPTION", "기술과 기능을 더하는 것보다 필요한 것만 남기는 것을 중요하게 생각합니다. 불필요한 복잡성을 줄이고 명확하고 유지보수 가능한 구조를 선택합니다."),
+    content("PROFILE", "DEVELOPMENT_VALUE_3_TITLE", "운영까지"),
+    content("PROFILE", "DEVELOPMENT_VALUE_3_DESCRIPTION", "구현과 배포에서 끝내지 않습니다. 로그, 모니터링, 백업과 장애 대응까지 고려해 실제로 지속 운영할 수 있는 상태를 완성의 기준으로 봅니다."),
+    content("CONTACT", "EMAIL", "test-contact@example.com"),
   ],
   profileEntries: [
     { id: 1, entryType: "EDUCATION", periodText: "2023.03 — 현재", title: "소프트웨어융합전공", organization: "성공회대학교", role: null, description: null, achievement: "재학", featured: false, displayOrder: 1 },

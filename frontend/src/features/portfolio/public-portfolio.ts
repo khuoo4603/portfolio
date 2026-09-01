@@ -1,5 +1,6 @@
 import type {
   ExternalLink,
+  PortfolioContentCode,
   ProfileEntry,
   PublicPortfolio,
   PublicProjectCard,
@@ -17,7 +18,67 @@ export const TECHNOLOGY_GROUPS: ReadonlyArray<{ category: TechnologyCategory; la
   { category: "DEVOPS", label: "DevOps" },
 ];
 
-export type ContentMap = Record<string, string>;
+// Public 구조와 상호작용에 사용하는 고정 UI Copy
+export const PUBLIC_COPY = {
+  siteMark: "KIM HYUNWOO",
+  navigation: {
+    about: "소개",
+    technology: "기술스택",
+    projects: "프로젝트",
+    education: "학력 및 성과",
+  },
+  heroCue: "소개로 이동 ↘",
+  about: {
+    label: "ABOUT",
+    title: "소개",
+    valuesTitle: "개발 철학",
+  },
+  technology: {
+    label: "TECH STACK",
+    title: "기술 스택",
+  },
+  projects: {
+    label: "PROJECTS",
+    title: "프로젝트",
+    detail: "자세히 보기",
+  },
+  education: {
+    label: "EDUCATION & ACHIEVEMENTS",
+    title: "학력 및 성과",
+    educationGroup: "학력",
+    activityGroup: "주요 활동",
+    awardGroup: "수상",
+  },
+  footer: {
+    resume: "RESUME",
+    resumeView: "이력서 보기",
+    resumeDownload: "PDF 다운로드",
+    contact: "CONTACT",
+    portfolio: "PORTFOLIO / 2026",
+    copyright: "© 2026 Kim Hyunwoo. All rights reserved.",
+  },
+} as const;
+
+export type ContentMap = Partial<Record<PortfolioContentCode, string>>;
+
+const MANAGED_CONTENT_CODES = new Set<PortfolioContentCode>([
+  "NAME",
+  "ENGLISH_NAME",
+  "POSITION",
+  "AFFILIATION",
+  "HERO_STATEMENT",
+  "HERO_DESCRIPTION",
+  "ABOUT_STATEMENT",
+  "ABOUT_DESCRIPTION_1",
+  "ABOUT_DESCRIPTION_2",
+  "DEVELOPMENT_VALUE_1_TITLE",
+  "DEVELOPMENT_VALUE_1_DESCRIPTION",
+  "DEVELOPMENT_VALUE_2_TITLE",
+  "DEVELOPMENT_VALUE_2_DESCRIPTION",
+  "DEVELOPMENT_VALUE_3_TITLE",
+  "DEVELOPMENT_VALUE_3_DESCRIPTION",
+  "EMAIL",
+]);
 
 export type ProfileRow = {
   id: number;
@@ -62,7 +123,7 @@ function joined(values: Array<string | null | undefined>) {
 export function mapContents(contents: PublicPortfolio["portfolioContents"]) {
   return contents.reduce<ContentMap>((mapped, item) => {
     const contentValue = value(item.contentValue);
-    if (contentValue) {
+    if (contentValue && MANAGED_CONTENT_CODES.has(item.contentCode)) {
       mapped[item.contentCode] = contentValue;
     }
     return mapped;

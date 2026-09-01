@@ -43,10 +43,21 @@ const UPDATED_AT = "2026-09-01T12:00:00+09:00";
 function siteData(name = "김현우"): SiteData {
   return {
     portfolioContents: [
-      { category: "COMMON", contentCode: "SITE_MARK", contentValue: "KIM HYUNWOO", updatedAt: UPDATED_AT },
       { category: "COMMON", contentCode: "NAME", contentValue: name, updatedAt: UPDATED_AT },
+      { category: "COMMON", contentCode: "ENGLISH_NAME", contentValue: "KIM HYUNWOO", updatedAt: UPDATED_AT },
+      { category: "COMMON", contentCode: "POSITION", contentValue: "BACKEND / INFRA DEVELOPER", updatedAt: UPDATED_AT },
+      { category: "COMMON", contentCode: "AFFILIATION", contentValue: "성공회대학교", updatedAt: UPDATED_AT },
       { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "Backend 개발부터 운영까지", updatedAt: UPDATED_AT },
+      { category: "MAIN", contentCode: "HERO_DESCRIPTION", contentValue: "서비스 설계와 운영", updatedAt: UPDATED_AT },
       { category: "PROFILE", contentCode: "ABOUT_STATEMENT", contentValue: "문제에 맞는 기술 선택", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_1", contentValue: "소개 설명 1", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_2", contentValue: "소개 설명 2", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_1_TITLE", contentValue: "문서화의 가치", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_1_DESCRIPTION", contentValue: "설계와 선택의 이유 기록", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_2_TITLE", contentValue: "덜어냄의 미학", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_2_DESCRIPTION", contentValue: "불필요한 복잡성 제거", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_3_TITLE", contentValue: "운영까지", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_3_DESCRIPTION", contentValue: "지속 운영 가능한 상태", updatedAt: UPDATED_AT },
       { category: "CONTACT", contentCode: "EMAIL", contentValue: "contact@example.com", updatedAt: UPDATED_AT },
     ],
     profileEntries: [{
@@ -69,7 +80,6 @@ function siteData(name = "김현우"): SiteData {
       { id: 8, name: "Next.js", category: "FRONTEND", iconUrl: "/icons/tech/nextjs.svg", enabled: true, createdAt: UPDATED_AT, updatedAt: UPDATED_AT },
     ],
     portfolioTechnologies: [{ technologyId: 7, displayOrder: 1 }],
-    projects: [{ id: 3, slug: "kyvc", name: "KYvC", year: 2026, tagline: "법인 KYC 자동 심사 서비스", cardRole: "백엔드 · 인프라", thumbnailUrl: null, displayOrder: 1, enabled: true, updatedAt: UPDATED_AT }],
     externalLinks: [{ id: 4, name: "GitHub", url: "https://github.com/example", displayOrder: 1, enabled: true, createdAt: UPDATED_AT, updatedAt: UPDATED_AT }],
     resume: { fileName: "resume.pdf", updatedAt: UPDATED_AT },
   };
@@ -95,20 +105,20 @@ describe("Admin Site 실제 API 관리", () => {
 
   afterEach(() => cleanup());
 
-  it("GET /admin/site 실제 DTO를 일곱 관리 영역에 매핑", async () => {
+  it("GET /admin/site 실제 DTO를 다섯 관리 영역과 16개 콘텐츠 Slot에 매핑", async () => {
     render(<SiteScreen />);
 
     expect(await screen.findByDisplayValue("김현우")).toBeInTheDocument();
-    expect(screen.getByText("COMMON/SITE_MARK")).toBeInTheDocument();
+    expect(siteData().portfolioContents).toHaveLength(16);
+    expect(screen.getByText("COMMON/NAME")).toBeInTheDocument();
     expect(screen.getByText("MAIN/HERO_STATEMENT")).toBeInTheDocument();
-    expect(screen.queryByText(/HERO_TITLE/)).not.toBeInTheDocument();
-    expect(screen.getAllByRole("tab")).toHaveLength(7);
-
-    fireEvent.click(screen.getByRole("tab", { name: "프로필·연락처" }));
     expect(screen.getByDisplayValue("문제에 맞는 기술 선택")).toBeInTheDocument();
     expect(screen.getByText("CONTACT/EMAIL")).toBeInTheDocument();
+    expect(screen.getAllByRole("textbox")).toHaveLength(16);
+    expect(screen.getAllByRole("tab")).toHaveLength(5);
+    expect(screen.queryByRole("tab", { name: "프로젝트" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "학력·경력·활동·수상·자격" }));
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
     expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
     expect(screen.getByText("학력")).toBeInTheDocument();
 
@@ -116,11 +126,6 @@ describe("Admin Site 실제 API 관리", () => {
     expect(screen.getByText("DATABASE")).toBeInTheDocument();
     expect(screen.getByText("FRONTEND")).toBeInTheDocument();
     expect(screen.getByText("/icons/tech/postgresql.svg")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: "프로젝트" }));
-    expect(screen.getByText("KYvC")).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "KYvC 프로젝트 비공개 전환" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "상세 편집" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "외부 링크" }));
     expect(screen.getByText("https://github.com/example")).toBeInTheDocument();
@@ -157,7 +162,7 @@ describe("Admin Site 실제 API 관리", () => {
   it("Profile Editor가 EDUCATION을 포함하고 Create Challenge를 발급", async () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");
-    fireEvent.click(screen.getByRole("tab", { name: "학력·경력·활동·수상·자격" }));
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
     fireEvent.click(screen.getByRole("button", { name: "항목 추가" }));
     const dialog = screen.getByRole("dialog");
 

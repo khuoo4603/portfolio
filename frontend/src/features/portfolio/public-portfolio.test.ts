@@ -8,17 +8,41 @@ import {
   mapPublicPortfolio,
 } from "./public-portfolio";
 import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
-import type { ProfileEntry, PublicTechnology } from "@/types/api";
+import type { PortfolioContent, ProfileEntry, PublicTechnology } from "@/types/api";
 
 describe("Public Portfolio Mapping", () => {
-  it("contentCode를 기존 Slot에 매핑하고 빈 콘텐츠를 제외", () => {
+  it("16개 관리 Slot만 매핑하고 빈 콘텐츠와 계약 밖 코드를 제외", () => {
     const content = mapContents([
       { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "첫 줄\n둘째 줄" },
-      { category: "MAIN", contentCode: "EMPTY", contentValue: "  " },
+      { category: "MAIN", contentCode: "HERO_DESCRIPTION", contentValue: "  " },
+      { category: "MAIN", contentCode: "UNKNOWN", contentValue: "제외" } as unknown as PortfolioContent,
     ]);
 
     expect(content).toEqual({ HERO_STATEMENT: "첫 줄\n둘째 줄" });
-    expect(content.EMPTY).toBeUndefined();
+    expect(content.HERO_DESCRIPTION).toBeUndefined();
+    expect((content as Record<string, string>).UNKNOWN).toBeUndefined();
+  });
+
+  it("Public Fixture가 UI Copy 없이 정확한 16개 관리 Slot만 사용", () => {
+    expect(PUBLIC_PORTFOLIO_FIXTURE.portfolioContents).toHaveLength(16);
+    expect(PUBLIC_PORTFOLIO_FIXTURE.portfolioContents.map((item) => item.contentCode)).toEqual([
+      "NAME",
+      "ENGLISH_NAME",
+      "POSITION",
+      "AFFILIATION",
+      "HERO_STATEMENT",
+      "HERO_DESCRIPTION",
+      "ABOUT_STATEMENT",
+      "ABOUT_DESCRIPTION_1",
+      "ABOUT_DESCRIPTION_2",
+      "DEVELOPMENT_VALUE_1_TITLE",
+      "DEVELOPMENT_VALUE_1_DESCRIPTION",
+      "DEVELOPMENT_VALUE_2_TITLE",
+      "DEVELOPMENT_VALUE_2_DESCRIPTION",
+      "DEVELOPMENT_VALUE_3_TITLE",
+      "DEVELOPMENT_VALUE_3_DESCRIPTION",
+      "EMAIL",
+    ]);
   });
 
   it("EDUCATION·EXPERIENCE/ACTIVITY·AWARD/CERTIFICATE를 순서대로 세 그룹에 매핑", () => {

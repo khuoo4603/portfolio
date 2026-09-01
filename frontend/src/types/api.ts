@@ -33,9 +33,29 @@ export type ChallengeResponse = {
   expiresAt: string;
 };
 
+export type PortfolioContentCategory = "COMMON" | "MAIN" | "PROFILE" | "CONTACT";
+
+export type PortfolioContentCode =
+  | "NAME"
+  | "ENGLISH_NAME"
+  | "POSITION"
+  | "AFFILIATION"
+  | "HERO_STATEMENT"
+  | "HERO_DESCRIPTION"
+  | "ABOUT_STATEMENT"
+  | "ABOUT_DESCRIPTION_1"
+  | "ABOUT_DESCRIPTION_2"
+  | "DEVELOPMENT_VALUE_1_TITLE"
+  | "DEVELOPMENT_VALUE_1_DESCRIPTION"
+  | "DEVELOPMENT_VALUE_2_TITLE"
+  | "DEVELOPMENT_VALUE_2_DESCRIPTION"
+  | "DEVELOPMENT_VALUE_3_TITLE"
+  | "DEVELOPMENT_VALUE_3_DESCRIPTION"
+  | "EMAIL";
+
 export type PortfolioContent = {
-  category: string;
-  contentCode: string;
+  category: PortfolioContentCategory;
+  contentCode: PortfolioContentCode;
   contentValue: string;
 };
 

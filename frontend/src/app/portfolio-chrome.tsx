@@ -1,6 +1,6 @@
 import { Github, Instagram, Linkedin, Mail } from "lucide-react";
 import type { ReactNode } from "react";
-import type { ContentMap } from "@/features/portfolio/public-portfolio";
+import { PUBLIC_COPY, type ContentMap } from "@/features/portfolio/public-portfolio";
 import type { ExternalLink, ResumeMetadata } from "@/types/api";
 import ThemeToggle from "./theme-toggle";
 
@@ -94,54 +94,44 @@ export function PortfolioFooter({ content, externalLinks, resume = null }: Portf
     <footer className="portfolio-footer" id="footer">
       <div className="content-container footer-inner">
         <div className="footer-identity">
-          {content.FOOTER_NAME ? (
-            <h2 className="footer-name type-heading">{content.FOOTER_NAME}</h2>
+          {content.NAME ? (
+            <h2 className="footer-name type-heading">{content.NAME}</h2>
           ) : null}
-          {content.FOOTER_ROLE ? (
-            <p className="footer-role type-small">{content.FOOTER_ROLE}</p>
+          {content.POSITION ? (
+            <p className="footer-role type-small">{content.POSITION}</p>
           ) : null}
         </div>
 
         <div className="footer-information">
-          {content.RESUME_LABEL ? (
-            <div className="footer-info-group">
-              <p className="type-small">{content.RESUME_LABEL}</p>
-              <div className="footer-resume-actions">
-                {resume ? (
-                  <>
-                    {content.RESUME_VIEW_LABEL ? (
-                      <a
-                        className="type-body-lg"
-                        href="/api/v1/public/resume"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {content.RESUME_VIEW_LABEL}
-                      </a>
-                    ) : null}
-                    {content.RESUME_DOWNLOAD_LABEL ? (
-                      <a className="type-body-lg" href="/api/v1/public/resume" download={resume.fileName}>
-                        {content.RESUME_DOWNLOAD_LABEL}
-                      </a>
-                    ) : null}
-                  </>
-                ) : (
-                  <>
-                    {content.RESUME_VIEW_LABEL ? (
-                      <span className="type-body-lg" aria-disabled="true">{content.RESUME_VIEW_LABEL}</span>
-                    ) : null}
-                    {content.RESUME_DOWNLOAD_LABEL ? (
-                      <span className="type-body-lg" aria-disabled="true">{content.RESUME_DOWNLOAD_LABEL}</span>
-                    ) : null}
-                  </>
-                )}
-              </div>
+          <div className="footer-info-group">
+            <p className="type-small">{PUBLIC_COPY.footer.resume}</p>
+            <div className="footer-resume-actions">
+              {resume ? (
+                <>
+                  <a
+                    className="type-body-lg"
+                    href="/api/v1/public/resume"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {PUBLIC_COPY.footer.resumeView}
+                  </a>
+                  <a className="type-body-lg" href="/api/v1/public/resume" download={resume.fileName}>
+                    {PUBLIC_COPY.footer.resumeDownload}
+                  </a>
+                </>
+              ) : (
+                <>
+                  <span className="type-body-lg" aria-disabled="true">{PUBLIC_COPY.footer.resumeView}</span>
+                  <span className="type-body-lg" aria-disabled="true">{PUBLIC_COPY.footer.resumeDownload}</span>
+                </>
+              )}
             </div>
-          ) : null}
+          </div>
 
           {hasContact ? (
             <div className="footer-info-group footer-contact">
-              {content.CONTACT_LABEL ? <p className="type-small">{content.CONTACT_LABEL}</p> : null}
+              <p className="type-small">{PUBLIC_COPY.footer.contact}</p>
               <div className="footer-contact-links">
                 {content.EMAIL ? (
                   <a href={`mailto:${content.EMAIL}`} aria-label={content.EMAIL}>
@@ -169,8 +159,8 @@ export function PortfolioFooter({ content, externalLinks, resume = null }: Portf
         </div>
 
         <div className="footer-bottom type-small">
-          {content.PORTFOLIO_LABEL ? <span>{content.PORTFOLIO_LABEL}</span> : null}
-          {content.COPYRIGHT ? <span>{content.COPYRIGHT}</span> : null}
+          <span>{PUBLIC_COPY.footer.portfolio}</span>
+          <span>{PUBLIC_COPY.footer.copyright}</span>
         </div>
       </div>
     </footer>

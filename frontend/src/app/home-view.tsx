@@ -1,7 +1,13 @@
 import Image from "next/image";
 import { Fragment } from "react";
 import BorderGlow from "../components/ui/border-glow";
-import type { ContentMap, ProfileGroups, PublicViewModel, TechnologyGroup } from "@/features/portfolio/public-portfolio";
+import {
+  PUBLIC_COPY,
+  type ContentMap,
+  type ProfileGroups,
+  type PublicViewModel,
+  type TechnologyGroup,
+} from "@/features/portfolio/public-portfolio";
 import HeroNetworkBackground from "./hero-network-background";
 import HeroSystemCard from "./hero-system-card";
 import { PortfolioFooter, SiteHeader } from "./portfolio-chrome";
@@ -28,7 +34,7 @@ function Hero({ content }: { content: ContentMap }) {
       <div className="hero-inner">
         <div className="hero-identity">
           <div className="hero-intro type-title">
-            {content.HERO_POSITION ? <span>{content.HERO_POSITION}</span> : null}
+            {content.POSITION ? <span>{content.POSITION}</span> : null}
           </div>
 
           <div className="hero-name-block">
@@ -52,7 +58,7 @@ function Hero({ content }: { content: ContentMap }) {
             ) : null}
           </div>
 
-          {content.HERO_CUE ? <a className="section-cue type-body" href="#about">{content.HERO_CUE}</a> : null}
+          <a className="section-cue type-body" href="#about">{PUBLIC_COPY.heroCue}</a>
         </div>
 
         <div className="hero-system">
@@ -65,26 +71,29 @@ function Hero({ content }: { content: ContentMap }) {
 
 // 자기소개와 개발 철학 중심 About 편집형 구성
 function AboutSection({ content }: { content: ContentMap }) {
-  const developmentValues = [1, 2, 3].flatMap((index) => {
-    const title = content[`DEVELOPMENT_VALUE_${index}_TITLE`];
-    const description = content[`DEVELOPMENT_VALUE_${index}_DESCRIPTION`];
+  const developmentValues = [
+    ["DEVELOPMENT_VALUE_1_TITLE", "DEVELOPMENT_VALUE_1_DESCRIPTION"],
+    ["DEVELOPMENT_VALUE_2_TITLE", "DEVELOPMENT_VALUE_2_DESCRIPTION"],
+    ["DEVELOPMENT_VALUE_3_TITLE", "DEVELOPMENT_VALUE_3_DESCRIPTION"],
+  ] as const;
+  const visibleValues = developmentValues.flatMap(([titleCode, descriptionCode]) => {
+    const title = content[titleCode];
+    const description = content[descriptionCode];
     return title && description ? [{ title, description }] : [];
   });
 
   return (
     <section
       className="main-section about-section"
-      aria-labelledby={content.ABOUT_SECTION_TITLE ? "about-title" : undefined}
+      aria-labelledby="about-title"
     >
       <span id="about" className="about-anchor" aria-hidden="true" />
       <div className="about-transition-window">
         <div className="about-viewport">
           <div className="content-container about-inner about-primary">
             <div className="about-heading">
-              {content.ABOUT_SECTION_LABEL ? <p className="section-meta type-small">{content.ABOUT_SECTION_LABEL}</p> : null}
-              {content.ABOUT_SECTION_TITLE ? (
-                <h2 className="section-title type-heading" id="about-title">{content.ABOUT_SECTION_TITLE}</h2>
-              ) : null}
+              <p className="section-meta type-small">{PUBLIC_COPY.about.label}</p>
+              <h2 className="section-title type-heading" id="about-title">{PUBLIC_COPY.about.title}</h2>
               {content.ABOUT_STATEMENT ? (
                 <p className="about-statement type-statement">{lines(content.ABOUT_STATEMENT, 1)}</p>
               ) : null}
@@ -102,21 +111,19 @@ function AboutSection({ content }: { content: ContentMap }) {
             </figure>
 
             <div className="about-introduction type-body-lg">
-              {content.ABOUT_POSITION ? <p className="about-position type-title">{content.ABOUT_POSITION}</p> : null}
+              {content.POSITION ? <p className="about-position type-title">{content.POSITION}</p> : null}
               {content.ABOUT_DESCRIPTION_1 ? <p>{content.ABOUT_DESCRIPTION_1}</p> : null}
               {content.ABOUT_DESCRIPTION_2 ? <p>{content.ABOUT_DESCRIPTION_2}</p> : null}
             </div>
 
-            {developmentValues.length > 0 ? (
+            {visibleValues.length > 0 ? (
               <div
                 className="about-values"
-                aria-labelledby={content.DEVELOPMENT_VALUES_TITLE ? "values-title" : undefined}
+                aria-labelledby="values-title"
               >
-                {content.DEVELOPMENT_VALUES_TITLE ? (
-                  <h3 className="type-title" id="values-title">{content.DEVELOPMENT_VALUES_TITLE}</h3>
-                ) : null}
+                <h3 className="type-title" id="values-title">{PUBLIC_COPY.about.valuesTitle}</h3>
                 <ol className="value-list">
-                  {developmentValues.map((item) => (
+                  {visibleValues.map((item) => (
                     <li className="value-item" data-value-card key={item.title}>
                       <BorderGlow className="value-card">
                         <div className="value-card-content">
@@ -137,19 +144,17 @@ function AboutSection({ content }: { content: ContentMap }) {
 }
 
 // 핵심 기술을 설명형 카드 대신 정제된 Index 행으로 구성
-function TechStackSection({ content, groups }: { content: ContentMap; groups: TechnologyGroup[] }) {
+function TechStackSection({ groups }: { groups: TechnologyGroup[] }) {
   return (
     <section
       className="main-section tech-section"
       id="tech"
-      aria-labelledby={content.TECH_SECTION_TITLE ? "tech-title" : undefined}
+      aria-labelledby="tech-title"
     >
       <div className="content-container tech-inner">
         <header className="tech-heading">
-          {content.TECH_SECTION_LABEL ? <p className="section-meta type-small">{content.TECH_SECTION_LABEL}</p> : null}
-          {content.TECH_SECTION_TITLE ? (
-            <h2 className="section-title type-heading" id="tech-title">{content.TECH_SECTION_TITLE}</h2>
-          ) : null}
+          <p className="section-meta type-small">{PUBLIC_COPY.technology.label}</p>
+          <h2 className="section-title type-heading" id="tech-title">{PUBLIC_COPY.technology.title}</h2>
         </header>
 
         <ol className="tech-list">
@@ -186,7 +191,7 @@ function TechStackSection({ content, groups }: { content: ContentMap; groups: Te
 }
 
 // 학력과 주요 활동, 수상 성과 구성
-function EducationSection({ content, groups }: { content: ContentMap; groups: ProfileGroups }) {
+function EducationSection({ groups }: { groups: ProfileGroups }) {
   const hasGroups = groups.education.length > 0 || groups.activity.length > 0 || groups.award.length > 0;
   if (!hasGroups) {
     return null;
@@ -196,24 +201,18 @@ function EducationSection({ content, groups }: { content: ContentMap; groups: Pr
     <section
       className="main-section education-section"
       id="education"
-      aria-labelledby={content.ACHIEVEMENTS_SECTION_TITLE ? "education-title" : undefined}
+      aria-labelledby="education-title"
     >
       <div className="content-container education-inner">
         <header className="education-heading">
-          {content.ACHIEVEMENTS_SECTION_LABEL ? (
-            <p className="section-meta type-small">{content.ACHIEVEMENTS_SECTION_LABEL}</p>
-          ) : null}
-          {content.ACHIEVEMENTS_SECTION_TITLE ? (
-            <h2 className="section-title type-heading" id="education-title">{content.ACHIEVEMENTS_SECTION_TITLE}</h2>
-          ) : null}
+          <p className="section-meta type-small">{PUBLIC_COPY.education.label}</p>
+          <h2 className="section-title type-heading" id="education-title">{PUBLIC_COPY.education.title}</h2>
         </header>
 
         <div className="education-groups">
           {groups.education.length > 0 ? (
             <section className="education-group education-info-group" aria-labelledby="education-group-title">
-              {content.EDUCATION_GROUP_TITLE ? (
-                <h3 className="type-title" id="education-group-title">{content.EDUCATION_GROUP_TITLE}</h3>
-              ) : null}
+              <h3 className="type-title" id="education-group-title">{PUBLIC_COPY.education.educationGroup}</h3>
               <ol className="education-list education-info-list">
                 {groups.education.map((item) => (
                   <li className="education-row education-info-row" key={item.id}>
@@ -229,9 +228,7 @@ function EducationSection({ content, groups }: { content: ContentMap; groups: Pr
 
           {groups.activity.length > 0 ? (
             <section className="activities-group education-info-group" aria-labelledby="activities-title">
-              {content.ACTIVITY_GROUP_TITLE ? (
-                <h3 className="type-title" id="activities-title">{content.ACTIVITY_GROUP_TITLE}</h3>
-              ) : null}
+              <h3 className="type-title" id="activities-title">{PUBLIC_COPY.education.activityGroup}</h3>
               <ol className="activities-list education-info-list">
                 {groups.activity.map((activity) => (
                   <li className="activity-row education-info-row" key={activity.id}>
@@ -247,9 +244,7 @@ function EducationSection({ content, groups }: { content: ContentMap; groups: Pr
 
           {groups.award.length > 0 ? (
             <section className="awards-group education-info-group" aria-labelledby="awards-title">
-              {content.AWARD_GROUP_TITLE ? (
-                <h3 className="type-title" id="awards-title">{content.AWARD_GROUP_TITLE}</h3>
-              ) : null}
+              <h3 className="type-title" id="awards-title">{PUBLIC_COPY.education.awardGroup}</h3>
               <ol className="awards-list education-info-list">
                 {groups.award.map((award) => (
                   <li className="award-row education-info-row" key={award.id}>
@@ -272,16 +267,16 @@ function EducationSection({ content, groups }: { content: ContentMap; groups: Pr
 export function HomeView({ model }: { model: PublicViewModel }) {
   const { content } = model;
   const navigation = [
-    [content.NAV_ABOUT, "#about"],
-    [content.NAV_TECH, "#tech"],
-    [content.NAV_PROJECTS, "#projects"],
-    [content.NAV_EDUCATION, "#education"],
-  ].flatMap(([label, href]) => label ? [{ label, href }] : []);
+    { label: PUBLIC_COPY.navigation.about, href: "#about" },
+    { label: PUBLIC_COPY.navigation.technology, href: "#tech" },
+    { label: PUBLIC_COPY.navigation.projects, href: "#projects" },
+    { label: PUBLIC_COPY.navigation.education, href: "#education" },
+  ];
 
   return (
     <div className="portfolio-shell">
       <SiteHeader
-        mark={content.SITE_MARK ?? ""}
+        mark={PUBLIC_COPY.siteMark}
         markLabel={content.NAME ? `${content.NAME} 포트폴리오 Home` : "포트폴리오 Home"}
         navigation={navigation}
       />
@@ -295,14 +290,14 @@ export function HomeView({ model }: { model: PublicViewModel }) {
           <Hero content={content} />
           <AboutSection content={content} />
         </div>
-        <TechStackSection content={content} groups={model.technologies} />
+        <TechStackSection groups={model.technologies} />
         <ProjectsSection
           projects={model.projects}
-          sectionLabel={content.PROJECTS_SECTION_LABEL}
-          sectionTitle={content.PROJECTS_SECTION_TITLE}
-          detailLabel={content.PROJECT_DETAIL_CTA}
+          sectionLabel={PUBLIC_COPY.projects.label}
+          sectionTitle={PUBLIC_COPY.projects.title}
+          detailLabel={PUBLIC_COPY.projects.detail}
         />
-        <EducationSection content={content} groups={model.profiles} />
+        <EducationSection groups={model.profiles} />
       </main>
 
       <PortfolioFooter content={content} externalLinks={model.externalLinks} resume={model.resume} />
