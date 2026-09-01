@@ -2,15 +2,14 @@
 
 import Image from "next/image";
 import { ExternalLink } from "lucide-react";
-import { useState } from "react";
-import {
-  DEFAULT_LINK_IMAGE_URL,
-  MOCK_TOOL_LINKS,
-  type ToolLink,
-  type ToolLinkCategory,
-} from "./mock-tools";
+import { useEffect, useState } from "react";
+import { formatApiError } from "@/lib/api/client";
+import type { ToolLink, ToolLinkCategory } from "@/types/api";
+import { getToolLinks } from "./tools-api";
 import { useToolsSession } from "./tools-shell";
 import styles from "./tools.module.css";
+
+export const DEFAULT_LINK_IMAGE_URL = "/images/tools/links/default-link-preview.svg";
 
 const CATEGORIES: ReadonlyArray<{ key: ToolLinkCategory; label: string }> = [
   { key: "REFERENCE", label: "Reference" },
@@ -31,12 +30,12 @@ export function getLinkMeta(value: string) {
   }
 }
 
-// 활성 Link의 기존 Category 및 데이터 표시 순서 유지
+// Backend 활성 Link의 실제 Category 및 데이터 표시 순서 유지
 export function groupActiveLinks(links: readonly ToolLink[]) {
   return CATEGORIES.map((category) => ({
     ...category,
     items: links.flatMap((link) => {
-      if (!link.enabled || link.category !== category.key) {
+      if (link.category !== category.key) {
         return [];
       }
 
@@ -77,6 +76,7 @@ export function LinkCard({
           alt={link.name || metadata.domain}
           className={styles.linkCoverImage}
           fill
+          unoptimized
           onError={handleImageError}
           sizes="(min-width: 1440px) 244px, (min-width: 1024px) calc((100vw - 128px) / 5), (min-width: 768px) calc((100vw - 88px) / 3), calc(100vw - 40px)"
           src={imageSrc}
@@ -104,10 +104,31 @@ export function LinkCard({
 // 이미지 중심 Blog Grid로 구성된 Category별 Link 조회 화면
 export default function LinksScreen() {
   const { hasTool } = useToolsSession();
-  const groups = groupActiveLinks(MOCK_TOOL_LINKS);
+  const [links, setLinks] = useState<ToolLink[] | null>(null);
+  const [error, setError] = useState("");
+  const linksEnabled = hasTool("LINKS");
+  const groups = groupActiveLinks(links ?? []);
   const totalLinks = groups.reduce((total, group) => total + group.items.length, 0);
 
-  if (!hasTool("LINKS")) {
+  useEffect(() => {
+    if (!linksEnabled) {
+      return;
+    }
+
+    let active = true;
+    void getToolLinks()
+      .then((response) => {
+        if (active) setLinks(response.items);
+      })
+      .catch((caught: unknown) => {
+        if (active) setError(formatApiError(caught));
+      });
+    return () => {
+      active = false;
+    };
+  }, [linksEnabled]);
+
+  if (!linksEnabled) {
     return (
       <main className={styles.toolsPage}>
         <div className="content-container">
@@ -121,6 +142,18 @@ export default function LinksScreen() {
         </div>
       </main>
     );
+  }
+
+  if (error) {
+    return (
+      <main className={styles.toolsPage} role="alert">
+        <div className="content-container">{error}</div>
+      </main>
+    );
+  }
+
+  if (!links) {
+    return <main className={styles.toolsPage} aria-busy="true" aria-label="Links 불러오는 중" />;
   }
 
   return (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-// Mock 인증번호 만료시각 또는 UI 재전송 시각의 남은 초 계산
+// 인증번호 만료시각 또는 UI 재전송 시각의 남은 초 계산
 export function useCountdown(deadline: string | number | null) {
   const [now, setNow] = useState(() => Date.now());
 

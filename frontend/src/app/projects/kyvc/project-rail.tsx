@@ -1,21 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import type { ProjectSection } from "@/features/portfolio/project-detail";
 import styles from "./kyvc-detail.module.css";
 
-export const projectSections = [
-  { id: "detail-stack-result", label: "기술 스택 · 성과" },
-  { id: "detail-background", label: "문제 배경 · 주요 기능" },
-  { id: "detail-development", label: "직접 담당한 개발 영역" },
-  { id: "detail-architecture", label: "아키텍처" },
-  { id: "detail-engineering", label: "기술적 문제 해결" },
-] as const;
+type ProjectRailProps = {
+  sections: readonly ProjectSection[];
+};
 
 // Cache된 Section 위치 기반 현재 구간과 Scroll 진행도 표시
-export default function ProjectRail() {
-  const [activeSection, setActiveSection] = useState<(typeof projectSections)[number]["id"]>(
-    projectSections[0].id,
-  );
+export default function ProjectRail({ sections }: ProjectRailProps) {
+  const [activeSection, setActiveSection] = useState<string | null>(sections[0]?.id ?? null);
   const [progress, setProgress] = useState(0);
   const positionsRef = useRef<number[]>([]);
 
@@ -23,7 +18,7 @@ export default function ProjectRail() {
     let frameId = 0;
 
     const measureSections = () => {
-      positionsRef.current = projectSections.map(({ id }) => {
+      positionsRef.current = sections.map(({ id }) => {
         const section = document.getElementById(id);
 
         return section ? window.scrollY + section.getBoundingClientRect().top : 0;
@@ -55,7 +50,7 @@ export default function ProjectRail() {
         ? 0
         : Math.min(1, Math.max(0, (probe - first) / distance));
 
-      setActiveSection(projectSections[activeIndex].id);
+      setActiveSection(sections[activeIndex]?.id ?? null);
       setProgress(nextProgress);
     };
 
@@ -76,7 +71,7 @@ export default function ProjectRail() {
       ? null
       : new ResizeObserver(handleLayoutChange);
 
-    projectSections.forEach(({ id }) => {
+    sections.forEach(({ id }) => {
       const section = document.getElementById(id);
 
       if (section) {
@@ -95,7 +90,11 @@ export default function ProjectRail() {
       window.removeEventListener("resize", handleLayoutChange);
       resizeObserver?.disconnect();
     };
-  }, []);
+  }, [sections]);
+
+  if (sections.length === 0) {
+    return null;
+  }
 
   return (
     <aside
@@ -105,7 +104,7 @@ export default function ProjectRail() {
       style={{ "--rail-progress": progress } as CSSProperties}
     >
       <ol className={styles.railList}>
-        {projectSections.map((section) => {
+        {sections.map((section) => {
           const isActive = section.id === activeSection;
 
           return (

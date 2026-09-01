@@ -5,15 +5,10 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import ThemeToggle from "@/app/theme-toggle";
+import { formatApiError } from "@/lib/api/client";
+import { login, resendAdminLogin, verifyAdminLogin } from "@/lib/auth/auth-api";
 import OtpInput from "./otp-input";
 import { formatCountdown, useCountdown } from "./challenge-time";
-import {
-  MOCK_ADMIN_OTP,
-  MOCK_AUTH_ACCOUNTS,
-  MOCK_LOGIN_PASSWORD,
-  MOCK_OTP_DURATION_MS,
-  MOCK_RESEND_WAIT_MS,
-} from "./mock-auth";
 import styles from "./auth.module.css";
 
 const FLIP_WORDS = ["Tools.", "Admin."];
@@ -21,12 +16,14 @@ const TYPING_SPEED_MS = 110;
 const DELETING_SPEED_MS = 100;
 const PAUSE_BEFORE_DELETE_MS = 1_500;
 const WORD_CHANGE_DELAY_MS = 240;
+const RESEND_WAIT_MS = 60 * 1_000;
 
 type FlipPhase = "typing" | "pause" | "deleting";
 
 type ChallengeState = {
+  challengeId: string;
   expiresAt: string;
-  maskedEmail: string;
+  email: string;
 };
 
 // 문자별 입력·정지·삭제 순서의 Tools와 Admin 전환
@@ -129,8 +126,8 @@ export default function LoginScreen() {
     }, 160);
   };
 
-  // 명시적 Mock 계정 일치 여부와 Role 기반 다음 단계 분기
-  const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
+  // Backend 로그인 응답의 USER·ADMIN 분기 처리
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
 
@@ -145,32 +142,40 @@ export default function LoginScreen() {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const account = MOCK_AUTH_ACCOUNTS.find((item) => item.email === normalizedEmail);
-
-    if (!account || password !== MOCK_LOGIN_PASSWORD) {
-      setError("이메일 또는 비밀번호를 확인하세요.");
-      setBusy(false);
-      return;
-    }
-
     setBusy(true);
 
-    if (account.role === "USER") {
-      router.push("/tools");
-      return;
-    }
+    try {
+      const response = await login(normalizedEmail, password, rememberMe);
 
-    setChallenge({
-      expiresAt: new Date(Date.now() + MOCK_OTP_DURATION_MS).toISOString(),
-      maskedEmail: account.email,
-    });
-    setResendAvailableAt(Date.now() + MOCK_RESEND_WAIT_MS);
-    setCode("");
-    changeStep("verification");
+      if (response.authenticated && response.role === "USER" && response.redirect === "/tools") {
+        router.push(response.redirect);
+        return;
+      }
+      if (!response.authenticated
+        && response.adminVerificationRequired
+        && response.challengeId
+        && response.expiresAt) {
+        setChallenge({
+          challengeId: response.challengeId,
+          expiresAt: response.expiresAt,
+          email: normalizedEmail,
+        });
+        setResendAvailableAt(Date.now() + RESEND_WAIT_MS);
+        setCode("");
+        changeStep("verification");
+        return;
+      }
+
+      setError("로그인 응답을 확인할 수 없습니다.");
+      setBusy(false);
+    } catch (requestError) {
+      setError(formatApiError(requestError));
+      setBusy(false);
+    }
   };
 
-  // Mock 관리자 인증번호 검증과 관리자 화면 이동
-  const handleVerification = (event: React.FormEvent<HTMLFormElement>) => {
+  // ADMIN 인증번호 검증과 관리자 화면 이동
+  const handleVerification = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
 
@@ -184,27 +189,43 @@ export default function LoginScreen() {
       return;
     }
 
-    if (code !== MOCK_ADMIN_OTP) {
-      setError("인증번호를 확인해 주세요.");
-      return;
+    setBusy(true);
+    try {
+      const response = await verifyAdminLogin(challenge.challengeId, code);
+      if (response.authenticated && response.role === "ADMIN" && response.redirect === "/admin") {
+        router.push(response.redirect);
+        return;
+      }
+      setError("관리자 인증 응답을 확인할 수 없습니다.");
+    } catch (requestError) {
+      setError(formatApiError(requestError));
+    } finally {
+      setBusy(false);
     }
-
-    router.push("/admin");
   };
 
-  // Mock 인증번호 만료시각과 재전송 대기시간 갱신
-  const handleResend = () => {
+  // 기존 ADMIN Challenge 교체와 재전송 대기시간 갱신
+  const handleResend = async () => {
     if (!challenge || resendIn > 0 || busy) {
       return;
     }
 
     setError("");
-    setChallenge({
-      expiresAt: new Date(Date.now() + MOCK_OTP_DURATION_MS).toISOString(),
-      maskedEmail: challenge.maskedEmail,
-    });
-    setCode("");
-    setResendAvailableAt(Date.now() + MOCK_RESEND_WAIT_MS);
+    setBusy(true);
+    try {
+      const response = await resendAdminLogin(challenge.challengeId);
+      setChallenge({
+        challengeId: response.challengeId,
+        expiresAt: response.expiresAt,
+        email: challenge.email,
+      });
+      setCode("");
+      setResendAvailableAt(Date.now() + RESEND_WAIT_MS);
+    } catch (requestError) {
+      setError(formatApiError(requestError));
+    } finally {
+      setBusy(false);
+    }
   };
 
   // Credentials 단계 복귀와 기존 Challenge 화면 폐기
@@ -329,8 +350,8 @@ export default function LoginScreen() {
                     <p className="type-body">
                       등록된 관리자 이메일로 전송된 6자리 인증번호를 입력해 주세요.
                     </p>
-                    {challenge?.maskedEmail && (
-                      <p className={`${styles.maskedEmail} type-small`}>{challenge.maskedEmail}</p>
+                    {challenge?.email && (
+                      <p className={`${styles.maskedEmail} type-small`}>{challenge.email}</p>
                     )}
                   </div>
 

@@ -220,3 +220,34 @@ export function buildAnswerText(exam: QuizExam, answers: QuizAnswers) {
 
   return lines.join("\n");
 }
+
+// 저장 responseJson의 네 문항 유형별 유효 답안만 안전 복원
+export function restoreQuizAnswers(exam: QuizExam, value: unknown): QuizAnswers {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const source = value as Record<string, unknown>;
+  return exam.questions.reduce<QuizAnswers>((answers, question, index) => {
+    const answer = source[String(index)];
+
+    if (question.type === "single" || question.type === "multiple") {
+      if (!Array.isArray(answer)) {
+        return answers;
+      }
+      const maxChoice = question.choices?.length ?? 0;
+      const selected = answer
+        .filter((item): item is string => typeof item === "string")
+        .filter((item) => /^\d+$/.test(item) && Number(item) >= 1 && Number(item) <= maxChoice);
+      if (selected.length > 0) {
+        answers[index] = question.type === "single" ? [selected[0]] : [...new Set(selected)];
+      }
+      return answers;
+    }
+
+    if (typeof answer === "string") {
+      answers[index] = answer;
+    }
+    return answers;
+  }, {});
+}
