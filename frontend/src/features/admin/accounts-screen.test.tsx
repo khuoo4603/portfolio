@@ -37,6 +37,14 @@ const account: AccountItem = {
   enabled: true,
   recentLoginAt: "2026-09-01T10:00:00+09:00",
 };
+const userAccount: AccountItem = {
+  id: 10,
+  email: "user@example.com",
+  name: "사용자",
+  role: "USER",
+  enabled: false,
+  recentLoginAt: null,
+};
 
 function submitOtp(code = "123456") {
   fireEvent.paste(screen.getByLabelText("인증번호 1번째 숫자"), {
@@ -69,6 +77,46 @@ describe("Admin Accounts 실제 API 관리", () => {
     fireEvent.click(screen.getByRole("button", { name: "조회" }));
 
     await waitFor(() => expect(getAdminAccounts).toHaveBeenLastCalledWith({ keyword: "kim", role: "ADMIN", enabled: false }));
+  });
+
+  it("계정 작업 메뉴는 내부 Pointer를 유지하고 외부 Pointer에서 닫힘", async () => {
+    render(<AccountsScreen />);
+    await screen.findByText("admin@example.com");
+
+    const trigger = screen.getByRole("button", { name: "admin@example.com 계정 작업" });
+    fireEvent.click(trigger);
+    const statusAction = screen.getByRole("button", { name: "비활성화" });
+    fireEvent.pointerDown(statusAction);
+    expect(statusAction).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("button", { name: "비활성화" })).not.toBeInTheDocument();
+
+    fireEvent.click(trigger);
+    const reopenedAction = screen.getByRole("button", { name: "비활성화" });
+    fireEvent.pointerDown(reopenedAction);
+    fireEvent.click(reopenedAction);
+    await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
+      operation: "ACCOUNT_STATUS_UPDATE",
+      targetId: "9",
+    })));
+  });
+
+  it("다른 Row 작업 버튼을 누르면 새 Row 메뉴 하나만 표시", async () => {
+    vi.mocked(getAdminAccounts).mockResolvedValue({ items: [account, userAccount] });
+    render(<AccountsScreen />);
+    await screen.findByText("user@example.com");
+
+    const firstTrigger = screen.getByRole("button", { name: "admin@example.com 계정 작업" });
+    const secondTrigger = screen.getByRole("button", { name: "user@example.com 계정 작업" });
+    fireEvent.click(firstTrigger);
+    expect(firstTrigger).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.pointerDown(secondTrigger);
+    fireEvent.click(secondTrigger);
+    expect(firstTrigger).toHaveAttribute("aria-expanded", "false");
+    expect(secondTrigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getAllByRole("button", { name: "활성화" })).toHaveLength(1);
   });
 
   it("계정 생성 Password를 ADMIN_ACTION Mutation까지 전달하고 성공 후 재조회", async () => {

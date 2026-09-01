@@ -64,6 +64,18 @@ describe("Project 실제 관리", () => {
   });
   afterEach(cleanup);
 
+  it("Project 전용 Row가 정보와 고정 작업 영역의 두 직접 열로 구성", () => {
+    render(<ProjectManagement projects={projects} technologyMaster={master} onRefresh={vi.fn()} />);
+
+    const row = screen.getByRole("article", { name: "Project One 프로젝트" });
+    const controls = within(row).getByRole("group", { name: "Project One 프로젝트 작업" });
+    expect(row.children).toHaveLength(2);
+    expect(row.children[1]).toBe(controls);
+    expect(within(controls).getByText("공개")).toBeInTheDocument();
+    expect(within(controls).getByRole("switch", { name: "Project One 프로젝트 비공개 전환" })).toBeInTheDocument();
+    expect(within(controls).getByRole("button", { name: "상세 편집" })).toBeInTheDocument();
+  });
+
   it("Summary가 아닌 projects.id 상세 API로 구조화 Editor를 구성", async () => {
     render(<ProjectManagement projects={projects} technologyMaster={master} onRefresh={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "상세 편집" }));

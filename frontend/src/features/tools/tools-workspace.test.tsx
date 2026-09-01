@@ -91,6 +91,45 @@ describe("Tools 실제 연동 Workspace", () => {
     expect(screen.getByRole("navigation", { name: "Tools 주요 메뉴" })).toHaveTextContent("QuizLinks");
   });
 
+  it("Links가 비활성이어도 고정 Card 슬롯을 유지하고 탐색을 차단", async () => {
+    mocks.getTools.mockResolvedValue({ items: [tools[0]] });
+    render(<ToolsShell><ToolsLauncher /></ToolsShell>);
+
+    const launcher = await screen.findByLabelText("Tools Launcher");
+    expect(launcher.children).toHaveLength(4);
+    expect(within(launcher).getByRole("link", { name: /Quiz/ })).toHaveAttribute("href", "/tools/quiz");
+    const disabledLinks = within(launcher).getByRole("article", { name: "Links 비활성" });
+    expect(disabledLinks).not.toHaveAttribute("href");
+    expect(within(disabledLinks).getByText("비활성")).toBeInTheDocument();
+    expect(within(launcher).queryByRole("link", { name: /Links/ })).not.toBeInTheDocument();
+
+    fireEvent.click(disabledLinks);
+    expect(navigation.replace).not.toHaveBeenCalled();
+  });
+
+  it("Quiz가 비활성이어도 두 실제 Tool Card를 유지하고 Quiz 탐색만 차단", async () => {
+    mocks.getTools.mockResolvedValue({ items: [tools[1]] });
+    render(<ToolsShell><ToolsLauncher /></ToolsShell>);
+
+    const launcher = await screen.findByLabelText("Tools Launcher");
+    expect(launcher.children).toHaveLength(4);
+    expect(within(launcher).getByRole("article", { name: "Quiz 비활성" })).not.toHaveAttribute("href");
+    expect(within(launcher).queryByRole("link", { name: /Quiz/ })).not.toBeInTheDocument();
+    expect(within(launcher).getByRole("link", { name: /Links/ })).toHaveAttribute("href", "/tools/links");
+  });
+
+  it("두 Tool이 모두 비활성이어도 실제 Tool 2개와 제작 중 2개의 Geometry를 유지", async () => {
+    mocks.getTools.mockResolvedValue({ items: [] });
+    render(<ToolsShell><ToolsLauncher /></ToolsShell>);
+
+    const launcher = await screen.findByLabelText("Tools Launcher");
+    expect(launcher.children).toHaveLength(4);
+    expect(within(launcher).getByRole("article", { name: "Quiz 비활성" })).toBeInTheDocument();
+    expect(within(launcher).getByRole("article", { name: "Links 비활성" })).toBeInTheDocument();
+    expect(within(launcher).getAllByLabelText("제작 중")).toHaveLength(2);
+    expect(within(launcher).queryAllByRole("link")).toHaveLength(0);
+  });
+
   it.each([user, admin])("$role Session의 실제 Profile을 읽기 전용으로 표시", async (account) => {
     mocks.useAuthSession.mockReturnValue(authenticated(account));
     render(<ToolsShell><ToolsLauncher /></ToolsShell>);

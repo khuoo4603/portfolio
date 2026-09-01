@@ -381,5 +381,46 @@ export default function ProjectManagement({ projects, technologyMaster, onRefres
     return <>{feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}{adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}{loading ? <PageLoading rows={7} /> : error ? <PageError message={error} onRetry={() => void loadDetail(id)} /> : detail ? <ProjectEditor key={detailVersion} detail={detail} technologyMaster={technologyMaster} busy={adminAction.issuing} onBack={() => { setMode({ kind: "list" }); setDetail(null); }} onSaveBasic={(input) => void adminAction.start({ ...projectActionBindings.update(id), actionLabel: `${detail.project.name} 기본정보 수정`, mutation: (verification) => updateProject(id, input, verification), onSuccess: () => completeDetail("프로젝트 기본정보를 저장했습니다.", id, true) })} onDelete={() => void adminAction.start({ ...projectActionBindings.delete(id), actionLabel: `${detail.project.name} 프로젝트 삭제`, mutation: (verification) => deleteProject(id, verification), onSuccess: () => { setFeedback("프로젝트를 삭제했습니다."); setMode({ kind: "list" }); setDetail(null); void onRefresh(); } })} onSaveContent={(content) => void adminAction.start({ ...projectActionBindings.update(id), actionLabel: `${detail.project.name} Content 저장`, mutation: (verification) => replaceProjectContent(id, content, verification), onSuccess: () => completeDetail("프로젝트 Content를 저장했습니다.", id) })} onSaveTechnologies={(items) => void adminAction.start({ ...projectActionBindings.update(id), actionLabel: `${detail.project.name} 기술 구성 저장`, mutation: (verification) => replaceProjectTechnologies(id, items, verification), onSuccess: () => completeDetail("프로젝트 기술 구성을 저장했습니다.", id, true) })} onSaveMedia={(items) => void adminAction.start({ ...projectActionBindings.update(id), actionLabel: `${detail.project.name} Media 저장`, mutation: (verification) => replaceProjectMedia(id, items, verification), onSuccess: () => completeDetail("프로젝트 Media를 저장했습니다.", id) })} /> : null}{adminAction.dialog && <AdminActionDialog {...adminAction.dialog} />}</>;
   }
 
-  return <><section className={styles.operationalSection} aria-labelledby="projects-title"><div className={styles.sectionHeading}><div><h2 id="projects-title" className="type-title">프로젝트 관리</h2><p className="type-body">Summary 목록에서 실제 Project Detail 편집기로 진입합니다.</p></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => setMode({ kind: "create" })}><Plus aria-hidden="true" />프로젝트 추가</button></div>{feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}{adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}{projects.length === 0 ? <EmptyState title="프로젝트 없음" description="등록된 프로젝트가 없습니다." /> : <div className={styles.registryRows}>{projects.map((project) => <div key={project.id} className={styles.registryRow}><div><strong className="type-body">{project.name}</strong><span className="type-small">#{project.id} · {project.year} · {project.slug} · {formatDateTime(project.updatedAt)}</span><span className="type-small">{project.tagline}</span></div><div><StatusLabel tone={project.enabled ? "success" : "neutral"}>{project.enabled ? "공개" : "비공개"}</StatusLabel><StateSwitch enabled={project.enabled} disabled={adminAction.issuing} onClick={() => changeStatus(project)} label={`${project.name} 프로젝트 ${project.enabled ? "비공개" : "공개"} 전환`} /><button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => open(project.id)}>상세 편집</button></div></div>)}</div>}</section>{adminAction.dialog && <AdminActionDialog {...adminAction.dialog} />}</>;
+  return (
+    <>
+      <section className={styles.operationalSection} aria-labelledby="projects-title">
+        <div className={styles.sectionHeading}>
+          <div>
+            <h2 id="projects-title" className="type-title">프로젝트 관리</h2>
+            <p className="type-body">Summary 목록에서 실제 Project Detail 편집기로 진입합니다.</p>
+          </div>
+          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => setMode({ kind: "create" })}>
+            <Plus aria-hidden="true" />프로젝트 추가
+          </button>
+        </div>
+        {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
+        {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
+        {projects.length === 0 ? (
+          <EmptyState title="프로젝트 없음" description="등록된 프로젝트가 없습니다." />
+        ) : (
+          <div className={styles.registryRows}>
+            {projects.map((project) => (
+              <article
+                key={project.id}
+                className={`${styles.registryRow} ${styles.projectRegistryRow}`}
+                aria-label={`${project.name} 프로젝트`}
+              >
+                <div className={styles.projectRegistryInfo}>
+                  <strong className="type-body">{project.name}</strong>
+                  <span className={`${styles.projectRegistryMeta} type-small`}>#{project.id} · {project.year} · {project.slug} · {formatDateTime(project.updatedAt)}</span>
+                  <span className={`${styles.projectRegistryTagline} type-small`}>{project.tagline}</span>
+                </div>
+                <div className={styles.projectRegistryControls} role="group" aria-label={`${project.name} 프로젝트 작업`}>
+                  <StatusLabel tone={project.enabled ? "success" : "neutral"}>{project.enabled ? "공개" : "비공개"}</StatusLabel>
+                  <StateSwitch enabled={project.enabled} disabled={adminAction.issuing} onClick={() => changeStatus(project)} label={`${project.name} 프로젝트 ${project.enabled ? "비공개" : "공개"} 전환`} />
+                  <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => open(project.id)}>상세 편집</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+      {adminAction.dialog && <AdminActionDialog {...adminAction.dialog} />}
+    </>
+  );
 }

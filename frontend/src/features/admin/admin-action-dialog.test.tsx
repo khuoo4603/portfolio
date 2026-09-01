@@ -10,7 +10,9 @@ function props(overrides: Partial<React.ComponentProps<typeof AdminActionDialog>
     actionLabel: "KYVC 프로젝트 비공개 전환",
     challengeId: "challenge-a",
     expiresAt: future(),
-    busy: false,
+    issuing: false,
+    resending: false,
+    submitting: false,
     error: "",
     onCancel: vi.fn(),
     onConfirm: vi.fn(),
@@ -23,6 +25,38 @@ describe("관리자 ADMIN_ACTION 재인증 Dialog", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+  });
+
+  it("최초 Challenge 발급 중에는 Loading만 표시하고 OTP 제출 UI를 숨김", () => {
+    render(<AdminActionDialog {...props({ challengeId: null, expiresAt: null, issuing: true })} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("인증번호 전송 중...");
+    expect(screen.queryByLabelText("인증번호 1번째 숫자")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "변경 실행" })).not.toBeInTheDocument();
+    expect(screen.getByText("KYVC 프로젝트 비공개 전환")).toBeInTheDocument();
+  });
+
+  it("Challenge 발급 실패를 Modal 안에 표시하고 다시 전송 가능", () => {
+    const onResend = vi.fn();
+    render(<AdminActionDialog {...props({
+      challengeId: null,
+      expiresAt: null,
+      error: "인증 메일을 전송하지 못했습니다. (추적 ID: trace-mail)",
+      onResend,
+    })} />);
+
+    expect(screen.getByText("인증번호 전송에 실패했습니다.")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("trace-mail");
+    fireEvent.click(screen.getByRole("button", { name: "다시 전송" }));
+    expect(onResend).toHaveBeenCalledOnce();
+  });
+
+  it("재전송 중에는 기존 OTP UI 대신 재전송 Loading을 표시", () => {
+    render(<AdminActionDialog {...props({ issuing: true, resending: true })} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("인증번호 재전송 중...");
+    expect(screen.queryByLabelText("인증번호 1번째 숫자")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "변경 실행" })).not.toBeInTheDocument();
   });
 
   it("임의의 6자리 인증번호를 정답 판정 없이 제출", () => {

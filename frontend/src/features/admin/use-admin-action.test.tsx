@@ -146,8 +146,43 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
     });
 
     expect(createAdminChallenge).toHaveBeenCalledTimes(1);
+    expect(result.current.dialog).toMatchObject({
+      actionLabel: "프로젝트 수정",
+      challengeId: null,
+      expiresAt: null,
+      issuing: true,
+    });
     resolveChallenge({ challengeId: "challenge-a", expiresAt: "2026-09-01T14:00:00+09:00" });
     await act(() => first);
+  });
+
+  it("최초 Challenge 실패를 Dialog에 유지하고 같은 작업으로 재시도", async () => {
+    vi.mocked(createAdminChallenge)
+      .mockRejectedValueOnce(new ApiError(503, {
+        code: "MAIL_SEND_FAILED",
+        message: "인증 메일을 전송하지 못했습니다.",
+        traceId: "trace-mail",
+        fieldErrors: [],
+      }))
+      .mockResolvedValueOnce({ challengeId: "challenge-retry", expiresAt: "2026-09-01T14:10:00+09:00" });
+    const { result } = renderHook(() => useAdminAction());
+
+    await act(() => result.current.start({ ...binding, mutation: vi.fn() }));
+    expect(result.current.dialog).toMatchObject({
+      challengeId: null,
+      expiresAt: null,
+      issuing: false,
+    });
+    expect(result.current.dialog?.error).toContain("trace-mail");
+    expect(result.current.startError).toBe("");
+
+    await act(() => result.current.dialog?.onResend());
+    expect(createAdminChallenge).toHaveBeenNthCalledWith(2, expect.objectContaining(binding));
+    expect(result.current.dialog).toMatchObject({
+      challengeId: "challenge-retry",
+      expiresAt: "2026-09-01T14:10:00+09:00",
+      error: "",
+    });
   });
 
   it("Challenge 발급 401은 Dialog를 열지 않고 /login으로 이동", async () => {

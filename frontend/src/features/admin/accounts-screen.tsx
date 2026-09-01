@@ -183,6 +183,7 @@ export default function AccountsScreen() {
   const [menuId, setMenuId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const requestSequence = useRef(0);
+  const openMenuRef = useRef<HTMLTableCellElement | null>(null);
   const adminAction = useAdminAction();
 
   const loadAccounts = useCallback(async () => {
@@ -223,6 +224,23 @@ export default function AccountsScreen() {
       requestSequence.current += 1;
     };
   }, [loadAccounts]);
+
+  useEffect(() => {
+    if (menuId === null) {
+      return;
+    }
+
+    // 현재 계정 작업 영역 밖의 Pointer 입력 감지
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && openMenuRef.current?.contains(event.target)) {
+        return;
+      }
+      setMenuId(null);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [menuId]);
 
   const handleFilter = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -341,7 +359,7 @@ export default function AccountsScreen() {
                   <td data-label="권한"><span className={styles.roleBadge}>{account.role}</span></td>
                   <td data-label="상태"><StatusLabel tone={account.enabled ? "success" : "neutral"}>{account.enabled ? "활성" : "비활성"}</StatusLabel></td>
                   <td data-label="최근 로그인"><time>{formatDateTime(account.recentLoginAt)}</time></td>
-                  <td className={styles.actionCell}>
+                  <td className={styles.actionCell} ref={menuId === account.id ? openMenuRef : undefined}>
                     <button className={styles.iconButton} type="button" onClick={() => setMenuId((current) => current === account.id ? null : account.id)} aria-label={`${account.email} 계정 작업`} aria-expanded={menuId === account.id}><MoreHorizontal aria-hidden="true" /></button>
                     {menuId === account.id && <div className={styles.rowMenu}><button type="button" onClick={() => queueStatus(account)}>{account.enabled ? "비활성화" : "활성화"}</button><button type="button" onClick={() => queueRole(account)}>{account.role === "ADMIN" ? "USER로 변경" : "ADMIN으로 변경"}</button><button type="button" onClick={() => { setMenuId(null); setPasswordAccount(account); }}>비밀번호 초기화</button></div>}
                   </td>

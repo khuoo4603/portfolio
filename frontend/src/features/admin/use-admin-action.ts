@@ -17,8 +17,8 @@ export type AdminAction<TResult = void> = AdminActionBinding & {
 
 type ActiveAdminAction = {
   action: AdminAction<unknown>;
-  challengeId: string;
-  expiresAt: string;
+  challengeId: string | null;
+  expiresAt: string | null;
 };
 
 // Challenge 발급부터 일회성 Mutation 제출까지 공통 ADMIN_ACTION 흐름 조정
@@ -26,6 +26,7 @@ export function useAdminAction() {
   const router = useRouter();
   const [active, setActive] = useState<ActiveAdminAction | null>(null);
   const [issuing, setIssuing] = useState(false);
+  const [resending, setResending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [startError, setStartError] = useState("");
   const [dialogError, setDialogError] = useState("");
@@ -33,31 +34,44 @@ export function useAdminAction() {
   const mutationInFlight = useRef(false);
 
   const handleUnauthorized = useCallback((error: unknown) => {
-    if (error instanceof ApiError && error.status === 401) {
+    const unauthorized = error instanceof ApiError && error.status === 401;
+    if (unauthorized) {
       router.replace("/login");
     }
+    return unauthorized;
   }, [router]);
 
-  // 확정된 작업 정보로 Challenge를 먼저 발급하고 성공한 경우에만 Dialog 표시
+  // 확정된 작업 정보를 먼저 표시한 뒤 Dialog 내부에서 Challenge 발급
   const start = useCallback(async <TResult,>(action: AdminAction<TResult>) => {
     if (issueInFlight.current || mutationInFlight.current || active) {
       return;
     }
 
     issueInFlight.current = true;
+    setActive({
+      action: action as AdminAction<unknown>,
+      challengeId: null,
+      expiresAt: null,
+    });
     setIssuing(true);
+    setResending(false);
     setStartError("");
     setDialogError("");
     try {
       const challenge = await createAdminChallenge(action);
-      setActive({
-        action: action as AdminAction<unknown>,
+      setActive((current) => current ? {
+        ...current,
         challengeId: challenge.challengeId,
         expiresAt: challenge.expiresAt,
-      });
+      } : null);
     } catch (error) {
-      setStartError(formatApiError(error));
-      handleUnauthorized(error);
+      const message = formatApiError(error);
+      if (handleUnauthorized(error)) {
+        setStartError(message);
+        setActive(null);
+      } else {
+        setDialogError(message);
+      }
     } finally {
       issueInFlight.current = false;
       setIssuing(false);
@@ -72,6 +86,7 @@ export function useAdminAction() {
 
     issueInFlight.current = true;
     setIssuing(true);
+    setResending(true);
     setDialogError("");
     try {
       const challenge = await createAdminChallenge(active.action);
@@ -81,11 +96,17 @@ export function useAdminAction() {
         expiresAt: challenge.expiresAt,
       } : null);
     } catch (error) {
-      setDialogError(formatApiError(error));
-      handleUnauthorized(error);
+      const message = formatApiError(error);
+      if (handleUnauthorized(error)) {
+        setStartError(message);
+        setActive(null);
+      } else {
+        setDialogError(message);
+      }
     } finally {
       issueInFlight.current = false;
       setIssuing(false);
+      setResending(false);
     }
   }, [active, handleUnauthorized]);
 
@@ -98,14 +119,19 @@ export function useAdminAction() {
       setDialogError("6자리 인증번호를 입력해 주세요.");
       return;
     }
+    if (!active.challengeId) {
+      setDialogError("인증번호 발급을 완료하지 못했습니다.");
+      return;
+    }
 
+    const challengeId = active.challengeId;
     mutationInFlight.current = true;
     setSubmitting(true);
     setDialogError("");
     let successCallback: (() => void) | null = null;
     try {
       const result = await active.action.mutation({
-        challengeId: active.challengeId,
+        challengeId,
         verificationCode,
       });
       setActive(null);
@@ -126,6 +152,7 @@ export function useAdminAction() {
     }
     setActive(null);
     setDialogError("");
+    setResending(false);
   }, []);
 
   return {
@@ -137,7 +164,9 @@ export function useAdminAction() {
       actionLabel: active.action.actionLabel,
       challengeId: active.challengeId,
       expiresAt: active.expiresAt,
-      busy: issuing || submitting,
+      issuing,
+      resending,
+      submitting,
       error: dialogError,
       onCancel: cancel,
       onConfirm: submit,
