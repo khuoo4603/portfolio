@@ -21,11 +21,7 @@ export type AdminActionOperation =
   | "ACCOUNT_CREATE"
   | "ACCOUNT_STATUS_UPDATE"
   | "ACCOUNT_ROLE_UPDATE"
-  | "ACCOUNT_PASSWORD_RESET"
-  | "TOOL_STATUS_UPDATE"
-  | "TOOL_LINK_CREATE"
-  | "TOOL_LINK_UPDATE"
-  | "TOOL_LINK_DELETE";
+  | "ACCOUNT_PASSWORD_RESET";
 
 export type AdminActionTarget =
   | "PORTFOLIO_CONTENT"
@@ -35,9 +31,7 @@ export type AdminActionTarget =
   | "PORTFOLIO_TECHNOLOGY"
   | "PROJECT"
   | "EXTERNAL_LINK"
-  | "ACCOUNT"
-  | "TOOL"
-  | "TOOL_LINK";
+  | "ACCOUNT";
 
 export type AdminActionBinding = {
   operation: AdminActionOperation;

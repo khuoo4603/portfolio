@@ -36,8 +36,8 @@ public class ToolLink {
     @Column(nullable = false)
     private String url;
 
-    @Column(name = "image_url")
-    private String imageUrl;
+    @Column(name = "image_storage_key", length = 255)
+    private String imageStorageKey;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
@@ -59,7 +59,7 @@ public class ToolLink {
             String name,
             String description,
             String url,
-            String imageUrl,
+            String imageStorageKey,
             ToolLinkCategory category,
             int displayOrder,
             boolean enabled
@@ -67,7 +67,7 @@ public class ToolLink {
         this.name = name;
         this.description = description;
         this.url = url;
-        this.imageUrl = imageUrl;
+        this.imageStorageKey = imageStorageKey;
         this.category = category;
         this.displayOrder = displayOrder;
         this.enabled = enabled;
@@ -78,12 +78,12 @@ public class ToolLink {
             String name,
             String description,
             String url,
-            String imageUrl,
+            String imageStorageKey,
             ToolLinkCategory category,
             int displayOrder,
             boolean enabled
     ) {
-        return new ToolLink(name, description, url, imageUrl, category, displayOrder, enabled);
+        return new ToolLink(name, description, url, imageStorageKey, category, displayOrder, enabled);
     }
 
     // 전달 필드 반영 후 실제 변경 여부 반환
@@ -91,7 +91,7 @@ public class ToolLink {
             String newName,
             String newDescription,
             String newUrl,
-            String newImageUrl,
+            String newImageStorageKey,
             ToolLinkCategory newCategory,
             int newDisplayOrder,
             boolean newEnabled,
@@ -100,7 +100,7 @@ public class ToolLink {
         boolean changed = !Objects.equals(name, newName)
                 || !Objects.equals(description, newDescription)
                 || !Objects.equals(url, newUrl)
-                || !Objects.equals(imageUrl, newImageUrl)
+                || !Objects.equals(imageStorageKey, newImageStorageKey)
                 || category != newCategory
                 || displayOrder != newDisplayOrder
                 || enabled != newEnabled;
@@ -111,7 +111,7 @@ public class ToolLink {
         name = newName;
         description = newDescription;
         url = newUrl;
-        imageUrl = newImageUrl;
+        imageStorageKey = newImageStorageKey;
         category = newCategory;
         displayOrder = newDisplayOrder;
         enabled = newEnabled;

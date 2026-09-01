@@ -22,8 +22,9 @@ public record ToolLinkCreateRequest(
         @Schema(description = "HTTP 또는 HTTPS 외부 URL")
         String url,
 
-        @Schema(description = "대표 이미지 경로 또는 URL", nullable = true)
-        String imageUrl,
+        @NotNull
+        @Schema(description = "대표 이미지 처리 방식", example = "DEFAULT")
+        ToolLinkCreateImageMode imageMode,
 
         @NotNull
         @Schema(description = "링크 분류", example = "REFERENCE")

@@ -32,8 +32,14 @@ public record ToolLinkResponse(
                 link.getName(),
                 link.getDescription(),
                 link.getUrl(),
-                link.getImageUrl(),
+                imageUrl(link),
                 link.getCategory()
         );
+    }
+
+    private static String imageUrl(ToolLink link) {
+        return link.getImageStorageKey() == null
+                ? null
+                : "/api/v1/tools/media/links/" + link.getId();
     }
 }

@@ -1,31 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiRequest } from "@/lib/api/client";
-import type { ToolLinkInput } from "./admin-types";
+import type { ToolLinkCreateMetadata, ToolLinkUpdateMetadata } from "./admin-types";
 import {
   createToolLink,
   deleteToolLink,
   getAdminTools,
-  toolActionBindings,
   updateToolLink,
+  updateToolLinkEnabled,
   updateToolStatus,
 } from "./admin-tool-api";
 
 vi.mock("@/lib/api/client", () => ({ apiRequest: vi.fn() }));
 
-const verification = { challengeId: "challenge-tools", verificationCode: "123456" };
-const headers = {
-  "X-Admin-Challenge-Id": "challenge-tools",
-  "X-Admin-Verification-Code": "123456",
-};
-const link: ToolLinkInput = {
+const createMetadata: ToolLinkCreateMetadata = {
   name: "Spring Docs",
   description: "Reference",
   url: "https://spring.io",
-  imageUrl: "/images/spring.webp",
+  imageMode: "UPLOAD",
   category: "REFERENCE",
   displayOrder: 1,
   enabled: true,
 };
+
+async function formDataJson(formData: FormData) {
+  const metadata = formData.get("metadata");
+  if (!(metadata instanceof Blob)) throw new Error("metadata Blob 누락");
+  return JSON.parse(await metadata.text()) as unknown;
+}
 
 describe("Admin Tools API 계약", () => {
   beforeEach(() => vi.mocked(apiRequest).mockReset());
@@ -35,28 +36,42 @@ describe("Admin Tools API 계약", () => {
     expect(apiRequest).toHaveBeenCalledWith("/admin/tools");
   });
 
-  it("operation·targetType·실제 Entity ID를 바인딩", () => {
-    expect(toolActionBindings.status("QUIZ")).toEqual({ operation: "TOOL_STATUS_UPDATE", targetType: "TOOL", targetId: "QUIZ" });
-    expect(toolActionBindings.linkCreate()).toEqual({ operation: "TOOL_LINK_CREATE", targetType: "TOOL_LINK", targetId: null });
-    expect(toolActionBindings.linkUpdate(15)).toEqual({ operation: "TOOL_LINK_UPDATE", targetType: "TOOL_LINK", targetId: "15" });
-    expect(toolActionBindings.linkDelete(15)).toEqual({ operation: "TOOL_LINK_DELETE", targetType: "TOOL_LINK", targetId: "15" });
-  });
-
-  it("Tool 상태 PATCH에 ADMIN_ACTION Header를 전달", () => {
-    updateToolStatus("LINKS", false, verification);
+  it("Tool 상태 PATCH는 enabled JSON만 전달", () => {
+    updateToolStatus("LINKS", { enabled: false });
     expect(apiRequest).toHaveBeenCalledWith("/admin/tools/LINKS", {
       method: "PATCH",
-      headers,
       json: { enabled: false },
     });
   });
 
-  it("Link CRUD가 imageUrl과 정확한 Header를 전달", () => {
-    createToolLink(link, verification);
-    updateToolLink(15, { ...link, category: "MY_SERVICES" }, verification);
-    deleteToolLink(15, verification);
-    expect(apiRequest).toHaveBeenNthCalledWith(1, "/admin/tools/links", { method: "POST", headers, json: link });
-    expect(apiRequest).toHaveBeenNthCalledWith(2, "/admin/tools/links/15", { method: "PATCH", headers, json: { ...link, category: "MY_SERVICES" } });
-    expect(apiRequest).toHaveBeenNthCalledWith(3, "/admin/tools/links/15", { method: "DELETE", headers });
+  it("Link 생성은 JSON metadata Blob과 선택 이미지를 FormData로 전달", async () => {
+    const image = new File(["image"], "spring.webp", { type: "image/webp" });
+    createToolLink({ metadata: createMetadata, image });
+
+    const options = vi.mocked(apiRequest).mock.calls[0][1]!;
+    expect(options).toMatchObject({ method: "POST" });
+    expect(options).not.toHaveProperty("headers");
+    expect(options.body).toBeInstanceOf(FormData);
+    const body = options.body as FormData;
+    expect(await formDataJson(body)).toEqual(createMetadata);
+    expect(body.get("image")).toBe(image);
+  });
+
+  it("Link 일반 수정과 enabled 전용 수정의 Mode·Image 계약을 분리", async () => {
+    const metadata: ToolLinkUpdateMetadata = { category: "MY_SERVICES", imageMode: "DEFAULT" };
+    updateToolLink(15, { metadata, image: null });
+    updateToolLinkEnabled(15, false);
+
+    const general = vi.mocked(apiRequest).mock.calls[0][1]!.body as FormData;
+    const enabledOnly = vi.mocked(apiRequest).mock.calls[1][1]!.body as FormData;
+    expect(await formDataJson(general)).toEqual(metadata);
+    expect(general.has("image")).toBe(false);
+    expect(await formDataJson(enabledOnly)).toEqual({ enabled: false, imageMode: "KEEP" });
+    expect(enabledOnly.has("image")).toBe(false);
+  });
+
+  it("Link 삭제는 ADMIN_ACTION Header 없이 요청", () => {
+    deleteToolLink(15);
+    expect(apiRequest).toHaveBeenCalledWith("/admin/tools/links/15", { method: "DELETE" });
   });
 });

@@ -940,6 +940,31 @@
   color: var(--text-secondary);
 }
 
+.linkFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-bottom: var(--space-20);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.linkFilters button {
+  min-height: 40px;
+  padding: var(--space-8) var(--space-16);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.linkFilters button[aria-pressed="true"] {
+  border-color: var(--border-accent);
+  background: var(--admin-elevated);
+  color: var(--text-primary);
+}
+
 .dataTableWrap {
   min-width: 0;
   border-block: 1px solid var(--border-default);
@@ -1293,6 +1318,59 @@
   color: var(--text-muted);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-small);
+}
+
+.linkImageEditor {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1fr);
+  gap: var(--space-20);
+  align-items: center;
+}
+
+.linkImagePreview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: var(--admin-elevated);
+}
+
+.linkImagePreview img {
+  object-fit: cover;
+}
+
+.linkImageControls {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-12);
+}
+
+.linkImageControls > span:first-child,
+.selectedFileName {
+  color: var(--text-secondary);
+}
+
+.linkImageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.linkImageActions > label {
+  cursor: pointer;
+}
+
+.linkImageActions [aria-pressed="true"] {
+  border-color: var(--border-accent);
+  background: var(--admin-elevated);
+}
+
+.selectedFileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .checkboxField {
@@ -2024,6 +2102,10 @@
 
   .editorForm {
     gap: var(--space-20);
+  }
+
+  .linkImageEditor {
+    grid-template-columns: 1fr;
   }
 
   .wideField,

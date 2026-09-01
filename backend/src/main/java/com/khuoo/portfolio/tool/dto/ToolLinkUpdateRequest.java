@@ -1,6 +1,7 @@
 package com.khuoo.portfolio.tool.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import tools.jackson.databind.JsonNode;
 
 // Tool Link의 미전달 필드와 explicit null 구분 수정 요청
@@ -14,8 +15,9 @@ public record ToolLinkUpdateRequest(
         @Schema(description = "HTTP 또는 HTTPS 외부 URL", implementation = String.class)
         JsonNode url,
 
-        @Schema(description = "대표 이미지 경로 또는 URL", implementation = String.class, nullable = true)
-        JsonNode imageUrl,
+        @NotNull
+        @Schema(description = "대표 이미지 처리 방식", example = "KEEP")
+        ToolLinkUpdateImageMode imageMode,
 
         @Schema(description = "링크 분류", implementation = String.class)
         JsonNode category,

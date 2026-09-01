@@ -289,7 +289,28 @@ export type ToolLink = {
   enabled: boolean;
 };
 
-export type ToolLinkInput = Omit<ToolLink, "id">;
+export type ToolLinkFields = Omit<ToolLink, "id" | "imageUrl">;
+
+export type ToolLinkCreateImageMode = "DEFAULT" | "UPLOAD";
+
+export type ToolLinkUpdateImageMode = "KEEP" | "DEFAULT" | "UPLOAD";
+
+export type ToolLinkCreateMetadata = ToolLinkFields & {
+  imageMode: ToolLinkCreateImageMode;
+};
+
+export type ToolLinkUpdateMetadata = Partial<ToolLinkFields> & {
+  imageMode: ToolLinkUpdateImageMode;
+};
+
+export type ToolLinkMutation<TMetadata> = {
+  metadata: TMetadata;
+  image: File | null;
+};
+
+export type ToolStatusInput = {
+  enabled: boolean;
+};
 
 export type ToolsData = {
   tools: ToolItem[];

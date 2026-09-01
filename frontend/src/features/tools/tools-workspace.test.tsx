@@ -2,7 +2,13 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthSessionState } from "@/lib/auth/use-auth-session";
 import type { CurrentUser, ToolItem, ToolLink } from "@/types/api";
-import LinksScreen, { DEFAULT_LINK_IMAGE_URL, getLinkMeta, groupActiveLinks, LinkCard } from "./links-screen";
+import LinksScreen, {
+  DEFAULT_LINK_IMAGE_URL,
+  filterActiveLinks,
+  getLinkMeta,
+  groupActiveLinks,
+  LinkCard,
+} from "./links-screen";
 import ToolsLauncher from "./tools-launcher";
 import ToolsShell from "./tools-shell";
 
@@ -215,10 +221,11 @@ describe("Tools 실제 연동 Workspace", () => {
     expect(navigation.replace).not.toHaveBeenCalled();
   });
 
-  it("실제 Links 응답을 계약 Category 순서로 표시하고 null·실패 이미지를 Default로 전환", async () => {
+  it("실제 Links 응답을 세 Filter로 분류하고 null·실패 이미지를 Default로 전환", async () => {
     navigation.pathname = "/tools/links";
     render(<ToolsShell><LinksScreen /></ToolsShell>);
     expect(await screen.findByText("3 links")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^(전체|Reference|My Services)$/ })).toHaveLength(3);
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual(["Reference", "My Services"]);
     expect(screen.getAllByRole("img").map((image) => image.getAttribute("alt"))).toEqual(["Reference One", "Reference Two", "My Service"]);
     const defaultImage = screen.getByRole("img", { name: "My Service" });
@@ -226,6 +233,18 @@ describe("Tools 실제 연동 Workspace", () => {
     const failedImage = screen.getByRole("img", { name: "Reference One" });
     fireEvent.error(failedImage);
     await waitFor(() => expect(failedImage.getAttribute("src")?.endsWith(DEFAULT_LINK_IMAGE_URL)).toBe(true));
+
+    fireEvent.click(screen.getByRole("button", { name: "Reference" }));
+    expect(screen.getByText("2 links")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Reference" })).toBeInTheDocument();
+    expect(screen.queryByText("My Service")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "My Services" }));
+    expect(screen.getByText("1 link")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "My Services" })).toBeInTheDocument();
+    expect(screen.queryByText("Reference One")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "전체" }));
+    expect(screen.getByText("3 links")).toBeInTheDocument();
+    expect(mocks.getToolLinks).toHaveBeenCalledOnce();
   });
 
   it("잘못된 URL을 제외하고 HTTP(S) Domain만 안전하게 정규화", () => {
@@ -238,6 +257,9 @@ describe("Tools 실제 연동 Workspace", () => {
       href: "https://intro.example.test/about", domain: "intro.example.test",
     });
     expect(getLinkMeta("mailto:test@example.test")).toBeNull();
+    expect(filterActiveLinks(links, "REFERENCE").map((link) => link.id)).toEqual([1, 3]);
+    expect(filterActiveLinks(links, "MY_SERVICES").map((link) => link.id)).toEqual([2]);
+    expect(filterActiveLinks(links, "ALL")).toEqual(links);
   });
 
   it("LinkCard의 null Description을 빈 Editorial Row로 유지", () => {

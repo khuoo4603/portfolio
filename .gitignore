@@ -19,6 +19,7 @@ Thumbs.db
 # Temporary
 tmp/
 temp/
+/storage/
 
 # Node.js
 node_modules/

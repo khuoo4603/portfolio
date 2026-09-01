@@ -268,11 +268,11 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 SELECT
                     COUNT(*) FILTER (WHERE category = 'REFERENCE') AS reference_count,
                     COUNT(*) FILTER (WHERE category = 'MY_SERVICES') AS service_count,
-                    COUNT(*) FILTER (WHERE image_url IS NULL) AS default_image_count
+                    COUNT(*) FILTER (WHERE image_storage_key IS NULL) AS default_image_count
                 FROM tool_links
                 """)).containsEntry("reference_count", 7L)
                 .containsEntry("service_count", 4L)
-                .containsEntry("default_image_count", 2L);
+                .containsEntry("default_image_count", 11L);
     }
 
     // Runtime 테이블의 초기 데이터 미생성 검증

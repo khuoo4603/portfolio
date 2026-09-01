@@ -16,6 +16,14 @@ const CATEGORIES: ReadonlyArray<{ key: ToolLinkCategory; label: string }> = [
   { key: "MY_SERVICES", label: "My Services" },
 ];
 
+type LinkFilter = "ALL" | ToolLinkCategory;
+
+const LINK_FILTERS: ReadonlyArray<{ value: LinkFilter; label: string }> = [
+  { value: "ALL", label: "전체" },
+  { value: "REFERENCE", label: "Reference" },
+  { value: "MY_SERVICES", label: "My Services" },
+];
+
 export function getLinkMeta(value: string) {
   try {
     const url = new URL(value);
@@ -43,6 +51,11 @@ export function groupActiveLinks(links: readonly ToolLink[]) {
       return metadata ? [{ link, metadata }] : [];
     }),
   })).filter((category) => category.items.length > 0);
+}
+
+// 한 번 조회한 Link 배열의 선택 Category 필터링
+export function filterActiveLinks(links: readonly ToolLink[], filter: LinkFilter) {
+  return filter === "ALL" ? [...links] : links.filter((link) => link.category === filter);
 }
 
 export function LinkCard({
@@ -105,9 +118,10 @@ export function LinkCard({
 export default function LinksScreen() {
   const { hasTool } = useToolsSession();
   const [links, setLinks] = useState<ToolLink[] | null>(null);
+  const [linkFilter, setLinkFilter] = useState<LinkFilter>("ALL");
   const [error, setError] = useState("");
   const linksEnabled = hasTool("LINKS");
-  const groups = groupActiveLinks(links ?? []);
+  const groups = groupActiveLinks(filterActiveLinks(links ?? [], linkFilter));
   const totalLinks = groups.reduce((total, group) => total + group.items.length, 0);
 
   useEffect(() => {
@@ -165,6 +179,20 @@ export default function LinksScreen() {
             {totalLinks} {totalLinks === 1 ? "link" : "links"}
           </span>
         </header>
+
+        <div className={styles.linksFilters} role="group" aria-label="Link 분류">
+          {LINK_FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              className="type-body"
+              type="button"
+              aria-pressed={linkFilter === filter.value}
+              onClick={() => setLinkFilter(filter.value)}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
 
         {groups.length === 0 ? (
           <div className={styles.emptyState}>

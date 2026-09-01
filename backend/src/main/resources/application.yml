@@ -58,7 +58,7 @@ springdoc:
 
 portfolio:
   file:
-    resume-directory: ${RESUME_STORAGE_PATH:build/files/resume}
+    storage-root: ${FILE_STORAGE_ROOT:../storage/dev}
   mail:
     from: ${MAIL_FROM:${MAIL_USERNAME:}}
   monitoring:

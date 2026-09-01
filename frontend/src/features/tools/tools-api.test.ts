@@ -15,7 +15,7 @@ vi.mock("@/lib/api/client", () => ({ apiRequest: vi.fn() }));
 describe("Tools API", () => {
   afterEach(() => vi.clearAllMocks());
 
-  it("활성 Tool과 기존 두 Link Category 계약을 조회", async () => {
+  it("활성 Tool과 전체 Link 배열을 Query 없이 조회", async () => {
     await getTools();
     await getToolLinks();
 

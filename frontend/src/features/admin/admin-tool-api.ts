@@ -1,72 +1,69 @@
 import { apiRequest } from "@/lib/api/client";
-import type { ToolItem, ToolLink, ToolLinkInput, ToolsData } from "./admin-types";
-import {
-  adminActionHeaders,
-  type AdminActionBinding,
-  type AdminActionVerification,
-} from "./admin-action-api";
+import type {
+  ToolItem,
+  ToolLink,
+  ToolLinkCreateMetadata,
+  ToolLinkMutation,
+  ToolLinkUpdateMetadata,
+  ToolStatusInput,
+  ToolsData,
+} from "./admin-types";
 
-const toolBinding = (toolKey: string): AdminActionBinding => ({
-  operation: "TOOL_STATUS_UPDATE",
-  targetType: "TOOL",
-  targetId: toolKey,
-});
+function linkFormData<TMetadata>(input: ToolLinkMutation<TMetadata>) {
+  const formData = new FormData();
+  formData.append("metadata", new Blob([JSON.stringify(input.metadata)], { type: "application/json" }));
+  if (input.image) {
+    formData.append("image", input.image);
+  }
+  return formData;
+}
 
-const linkBinding = (
-  operation: "TOOL_LINK_CREATE" | "TOOL_LINK_UPDATE" | "TOOL_LINK_DELETE",
-  id: number | null,
-): AdminActionBinding => ({
-  operation,
-  targetType: "TOOL_LINK",
-  targetId: id === null ? null : String(id),
-});
-
-export const toolActionBindings = {
-  status: toolBinding,
-  linkCreate: () => linkBinding("TOOL_LINK_CREATE", null),
-  linkUpdate: (id: number) => linkBinding("TOOL_LINK_UPDATE", id),
-  linkDelete: (id: number) => linkBinding("TOOL_LINK_DELETE", id),
-};
-
+// Tool Registry와 Link 관리 데이터 조회
 export function getAdminTools() {
   return apiRequest<ToolsData>("/admin/tools");
 }
 
+// Tool Registry enabled JSON 변경
 export function updateToolStatus(
   toolKey: string,
-  enabled: boolean,
-  verification: AdminActionVerification,
+  input: ToolStatusInput,
 ) {
   return apiRequest<ToolItem>(`/admin/tools/${encodeURIComponent(toolKey)}`, {
     method: "PATCH",
-    headers: adminActionHeaders(verification),
-    json: { enabled },
-  });
-}
-
-export function createToolLink(input: ToolLinkInput, verification: AdminActionVerification) {
-  return apiRequest<ToolLink>("/admin/tools/links", {
-    method: "POST",
-    headers: adminActionHeaders(verification),
     json: input,
   });
 }
 
+// Tool Link Multipart 생성
+export function createToolLink(input: ToolLinkMutation<ToolLinkCreateMetadata>) {
+  return apiRequest<ToolLink>("/admin/tools/links", {
+    method: "POST",
+    body: linkFormData(input),
+  });
+}
+
+// Tool Link Multipart 일반 수정
 export function updateToolLink(
   id: number,
-  input: ToolLinkInput,
-  verification: AdminActionVerification,
+  input: ToolLinkMutation<ToolLinkUpdateMetadata>,
 ) {
   return apiRequest<ToolLink>(`/admin/tools/links/${id}`, {
     method: "PATCH",
-    headers: adminActionHeaders(verification),
-    json: input,
+    body: linkFormData(input),
   });
 }
 
-export function deleteToolLink(id: number, verification: AdminActionVerification) {
+// Tool Link enabled만 KEEP Mode로 변경
+export function updateToolLinkEnabled(id: number, enabled: boolean) {
+  return updateToolLink(id, {
+    metadata: { enabled, imageMode: "KEEP" },
+    image: null,
+  });
+}
+
+// Tool Link 삭제
+export function deleteToolLink(id: number) {
   return apiRequest(`/admin/tools/links/${id}`, {
     method: "DELETE",
-    headers: adminActionHeaders(verification),
   });
 }

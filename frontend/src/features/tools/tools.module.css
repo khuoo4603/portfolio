@@ -883,7 +883,7 @@
 /* Links 제목과 활성 Link 수만 유지하는 절제된 Header */
 .pageHeader.linksHeader {
   align-items: baseline;
-  margin-bottom: var(--space-64);
+  margin-bottom: var(--space-24);
   padding-bottom: 0;
   border-bottom: 0;
 }
@@ -893,6 +893,34 @@
   color: var(--text-muted);
   font-family: var(--font-family-mono);
   letter-spacing: 0.02em;
+}
+
+.linksFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-bottom: var(--space-64);
+}
+
+.linksFilters button {
+  min-height: 40px;
+  padding: var(--space-8) var(--space-16);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-160) var(--motion-easing-default),
+    background-color var(--motion-duration-160) var(--motion-easing-default),
+    color var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.linksFilters button:is(:hover, :focus-visible),
+.linksFilters button[aria-pressed="true"] {
+  border-color: var(--border-accent);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 /* Category별 독립 5열 Link Board */
@@ -1588,6 +1616,10 @@
 
   .pageHeader.linksHeader {
     display: flex;
+    margin-bottom: var(--space-20);
+  }
+
+  .linksFilters {
     margin-bottom: var(--space-48);
   }
 
@@ -1619,6 +1651,7 @@
 @media (prefers-reduced-motion: reduce) {
   .primaryButton,
   .secondaryButton,
+  .linksFilters button,
   .linkCard,
   .linkExternalIcon,
   .cardContent,

@@ -1,6 +1,5 @@
 package com.khuoo.portfolio.tool.repository;
 
-import com.khuoo.portfolio.common.util.PortfolioEnums.ToolLinkCategory;
 import com.khuoo.portfolio.tool.domain.Tool;
 import com.khuoo.portfolio.tool.domain.ToolLink;
 import jakarta.persistence.EntityManager;
@@ -41,26 +40,15 @@ public class ToolQueryRepositoryImpl implements ToolQueryRepository {
                 .getResultList();
     }
 
-    // 공개 상태와 표시 순서를 반영한 Tool Link 조회
+    // 공개 상태와 표시 순서를 반영한 Tool Link 전체 조회
     @Override
-    public List<ToolLink> findEnabledLinks(ToolLinkCategory category) {
-        if (category == null) {
-            return entityManager.createQuery("""
-                            SELECT link
-                            FROM ToolLink link
-                            WHERE link.enabled = true
-                            ORDER BY link.displayOrder ASC, link.id ASC
-                            """, ToolLink.class)
-                    .getResultList();
-        }
+    public List<ToolLink> findEnabledLinks() {
         return entityManager.createQuery("""
                         SELECT link
                         FROM ToolLink link
                         WHERE link.enabled = true
-                          AND link.category = :category
                         ORDER BY link.displayOrder ASC, link.id ASC
                         """, ToolLink.class)
-                .setParameter("category", category)
                 .getResultList();
     }
 
