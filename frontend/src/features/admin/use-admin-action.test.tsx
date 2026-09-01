@@ -38,6 +38,7 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
 
     expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining(binding));
     expect(result.current.dialog).toMatchObject({
+      phase: "READY",
       challengeId: "challenge-a",
       expiresAt: "2026-09-01T14:00:00+09:00",
       actionLabel: "프로젝트 수정",
@@ -87,6 +88,7 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
 
     expect(mutation).toHaveBeenCalledTimes(1);
     expect(result.current.dialog?.error).toContain("trace-admin-action");
+    expect(result.current.dialog?.phase).toBe("ERROR");
     expect(result.current.dialog?.challengeId).toBe("challenge-a");
   });
 
@@ -107,6 +109,7 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
     });
 
     expect(mutation).toHaveBeenCalledTimes(1);
+    expect(result.current.dialog?.phase).toBe("VERIFYING");
     resolveMutation();
     await act(() => first);
   });
@@ -151,6 +154,7 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
       challengeId: null,
       expiresAt: null,
       issuing: true,
+      phase: "SENDING",
     });
     resolveChallenge({ challengeId: "challenge-a", expiresAt: "2026-09-01T14:00:00+09:00" });
     await act(() => first);
@@ -172,6 +176,7 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
       challengeId: null,
       expiresAt: null,
       issuing: false,
+      phase: "ERROR",
     });
     expect(result.current.dialog?.error).toContain("trace-mail");
     expect(result.current.startError).toBe("");
@@ -182,6 +187,7 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
       challengeId: "challenge-retry",
       expiresAt: "2026-09-01T14:10:00+09:00",
       error: "",
+      phase: "READY",
     });
   });
 
@@ -200,5 +206,31 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
     expect(result.current.startError).toContain("trace-401");
     expect(navigation.replace).toHaveBeenCalledWith("/login");
     await waitFor(() => expect(result.current.issuing).toBe(false));
+  });
+
+  it.each([
+    ["AUTH_ADMIN_ACTION_EXPIRED", "인증번호가 만료되었습니다."],
+    ["AUTH_ADMIN_ACTION_LOCKED", "인증 시도 횟수를 초과했습니다."],
+  ])("%s 검증 실패를 ERROR로 유지", async (code, message) => {
+    vi.mocked(createAdminChallenge).mockResolvedValue({
+      challengeId: "challenge-a",
+      expiresAt: "2026-09-01T14:00:00+09:00",
+    });
+    const mutation = vi.fn().mockRejectedValue(new ApiError(403, {
+      code,
+      message,
+      traceId: "trace-policy",
+      fieldErrors: [],
+    }));
+    const { result } = renderHook(() => useAdminAction());
+    await act(() => result.current.start({ ...binding, mutation }));
+
+    await act(() => result.current.dialog?.onConfirm("123456"));
+
+    expect(result.current.dialog).toMatchObject({
+      phase: "ERROR",
+      challengeId: "challenge-a",
+    });
+    expect(result.current.dialog?.error).toContain("trace-policy");
   });
 });

@@ -15,6 +15,8 @@ export type AdminAction<TResult = void> = AdminActionBinding & {
   onSuccess?: (result: TResult) => void;
 };
 
+export type AdminActionPhase = "SENDING" | "READY" | "VERIFYING" | "ERROR";
+
 type ActiveAdminAction = {
   action: AdminAction<unknown>;
   challengeId: string | null;
@@ -25,6 +27,7 @@ type ActiveAdminAction = {
 export function useAdminAction() {
   const router = useRouter();
   const [active, setActive] = useState<ActiveAdminAction | null>(null);
+  const [phase, setPhase] = useState<AdminActionPhase>("SENDING");
   const [issuing, setIssuing] = useState(false);
   const [resending, setResending] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -55,6 +58,7 @@ export function useAdminAction() {
     });
     setIssuing(true);
     setResending(false);
+    setPhase("SENDING");
     setStartError("");
     setDialogError("");
     try {
@@ -64,6 +68,7 @@ export function useAdminAction() {
         challengeId: challenge.challengeId,
         expiresAt: challenge.expiresAt,
       } : null);
+      setPhase("READY");
     } catch (error) {
       const message = formatApiError(error);
       if (handleUnauthorized(error)) {
@@ -71,6 +76,7 @@ export function useAdminAction() {
         setActive(null);
       } else {
         setDialogError(message);
+        setPhase("ERROR");
       }
     } finally {
       issueInFlight.current = false;
@@ -87,6 +93,7 @@ export function useAdminAction() {
     issueInFlight.current = true;
     setIssuing(true);
     setResending(true);
+    setPhase("SENDING");
     setDialogError("");
     try {
       const challenge = await createAdminChallenge(active.action);
@@ -95,6 +102,7 @@ export function useAdminAction() {
         challengeId: challenge.challengeId,
         expiresAt: challenge.expiresAt,
       } : null);
+      setPhase("READY");
     } catch (error) {
       const message = formatApiError(error);
       if (handleUnauthorized(error)) {
@@ -102,6 +110,7 @@ export function useAdminAction() {
         setActive(null);
       } else {
         setDialogError(message);
+        setPhase("ERROR");
       }
     } finally {
       issueInFlight.current = false;
@@ -117,16 +126,19 @@ export function useAdminAction() {
     }
     if (!/^\d{6}$/.test(verificationCode)) {
       setDialogError("6자리 인증번호를 입력해 주세요.");
+      setPhase("ERROR");
       return;
     }
     if (!active.challengeId) {
       setDialogError("인증번호 발급을 완료하지 못했습니다.");
+      setPhase("ERROR");
       return;
     }
 
     const challengeId = active.challengeId;
     mutationInFlight.current = true;
     setSubmitting(true);
+    setPhase("VERIFYING");
     setDialogError("");
     let successCallback: (() => void) | null = null;
     try {
@@ -138,6 +150,7 @@ export function useAdminAction() {
       successCallback = () => active.action.onSuccess?.(result);
     } catch (error) {
       setDialogError(formatApiError(error));
+      setPhase("ERROR");
       handleUnauthorized(error);
     } finally {
       mutationInFlight.current = false;
@@ -162,6 +175,7 @@ export function useAdminAction() {
     dialog: active ? {
       open: true as const,
       actionLabel: active.action.actionLabel,
+      phase,
       challengeId: active.challengeId,
       expiresAt: active.expiresAt,
       issuing,

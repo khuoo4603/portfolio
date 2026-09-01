@@ -20,6 +20,7 @@ import type {
   PortfolioTechnology,
   ProfileEntry,
   ProfileEntryInput,
+  ProfileEntryType,
   SiteContent,
   SiteData,
   Technology,
@@ -58,6 +59,7 @@ import { useAdminAction } from "./use-admin-action";
 import styles from "./admin.module.css";
 
 type SiteTab = "content" | "entries" | "technology" | "links" | "resume";
+type ProfileFilter = "ALL" | ProfileEntryType;
 
 type ContentDefinition = {
   category: PortfolioContentCategory;
@@ -79,6 +81,15 @@ const TABS: Array<{ id: SiteTab; label: string }> = [
   { id: "technology", label: "기술" },
   { id: "links", label: "외부 링크" },
   { id: "resume", label: "이력서" },
+];
+
+const PROFILE_FILTERS: Array<{ value: ProfileFilter; label: string }> = [
+  { value: "ALL", label: "전체" },
+  { value: "EDUCATION", label: "학력" },
+  { value: "EXPERIENCE", label: "경력" },
+  { value: "ACTIVITY", label: "활동" },
+  { value: "AWARD", label: "수상" },
+  { value: "CERTIFICATE", label: "자격·교육" },
 ];
 
 const CONTENT_SECTIONS: ContentSection[] = [
@@ -502,12 +513,20 @@ export default function SiteScreen() {
 }
 
 function ProfileEntriesPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onDelete, onToggle }: { items: ProfileEntry[]; menuKey: string | null; setMenuKey: (key: string | null) => void; onCreate: () => void; onEdit: (item: ProfileEntry) => void; onDelete: (item: ProfileEntry) => void; onToggle: (item: ProfileEntry) => void }) {
+  const [filter, setFilter] = useState<ProfileFilter>("ALL");
+  const filteredItems = filter === "ALL" ? items : items.filter((item) => item.entryType === filter);
+
   return (
     <section className={styles.operationalSection} aria-labelledby="profile-entries-title">
       <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">학력·경력·활동·수상·자격</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</button></div>
+      <div className={styles.linkFilters} role="group" aria-label="이력 유형">
+        {PROFILE_FILTERS.map((item) => (
+          <button key={item.value} className="type-body" type="button" aria-pressed={filter === item.value} onClick={() => setFilter(item.value)}>{item.label}</button>
+        ))}
+      </div>
       {items.length === 0 ? <EmptyState title="등록 항목 없음" description="등록된 프로필 반복 항목이 없습니다." /> : (
-        <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>항목</th><th>유형 / 기간</th><th>순서</th><th>대표</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
-          {items.map((item) => { const key = `profile-${item.id}`; return (
+        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>항목</th><th>유형 / 기간</th><th>순서</th><th>대표</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
+          {filteredItems.map((item) => { const key = `profile-${item.id}`; return (
             <tr key={item.id}>
               <td data-label="항목"><div className={styles.tableIdentity}><strong>{item.title}</strong><span>{item.organization || item.role || item.description || "보조 정보 없음"}</span></div></td>
               <td data-label="유형 / 기간"><strong>{entryTypeLabel(item.entryType)}</strong><span>{item.periodText || "-"}</span></td>

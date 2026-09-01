@@ -74,6 +74,62 @@ function siteData(name = "김현우"): SiteData {
       enabled: true,
       createdAt: UPDATED_AT,
       updatedAt: UPDATED_AT,
+    }, {
+      id: 16,
+      entryType: "EXPERIENCE",
+      periodText: "2025.01 — 현재",
+      title: "플랫폼 개발",
+      organization: "포트폴리오 팀",
+      role: "Backend",
+      description: null,
+      achievement: null,
+      featured: true,
+      displayOrder: 2,
+      enabled: true,
+      createdAt: UPDATED_AT,
+      updatedAt: UPDATED_AT,
+    }, {
+      id: 17,
+      entryType: "ACTIVITY",
+      periodText: "2024.03 — 2024.12",
+      title: "개발 커뮤니티 활동",
+      organization: "Community",
+      role: null,
+      description: null,
+      achievement: null,
+      featured: false,
+      displayOrder: 3,
+      enabled: true,
+      createdAt: UPDATED_AT,
+      updatedAt: UPDATED_AT,
+    }, {
+      id: 18,
+      entryType: "AWARD",
+      periodText: "2024.11",
+      title: "프로젝트 우수상",
+      organization: "성공회대학교",
+      role: null,
+      description: null,
+      achievement: "우수상",
+      featured: false,
+      displayOrder: 4,
+      enabled: true,
+      createdAt: UPDATED_AT,
+      updatedAt: UPDATED_AT,
+    }, {
+      id: 19,
+      entryType: "CERTIFICATE",
+      periodText: "2025.02",
+      title: "클라우드 교육 수료",
+      organization: "교육 기관",
+      role: null,
+      description: null,
+      achievement: "수료",
+      featured: false,
+      displayOrder: 5,
+      enabled: true,
+      createdAt: UPDATED_AT,
+      updatedAt: UPDATED_AT,
     }],
     technologyMaster: [
       { id: 7, name: "PostgreSQL", category: "DATABASE", iconUrl: "/icons/tech/postgresql.svg", enabled: true, createdAt: UPDATED_AT, updatedAt: UPDATED_AT },
@@ -120,7 +176,7 @@ describe("Admin Site 실제 API 관리", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "이력" }));
     expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
-    expect(screen.getByText("학력")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "학력" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "기술" }));
     expect(screen.getByText("DATABASE")).toBeInTheDocument();
@@ -133,6 +189,41 @@ describe("Admin Site 실제 API 관리", () => {
     fireEvent.click(screen.getByRole("tab", { name: "이력서" }));
     expect(screen.getByText("resume.pdf")).toBeInTheDocument();
     expect(screen.queryByText(/파일 크기/)).not.toBeInTheDocument();
+  });
+
+  it("단일 Site 조회 결과를 ALL과 5개 이력 유형으로 필터링하고 필터 상태에서 수정 가능", async () => {
+    render(<SiteScreen />);
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
+
+    const filterGroup = screen.getByRole("group", { name: "이력 유형" });
+    expect(within(filterGroup).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "전체", "학력", "경력", "활동", "수상", "자격·교육",
+    ]);
+    expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
+    expect(screen.getByText("플랫폼 개발")).toBeInTheDocument();
+
+    const cases = [
+      ["학력", "소프트웨어융합전공"],
+      ["경력", "플랫폼 개발"],
+      ["활동", "개발 커뮤니티 활동"],
+      ["수상", "프로젝트 우수상"],
+      ["자격·교육", "클라우드 교육 수료"],
+    ];
+    for (const [label, title] of cases) {
+      fireEvent.click(within(filterGroup).getByRole("button", { name: label }));
+      expect(screen.getByText(title)).toBeInTheDocument();
+      expect(screen.getAllByRole("row")).toHaveLength(2);
+    }
+
+    fireEvent.click(within(filterGroup).getByRole("button", { name: "전체" }));
+    expect(screen.getAllByRole("row")).toHaveLength(6);
+    fireEvent.click(within(filterGroup).getByRole("button", { name: "활동" }));
+    fireEvent.click(screen.getByRole("button", { name: "개발 커뮤니티 활동 작업" }));
+    fireEvent.click(screen.getByRole("button", { name: "수정" }));
+    expect(screen.getByRole("dialog", { name: "프로필 항목 수정" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("개발 커뮤니티 활동")).toBeInTheDocument();
+    expect(getAdminSite).toHaveBeenCalledTimes(1);
   });
 
   it("콘텐츠 변경만 ADMIN_ACTION PATCH로 보내고 성공 후 Site를 재조회", async () => {

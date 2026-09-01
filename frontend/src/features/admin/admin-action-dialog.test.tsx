@@ -8,6 +8,7 @@ function props(overrides: Partial<React.ComponentProps<typeof AdminActionDialog>
   return {
     open: true,
     actionLabel: "KYVC 프로젝트 비공개 전환",
+    phase: "READY" as const,
     challengeId: "challenge-a",
     expiresAt: future(),
     issuing: false,
@@ -27,12 +28,12 @@ describe("관리자 ADMIN_ACTION 재인증 Dialog", () => {
     vi.restoreAllMocks();
   });
 
-  it("최초 Challenge 발급 중에는 Loading만 표시하고 OTP 제출 UI를 숨김", () => {
-    render(<AdminActionDialog {...props({ challengeId: null, expiresAt: null, issuing: true })} />);
+  it("SENDING에는 Loading과 비활성 OTP·제출 UI를 함께 표시", () => {
+    render(<AdminActionDialog {...props({ phase: "SENDING", challengeId: null, expiresAt: null, issuing: true })} />);
 
     expect(screen.getByRole("status")).toHaveTextContent("인증번호 전송 중...");
-    expect(screen.queryByLabelText("인증번호 1번째 숫자")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "변경 실행" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "변경 실행" })).toBeDisabled();
     expect(screen.getByText("KYVC 프로젝트 비공개 전환")).toBeInTheDocument();
   });
 
@@ -41,6 +42,7 @@ describe("관리자 ADMIN_ACTION 재인증 Dialog", () => {
     render(<AdminActionDialog {...props({
       challengeId: null,
       expiresAt: null,
+      phase: "ERROR",
       error: "인증 메일을 전송하지 못했습니다. (추적 ID: trace-mail)",
       onResend,
     })} />);
@@ -51,12 +53,12 @@ describe("관리자 ADMIN_ACTION 재인증 Dialog", () => {
     expect(onResend).toHaveBeenCalledOnce();
   });
 
-  it("재전송 중에는 기존 OTP UI 대신 재전송 Loading을 표시", () => {
-    render(<AdminActionDialog {...props({ issuing: true, resending: true })} />);
+  it("재전송 SENDING에는 기존 OTP 입력을 잠그고 Loading을 표시", () => {
+    render(<AdminActionDialog {...props({ phase: "SENDING", issuing: true, resending: true })} />);
 
     expect(screen.getByRole("status")).toHaveTextContent("인증번호 재전송 중...");
-    expect(screen.queryByLabelText("인증번호 1번째 숫자")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "변경 실행" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "변경 실행" })).toBeDisabled();
   });
 
   it("임의의 6자리 인증번호를 정답 판정 없이 제출", () => {
@@ -86,11 +88,18 @@ describe("관리자 ADMIN_ACTION 재인증 Dialog", () => {
 
   it("Backend 오류와 재발급 요청을 그대로 표시·전달", () => {
     const onResend = vi.fn();
-    render(<AdminActionDialog {...props({ error: "인증번호가 일치하지 않습니다. (추적 ID: trace-action)", onResend })} />);
+    render(<AdminActionDialog {...props({ phase: "ERROR", error: "인증번호가 일치하지 않습니다. (추적 ID: trace-action)", onResend })} />);
 
     expect(screen.getByRole("alert")).toHaveTextContent("trace-action");
     fireEvent.click(screen.getByRole("button", { name: "인증번호 재전송" }));
     expect(onResend).toHaveBeenCalledTimes(1);
+  });
+
+  it("VERIFYING에는 입력 변경과 중복 제출을 차단하고 Mutation Loading을 표시", () => {
+    render(<AdminActionDialog {...props({ phase: "VERIFYING", submitting: true })} />);
+
+    expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "변경 실행" })).toBeDisabled();
   });
 
   it("재발급으로 challengeId가 바뀌면 기존 입력을 제거", () => {
