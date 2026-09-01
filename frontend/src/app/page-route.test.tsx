@@ -4,6 +4,7 @@ import { fetchPublicPortfolio } from "@/lib/api/public-server";
 import Home from "./page";
 
 vi.mock("@/lib/api/public-server", () => ({ fetchPublicPortfolio: vi.fn() }));
+vi.mock("@/lib/analytics/page-view-action", () => ({ recordPageView: vi.fn() }));
 
 describe("Public SSR Route", () => {
   afterEach(() => {

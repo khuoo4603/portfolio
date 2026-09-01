@@ -12,6 +12,7 @@ const routeMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({ notFound: routeMocks.notFound }));
+vi.mock("@/lib/analytics/page-view-action", () => ({ recordPageView: vi.fn() }));
 vi.mock("@/lib/api/public-server", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/public-server")>();
   return {

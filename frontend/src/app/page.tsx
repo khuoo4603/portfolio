@@ -1,5 +1,6 @@
 import { mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
 import { fetchPublicPortfolio } from "@/lib/api/public-server";
+import PageViewTracker from "@/lib/analytics/page-view-tracker";
 import { HomeView } from "./home-view";
 
 export const dynamic = "force-dynamic";
@@ -14,5 +15,10 @@ export default async function Home() {
       </main>
     );
   }
-  return <HomeView model={mapPublicPortfolio(portfolio)} />;
+  return (
+    <>
+      <PageViewTracker path="/" />
+      <HomeView model={mapPublicPortfolio(portfolio)} />
+    </>
+  );
 }

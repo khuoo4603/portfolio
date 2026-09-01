@@ -49,12 +49,12 @@ import {
   PageHeader,
   PageLoading,
   StateSwitch,
-  StatusLabel,
   SubmitButton,
   formatDateTime,
   formatFileSize,
 } from "./admin-ui";
 import { ExternalLinkEditor, ProfileEditor, TechnologyEditor } from "./site-editors";
+import ProjectManagement from "./project-management";
 import { useAdminAction } from "./use-admin-action";
 import styles from "./admin.module.css";
 
@@ -260,9 +260,9 @@ export default function SiteScreen() {
   const requestSequence = useRef(0);
   const adminAction = useAdminAction();
 
-  const loadSite = useCallback(async () => {
+  const loadSite = useCallback(async (silent = false) => {
     const requestId = ++requestSequence.current;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError("");
     try {
       const response = await getAdminSite();
@@ -272,11 +272,15 @@ export default function SiteScreen() {
       }
     } catch (caught) {
       if (requestSequence.current === requestId) {
-        setData(null);
-        setError(formatApiError(caught));
+        if (silent) {
+          setFeedback(`최신 Site 데이터 재조회 실패: ${formatApiError(caught)}`);
+        } else {
+          setData(null);
+          setError(formatApiError(caught));
+        }
       }
     } finally {
-      if (requestSequence.current === requestId) {
+      if (requestSequence.current === requestId && !silent) {
         setLoading(false);
       }
     }
@@ -298,7 +302,7 @@ export default function SiteScreen() {
   const completeMutation = (message: string) => {
     setFeedback(message);
     setMenuKey(null);
-    void loadSite();
+    void loadSite(true);
   };
 
   const saveContents = (items: PortfolioContentInput[]) => {
@@ -472,7 +476,7 @@ export default function SiteScreen() {
             {tab === "profile" && <ContentPanel definitions={PROFILE_CONTENTS} contents={data.portfolioContents} title="프로필·연락처" description="소개, 개발 철학과 공개 이메일에 연결된 고정 Slot" busy={adminAction.issuing} onSubmit={saveContents} />}
             {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} />}
             {tab === "technology" && <TechnologiesPanel items={data.technologyMaster} portfolioItems={data.portfolioTechnologies} draft={portfolioDraft} setDraft={setPortfolioDraft} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setTechnologyEditor({})} onEdit={(item) => setTechnologyEditor({ item })} onDelete={deleteTechnologyItem} onToggle={toggleTechnology} onSavePortfolio={savePortfolioTechnologies} />}
-            {tab === "projects" && <ProjectsPanel projects={data.projects} />}
+            {tab === "projects" && <ProjectManagement projects={data.projects} technologyMaster={data.technologyMaster} onRefresh={() => loadSite(true)} />}
             {tab === "links" && <ExternalLinksPanel items={data.externalLinks} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} />}
             {tab === "resume" && <ResumePanel data={data} file={resumeFile} error={fileError} onSelect={selectResume} onSubmit={saveResume} />}
           </div>
@@ -566,15 +570,6 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, se
         <div className={styles.formActionRow}><p className="type-small">변경된 전체 구성을 한 번에 저장합니다.</p><SubmitButton busy={false} type="button" disabled={!portfolioChanged} onClick={() => onSavePortfolio(draft)}>메인 구성 저장</SubmitButton></div>
       </section>
     </div>
-  );
-}
-
-function ProjectsPanel({ projects }: { projects: SiteData["projects"] }) {
-  return (
-    <section className={styles.operationalSection} aria-labelledby="projects-title">
-      <div className={styles.sectionHeading}><div><h2 id="projects-title" className="type-title">프로젝트 요약</h2><p className="type-body">프로젝트 변경은 다음 연동 범위에서 처리하며 현재는 실제 요약 데이터만 표시합니다.</p></div></div>
-      {projects.length === 0 ? <EmptyState title="프로젝트 없음" description="등록된 프로젝트가 없습니다." /> : <div className={styles.registryRows}>{projects.map((project) => <div key={project.id} className={styles.registryRow}><div><strong className="type-body">{project.name}</strong><span className="type-small">{project.year} · {project.tagline} · {formatDateTime(project.updatedAt)}</span></div><StatusLabel tone={project.enabled ? "success" : "neutral"}>{project.enabled ? "공개" : "비공개"}</StatusLabel></div>)}</div>}
-    </section>
   );
 }
 

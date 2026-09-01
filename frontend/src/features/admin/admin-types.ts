@@ -139,6 +139,85 @@ export type ProjectSummary = {
   updatedAt: string;
 };
 
+export type Project = ProjectSummary & {
+  description: string;
+  summary: string | null;
+  detailRole: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  teamSize: number | null;
+};
+
+export type ProjectCreateInput = Omit<Project, "id" | "updatedAt">;
+
+export type ProjectUpdateInput = Partial<Omit<ProjectCreateInput, "enabled">>;
+
+export type ProjectTitleItem = {
+  title: string;
+};
+
+export type ProjectDevelopmentItem = {
+  title: string;
+  items: string[];
+};
+
+export type ProjectArchitecture = {
+  clients: string[];
+  services: string[];
+  dataAndExternal: string[];
+  runtime: string[];
+  delivery: string[];
+};
+
+export type ProjectEngineeringItem = {
+  title: string;
+  summary: string;
+  problem: string;
+  solution: string;
+  result: string;
+};
+
+export type ProjectContent = {
+  results: ProjectTitleItem[];
+  background: string[];
+  features: ProjectTitleItem[];
+  development: ProjectDevelopmentItem[];
+  architecture: ProjectArchitecture;
+  engineering: ProjectEngineeringItem[];
+};
+
+export type ProjectTechnology = {
+  technologyId: number;
+  name: string;
+  category: TechnologyCategory;
+  iconUrl: string | null;
+  showOnCard: boolean;
+  highlighted: boolean;
+  displayOrder: number;
+};
+
+export type ProjectTechnologyInput = Pick<
+  ProjectTechnology,
+  "technologyId" | "showOnCard" | "highlighted" | "displayOrder"
+>;
+
+export type ProjectMedia = {
+  id: number;
+  imageUrl: string;
+  label: string | null;
+  altText: string | null;
+  displayOrder: number;
+};
+
+export type ProjectMediaInput = Omit<ProjectMedia, "id">;
+
+export type ProjectDetail = {
+  project: Project;
+  technologies: ProjectTechnology[];
+  content: ProjectContent;
+  media: ProjectMedia[];
+};
+
 export type ExternalLink = {
   id: number;
   name: string;
@@ -192,25 +271,30 @@ export type AccountCreateResult = Omit<AccountItem, "recentLoginAt"> & {
 };
 
 export type ToolItem = {
-  toolKey: "QUIZ" | "LINKS" | string;
+  toolKey: string;
   name: string;
   enabled: boolean;
-  updatedAt?: string;
 };
 
-export type ToolLinkCategory = "REFERENCE" | "DEVELOPMENT" | "MY_SERVICES" | "PERSONAL";
+export type ToolLinkCategory = "REFERENCE" | "MY_SERVICES";
 
 export type ToolLink = {
   id: number;
   name: string;
   description: string | null;
   url: string;
+  imageUrl: string | null;
   category: ToolLinkCategory;
   displayOrder: number;
   enabled: boolean;
 };
 
 export type ToolLinkInput = Omit<ToolLink, "id">;
+
+export type ToolsData = {
+  tools: ToolItem[];
+  links: ToolLink[];
+};
 
 export type LoginLog = {
   id: number;

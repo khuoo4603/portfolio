@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { mapProjectDetail } from "@/features/portfolio/project-detail";
 import { mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
+import PageViewTracker from "@/lib/analytics/page-view-tracker";
 import {
   PublicApiError,
   fetchPublicPortfolio,
@@ -72,9 +73,12 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
 
   return (
-    <ProjectDetailView
-      project={mapProjectDetail(projectResult.value)}
-      portfolio={portfolio}
-    />
+    <>
+      <PageViewTracker path={`/projects/${slug}`} />
+      <ProjectDetailView
+        project={mapProjectDetail(projectResult.value)}
+        portfolio={portfolio}
+      />
+    </>
   );
 }

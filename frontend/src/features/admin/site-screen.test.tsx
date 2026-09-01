@@ -119,7 +119,8 @@ describe("Admin Site 실제 API 관리", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "프로젝트" }));
     expect(screen.getByText("KYvC")).toBeInTheDocument();
-    expect(screen.queryByRole("switch", { name: /프로젝트/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "KYvC 프로젝트 비공개 전환" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "상세 편집" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "외부 링크" }));
     expect(screen.getByText("https://github.com/example")).toBeInTheDocument();
