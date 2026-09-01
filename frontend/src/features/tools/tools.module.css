@@ -259,6 +259,15 @@
   text-decoration: none;
 }
 
+.toolCardDisabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.toolCardDisabled .cardCta {
+  color: var(--text-muted);
+}
+
 .toolCard:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
@@ -649,26 +658,39 @@
     transform: translateY(40px);
   }
 
-  .toolCard:is(:hover, :focus-visible, :focus-within) .cardContent {
+  .toolCard:not(.toolCardDisabled):is(:hover, :focus-visible, :focus-within) .cardContent {
     transform: translateY(-40px);
   }
 
-  .toolCard:is(:hover, :focus-visible, :focus-within) .cardIcon svg {
+  .toolCard:not(.toolCardDisabled):is(:hover, :focus-visible, :focus-within) .cardIcon svg {
     transform: scale(0.75);
   }
 
-  .toolCard:is(:hover, :focus-visible, :focus-within) .cardCta {
+  .toolCard:not(.toolCardDisabled):is(:hover, :focus-visible, :focus-within) .cardCta {
     opacity: 1;
     transform: translateY(0);
   }
 
-  .toolCard:is(:hover, :focus-visible, :focus-within) .cardOverlay {
+  .toolCard:not(.toolCardDisabled):is(:hover, :focus-visible, :focus-within) .cardOverlay {
     opacity: 1;
   }
 
-  .toolCard:is(:hover, :focus-visible, :focus-within) .quizPreview,
-  .toolCard:is(:hover, :focus-visible, :focus-within) .linksBeamPreview {
+  .toolCard:not(.toolCardDisabled):is(:hover, :focus-visible, :focus-within) .quizPreview,
+  .toolCard:not(.toolCardDisabled):is(:hover, :focus-visible, :focus-within) .linksBeamPreview {
     transform: scale(1);
+  }
+
+  .toolCardDisabled .cardCta {
+    opacity: 1;
+    transform: none;
+  }
+
+  .toolCardDisabled .cardContent {
+    transform: translateY(-40px);
+  }
+
+  .toolCardDisabled .cardIcon svg {
+    transform: scale(0.75);
   }
 }
 

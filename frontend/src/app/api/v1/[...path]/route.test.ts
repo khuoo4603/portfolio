@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DELETE, GET, HEAD, PATCH, POST } from "./route";
 
+const loggingMocks = vi.hoisted(() => ({ recordFrontendError: vi.fn() }));
+vi.mock("@/lib/logging/frontend-error", () => ({
+  recordFrontendError: loggingMocks.recordFrontendError,
+}));
+
 const ORIGINAL_BACKEND_BASE_URL = process.env.BACKEND_BASE_URL;
 
 function context(...path: string[]) {
@@ -14,6 +19,8 @@ function request(path: string, init?: RequestInit) {
 describe("Same-Origin Backend Proxy", () => {
   beforeEach(() => {
     process.env.BACKEND_BASE_URL = "http://backend.local:8080";
+    loggingMocks.recordFrontendError.mockReset().mockResolvedValue(undefined);
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -137,6 +144,7 @@ describe("Same-Origin Backend Proxy", () => {
 
     expect(response.status).toBe(status);
     expect(await response.json()).toEqual(payload);
+    expect(loggingMocks.recordFrontendError).not.toHaveBeenCalled();
   });
 
   it("Backend 연결 실패만 안전한 ErrorResponse 502로 변환", async () => {
@@ -155,6 +163,27 @@ describe("Same-Origin Backend Proxy", () => {
     });
     expect(payload.traceId).toMatch(/^[0-9a-f-]{36}$/);
     expect(response.headers.get("x-request-id")).toBe(payload.traceId);
+    expect(loggingMocks.recordFrontendError).toHaveBeenCalledWith({
+      method: "GET",
+      path: "/api/v1/public/portfolio",
+      statusCode: 502,
+      errorCode: "FRONTEND_BACKEND_CONNECTION_FAILED",
+      traceId: payload.traceId,
+    });
+  });
+
+  it("Backend가 반환한 500은 Frontend 오류로 중복 기록하지 않음", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+      code: "COMMON_INTERNAL_ERROR",
+      message: "Backend failure",
+      traceId: "backend-trace",
+      fieldErrors: [],
+    }, { status: 500 })));
+
+    const response = await GET(request("/api/v1/public/portfolio"), context("public", "portfolio"));
+
+    expect(response.status).toBe(500);
+    expect(loggingMocks.recordFrontendError).not.toHaveBeenCalled();
   });
 
   it("유효 Request ID는 유지하고 유효하지 않은 ID는 재생성", async () => {

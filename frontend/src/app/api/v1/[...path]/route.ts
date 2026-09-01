@@ -1,6 +1,7 @@
 import { isIP } from "node:net";
 import { randomUUID } from "node:crypto";
 import { getBackendBaseUrl } from "@/lib/api/backend-url";
+import { recordFrontendError } from "@/lib/logging/frontend-error";
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const FORWARDED_FOR_HEADER = "X-Forwarded-For";
@@ -84,7 +85,19 @@ async function proxy(request: Request, context: ProxyContext) {
     const headers = responseHeaders(upstream);
     const responseBody = upstream.status === 204 || method === "HEAD" ? null : upstream.body;
     return new Response(responseBody, { status: upstream.status, statusText: upstream.statusText, headers });
-  } catch {
+  } catch (error) {
+    const pathname = new URL(request.url).pathname;
+    console.error(
+      `[frontend-error] traceId=${traceId} method=${request.method.toUpperCase()} path=${pathname} status=502 errorCode=FRONTEND_BACKEND_CONNECTION_FAILED`,
+      error,
+    );
+    await recordFrontendError({
+      method: request.method,
+      path: pathname,
+      statusCode: 502,
+      errorCode: "FRONTEND_BACKEND_CONNECTION_FAILED",
+      traceId,
+    });
     return Response.json(
       {
         code: "COMMON_INTERNAL_ERROR",

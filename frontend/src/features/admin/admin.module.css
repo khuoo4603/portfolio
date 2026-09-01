@@ -1101,6 +1101,39 @@
   font-weight: 500;
 }
 
+/* Project 정보와 고정 Control 열을 일치시키는 전용 Registry Row */
+.projectRegistryRow {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.projectRegistryInfo {
+  min-width: 0;
+  display: grid;
+}
+
+.projectRegistryMeta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectRegistryTagline {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.projectRegistryControls {
+  display: grid;
+  grid-template-columns: var(--space-64) 66px var(--space-112);
+  align-items: center;
+  justify-items: start;
+  gap: var(--space-12);
+}
+
+.projectRegistryControls .secondaryButton {
+  width: 100%;
+}
+
 .toolMark {
   width: 40px;
   height: 40px;
@@ -1328,6 +1361,18 @@
 }
 
 .challengeLoading p {
+  margin: 0;
+}
+
+.challengeIssueError {
+  min-height: 96px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: var(--space-8);
+}
+
+.challengeIssueError p {
   margin: 0;
 }
 
@@ -1946,6 +1991,29 @@
   .registryRow .statusLabel {
     grid-column: 1;
     grid-row: 2;
+  }
+
+  .projectRegistryRow {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: var(--space-16);
+  }
+
+  .projectRegistryMeta {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .projectRegistryControls {
+    width: 100%;
+    grid-template-columns: var(--space-64) 66px minmax(var(--space-96), var(--space-112));
+    justify-content: start;
+  }
+
+  .projectRegistryRow .projectRegistryControls .statusLabel,
+  .projectRegistryRow .projectRegistryControls .stateSwitch {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .contentForm {

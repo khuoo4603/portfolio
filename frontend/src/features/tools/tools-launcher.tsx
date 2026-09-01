@@ -237,7 +237,7 @@ function RipplePreview({ variant }: { variant: "wide" | "compact" }) {
   );
 }
 
-// 실제 기능으로 연결되는 정적 Tool Card
+// 활성 여부에 따라 탐색성을 전환하는 고정 Tool Card
 function ToolCard({
   className,
   href,
@@ -245,6 +245,7 @@ function ToolCard({
   title,
   description,
   preview,
+  enabled,
 }: {
   className: string;
   href: string;
@@ -252,9 +253,11 @@ function ToolCard({
   title: string;
   description: string;
   preview: React.ReactNode;
+  enabled: boolean;
 }) {
-  return (
-    <Link className={`${styles.bentoCard} ${styles.toolCard} ${className}`} href={href}>
+  const cardClassName = `${styles.bentoCard} ${styles.toolCard} ${enabled ? "" : styles.toolCardDisabled} ${className}`;
+  const content = (
+    <>
       {preview}
       <span className={styles.cardOverlay} aria-hidden="true" />
       <div className={styles.cardContent}>
@@ -263,9 +266,15 @@ function ToolCard({
         <p className={styles.cardDescription}>{description}</p>
       </div>
       <span className={styles.cardCta} aria-hidden="true">
-        자세히 보기 <span className={styles.cardCtaArrow}>→</span>
+        {enabled ? <>자세히 보기 <span className={styles.cardCtaArrow}>→</span></> : "비활성"}
       </span>
-    </Link>
+    </>
+  );
+
+  return enabled ? (
+    <Link className={cardClassName} href={href}>{content}</Link>
+  ) : (
+    <article className={cardClassName} aria-label={`${title} 비활성`}>{content}</article>
   );
 }
 
@@ -283,7 +292,7 @@ function ComingCard({ className, preview }: { className: string; preview: React.
   );
 }
 
-// 활성 Tool 2개와 제작 상태 2개의 Bento Launcher
+// 고정 Tool 슬롯 2개와 제작 상태 2개의 Bento Launcher
 export default function ToolsLauncher() {
   const { tools } = useToolsSession();
   const quiz = tools.find((tool) => tool.toolKey === "QUIZ");
@@ -296,26 +305,24 @@ export default function ToolsLauncher() {
           <h1 className={styles.launcherTitle}>Quick Menu</h1>
           <div className={styles.launcherCenter}>
             <section className={styles.launcherGrid} aria-label="Tools Launcher">
-              {quiz && (
-                <ToolCard
-                  className={styles.quizCard}
-                  href="/tools/quiz"
-                  icon={<ListChecks strokeWidth={1.8} />}
-                  title={quiz.name}
-                  description="GPT 문제 JSON을 불러와 직접 풀고 답안을 정리합니다."
-                  preview={<QuizPreview />}
-                />
-              )}
-              {links && (
-                <ToolCard
-                  className={styles.linksCard}
-                  href="/tools/links"
-                  icon={<Link2 strokeWidth={1.8} />}
-                  title={links.name}
-                  description="공통 Links 데이터를 분류별로 조회합니다."
-                  preview={<LinksBeamPreview />}
-                />
-              )}
+              <ToolCard
+                className={styles.quizCard}
+                href="/tools/quiz"
+                icon={<ListChecks strokeWidth={1.8} />}
+                title={quiz?.name ?? "Quiz"}
+                description="GPT 문제 JSON을 불러와 직접 풀고 답안을 정리합니다."
+                preview={<QuizPreview />}
+                enabled={Boolean(quiz)}
+              />
+              <ToolCard
+                className={styles.linksCard}
+                href="/tools/links"
+                icon={<Link2 strokeWidth={1.8} />}
+                title={links?.name ?? "Links"}
+                description="공통 Links 데이터를 분류별로 조회합니다."
+                preview={<LinksBeamPreview />}
+                enabled={Boolean(links)}
+              />
               <ComingCard className={styles.comingWideCard} preview={<RipplePreview variant="wide" />} />
               <ComingCard className={styles.comingNarrowCard} preview={<RipplePreview variant="compact" />} />
             </section>
