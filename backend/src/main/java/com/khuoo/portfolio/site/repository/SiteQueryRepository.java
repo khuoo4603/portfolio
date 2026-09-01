@@ -44,9 +44,6 @@ public interface SiteQueryRepository {
     // 현재 메인 기술 구성 Mapping 조회
     List<PortfolioTechnology> findPortfolioTechnologyMappings();
 
-    // 비공개 포함 프로젝트 관리 목록 조회
-    List<Project> findProjects();
-
     // 비활성 포함 전체 외부 링크 조회
     List<ExternalLink> findExternalLinks();
 }

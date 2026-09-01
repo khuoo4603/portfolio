@@ -156,17 +156,6 @@ public class SiteQueryRepositoryImpl implements SiteQueryRepository {
                 .getResultList();
     }
 
-    // 비공개 포함 표시 순서 기반 프로젝트 관리 목록 조회
-    @Override
-    public List<Project> findProjects() {
-        return entityManager.createQuery("""
-                        SELECT project
-                        FROM Project project
-                        ORDER BY project.displayOrder ASC, project.id ASC
-                        """, Project.class)
-                .getResultList();
-    }
-
     // 비활성 포함 표시 순서 기반 전체 외부 링크 조회
     @Override
     public List<ExternalLink> findExternalLinks() {

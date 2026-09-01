@@ -14,7 +14,6 @@ import com.khuoo.portfolio.site.domain.Technology;
 import com.khuoo.portfolio.site.dto.AdminExternalLinkResponse;
 import com.khuoo.portfolio.site.dto.AdminPortfolioContentResponse;
 import com.khuoo.portfolio.site.dto.AdminProfileEntryResponse;
-import com.khuoo.portfolio.site.dto.AdminProjectSummaryResponse;
 import com.khuoo.portfolio.site.dto.AdminSiteResponse;
 import com.khuoo.portfolio.site.dto.PortfolioContentUpdateRequest;
 import com.khuoo.portfolio.site.dto.PortfolioContentUpdateResponse;
@@ -65,9 +64,6 @@ public class AdminSiteService {
                         .toList(),
                 siteQueryRepository.findPortfolioTechnologyMappings().stream()
                         .map(PortfolioTechnologyMappingResponse::from)
-                        .toList(),
-                siteQueryRepository.findProjects().stream()
-                        .map(AdminProjectSummaryResponse::from)
                         .toList(),
                 siteQueryRepository.findExternalLinks().stream()
                         .map(AdminExternalLinkResponse::from)

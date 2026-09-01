@@ -32,7 +32,7 @@ class PortfolioEnumsTest {
                 + PortfolioEnums.ErrorService.values().length;
 
         assertThat(enumGroupCount).isEqualTo(15);
-        assertThat(totalCodeCount).isEqualTo(116);
+        assertThat(totalCodeCount).isEqualTo(86);
         assertThat(PortfolioEnums.AccountRole.values())
                 .containsExactly(PortfolioEnums.AccountRole.ADMIN, PortfolioEnums.AccountRole.USER);
         assertThat(PortfolioEnums.AdminActionOperation.values()).hasSize(20);
@@ -40,19 +40,27 @@ class PortfolioEnumsTest {
                 .containsExactly(PortfolioEnums.ErrorService.FRONTEND, PortfolioEnums.ErrorService.BACKEND);
     }
 
-    // 콘텐츠 Slot 45개와 대표 상위 카테고리 매핑 검증
+    // 콘텐츠 Slot 16개와 전체 상위 카테고리 매핑 검증
     @Test
     void portfolioContentCodesUseDbCategoryMapping() {
-        assertThat(PortfolioEnums.PortfolioContentCode.values()).hasSize(45);
-        assertThat(PortfolioEnums.PortfolioContentCode.SITE_MARK.category())
-                .isEqualTo(PortfolioEnums.PortfolioContentCategory.COMMON);
-        assertThat(PortfolioEnums.PortfolioContentCode.HERO_POSITION.category())
-                .isEqualTo(PortfolioEnums.PortfolioContentCategory.MAIN);
-        assertThat(PortfolioEnums.PortfolioContentCode.ABOUT_STATEMENT.category())
-                .isEqualTo(PortfolioEnums.PortfolioContentCategory.PROFILE);
-        assertThat(PortfolioEnums.PortfolioContentCode.EMAIL.category())
-                .isEqualTo(PortfolioEnums.PortfolioContentCategory.CONTACT);
-        assertThat(PortfolioEnums.PortfolioContentCode.COPYRIGHT.category())
-                .isEqualTo(PortfolioEnums.PortfolioContentCategory.FOOTER);
+        assertThat(PortfolioEnums.PortfolioContentCategory.values()).containsExactly(
+                PortfolioEnums.PortfolioContentCategory.COMMON,
+                PortfolioEnums.PortfolioContentCategory.MAIN,
+                PortfolioEnums.PortfolioContentCategory.PROFILE,
+                PortfolioEnums.PortfolioContentCategory.CONTACT
+        );
+        assertThat(PortfolioEnums.PortfolioContentCode.values()).hasSize(16);
+        assertThat(PortfolioEnums.PortfolioContentCode.values())
+                .filteredOn(contentCode -> contentCode.category() == PortfolioEnums.PortfolioContentCategory.COMMON)
+                .hasSize(4);
+        assertThat(PortfolioEnums.PortfolioContentCode.values())
+                .filteredOn(contentCode -> contentCode.category() == PortfolioEnums.PortfolioContentCategory.MAIN)
+                .hasSize(2);
+        assertThat(PortfolioEnums.PortfolioContentCode.values())
+                .filteredOn(contentCode -> contentCode.category() == PortfolioEnums.PortfolioContentCategory.PROFILE)
+                .hasSize(9);
+        assertThat(PortfolioEnums.PortfolioContentCode.values())
+                .filteredOn(contentCode -> contentCode.category() == PortfolioEnums.PortfolioContentCategory.CONTACT)
+                .containsExactly(PortfolioEnums.PortfolioContentCode.EMAIL);
     }
 }

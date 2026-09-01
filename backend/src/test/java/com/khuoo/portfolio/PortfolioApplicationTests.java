@@ -17,51 +17,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PortfolioApplicationTests extends PostgresIntegrationTest {
 
     private static final List<String> CONTENT_SLOTS = List.of(
-            "COMMON/SITE_MARK",
             "COMMON/NAME",
             "COMMON/ENGLISH_NAME",
             "COMMON/POSITION",
             "COMMON/AFFILIATION",
-            "COMMON/NAV_ABOUT",
-            "COMMON/NAV_TECH",
-            "COMMON/NAV_PROJECTS",
-            "COMMON/NAV_EDUCATION",
-            "MAIN/HERO_POSITION",
             "MAIN/HERO_STATEMENT",
             "MAIN/HERO_DESCRIPTION",
-            "MAIN/HERO_CUE",
-            "MAIN/ABOUT_SECTION_LABEL",
-            "MAIN/ABOUT_SECTION_TITLE",
-            "MAIN/TECH_SECTION_LABEL",
-            "MAIN/TECH_SECTION_TITLE",
-            "MAIN/PROJECTS_SECTION_LABEL",
-            "MAIN/PROJECTS_SECTION_TITLE",
-            "MAIN/PROJECT_DETAIL_CTA",
-            "MAIN/ACHIEVEMENTS_SECTION_LABEL",
-            "MAIN/ACHIEVEMENTS_SECTION_TITLE",
-            "MAIN/EDUCATION_GROUP_TITLE",
-            "MAIN/ACTIVITY_GROUP_TITLE",
-            "MAIN/AWARD_GROUP_TITLE",
             "PROFILE/ABOUT_STATEMENT",
-            "PROFILE/ABOUT_POSITION",
             "PROFILE/ABOUT_DESCRIPTION_1",
             "PROFILE/ABOUT_DESCRIPTION_2",
-            "PROFILE/DEVELOPMENT_VALUES_TITLE",
             "PROFILE/DEVELOPMENT_VALUE_1_TITLE",
             "PROFILE/DEVELOPMENT_VALUE_1_DESCRIPTION",
             "PROFILE/DEVELOPMENT_VALUE_2_TITLE",
             "PROFILE/DEVELOPMENT_VALUE_2_DESCRIPTION",
             "PROFILE/DEVELOPMENT_VALUE_3_TITLE",
             "PROFILE/DEVELOPMENT_VALUE_3_DESCRIPTION",
-            "CONTACT/EMAIL",
-            "FOOTER/FOOTER_NAME",
-            "FOOTER/FOOTER_ROLE",
-            "FOOTER/RESUME_LABEL",
-            "FOOTER/RESUME_VIEW_LABEL",
-            "FOOTER/RESUME_DOWNLOAD_LABEL",
-            "FOOTER/CONTACT_LABEL",
-            "FOOTER/PORTFOLIO_LABEL",
-            "FOOTER/COPYRIGHT"
+            "CONTACT/EMAIL"
     );
 
     private static final List<String> MAIN_TECHNOLOGIES = List.of(
@@ -132,14 +103,12 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                     COUNT(*) FILTER (WHERE category = 'COMMON') AS common_count,
                     COUNT(*) FILTER (WHERE category = 'MAIN') AS main_count,
                     COUNT(*) FILTER (WHERE category = 'PROFILE') AS profile_count,
-                    COUNT(*) FILTER (WHERE category = 'CONTACT') AS contact_count,
-                    COUNT(*) FILTER (WHERE category = 'FOOTER') AS footer_count
+                    COUNT(*) FILTER (WHERE category = 'CONTACT') AS contact_count
                 FROM portfolio_contents
-                """)).containsEntry("common_count", 9L)
-                .containsEntry("main_count", 16L)
-                .containsEntry("profile_count", 11L)
-                .containsEntry("contact_count", 1L)
-                .containsEntry("footer_count", 8L);
+                """)).containsEntry("common_count", 4L)
+                .containsEntry("main_count", 2L)
+                .containsEntry("profile_count", 9L)
+                .containsEntry("contact_count", 1L);
         assertThat(contentValue("COMMON", "NAME")).isEqualTo("김현우");
         assertThat(contentValue("COMMON", "POSITION")).isEqualTo("BACKEND / INFRA DEVELOPER");
         assertThat(contentValue("COMMON", "AFFILIATION")).isEqualTo("성공회대학교 소프트웨어융합전공");

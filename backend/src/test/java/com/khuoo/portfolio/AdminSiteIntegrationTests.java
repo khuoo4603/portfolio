@@ -1,5 +1,6 @@
 package com.khuoo.portfolio;
 
+import com.khuoo.portfolio.common.util.PortfolioEnums.PortfolioContentCode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -7,6 +8,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -37,9 +41,11 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
                 """);
         mockMvc.perform(get(SITE_PATH)).andExpect(status().isUnauthorized());
         mockMvc.perform(get(SITE_PATH).with(user())).andExpect(status().isForbidden());
+        insertProject("site-response-project");
         mockMvc.perform(get(SITE_PATH).with(admin()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.portfolioContents.length()").value(2));
+                .andExpect(jsonPath("$.portfolioContents.length()").value(2))
+                .andExpect(jsonPath("$.projects").doesNotExist());
 
         ActionChallenge csrfChallenge = challenge("PORTFOLIO_CONTENT_UPDATE", "PORTFOLIO_CONTENT", null);
         updateContents(csrfChallenge, validContentBody(), false).andExpect(status().isForbidden());
@@ -62,6 +68,15 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
         assertInvalidContentBatch("""
                 {"items":[{"category":"MAIN","contentCode":"POSITION","contentValue":"bad"}]}
                 """);
+        assertInvalidContentBatch("""
+                {"items":[{"category":"UNKNOWN","contentCode":"POSITION","contentValue":"bad"}]}
+                """);
+        assertInvalidContentBatch("""
+                {"items":[{"category":"COMMON","contentCode":"UNKNOWN","contentValue":"bad"}]}
+                """);
+        assertInvalidContentBatch("""
+                {"items":[{"category":"COMMON","contentCode":"SITE_MARK","contentValue":"bad"}]}
+                """);
 
         String beforePosition = contentValue("COMMON", "POSITION");
         ActionChallenge missing = challenge("PORTFOLIO_CONTENT_UPDATE", "PORTFOLIO_CONTENT", null);
@@ -73,6 +88,32 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
                 """, true).andExpect(status().isNotFound());
         assertThat(contentValue("COMMON", "POSITION")).isEqualTo(beforePosition);
         assertThat(challengeStatus(missing.id())).isEqualTo("ACTIVE");
+    }
+
+    // 최종 16개 콘텐츠 Slot 전체 수정과 Category 매핑 검증
+    @Test
+    void everyPortfolioContentSlotCanBeUpdated() throws Exception {
+        for (PortfolioContentCode contentCode : PortfolioContentCode.values()) {
+            jdbcTemplate.update("""
+                    INSERT INTO portfolio_contents (category, content_code, content_value)
+                    VALUES (?, ?, ?)
+                    """, contentCode.category().name(), contentCode.name(), "before-" + contentCode.name());
+        }
+        String body = Arrays.stream(PortfolioContentCode.values())
+                .map(contentCode -> """
+                        {"category":"%s","contentCode":"%s","contentValue":"after-%s"}
+                        """.formatted(contentCode.category(), contentCode, contentCode))
+                .collect(Collectors.joining(",", "{\"items\":[", "]}"));
+
+        ActionChallenge challenge = challenge("PORTFOLIO_CONTENT_UPDATE", "PORTFOLIO_CONTENT", null);
+        updateContents(challenge, body, true)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(16));
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM portfolio_contents WHERE content_value LIKE 'after-%'",
+                Integer.class
+        )).isEqualTo(16);
     }
 
     // Profile 생성·PATCH Presence·explicit null·빈 PATCH·삭제 검증
