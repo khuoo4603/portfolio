@@ -1765,6 +1765,577 @@
   color: var(--text-secondary);
 }
 
+/* Project 목록의 운영 정보 밀도와 직접 작업 영역 */
+.projectTableSection {
+  min-width: 0;
+}
+
+.projectTable th:first-child,
+.projectTable td:first-child {
+  width: 96px;
+}
+
+.projectTable th:nth-child(2) {
+  width: 30%;
+}
+
+.projectThumbnail,
+.mediaDraftPreview,
+.thumbnailDraftPreview,
+.projectPreviewImage {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: var(--admin-elevated);
+}
+
+.projectThumbnail {
+  width: 72px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.projectThumbnail img,
+.mediaDraftPreview img,
+.thumbnailDraftPreview img,
+.projectPreviewImage img {
+  object-fit: cover;
+}
+
+.projectThumbnail svg {
+  width: 20px;
+  height: 20px;
+}
+
+.projectIdentity,
+.projectStatusCell {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.projectIdentity code {
+  overflow-wrap: anywhere;
+}
+
+.projectStatusCell {
+  grid-template-columns: auto 44px;
+  align-items: center;
+  justify-content: start;
+  gap: var(--space-12);
+}
+
+.projectStatusCell > span {
+  color: var(--text-secondary);
+  font-size: var(--font-size-small);
+}
+
+.projectRowActions,
+.projectItemActions,
+.mediaGroupActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.projectCreateFields {
+  display: grid;
+  gap: var(--space-20);
+}
+
+.deleteWarning {
+  margin: 0;
+  padding: var(--space-16);
+  border-left: 2px solid var(--status-error);
+  background: var(--admin-elevated);
+  color: var(--text-secondary);
+}
+
+.deleteWarning strong {
+  color: var(--text-primary);
+}
+
+.dangerButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-16);
+  border: 1px solid var(--status-error);
+  border-radius: var(--radius-value-sm);
+  background: var(--status-error);
+  color: var(--sand-50);
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+  font-weight: 700;
+}
+
+/* Project Editor의 Section·Draft·실제 상세 Preview 3단 구조 */
+.projectEditorPage {
+  min-width: 0;
+}
+
+.projectEditorHeader {
+  position: sticky;
+  z-index: 16;
+  top: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-16);
+  margin-bottom: var(--space-20);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--border-accent);
+  background: color-mix(in srgb, var(--admin-canvas) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.projectEditorHeader > div {
+  min-width: 0;
+}
+
+.projectEditorHeader span,
+.projectEditorHeader h1 {
+  display: block;
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectEditorHeader span {
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+}
+
+.projectMobileViewSwitch {
+  display: none;
+}
+
+.projectEditorLayout {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 152px minmax(340px, 0.82fr) minmax(430px, 1.18fr);
+  align-items: start;
+  gap: var(--space-16);
+}
+
+.projectSectionNav,
+.projectEditorWorkspace,
+.projectPreviewWorkspace {
+  min-width: 0;
+}
+
+.projectSectionNav {
+  position: sticky;
+  top: 82px;
+}
+
+.projectSectionNav nav {
+  display: grid;
+  border-block: 1px solid var(--border-default);
+}
+
+.projectSectionNav button {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  border: 0;
+  border-bottom: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-small);
+  text-align: left;
+}
+
+.projectSectionNav button:last-child {
+  border-bottom: 0;
+}
+
+.projectSectionNav button > span {
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+}
+
+.projectSectionNav button:hover,
+.projectSectionNav button:focus-visible,
+.projectSectionNav button[aria-current="step"] {
+  background: var(--admin-elevated);
+  color: var(--text-primary);
+}
+
+.projectSectionNav button[aria-current="step"] {
+  box-shadow: inset 2px 0 var(--accent-primary);
+}
+
+.projectEditorWorkspace,
+.projectPreviewWorkspace {
+  border: 1px solid var(--border-default);
+  background: var(--admin-surface);
+}
+
+.projectPreviewWorkspace {
+  position: sticky;
+  top: 82px;
+  max-height: calc(100dvh - 106px);
+  overflow: auto;
+}
+
+.projectEditorPanel {
+  min-height: 560px;
+  display: grid;
+  align-content: start;
+  gap: var(--space-24);
+  padding: var(--space-20);
+}
+
+.projectPanelHeading,
+.mediaGroupHeading,
+.architectureGroupHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.projectPanelHeading h2,
+.projectPanelHeading p,
+.mediaGroupHeading h3,
+.mediaGroupHeading p,
+.architectureGroupHeading h3 {
+  margin: 0;
+}
+
+.projectPanelHeading p,
+.mediaGroupHeading p {
+  margin-top: var(--space-4);
+  color: var(--text-secondary);
+}
+
+.projectFieldsGrid,
+.projectItemFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+.projectFieldsGrid .wideField,
+.projectItemFields .wideField {
+  grid-column: 1 / -1;
+}
+
+.projectItemList,
+.nestedStringList,
+.architectureEditors {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.projectItemEditor,
+.architectureGroupEditor,
+.mediaGroup {
+  display: grid;
+  gap: var(--space-16);
+  padding: var(--space-16);
+  border: 1px solid var(--border-default);
+  background: color-mix(in srgb, var(--admin-elevated) 45%, transparent);
+}
+
+.projectItemEditor {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.projectItemActions {
+  justify-content: flex-end;
+}
+
+.contentImageField,
+.technologyPicker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-12);
+}
+
+.compactFileButton {
+  min-height: 42px;
+}
+
+.stringItemRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.stringItemRow > input {
+  width: 100%;
+  min-height: 42px;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: var(--admin-input);
+  color: var(--admin-data-text);
+  font-family: var(--font-family-primary);
+}
+
+.technologyDraftRow {
+  display: grid;
+  grid-template-columns: minmax(132px, 1fr) auto auto 112px auto;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.technologyDraftRow:last-child {
+  border-bottom: 0;
+}
+
+.technologyDraftRow > div:first-child {
+  min-width: 0;
+  display: grid;
+}
+
+.technologyDraftRow > div:first-child span {
+  color: var(--text-muted);
+}
+
+.checkField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.mediaDraftRow {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-16);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.mediaDraftRow[data-deleted="true"] {
+  opacity: 0.58;
+}
+
+.mediaDraftPreview {
+  width: 104px;
+  aspect-ratio: 4 / 3;
+}
+
+.mediaDraftFields {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+
+.mediaDraftFields .formField:last-child {
+  grid-column: 1 / -1;
+}
+
+.thumbnailDraftPreview {
+  width: min(100%, 520px);
+  aspect-ratio: 16 / 9;
+}
+
+/* Local Draft를 공개 상세 흐름으로 확인하는 편집 Preview */
+.projectPreview {
+  background: var(--admin-canvas);
+  color: var(--text-primary);
+}
+
+.projectPreviewHero,
+.projectPreviewSection,
+.projectPreviewMedia {
+  padding: var(--space-24);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.projectPreviewHero > span {
+  color: var(--accent-primary);
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.08em;
+}
+
+.projectPreviewHero h2 {
+  margin: var(--space-12) 0 var(--space-8);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1.05;
+}
+
+.projectPreviewHero > p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.projectPreviewHero dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-12);
+  margin: var(--space-24) 0 0;
+}
+
+.projectPreviewHero dl > div {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.projectPreviewHero dt,
+.projectPreviewEngineering dt {
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+}
+
+.projectPreviewHero dd,
+.projectPreviewEngineering dd {
+  margin: 0;
+}
+
+.projectPreviewMedia {
+  min-height: 180px;
+  display: grid;
+  align-items: center;
+}
+
+.projectPreviewMedia > p {
+  margin: 0;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.projectPreviewSection {
+  display: grid;
+  gap: var(--space-20);
+}
+
+.projectPreviewSection > h3 {
+  margin: 0;
+  font-size: var(--font-size-title);
+}
+
+.projectPreviewSection h4,
+.projectPreviewSection p,
+.projectPreviewSection ul,
+.projectPreviewSection ol {
+  margin-block: 0;
+}
+
+.projectPreviewSplit,
+.projectPreviewColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-20);
+}
+
+.projectPreviewSplit > div,
+.projectPreviewColumns > article {
+  display: grid;
+  align-content: start;
+  gap: var(--space-12);
+}
+
+.projectPreviewImage {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  margin-top: var(--space-12);
+}
+
+.projectPreviewEngineering {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.projectPreviewEngineering > article {
+  display: grid;
+  gap: var(--space-8);
+  padding-left: var(--space-16);
+  border-left: 2px solid var(--border-accent);
+}
+
+.projectPreviewEngineering > article > span {
+  color: var(--accent-primary);
+  font-family: var(--font-family-mono);
+}
+
+.projectPreviewEngineering h4,
+.projectPreviewEngineering dl {
+  margin: 0;
+}
+
+.projectPreviewEngineering dl {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.projectPreviewEngineering dl > div {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: var(--space-8);
+}
+
+/* Tablet의 Editor·Preview 명시적 전환 */
+@media (max-width: 1199px) {
+  .projectMobileViewSwitch {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-16);
+    padding: var(--space-4);
+    border: 1px solid var(--border-default);
+    background: var(--admin-surface);
+  }
+
+  .projectMobileViewSwitch button {
+    min-height: 40px;
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-family-primary);
+  }
+
+  .projectMobileViewSwitch button[aria-pressed="true"] {
+    background: var(--admin-elevated);
+    color: var(--text-primary);
+  }
+
+  .projectMobileViewSwitch svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .projectEditorLayout {
+    grid-template-columns: 168px minmax(0, 1fr);
+  }
+
+  .projectEditorLayout [data-mobile-visible="false"] {
+    display: none;
+  }
+
+  .projectPreviewWorkspace {
+    position: static;
+    max-height: none;
+    grid-column: 1 / -1;
+  }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -1911,6 +2482,10 @@
     grid-column: 2;
     justify-self: start;
   }
+
+  .projectEditorHeader {
+    top: 64px;
+  }
 }
 
 @keyframes drawer-enter {
@@ -1997,6 +2572,19 @@
     max-width: 100%;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  .projectTable tr > td:first-child {
+    grid-column: 1;
+    padding-right: 0;
+  }
+
+  .projectTable tr > td:nth-child(2) {
+    grid-column: 2;
+  }
+
+  .projectTable tr > td:last-child {
+    grid-column: 1 / -1;
   }
 }
 
@@ -2203,6 +2791,90 @@
 
   .errorState .secondaryButton {
     grid-column: 1 / -1;
+  }
+
+  .projectEditorHeader {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--space-8);
+  }
+
+  .projectEditorHeader .secondaryButton,
+  .projectEditorHeader .primaryButton {
+    padding-inline: var(--space-12);
+  }
+
+  .projectEditorLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .projectSectionNav {
+    position: static;
+    overflow-x: auto;
+  }
+
+  .projectSectionNav nav {
+    width: max-content;
+    min-width: 100%;
+    display: flex;
+    border: 1px solid var(--border-default);
+  }
+
+  .projectSectionNav button {
+    min-width: 126px;
+    border-right: 1px solid var(--border-default);
+    border-bottom: 0;
+  }
+
+  .projectSectionNav button[aria-current="step"] {
+    box-shadow: inset 0 -2px var(--accent-primary);
+  }
+
+  .projectEditorWorkspace,
+  .projectPreviewWorkspace {
+    grid-column: 1;
+  }
+
+  .projectEditorPanel {
+    min-height: 0;
+    padding: var(--space-16);
+  }
+
+  .projectPanelHeading,
+  .mediaGroupHeading {
+    display: grid;
+  }
+
+  .projectFieldsGrid,
+  .projectItemFields,
+  .mediaDraftFields,
+  .projectPreviewHero dl,
+  .projectPreviewSplit,
+  .projectPreviewColumns {
+    grid-template-columns: 1fr;
+  }
+
+  .projectItemEditor,
+  .mediaDraftRow,
+  .technologyDraftRow {
+    grid-template-columns: 1fr;
+  }
+
+  .projectItemActions {
+    justify-content: flex-start;
+  }
+
+  .mediaDraftPreview {
+    width: min(100%, 220px);
+  }
+
+  .contentImageField,
+  .technologyPicker {
+    grid-template-columns: 1fr;
+  }
+
+  .contentImageField .secondaryButton,
+  .technologyPicker .secondaryButton {
+    justify-self: start;
   }
 }
 

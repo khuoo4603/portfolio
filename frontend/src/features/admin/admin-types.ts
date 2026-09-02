@@ -84,9 +84,7 @@ export type ProjectSummary = {
   id: number;
   slug: string;
   name: string;
-  year: number;
-  tagline: string;
-  cardRole: string;
+  year: number | null;
   thumbnailUrl: string | null;
   displayOrder: number;
   enabled: boolean;
@@ -94,7 +92,9 @@ export type ProjectSummary = {
 };
 
 export type Project = ProjectSummary & {
-  description: string;
+  tagline: string | null;
+  description: string | null;
+  cardRole: string | null;
   summary: string | null;
   detailRole: string | null;
   startedAt: string | null;
@@ -102,17 +102,38 @@ export type Project = ProjectSummary & {
   teamSize: number | null;
 };
 
-export type ProjectCreateInput = Omit<Project, "id" | "updatedAt">;
+export type ProjectCreateInput = Pick<Project, "name" | "slug">;
 
-export type ProjectUpdateInput = Partial<Omit<ProjectCreateInput, "enabled">>;
+export type ProjectCreateResult = ProjectCreateInput & {
+  id: number;
+  enabled: boolean;
+  displayOrder: number;
+  createdAt: string;
+};
 
-export type ProjectTitleItem = {
+export type ProjectFields = Omit<Project, "id" | "thumbnailUrl" | "enabled" | "updatedAt">;
+
+export type ProjectResultItem = {
   title: string;
+  description: string;
+};
+
+export type ProjectBackgroundItem = {
+  title: string | null;
+  body: string;
+  mediaId: number | null;
+};
+
+export type ProjectFeatureItem = {
+  title: string;
+  description: string;
+  mediaId: number | null;
 };
 
 export type ProjectDevelopmentItem = {
   title: string;
   items: string[];
+  mediaId: number | null;
 };
 
 export type ProjectArchitecture = {
@@ -125,16 +146,17 @@ export type ProjectArchitecture = {
 
 export type ProjectEngineeringItem = {
   title: string;
-  summary: string;
+  summary: string | null;
   problem: string;
   solution: string;
   result: string;
+  mediaId: number | null;
 };
 
 export type ProjectContent = {
-  results: ProjectTitleItem[];
-  background: string[];
-  features: ProjectTitleItem[];
+  results: ProjectResultItem[];
+  background: ProjectBackgroundItem[];
+  features: ProjectFeatureItem[];
   development: ProjectDevelopmentItem[];
   architecture: ProjectArchitecture;
   engineering: ProjectEngineeringItem[];
@@ -157,19 +179,57 @@ export type ProjectTechnologyInput = Pick<
 
 export type ProjectMedia = {
   id: number;
+  mediaType: "CAROUSEL" | "CONTENT";
   imageUrl: string;
   label: string | null;
   altText: string | null;
   displayOrder: number;
 };
 
-export type ProjectMediaInput = Omit<ProjectMedia, "id">;
-
 export type ProjectDetail = {
   project: Project;
   technologies: ProjectTechnology[];
   content: ProjectContent;
   media: ProjectMedia[];
+};
+
+export type ProjectContentMediaReference = {
+  mediaId: number | null;
+  clientKey?: string | null;
+};
+
+export type ProjectSaveContent = {
+  results: ProjectResultItem[];
+  background: Array<ProjectBackgroundItem & ProjectContentMediaReference>;
+  features: Array<ProjectFeatureItem & ProjectContentMediaReference>;
+  development: Array<ProjectDevelopmentItem & ProjectContentMediaReference>;
+  architecture: ProjectArchitecture;
+  engineering: Array<ProjectEngineeringItem & ProjectContentMediaReference>;
+};
+
+export type ProjectMediaChange = {
+  id?: number;
+  clientKey?: string;
+  action: "KEEP" | "DELETE" | "UPLOAD";
+  uploadIndex?: number;
+  mediaType?: "CAROUSEL" | "CONTENT";
+  label?: string | null;
+  altText?: string | null;
+  displayOrder?: number;
+};
+
+export type ProjectSaveMetadata = {
+  project: ProjectFields;
+  content: ProjectSaveContent;
+  technologies: ProjectTechnologyInput[];
+  thumbnailMode: "KEEP" | "REMOVE" | "UPLOAD";
+  mediaChanges: ProjectMediaChange[];
+};
+
+export type ProjectSaveInput = {
+  metadata: ProjectSaveMetadata;
+  thumbnail: File | null;
+  mediaFiles: File[];
 };
 
 export type ExternalLink = {
