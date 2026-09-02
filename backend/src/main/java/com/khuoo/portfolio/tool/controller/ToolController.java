@@ -60,6 +60,7 @@ public class ToolController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(media.contentType()))
                 .cacheControl(CacheControl.noCache().cachePrivate())
+                .eTag("\"" + media.version() + "\"")
                 .body(media.resource());
     }
 }

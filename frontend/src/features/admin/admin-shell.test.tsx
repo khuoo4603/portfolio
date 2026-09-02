@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import { logout } from "@/lib/auth/auth-api";
@@ -33,8 +34,31 @@ describe("Admin Session Gate와 Sidebar", () => {
     render(<AdminShell><div>관리 본문</div></AdminShell>);
 
     expect(screen.getByRole("status", { name: "관리자 Session 확인 중" })).toBeInTheDocument();
-    expect(screen.queryByText("관리 본문")).not.toBeInTheDocument();
+    expect(screen.getByText("관리 본문")).not.toBeVisible();
     expect(screen.queryByLabelText("관리자 Sidebar 공간")).not.toBeInTheDocument();
+  });
+
+  it("Session loading부터 ADMIN 전환까지 동일 본문을 한 번만 Mount", () => {
+    let mountCount = 0;
+    const StableChild = () => {
+      useEffect(() => {
+        mountCount += 1;
+      }, []);
+      return <div>안정 본문</div>;
+    };
+    authState({ status: "loading", user: null, error: null, refresh: vi.fn(), clear: vi.fn() });
+    const view = render(<AdminShell><StableChild /></AdminShell>);
+    const child = screen.getByText("안정 본문");
+
+    expect(child).not.toBeVisible();
+    expect(mountCount).toBe(1);
+
+    authState({ status: "authenticated", user: admin, error: null, refresh: vi.fn(), clear: vi.fn() });
+    view.rerender(<AdminShell><StableChild /></AdminShell>);
+
+    expect(screen.getByText("안정 본문")).toBe(child);
+    expect(child).toBeVisible();
+    expect(mountCount).toBe(1);
   });
 
   it("비로그인 Session은 본문을 숨기고 /login으로 이동", async () => {
@@ -43,7 +67,7 @@ describe("Admin Session Gate와 Sidebar", () => {
     render(<AdminShell><div>관리 본문</div></AdminShell>);
 
     await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith("/login"));
-    expect(screen.queryByText("관리 본문")).not.toBeInTheDocument();
+    expect(screen.getByText("관리 본문")).not.toBeVisible();
   });
 
   it("USER Session은 본문을 숨기고 /tools로 이동", async () => {
@@ -52,7 +76,7 @@ describe("Admin Session Gate와 Sidebar", () => {
     render(<AdminShell><div>관리 본문</div></AdminShell>);
 
     await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith("/tools"));
-    expect(screen.queryByText("관리 본문")).not.toBeInTheDocument();
+    expect(screen.getByText("관리 본문")).not.toBeVisible();
   });
 
   it("ADMIN Session만 본문과 실제 계정 정보를 렌더링", () => {

@@ -193,14 +193,10 @@ public class AuthenticationService {
         );
     }
 
-    // 현재 인증 주체의 최신 계정 공개 정보 조회
+    // 현재 인증 주체의 Session 공개 정보 조회
     public CurrentUserResponse getCurrentUser(Authentication authentication) {
         AccountPrincipal principal = principal(authentication);
-
-        Account account = accountRepository.findById(principal.id())
-                .filter(Account::isEnabled)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_UNAUTHORIZED));
-        return CurrentUserResponse.from(account);
+        return CurrentUserResponse.from(principal);
     }
 
     // 현재 Session과 SecurityContext 폐기

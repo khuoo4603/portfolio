@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
 // 인증 사용자의 활성 Tool과 Links 조회
 @Service
 @RequiredArgsConstructor
@@ -59,7 +62,11 @@ public class ToolService {
             if (!fileStorageService.exists(storageKey)) {
                 throw new ApiException(ErrorCode.TOOL_LINK_NOT_FOUND);
             }
-            return new ToolLinkMedia(contentType, fileStorageService.open(storageKey));
+            return new ToolLinkMedia(
+                    contentType,
+                    UUID.nameUUIDFromBytes(storageKey.getBytes(StandardCharsets.UTF_8)).toString(),
+                    fileStorageService.open(storageKey)
+            );
         } catch (ApiException exception) {
             throw new ApiException(ErrorCode.TOOL_LINK_NOT_FOUND, exception);
         }
@@ -88,7 +95,7 @@ public class ToolService {
         throw new ApiException(ErrorCode.TOOL_LINK_NOT_FOUND);
     }
 
-    // Binary 응답용 이미지 MIME과 Resource
-    public record ToolLinkMedia(String contentType, Resource resource) {
+    // Binary 응답용 이미지 MIME·불투명 Version·Resource
+    public record ToolLinkMedia(String contentType, String version, Resource resource) {
     }
 }

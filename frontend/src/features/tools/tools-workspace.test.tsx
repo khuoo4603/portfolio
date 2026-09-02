@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthSessionState } from "@/lib/auth/use-auth-session";
 import type { CurrentUser, ToolItem, ToolLink } from "@/types/api";
@@ -99,6 +100,29 @@ describe("Tools 실제 연동 Workspace", () => {
     ]);
     expect(screen.getByRole("button", { name: user.name })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Tools 주요 메뉴" })).toHaveTextContent("QuizLinks");
+  });
+
+  it("Auth loading부터 Registry 조회를 시작하고 ADMIN 전환에도 중복 호출하지 않음", async () => {
+    let resolveTools!: (value: { items: ToolItem[] }) => void;
+    mocks.getTools.mockReturnValue(new Promise((resolve) => { resolveTools = resolve; }));
+    mocks.useAuthSession.mockReturnValue({
+      status: "loading", user: null, error: null, clear: mocks.clear, refresh: mocks.refresh,
+    });
+    const view = render(
+      <StrictMode><ToolsShell><ToolsLauncher /></ToolsShell></StrictMode>,
+    );
+
+    expect(screen.getByLabelText("Tools 불러오는 중")).toBeInTheDocument();
+    expect(mocks.getTools).toHaveBeenCalledOnce();
+
+    mocks.useAuthSession.mockReturnValue(authenticated(admin));
+    view.rerender(<StrictMode><ToolsShell><ToolsLauncher /></ToolsShell></StrictMode>);
+    expect(mocks.getTools).toHaveBeenCalledOnce();
+    expect(screen.getByLabelText("Tools 불러오는 중")).toBeInTheDocument();
+
+    await act(async () => resolveTools({ items: tools }));
+    expect(await screen.findByLabelText("Tools Launcher")).toBeInTheDocument();
+    expect(mocks.getTools).toHaveBeenCalledOnce();
   });
 
   it("Links가 비활성이어도 고정 Card 슬롯을 유지하고 탐색을 차단", async () => {

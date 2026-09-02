@@ -1,6 +1,6 @@
 package com.khuoo.portfolio.authentication.dto;
 
-import com.khuoo.portfolio.account.domain.Account;
+import com.khuoo.portfolio.authentication.security.AccountPrincipal;
 import com.khuoo.portfolio.common.util.PortfolioEnums.AccountRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -19,13 +19,13 @@ public record CurrentUserResponse(
         AccountRole role
 ) {
 
-    // 계정 Entity의 공개 필드 변환
-    public static CurrentUserResponse from(Account account) {
+    // Session 인증 주체의 공개 필드 변환
+    public static CurrentUserResponse from(AccountPrincipal principal) {
         return new CurrentUserResponse(
-                account.getId(),
-                account.getEmail(),
-                account.getName(),
-                account.getRole()
+                principal.id(),
+                principal.email(),
+                principal.name(),
+                principal.role()
         );
     }
 }

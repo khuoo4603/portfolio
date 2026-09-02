@@ -24,6 +24,11 @@ import HeroWorldMap, {
   projectPoint,
 } from "./hero-world-map";
 
+type IdleWindow = Window & {
+  requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
 const serverPoint = projectPoint(KOREA_ANCHOR);
 const resetProperties = ["--card-rotate-x", "--card-rotate-y"] as const;
 
@@ -773,6 +778,37 @@ export default function HeroSystemCard() {
   const progressRef = useRef(0);
   const galleryReadyRef = useRef(false);
   const [galleryReady, setGalleryReady] = useState(false);
+  const [mapGeometryReady, setMapGeometryReady] = useState(false);
+
+  useEffect(() => {
+    const idleWindow = window as IdleWindow;
+    let idleCallbackId = 0;
+    let fallbackTimeoutId = 0;
+    let activated = false;
+
+    // 최초 Idle 또는 첫 Scroll 중 빠른 시점의 후반 지도 Geometry 활성화
+    const activateGeometry = () => {
+      if (activated) return;
+      activated = true;
+      if (idleCallbackId) idleWindow.cancelIdleCallback?.(idleCallbackId);
+      if (fallbackTimeoutId) window.clearTimeout(fallbackTimeoutId);
+      window.removeEventListener("scroll", activateGeometry);
+      setMapGeometryReady(true);
+    };
+
+    window.addEventListener("scroll", activateGeometry, { passive: true, once: true });
+    if (idleWindow.requestIdleCallback) {
+      idleCallbackId = idleWindow.requestIdleCallback(activateGeometry, { timeout: 80 });
+    } else {
+      fallbackTimeoutId = window.setTimeout(activateGeometry, 0);
+    }
+
+    return () => {
+      if (idleCallbackId) idleWindow.cancelIdleCallback?.(idleCallbackId);
+      if (fallbackTimeoutId) window.clearTimeout(fallbackTimeoutId);
+      window.removeEventListener("scroll", activateGeometry);
+    };
+  }, []);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -1538,13 +1574,13 @@ export default function HeroSystemCard() {
     <div className="hero-visual-stage" ref={stageRef} style={initialStyle}>
       <div aria-hidden="true" className="topology-narrative-world-map-plane">
         <div className="topology-narrative-world-map-viewport" ref={narrativeMapRef}>
-          <HeroNarrativeWorldMap />
+          <HeroNarrativeWorldMap geometryReady={mapGeometryReady} />
         </div>
       </div>
 
       <div aria-hidden="true" className="topology-focus-map-plane">
         <div className="topology-focus-map-viewport" ref={focusMapRef}>
-          <HeroEastAsiaMap />
+          <HeroEastAsiaMap geometryReady={mapGeometryReady} />
         </div>
       </div>
 

@@ -13,12 +13,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.io.IOException;
@@ -433,6 +435,45 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(status().isNotFound());
     }
 
+    // 동일 이미지 304와 Upload 교체 후 새 ETag·Binary 응답 검증
+    @Test
+    void linkMediaUsesConditionalEtagAndChangesAfterReplacement() throws Exception {
+        Long linkId = createUploadedLink("ETag", "original.png", "image/png", PNG);
+        String storageKey = (String) linkValue(linkId, "image_storage_key");
+
+        MvcResult first = mockMvc.perform(get(TOOLS_PATH + "/media/links/" + linkId).with(user()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("image/png"))
+                .andExpect(header().string("Cache-Control", containsString("private")))
+                .andExpect(header().string("Cache-Control", containsString("no-cache")))
+                .andExpect(header().exists(HttpHeaders.ETAG))
+                .andExpect(content().bytes(PNG))
+                .andReturn();
+        String originalEtag = first.getResponse().getHeader(HttpHeaders.ETAG);
+        assertThat(originalEtag).isNotBlank().doesNotContain(storageKey);
+
+        mockMvc.perform(get(TOOLS_PATH + "/media/links/" + linkId)
+                        .header(HttpHeaders.IF_NONE_MATCH, originalEtag)
+                        .with(user()))
+                .andExpect(status().isNotModified())
+                .andExpect(header().string(HttpHeaders.ETAG, originalEtag))
+                .andExpect(content().bytes(new byte[0]));
+
+        linkChange(HttpMethod.PATCH, ADMIN_TOOLS_PATH + "/links/" + linkId,
+                "{\"imageMode\":\"UPLOAD\"}", image("replacement.webp", "image/webp", WEBP), true)
+                .andExpect(status().isOk());
+
+        MvcResult replaced = mockMvc.perform(get(TOOLS_PATH + "/media/links/" + linkId)
+                        .header(HttpHeaders.IF_NONE_MATCH, originalEtag)
+                        .with(user()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("image/webp"))
+                .andExpect(header().exists(HttpHeaders.ETAG))
+                .andExpect(content().bytes(WEBP))
+                .andReturn();
+        assertThat(replaced.getResponse().getHeader(HttpHeaders.ETAG)).isNotEqualTo(originalEtag);
+    }
+
     // Tool Link DB Rollback 시 신규 제거와 기존 값·파일 보존 검증
     @Test
     void linkImageLifecyclePreservesFilesAcrossRollbacks() throws Exception {
@@ -537,6 +578,7 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(content().contentType(contentType))
                 .andExpect(header().string("Cache-Control", containsString("private")))
                 .andExpect(header().string("Cache-Control", containsString("no-cache")))
+                .andExpect(header().exists(HttpHeaders.ETAG))
                 .andExpect(content().bytes(bytes));
     }
 

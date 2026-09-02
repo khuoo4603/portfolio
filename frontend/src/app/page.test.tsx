@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PUBLIC_COPY, mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
 import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
@@ -111,10 +111,10 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".topology-map-dots")).toBeInTheDocument();
     expect(document.querySelectorAll(".topology-map-zoom")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-svg")).toHaveLength(1);
-    expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(1);
+    expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(0);
     expect(document.querySelectorAll(".topology-narrative-world-map-zoom")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-focus-map-svg")).toHaveLength(1);
-    expect(document.querySelectorAll(".topology-focus-map-dots")).toHaveLength(1);
+    expect(document.querySelectorAll(".topology-focus-map-dots")).toHaveLength(0);
     expect(document.querySelector(".topology-focus-map-svg")).toHaveAttribute(
       "viewBox",
       formatMapViewBox(EAST_ASIA_VIEWBOX),
@@ -123,14 +123,6 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".topology-map-dots")).toHaveAttribute(
       "href",
       "/maps/world-map-dots.svg#world-map-dots",
-    );
-    expect(document.querySelector(".topology-narrative-world-map-dots")).toHaveAttribute(
-      "href",
-      "/maps/world-map-dots.svg#world-map-dots",
-    );
-    expect(document.querySelector(".topology-focus-map-dots")).toHaveAttribute(
-      "href",
-      "/maps/east-asia-map-dots.svg#east-asia-map-dots",
     );
     const koreaAnchor = screen.getByTestId("korea-anchor");
     const koreaMarker = screen.getByTestId("korea-marker");
@@ -147,6 +139,35 @@ describe("포트폴리오 메인", () => {
     expect(within(navigation).getByRole("link", { name: "기술스택" })).toHaveAttribute("href", "#tech");
     expect(within(navigation).getByRole("link", { name: "프로젝트" })).toHaveAttribute("href", "#projects");
     expect(within(navigation).getByRole("link", { name: "학력 및 성과" })).toHaveAttribute("href", "#education");
+  });
+
+  it("Browser Idle 이후 후반 지도 Geometry를 기존 Asset과 Dot 수로 활성화", async () => {
+    const idleCallbacks: IdleRequestCallback[] = [];
+    vi.stubGlobal("requestIdleCallback", vi.fn((callback: IdleRequestCallback) => {
+      idleCallbacks.push(callback);
+      return idleCallbacks.length;
+    }));
+    vi.stubGlobal("cancelIdleCallback", vi.fn());
+    render(<Home />);
+
+    expect(document.querySelector(".topology-narrative-world-map-dots")).not.toBeInTheDocument();
+    expect(document.querySelector(".topology-focus-map-dots")).not.toBeInTheDocument();
+
+    await act(async () => {
+      idleCallbacks.forEach((callback) => callback({
+        didTimeout: false,
+        timeRemaining: () => 50,
+      }));
+    });
+
+    expect(document.querySelector(".topology-narrative-world-map-dots"))
+      .toHaveAttribute("href", "/maps/world-map-dots.svg#world-map-dots");
+    expect(document.querySelector(".topology-narrative-world-map-dots"))
+      .toHaveAttribute("data-dot-count", String(WORLD_MAP_DOT_COUNT));
+    expect(document.querySelector(".topology-focus-map-dots"))
+      .toHaveAttribute("href", "/maps/east-asia-map-dots.svg#east-asia-map-dots");
+    expect(document.querySelector(".topology-focus-map-dots"))
+      .toHaveAttribute("data-dot-count", String(EAST_ASIA_DOT_COUNT));
   });
 
   it("대한민국 Server와 지정된 세 Resource만 표시", () => {
@@ -226,6 +247,10 @@ describe("포트폴리오 메인", () => {
     const galleryPlane = document.querySelector<HTMLElement>(".topology-project-gallery-plane");
     const galleryFrames = galleryPlane?.querySelectorAll<HTMLElement>(".topology-project-gallery-frame");
     const serviceGraph = document.querySelector<HTMLElement>(".service-graph");
+
+    expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(0);
+    expect(document.querySelectorAll(".topology-focus-map-dots")).toHaveLength(0);
+    fireEvent.scroll(window);
 
     expect(WORLD_MAP_GRID_HEIGHT).toBe(280);
     expect(WORLD_MAP_DOT_COUNT).toBeGreaterThan(50000);

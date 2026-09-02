@@ -179,7 +179,7 @@ export default function HeroWorldMap() {
 }
 
 // Hero Scroll Narrative Full Stage 전용 World Map
-export function HeroNarrativeWorldMap() {
+export function HeroNarrativeWorldMap({ geometryReady }: { geometryReady: boolean }) {
   return (
     <svg
       aria-hidden="true"
@@ -190,18 +190,20 @@ export function HeroNarrativeWorldMap() {
       viewBox={`0 0 ${WORLD_MAP_SIZE.width} ${WORLD_MAP_SIZE.height}`}
     >
       <g className="topology-narrative-world-map-zoom">
-        <use
-          className="topology-narrative-world-map-dots"
-          data-dot-count={WORLD_MAP_DOT_COUNT}
-          href={WORLD_MAP_DOT_ASSET}
-        />
+        {geometryReady ? (
+          <use
+            className="topology-narrative-world-map-dots"
+            data-dot-count={WORLD_MAP_DOT_COUNT}
+            href={WORLD_MAP_DOT_ASSET}
+          />
+        ) : null}
       </g>
     </svg>
   );
 }
 
 // Korea Zoom 후반부 LOD 전환 전용 East Asia Regional Map
-export function HeroEastAsiaMap() {
+export function HeroEastAsiaMap({ geometryReady }: { geometryReady: boolean }) {
   return (
     <svg
       aria-hidden="true"
@@ -212,11 +214,13 @@ export function HeroEastAsiaMap() {
       viewBox={formatMapViewBox(EAST_ASIA_VIEWBOX)}
     >
       <g className="topology-focus-map-zoom">
-        <use
-          className="topology-focus-map-dots"
-          data-dot-count={EAST_ASIA_DOT_COUNT}
-          href={EAST_ASIA_DOT_ASSET}
-        />
+        {geometryReady ? (
+          <use
+            className="topology-focus-map-dots"
+            data-dot-count={EAST_ASIA_DOT_COUNT}
+            href={EAST_ASIA_DOT_ASSET}
+          />
+        ) : null}
       </g>
     </svg>
   );

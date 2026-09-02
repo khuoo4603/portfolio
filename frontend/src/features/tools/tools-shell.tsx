@@ -318,6 +318,7 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [profileError, setProfileError] = useState("");
+  const registryRequest = useRef<ReturnType<typeof getTools> | null>(null);
 
   useEffect(() => {
     if (auth.status === "unauthenticated") {
@@ -326,12 +327,13 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
   }, [auth.status, router]);
 
   useEffect(() => {
-    if (auth.status !== "authenticated") {
+    if (auth.status !== "loading" && auth.status !== "authenticated") {
       return;
     }
 
     let active = true;
-    void getTools()
+    registryRequest.current ??= getTools();
+    void registryRequest.current
       .then((response) => {
         if (active) setTools(response.items.filter(isKnownTool));
       })
