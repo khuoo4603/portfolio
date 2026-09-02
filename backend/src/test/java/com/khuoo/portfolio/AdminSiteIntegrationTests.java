@@ -123,7 +123,7 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
         Long entryId = objectMapper.readTree(profileRequest(post(SITE_PATH + "/profile-entries"), create, """
                         {
                           "entryType":"EDUCATION","periodText":"2023 ~ 2026","title":"School",
-                          "organization":"Org","description":"Description","featured":true,
+                          "organization":"Org","description":"Description",
                           "displayOrder":1,"enabled":true
                         }
                         """)
@@ -132,12 +132,14 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
 
         ActionChallenge patch = challenge("PROFILE_ENTRY_UPDATE", "PROFILE_ENTRY", entryId.toString());
         profileRequest(patch(SITE_PATH + "/profile-entries/" + entryId), patch,
-                "{\"periodText\":null,\"description\":null,\"featured\":false}")
+                "{\"periodText\":null,\"description\":null,\"displayOrder\":7,\"enabled\":false}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.periodText").value((Object) null))
                 .andExpect(jsonPath("$.description").value((Object) null))
                 .andExpect(jsonPath("$.organization").value("Org"))
-                .andExpect(jsonPath("$.featured").value(false));
+                .andExpect(jsonPath("$.displayOrder").value(7))
+                .andExpect(jsonPath("$.enabled").value(false))
+                .andExpect(jsonPath("$.featured").doesNotExist());
 
         ActionChallenge empty = challenge("PROFILE_ENTRY_UPDATE", "PROFILE_ENTRY", entryId.toString());
         profileRequest(patch(SITE_PATH + "/profile-entries/" + entryId), empty, "{}")
@@ -151,6 +153,36 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
         profileRequest(delete(SITE_PATH + "/profile-entries/" + entryId), delete, null)
                 .andExpect(status().isNoContent());
         assertThat(count("profile_entries")).isZero();
+    }
+
+    // 프로필 5개 유형과 노출·표시 순서 저장 계약 검증
+    @Test
+    void profileCreateSupportsEveryEntryTypeAndDisplayState() throws Exception {
+        String[] entryTypes = {"EDUCATION", "EXPERIENCE", "ACTIVITY", "AWARD", "CERTIFICATE"};
+
+        for (int index = 0; index < entryTypes.length; index++) {
+            String entryType = entryTypes[index];
+            boolean enabled = index % 2 != 0;
+            ActionChallenge challenge = challenge("PROFILE_ENTRY_CREATE", "PROFILE_ENTRY", null);
+
+            profileRequest(post(SITE_PATH + "/profile-entries"), challenge, """
+                            {
+                              "entryType":"%s","title":"%s item",
+                              "displayOrder":%d,"enabled":%s
+                            }
+                            """.formatted(entryType, entryType, index + 1, enabled))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.entryType").value(entryType))
+                    .andExpect(jsonPath("$.displayOrder").value(index + 1))
+                    .andExpect(jsonPath("$.enabled").value(enabled))
+                    .andExpect(jsonPath("$.featured").doesNotExist());
+        }
+
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT entry_type
+                FROM profile_entries
+                ORDER BY display_order
+                """, String.class)).containsExactly(entryTypes);
     }
 
     // Technology CRUD·UNIQUE·Mapping 검증·FK Cascade와 전체 교체 검증
@@ -204,6 +236,20 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(status().isNoContent());
         assertThat(count("portfolio_technologies")).isZero();
         assertThat(count("project_technologies")).isZero();
+    }
+
+    // Technology 허용 Category 밖 요청과 Challenge 미소모 검증
+    @Test
+    void technologyCreateRejectsUnknownCategory() throws Exception {
+        ActionChallenge challenge = challenge("TECHNOLOGY_CREATE", "TECHNOLOGY", null);
+
+        technologyRequest(post(SITE_PATH + "/technologies"), challenge,
+                "{\"name\":\"Invalid\",\"category\":\"OTHER\",\"enabled\":true}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_ERROR"));
+
+        assertThat(challengeStatus(challenge.id())).isEqualTo("ACTIVE");
+        assertThat(count("technology_master")).isZero();
     }
 
     // External Link URL Scheme 정책과 CRUD·빈 PATCH Challenge 미소모 검증

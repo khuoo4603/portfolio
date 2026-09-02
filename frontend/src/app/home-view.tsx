@@ -190,9 +190,9 @@ function TechStackSection({ groups }: { groups: TechnologyGroup[] }) {
   );
 }
 
-// 학력과 주요 활동, 수상 성과 구성
+// 학력과 주요 활동, 수상, 자격·교육 성과 구성
 function EducationSection({ groups }: { groups: ProfileGroups }) {
-  const hasGroups = groups.education.length > 0 || groups.activity.length > 0 || groups.award.length > 0;
+  const hasGroups = groups.education.length > 0 || groups.activity.length > 0 || groups.award.length > 0 || groups.certificate.length > 0;
   if (!hasGroups) {
     return null;
   }
@@ -252,6 +252,22 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
                     <strong className="education-info-title type-title">{award.title}</strong>
                     {award.detail ? <span className="award-project education-info-detail type-small">{award.detail}</span> : null}
                     {award.outcome ? <span className="award-result education-info-outcome type-small">{award.outcome}</span> : null}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
+
+          {groups.certificate.length > 0 ? (
+            <section className="certificates-group education-info-group" aria-labelledby="certificates-title">
+              <h3 className="type-title" id="certificates-title">{PUBLIC_COPY.education.certificateGroup}</h3>
+              <ol className="certificates-list education-info-list">
+                {groups.certificate.map((certificate) => (
+                  <li className="certificate-row education-info-row" key={certificate.id}>
+                    {certificate.period ? <span className="certificate-period education-info-period type-small">{certificate.period}</span> : null}
+                    <strong className="education-info-title type-title">{certificate.title}</strong>
+                    {certificate.detail ? <span className="certificate-organization education-info-detail type-small">{certificate.detail}</span> : null}
+                    {certificate.outcome ? <span className="certificate-result education-info-outcome type-small">{certificate.outcome}</span> : null}
                   </li>
                 ))}
               </ol>

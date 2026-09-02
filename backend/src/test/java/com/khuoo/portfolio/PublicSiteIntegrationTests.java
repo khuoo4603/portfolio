@@ -35,10 +35,10 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 VALUES ('COMMON', 'POSITION', 'Backend'), ('COMMON', 'NAME', 'Kim')
                 """);
         jdbcTemplate.update("""
-                INSERT INTO profile_entries (entry_type, title, featured, display_order, enabled)
-                VALUES ('EDUCATION', 'disabled', TRUE, 0, FALSE),
-                       ('ACTIVITY', 'featured false', FALSE, 1, TRUE),
-                       ('AWARD', 'featured true', TRUE, 1, TRUE)
+                INSERT INTO profile_entries (entry_type, title, display_order, enabled)
+                VALUES ('EDUCATION', 'disabled', 0, FALSE),
+                       ('ACTIVITY', 'visible activity', 1, TRUE),
+                       ('AWARD', 'visible award', 1, TRUE)
                 """);
         Long javaId = technology("Java", "LANGUAGE", true);
         Long hiddenId = technology("Hidden", "BACKEND", false);
@@ -63,8 +63,8 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.portfolioContents.length()").value(2))
                 .andExpect(jsonPath("$.profileEntries.length()").value(2))
-                .andExpect(jsonPath("$.profileEntries[0].title").value("featured false"))
-                .andExpect(jsonPath("$.profileEntries[0].featured").value(false))
+                .andExpect(jsonPath("$.profileEntries[0].title").value("visible activity"))
+                .andExpect(jsonPath("$.profileEntries[0].featured").doesNotExist())
                 .andExpect(jsonPath("$.portfolioTechnologies.length()").value(1))
                 .andExpect(jsonPath("$.portfolioTechnologies[0].name").value("Java"))
                 .andExpect(jsonPath("$.projects.length()").value(2))

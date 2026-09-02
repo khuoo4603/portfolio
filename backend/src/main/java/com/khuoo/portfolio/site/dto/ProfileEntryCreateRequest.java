@@ -36,9 +36,6 @@ public record ProfileEntryCreateRequest(
         @Schema(description = "주요 성과", nullable = true)
         String achievement,
 
-        @Schema(description = "대표 강조 여부", defaultValue = "false")
-        Boolean featured,
-
         @PositiveOrZero
         @Schema(description = "표시 순서", defaultValue = "0")
         Integer displayOrder,

@@ -30,9 +30,6 @@ public record ProfileEntryResponse(
         @Schema(description = "주요 성과", nullable = true)
         String achievement,
 
-        @Schema(description = "대표 강조 여부", example = "true")
-        boolean featured,
-
         @Schema(description = "표시 순서", example = "1")
         int displayOrder
 ) {
@@ -48,7 +45,6 @@ public record ProfileEntryResponse(
                 entry.getRole(),
                 entry.getDescription(),
                 entry.getAchievement(),
-                entry.isFeatured(),
                 entry.getDisplayOrder()
         );
     }

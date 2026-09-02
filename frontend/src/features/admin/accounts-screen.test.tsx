@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import type { AccountItem } from "./admin-types";
@@ -100,6 +100,46 @@ describe("Admin Accounts 실제 API 관리", () => {
       operation: "ACCOUNT_STATUS_UPDATE",
       targetId: "9",
     })));
+  });
+
+  it("대표 Critical 작업은 Challenge 대기 중 즉시 SENDING Modal을 열고 READY·VERIFYING으로 전환", async () => {
+    let resolveChallenge!: (value: { challengeId: string; expiresAt: string }) => void;
+    let resolveMutation!: () => void;
+    vi.mocked(createAdminChallenge).mockImplementation(() => new Promise((resolve) => {
+      resolveChallenge = resolve;
+    }));
+    vi.mocked(updateAccountStatus).mockImplementation(() => new Promise<void>((resolve) => {
+      resolveMutation = resolve;
+    }));
+    render(<AccountsScreen />);
+    await screen.findByText("admin@example.com");
+
+    fireEvent.click(screen.getByRole("button", { name: "admin@example.com 계정 작업" }));
+    fireEvent.click(screen.getByRole("button", { name: "비활성화" }));
+
+    expect(await screen.findByRole("heading", { name: "관리자 이메일 재인증" })).toBeInTheDocument();
+    expect(document.querySelector('[data-admin-action-phase="SENDING"]')).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("인증번호 전송 중...");
+    expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "변경 실행" })).toBeDisabled();
+
+    await act(async () => resolveChallenge({
+      challengeId: "challenge-pending",
+      expiresAt: "2099-09-01T12:00:00+09:00",
+    }));
+    await waitFor(() => expect(document.querySelector('[data-admin-action-phase="READY"]')).toBeInTheDocument());
+    expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeEnabled();
+
+    submitOtp("246810");
+    await waitFor(() => expect(updateAccountStatus).toHaveBeenCalledWith(9, false, {
+      challengeId: "challenge-pending",
+      verificationCode: "246810",
+    }));
+    expect(document.querySelector('[data-admin-action-phase="VERIFYING"]')).toBeInTheDocument();
+    expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
+
+    await act(async () => resolveMutation());
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "관리자 이메일 재인증" })).not.toBeInTheDocument());
   });
 
   it("다른 Row 작업 버튼을 누르면 새 Row 메뉴 하나만 표시", async () => {

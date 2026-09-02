@@ -36,6 +36,38 @@ class PortfolioEnumsTest {
         assertThat(PortfolioEnums.AccountRole.values())
                 .containsExactly(PortfolioEnums.AccountRole.ADMIN, PortfolioEnums.AccountRole.USER);
         assertThat(PortfolioEnums.AdminActionOperation.values()).hasSize(20);
+        assertThat(PortfolioEnums.AdminActionOperation.values()).containsExactly(
+                PortfolioEnums.AdminActionOperation.PORTFOLIO_CONTENT_UPDATE,
+                PortfolioEnums.AdminActionOperation.PROFILE_ENTRY_CREATE,
+                PortfolioEnums.AdminActionOperation.PROFILE_ENTRY_UPDATE,
+                PortfolioEnums.AdminActionOperation.PROFILE_ENTRY_DELETE,
+                PortfolioEnums.AdminActionOperation.RESUME_REPLACE,
+                PortfolioEnums.AdminActionOperation.TECHNOLOGY_CREATE,
+                PortfolioEnums.AdminActionOperation.TECHNOLOGY_UPDATE,
+                PortfolioEnums.AdminActionOperation.TECHNOLOGY_DELETE,
+                PortfolioEnums.AdminActionOperation.PORTFOLIO_TECHNOLOGY_UPDATE,
+                PortfolioEnums.AdminActionOperation.PROJECT_CREATE,
+                PortfolioEnums.AdminActionOperation.PROJECT_UPDATE,
+                PortfolioEnums.AdminActionOperation.PROJECT_DELETE,
+                PortfolioEnums.AdminActionOperation.PROJECT_STATUS_UPDATE,
+                PortfolioEnums.AdminActionOperation.EXTERNAL_LINK_CREATE,
+                PortfolioEnums.AdminActionOperation.EXTERNAL_LINK_UPDATE,
+                PortfolioEnums.AdminActionOperation.EXTERNAL_LINK_DELETE,
+                PortfolioEnums.AdminActionOperation.ACCOUNT_CREATE,
+                PortfolioEnums.AdminActionOperation.ACCOUNT_STATUS_UPDATE,
+                PortfolioEnums.AdminActionOperation.ACCOUNT_ROLE_UPDATE,
+                PortfolioEnums.AdminActionOperation.ACCOUNT_PASSWORD_RESET
+        );
+        assertThat(PortfolioEnums.AdminActionTarget.values()).containsExactly(
+                PortfolioEnums.AdminActionTarget.PORTFOLIO_CONTENT,
+                PortfolioEnums.AdminActionTarget.PROFILE_ENTRY,
+                PortfolioEnums.AdminActionTarget.RESUME,
+                PortfolioEnums.AdminActionTarget.TECHNOLOGY,
+                PortfolioEnums.AdminActionTarget.PORTFOLIO_TECHNOLOGY,
+                PortfolioEnums.AdminActionTarget.PROJECT,
+                PortfolioEnums.AdminActionTarget.EXTERNAL_LINK,
+                PortfolioEnums.AdminActionTarget.ACCOUNT
+        );
         assertThat(PortfolioEnums.ErrorService.values())
                 .containsExactly(PortfolioEnums.ErrorService.FRONTEND, PortfolioEnums.ErrorService.BACKEND);
     }

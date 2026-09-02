@@ -48,6 +48,7 @@ export const PUBLIC_COPY = {
     educationGroup: "학력",
     activityGroup: "주요 활동",
     awardGroup: "수상",
+    certificateGroup: "자격·교육",
   },
   footer: {
     resume: "RESUME",
@@ -92,6 +93,7 @@ export type ProfileGroups = {
   education: ProfileRow[];
   activity: ProfileRow[];
   award: ProfileRow[];
+  certificate: ProfileRow[];
 };
 
 export type TechnologyGroup = {
@@ -130,9 +132,9 @@ export function mapContents(contents: PublicPortfolio["portfolioContents"]) {
   }, {});
 }
 
-// Profile 5개 유형의 학력·주요 활동·수상 세 그룹 변환
+// Profile 5개 유형의 학력·주요 활동·수상·자격·교육 네 그룹 변환
 export function groupProfiles(entries: ProfileEntry[]): ProfileGroups {
-  const groups: ProfileGroups = { education: [], activity: [], award: [] };
+  const groups: ProfileGroups = { education: [], activity: [], award: [], certificate: [] };
 
   [...entries].sort((first, second) => first.displayOrder - second.displayOrder).forEach((entry) => {
     const period = value(entry.periodText);
@@ -163,8 +165,19 @@ export function groupProfiles(entries: ProfileEntry[]): ProfileGroups {
       return;
     }
 
-    if (entry.entryType === "AWARD" || entry.entryType === "CERTIFICATE") {
+    if (entry.entryType === "AWARD") {
       groups.award.push({
+        id: entry.id,
+        period,
+        title,
+        detail: value(entry.description) ?? value(entry.organization),
+        outcome: value(entry.achievement),
+      });
+      return;
+    }
+
+    if (entry.entryType === "CERTIFICATE") {
+      groups.certificate.push({
         id: entry.id,
         period,
         title,

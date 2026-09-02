@@ -9,6 +9,7 @@ import {
   getAdminSite,
   replacePortfolioTechnologies,
   replaceResume,
+  updateProfileEntry,
   updatePortfolioContents,
 } from "./admin-site-api";
 import SiteScreen from "./site-screen";
@@ -69,7 +70,6 @@ function siteData(name = "김현우"): SiteData {
       role: null,
       description: null,
       achievement: "재학",
-      featured: false,
       displayOrder: 1,
       enabled: true,
       createdAt: UPDATED_AT,
@@ -83,7 +83,6 @@ function siteData(name = "김현우"): SiteData {
       role: "Backend",
       description: null,
       achievement: null,
-      featured: true,
       displayOrder: 2,
       enabled: true,
       createdAt: UPDATED_AT,
@@ -97,7 +96,6 @@ function siteData(name = "김현우"): SiteData {
       role: null,
       description: null,
       achievement: null,
-      featured: false,
       displayOrder: 3,
       enabled: true,
       createdAt: UPDATED_AT,
@@ -111,7 +109,6 @@ function siteData(name = "김현우"): SiteData {
       role: null,
       description: null,
       achievement: "우수상",
-      featured: false,
       displayOrder: 4,
       enabled: true,
       createdAt: UPDATED_AT,
@@ -125,7 +122,6 @@ function siteData(name = "김현우"): SiteData {
       role: null,
       description: null,
       achievement: "수료",
-      featured: false,
       displayOrder: 5,
       enabled: true,
       createdAt: UPDATED_AT,
@@ -154,6 +150,7 @@ describe("Admin Site 실제 API 관리", () => {
     vi.mocked(createAdminChallenge).mockReset().mockResolvedValue({ challengeId: "challenge-site", expiresAt: "2099-09-01T12:00:00+09:00" });
     vi.mocked(updatePortfolioContents).mockReset().mockResolvedValue({ items: [] });
     vi.mocked(createProfileEntry).mockReset().mockResolvedValue(siteData().profileEntries[0]);
+    vi.mocked(updateProfileEntry).mockReset().mockResolvedValue(siteData().profileEntries[0]);
     vi.mocked(createTechnology).mockReset().mockResolvedValue(siteData().technologyMaster[0]);
     vi.mocked(replacePortfolioTechnologies).mockReset().mockResolvedValue({ items: [] });
     vi.mocked(replaceResume).mockReset().mockResolvedValue({ fileName: "resume-new.pdf", updatedAt: UPDATED_AT });
@@ -177,6 +174,14 @@ describe("Admin Site 실제 API 관리", () => {
     fireEvent.click(screen.getByRole("tab", { name: "이력" }));
     expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "학력" })).toBeInTheDocument();
+    const profileTable = screen.getByRole("table");
+    expect(within(profileTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
+      "항목", "기간", "순서", "상태", "작업",
+    ]);
+    expect(within(profileTable).queryByText("유형 / 기간")).not.toBeInTheDocument();
+    expect(within(profileTable).queryByText("대표")).not.toBeInTheDocument();
+    expect(within(profileTable).queryByText("강조")).not.toBeInTheDocument();
+    expect(within(profileTable).queryByText("일반")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "기술" }));
     expect(screen.getByText("DATABASE")).toBeInTheDocument();
@@ -250,7 +255,7 @@ describe("Admin Site 실제 API 관리", () => {
     expect(await screen.findByDisplayValue("김현우 수정")).toBeInTheDocument();
   });
 
-  it("Profile Editor가 EDUCATION을 포함하고 Create Challenge를 발급", async () => {
+  it("Profile Editor가 자격·교육과 enabled만 제공하고 featured 없이 Create Challenge를 실행", async () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");
     fireEvent.click(screen.getByRole("tab", { name: "이력" }));
@@ -258,8 +263,11 @@ describe("Admin Site 실제 API 관리", () => {
     const dialog = screen.getByRole("dialog");
 
     expect(within(dialog).getByRole("option", { name: "학력" })).toHaveValue("EDUCATION");
-    fireEvent.change(within(dialog).getByLabelText("유형"), { target: { value: "EDUCATION" } });
-    fireEvent.change(within(dialog).getByLabelText("제목"), { target: { value: "새 학력" } });
+    expect(within(dialog).getByRole("option", { name: "자격·교육" })).toHaveValue("CERTIFICATE");
+    expect(within(dialog).getByLabelText("노출 ON")).toBeChecked();
+    expect(within(dialog).queryByLabelText("대표/강조")).not.toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText("유형"), { target: { value: "CERTIFICATE" } });
+    fireEvent.change(within(dialog).getByLabelText("제목"), { target: { value: "새 자격·교육" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "저장" }));
 
     await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
@@ -267,6 +275,43 @@ describe("Admin Site 실제 API 관리", () => {
       targetType: "PROFILE_ENTRY",
       targetId: null,
     })));
+    submitOtp();
+    await waitFor(() => expect(createProfileEntry).toHaveBeenCalledWith({
+      entryType: "CERTIFICATE",
+      periodText: null,
+      title: "새 자격·교육",
+      organization: null,
+      role: null,
+      description: null,
+      achievement: null,
+      displayOrder: 0,
+      enabled: true,
+    }, { challengeId: "challenge-site", verificationCode: "654321" }));
+  });
+
+  it("Profile 노출 ON/OFF를 featured 없이 Update Challenge로 전달", async () => {
+    render(<SiteScreen />);
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
+    fireEvent.click(screen.getByRole("switch", { name: "소프트웨어융합전공 비노출 전환" }));
+
+    await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
+      operation: "PROFILE_ENTRY_UPDATE",
+      targetType: "PROFILE_ENTRY",
+      targetId: "15",
+    })));
+    submitOtp();
+    await waitFor(() => expect(updateProfileEntry).toHaveBeenCalledWith(15, {
+      entryType: "EDUCATION",
+      periodText: "2023.03 — 현재",
+      title: "소프트웨어융합전공",
+      organization: "성공회대학교",
+      role: null,
+      description: null,
+      achievement: "재학",
+      displayOrder: 1,
+      enabled: false,
+    }, { challengeId: "challenge-site", verificationCode: "654321" }));
   });
 
   it("Technology Editor가 6개 Category와 iconUrl만 사용", async () => {

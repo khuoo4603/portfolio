@@ -98,6 +98,11 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
 
         assertThat(slots).containsExactlyInAnyOrderElementsOf(CONTENT_SLOTS);
         assertThat(duplicateCount).isZero();
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM portfolio_contents
+                WHERE content_code IN ('SITE_MARK', 'NAV_ABOUT', 'HERO_POSITION', 'FOOTER_NAME', 'COPYRIGHT')
+                """, Integer.class)).isZero();
         assertThat(jdbcTemplate.queryForMap("""
                 SELECT
                     COUNT(*) FILTER (WHERE category = 'COMMON') AS common_count,
@@ -119,6 +124,26 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
     // 프로필 이력과 기술 스택 초기값 검증
     @Test
     void profileAndTechnologySeedsMatchPublicData() {
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'profile_entries'
+                ORDER BY ordinal_position
+                """, String.class)).containsExactly(
+                "id",
+                "entry_type",
+                "period_text",
+                "title",
+                "organization",
+                "role",
+                "description",
+                "achievement",
+                "display_order",
+                "enabled",
+                "created_at",
+                "updated_at"
+        );
         assertThat(jdbcTemplate.queryForList("""
                 SELECT title
                 FROM profile_entries
@@ -147,13 +172,11 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 .containsEntry("award_count", 5L)
                 .containsEntry("certificate_count", 1L);
         assertThat(jdbcTemplate.queryForMap("""
-                SELECT organization, featured
+                SELECT organization, entry_type
                 FROM profile_entries
-                WHERE title = 'QED'
-                """)).containsEntry("organization", "성공회대학교")
-                .containsEntry("featured", true);
-        assertThat(jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM profile_entries WHERE featured = TRUE", Integer.class)).isEqualTo(3);
+                WHERE title = '현대오토에버 특성화 고교생 화이트해커 양성교육'
+                """)).containsEntry("organization", "현대오토에버")
+                .containsEntry("entry_type", "CERTIFICATE");
 
         assertThat(jdbcTemplate.queryForList(
                 "SELECT name FROM technology_master", String.class))

@@ -70,7 +70,6 @@ export type ProfileEntry = {
   role: string | null;
   description: string | null;
   achievement: string | null;
-  featured: boolean;
   displayOrder: number;
 };
 

@@ -1069,7 +1069,7 @@ describe("포트폴리오 메인", () => {
     expect(projectHistory.style.getPropertyValue("--project-timeline-progress")).toBe("");
   });
 
-  it("학력과 주요 활동, 수상 성과를 최신순으로 표시", () => {
+  it("학력·주요 활동·수상·자격·교육을 독립 그룹으로 최신순 표시", () => {
     render(<Home />);
 
     expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
@@ -1085,23 +1085,44 @@ describe("포트폴리오 메인", () => {
     expect(screen.getByText("현대오토에버 특성화 고교생 화이트해커 양성교육")).toBeInTheDocument();
     expect(screen.getByText("수료/입상")).toBeInTheDocument();
     expect(screen.getByText("성공회대학교 소프트웨어경진대회")).toBeInTheDocument();
-    const awardRows = Array.from(document.querySelectorAll(".award-row"));
+    expect(Array.from(document.querySelectorAll(".education-info-group > h3")).map((heading) => heading.textContent)).toEqual([
+      "학력", "주요 활동", "수상", "자격·교육",
+    ]);
+    const awardRegion = screen.getByRole("region", { name: "수상" });
+    const awardRows = Array.from(awardRegion.querySelectorAll(".award-row"));
     expect(awardRows[0]).toHaveTextContent("성공회대학교 소프트웨어경진대회SKHUTRack1등");
     expect(awardRows[1]).toHaveTextContent("KFIP 2026KYvCToss 특별상");
     expect(awardRows[2]).toHaveTextContent("성공회대학교 IT경진대회SKHURoad3등");
-    expect(awardRows[3]).toHaveTextContent("현대오토에버 특성화 고교생 화이트해커 양성교육수료/입상");
-    expect(awardRows[4]).toHaveTextContent("SW·AI 교육 수기 공모전최우수상 · 과학기술정보통신부 장관상");
-    expect(awardRows[5]).toHaveTextContent("Hello New() WorldNewLife대상");
+    expect(awardRows[3]).toHaveTextContent("SW·AI 교육 수기 공모전최우수상 · 과학기술정보통신부 장관상");
+    expect(awardRows[4]).toHaveTextContent("Hello New() WorldNewLife대상");
+    expect(awardRows).toHaveLength(5);
+    expect(within(awardRegion).queryByText("현대오토에버 특성화 고교생 화이트해커 양성교육")).not.toBeInTheDocument();
+    const certificateRegion = screen.getByRole("region", { name: "자격·교육" });
+    const certificateRows = Array.from(certificateRegion.querySelectorAll(".certificate-row"));
+    expect(certificateRows).toHaveLength(1);
+    expect(certificateRows[0]).toHaveTextContent("2021현대오토에버 특성화 고교생 화이트해커 양성교육현대오토에버수료/입상");
     expect(screen.getByText("Toss 특별상")).toBeInTheDocument();
     expect(screen.getByText("최우수상 · 과학기술정보통신부 장관상")).toBeInTheDocument();
     expect(screen.getByText("SW·AI 교육 수기 공모전")).toBeInTheDocument();
     expect(screen.queryByText("신나는 SW·AI 교육 수기 공모전")).not.toBeInTheDocument();
     expect(document.querySelectorAll(".education-info-row")).toHaveLength(11);
-    expect(document.querySelectorAll(".education-info-detail.type-small")).toHaveLength(9);
+    expect(document.querySelectorAll(".education-info-detail.type-small")).toHaveLength(10);
     expect(document.querySelectorAll(".education-info-outcome.type-small")).toHaveLength(8);
     expect(screen.queryByRole("heading", { name: "학업 성과" })).not.toBeInTheDocument();
     expect(screen.queryByText("21학점 · 4.5 / 4.5")).not.toBeInTheDocument();
     expect(screen.queryByText("학기 교내 수석")).not.toBeInTheDocument();
+  });
+
+  it("자격·교육 데이터가 없으면 해당 그룹만 비노출", () => {
+    const model = mapPublicPortfolio({
+      ...PUBLIC_PORTFOLIO_FIXTURE,
+      profileEntries: PUBLIC_PORTFOLIO_FIXTURE.profileEntries.filter((entry) => entry.entryType !== "CERTIFICATE"),
+    });
+    render(<HomeView model={model} />);
+
+    expect(screen.getByRole("heading", { name: "학력 및 성과" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "자격·교육" })).not.toBeInTheDocument();
+    expect(document.querySelector(".certificates-group")).not.toBeInTheDocument();
   });
 
   it("실제 Contact Link를 표시", () => {

@@ -27,9 +27,6 @@ public record ProfileEntryUpdateRequest(
         @Schema(description = "주요 성과", implementation = String.class, nullable = true)
         JsonNode achievement,
 
-        @Schema(description = "대표 강조 여부", implementation = Boolean.class)
-        JsonNode featured,
-
         @Schema(description = "표시 순서", implementation = Integer.class)
         JsonNode displayOrder,
 

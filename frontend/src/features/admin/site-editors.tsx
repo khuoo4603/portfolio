@@ -17,7 +17,7 @@ import styles from "./admin.module.css";
 
 type EditorState<T> = { item?: T } | null;
 
-// 학력·경력·활동·수상·자격 Backend Model 기반 Editor
+// 학력·경력·활동·수상·자격·교육 Backend Model 기반 Editor
 export function ProfileEditor({
   state,
   onClose,
@@ -35,7 +35,6 @@ export function ProfileEditor({
   const [role, setRole] = useState(item?.role || "");
   const [description, setDescription] = useState(item?.description || "");
   const [achievement, setAchievement] = useState(item?.achievement || "");
-  const [featured, setFeatured] = useState(item?.featured ?? false);
   const [displayOrder, setDisplayOrder] = useState(item?.displayOrder || 0);
   const [enabled, setEnabled] = useState(item?.enabled ?? true);
   const [error, setError] = useState("");
@@ -55,7 +54,6 @@ export function ProfileEditor({
       role: role.trim() || null,
       description: description.trim() || null,
       achievement: achievement.trim() || null,
-      featured,
       displayOrder,
       enabled,
     }, item);
@@ -65,7 +63,7 @@ export function ProfileEditor({
     <DialogFrame
       open={state !== null}
       title={item ? "프로필 항목 수정" : "프로필 항목 추가"}
-      description="Public의 학력·경력·활동·수상·교육 영역에 연결되는 반복 항목"
+      description="Public의 학력·경력·활동·수상·자격·교육 영역에 연결되는 반복 항목"
       onClose={onClose}
       footer={(
         <>
@@ -83,7 +81,7 @@ export function ProfileEditor({
               <option value="EXPERIENCE">경력</option>
               <option value="ACTIVITY">활동</option>
               <option value="AWARD">수상</option>
-              <option value="CERTIFICATE">자격/교육</option>
+              <option value="CERTIFICATE">자격·교육</option>
             </select>
           </label>
           <label className={styles.formField}>
@@ -118,7 +116,6 @@ export function ProfileEditor({
           <input className="type-body" type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(Number(event.currentTarget.value))} />
         </label>
         <div className={styles.checkRow}>
-          <label className={styles.checkboxField}><input type="checkbox" checked={featured} onChange={(event) => setFeatured(event.currentTarget.checked)} /><span className="type-body">대표/강조</span></label>
           <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">노출 ON</span></label>
         </div>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>

@@ -32,9 +32,6 @@ public record AdminProfileEntryResponse(
         @Schema(description = "주요 성과", nullable = true)
         String achievement,
 
-        @Schema(description = "대표 강조 여부")
-        boolean featured,
-
         @Schema(description = "표시 순서")
         int displayOrder,
 
@@ -59,7 +56,6 @@ public record AdminProfileEntryResponse(
                 entry.getRole(),
                 entry.getDescription(),
                 entry.getAchievement(),
-                entry.isFeatured(),
                 entry.getDisplayOrder(),
                 entry.isEnabled(),
                 ResponseTime.kst(entry.getCreatedAt()),

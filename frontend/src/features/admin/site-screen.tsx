@@ -145,16 +145,6 @@ const CONTENT_SECTIONS: ContentSection[] = [
 
 const CONTENT_DEFINITIONS = CONTENT_SECTIONS.flatMap((section) => section.definitions);
 
-function entryTypeLabel(type: ProfileEntry["entryType"]) {
-  return {
-    EDUCATION: "학력",
-    EXPERIENCE: "경력",
-    ACTIVITY: "활동",
-    AWARD: "수상",
-    CERTIFICATE: "자격/교육",
-  }[type];
-}
-
 function profileInput(item: ProfileEntry, override: Partial<ProfileEntryInput> = {}): ProfileEntryInput {
   return {
     entryType: item.entryType,
@@ -164,7 +154,6 @@ function profileInput(item: ProfileEntry, override: Partial<ProfileEntryInput> =
     role: item.role,
     description: item.description,
     achievement: item.achievement,
-    featured: item.featured,
     displayOrder: item.displayOrder,
     enabled: item.enabled,
     ...override,
@@ -518,20 +507,19 @@ function ProfileEntriesPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onD
 
   return (
     <section className={styles.operationalSection} aria-labelledby="profile-entries-title">
-      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">학력·경력·활동·수상·자격</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</button></div>
+      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">학력·경력·활동·수상·자격·교육</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</button></div>
       <div className={styles.linkFilters} role="group" aria-label="이력 유형">
         {PROFILE_FILTERS.map((item) => (
           <button key={item.value} className="type-body" type="button" aria-pressed={filter === item.value} onClick={() => setFilter(item.value)}>{item.label}</button>
         ))}
       </div>
       {items.length === 0 ? <EmptyState title="등록 항목 없음" description="등록된 프로필 반복 항목이 없습니다." /> : (
-        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>항목</th><th>유형 / 기간</th><th>순서</th><th>대표</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
+        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>항목</th><th>기간</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
           {filteredItems.map((item) => { const key = `profile-${item.id}`; return (
             <tr key={item.id}>
               <td data-label="항목"><div className={styles.tableIdentity}><strong>{item.title}</strong><span>{item.organization || item.role || item.description || "보조 정보 없음"}</span></div></td>
-              <td data-label="유형 / 기간"><strong>{entryTypeLabel(item.entryType)}</strong><span>{item.periodText || "-"}</span></td>
+              <td data-label="기간"><span>{item.periodText || "-"}</span></td>
               <td data-label="순서">{item.displayOrder}</td>
-              <td data-label="대표">{item.featured ? "강조" : "일반"}</td>
               <td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.title} ${item.enabled ? "비노출" : "노출"} 전환`} /></td>
               <td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.title} 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td>
             </tr>

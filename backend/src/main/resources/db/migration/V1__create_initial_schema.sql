@@ -77,7 +77,6 @@ CREATE TABLE profile_entries (
     role VARCHAR(200),
     description TEXT,
     achievement TEXT,
-    featured BOOLEAN NOT NULL DEFAULT FALSE,
     display_order INTEGER NOT NULL DEFAULT 0,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

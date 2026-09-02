@@ -92,6 +92,32 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
     expect(result.current.dialog?.challengeId).toBe("challenge-a");
   });
 
+  it("Verification ERROR 뒤 같은 바인딩 재전송으로 새 Challenge READY 상태를 복구", async () => {
+    vi.mocked(createAdminChallenge)
+      .mockResolvedValueOnce({ challengeId: "challenge-a", expiresAt: "2026-09-01T14:00:00+09:00" })
+      .mockResolvedValueOnce({ challengeId: "challenge-b", expiresAt: "2026-09-01T14:05:00+09:00" });
+    const mutation = vi.fn().mockRejectedValue(new ApiError(403, {
+      code: "AUTH_ADMIN_ACTION_MISMATCH",
+      message: "관리자 재인증 정보가 일치하지 않습니다.",
+      traceId: "trace-retry",
+      fieldErrors: [],
+    }));
+    const { result } = renderHook(() => useAdminAction());
+    await act(() => result.current.start({ ...binding, mutation }));
+    await act(() => result.current.dialog?.onConfirm("111111"));
+
+    expect(result.current.dialog?.phase).toBe("ERROR");
+    await act(() => result.current.dialog?.onResend());
+
+    expect(createAdminChallenge).toHaveBeenNthCalledWith(2, expect.objectContaining(binding));
+    expect(result.current.dialog).toMatchObject({
+      phase: "READY",
+      challengeId: "challenge-b",
+      error: "",
+    });
+    expect(mutation).toHaveBeenCalledTimes(1);
+  });
+
   it("Mutation 진행 중 중복 제출을 한 번으로 제한", async () => {
     vi.mocked(createAdminChallenge).mockResolvedValue({
       challengeId: "challenge-a",

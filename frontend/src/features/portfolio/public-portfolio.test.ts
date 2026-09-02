@@ -45,13 +45,13 @@ describe("Public Portfolio Mapping", () => {
     ]);
   });
 
-  it("EDUCATION·EXPERIENCE/ACTIVITY·AWARD/CERTIFICATE를 순서대로 세 그룹에 매핑", () => {
+  it("EDUCATION·EXPERIENCE/ACTIVITY·AWARD·CERTIFICATE를 순서대로 네 그룹에 매핑", () => {
     const entries: ProfileEntry[] = [
-      { id: 5, entryType: "CERTIFICATE", periodText: null, title: "Certificate", organization: null, role: null, description: null, achievement: "Pass", featured: false, displayOrder: 5 },
-      { id: 2, entryType: "EXPERIENCE", periodText: "2025", title: "Experience", organization: "Org", role: "Role", description: "Description", achievement: null, featured: false, displayOrder: 2 },
-      { id: 1, entryType: "EDUCATION", periodText: "2026", title: "Major", organization: "School", role: null, description: null, achievement: "Current", featured: false, displayOrder: 1 },
-      { id: 4, entryType: "AWARD", periodText: "2024", title: "Award", organization: null, role: null, description: "Project", achievement: "Winner", featured: false, displayOrder: 4 },
-      { id: 3, entryType: "ACTIVITY", periodText: "2023", title: "Activity", organization: null, role: null, description: "Network", achievement: null, featured: false, displayOrder: 3 },
+      { id: 5, entryType: "CERTIFICATE", periodText: null, title: "Certificate", organization: null, role: null, description: null, achievement: "Pass", displayOrder: 5 },
+      { id: 2, entryType: "EXPERIENCE", periodText: "2025", title: "Experience", organization: "Org", role: "Role", description: "Description", achievement: null, displayOrder: 2 },
+      { id: 1, entryType: "EDUCATION", periodText: "2026", title: "Major", organization: "School", role: null, description: null, achievement: "Current", displayOrder: 1 },
+      { id: 4, entryType: "AWARD", periodText: "2024", title: "Award", organization: null, role: null, description: "Project", achievement: "Winner", displayOrder: 4 },
+      { id: 3, entryType: "ACTIVITY", periodText: "2023", title: "Activity", organization: null, role: null, description: "Network", achievement: null, displayOrder: 3 },
     ];
 
     const groups = groupProfiles(entries);
@@ -59,15 +59,16 @@ describe("Public Portfolio Mapping", () => {
     expect(groups.education).toEqual([{ id: 1, period: "2026", title: "School", detail: "Major", outcome: "Current" }]);
     expect(groups.activity.map((item) => item.title)).toEqual(["Experience", "Activity"]);
     expect(groups.activity[0].detail).toBe("Org · Role · Description");
-    expect(groups.award.map((item) => item.title)).toEqual(["Award", "Certificate"]);
-    expect(groups.award[1].detail).toBeUndefined();
+    expect(groups.award.map((item) => item.title)).toEqual(["Award"]);
+    expect(groups.certificate.map((item) => item.title)).toEqual(["Certificate"]);
+    expect(groups.certificate[0].detail).toBeUndefined();
   });
 
   it("빈 Profile 제목과 빈 Group을 만들지 않음", () => {
     const groups = groupProfiles([
-      { id: 1, entryType: "EDUCATION", periodText: null, title: " ", organization: null, role: null, description: null, achievement: null, featured: false, displayOrder: 1 },
+      { id: 1, entryType: "EDUCATION", periodText: null, title: " ", organization: null, role: null, description: null, achievement: null, displayOrder: 1 },
     ]);
-    expect(groups).toEqual({ education: [], activity: [], award: [] });
+    expect(groups).toEqual({ education: [], activity: [], award: [], certificate: [] });
   });
 
   it("6개 허용 Technology Category 계약과 순서를 유지", () => {

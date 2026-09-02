@@ -27,21 +27,20 @@ INSERT INTO profile_entries (
     role,
     description,
     achievement,
-    featured,
     display_order,
     enabled
 )
 VALUES
-    ('EDUCATION', '2023.03 — 현재', '소프트웨어융합전공', '성공회대학교', NULL, NULL, '재학', FALSE, 1, TRUE),
-    ('EDUCATION', '2020.03 — 2023.02', '스마트콘텐츠과', '경기경영고등학교', NULL, NULL, '졸업', FALSE, 2, TRUE),
-    ('ACTIVITY', '2026.04 — 현재', 'QED', '성공회대학교', NULL, '성공회대학교 보안동아리', NULL, TRUE, 1, TRUE),
-    ('ACTIVITY', '2023.03 — 2023.12', 'One Think IT''s', NULL, NULL, '특성화고 졸업자 네트워크', NULL, FALSE, 2, TRUE),
-    ('AWARD', '2026', '성공회대학교 소프트웨어경진대회', '성공회대학교', NULL, 'SKHUTRack', '1등', TRUE, 3, TRUE),
-    ('AWARD', '2026', 'KFIP 2026', NULL, NULL, 'KYvC', 'Toss 특별상', TRUE, 4, TRUE),
-    ('AWARD', '2023', '성공회대학교 IT경진대회', '성공회대학교', NULL, 'SKHURoad', '3등', FALSE, 5, TRUE),
-    ('CERTIFICATE', '2021', '현대오토에버 특성화 고교생 화이트해커 양성교육', '현대오토에버', NULL, NULL, '수료/입상', FALSE, 6, TRUE),
-    ('AWARD', '2021', 'SW·AI 교육 수기 공모전', NULL, NULL, NULL, '최우수상 · 과학기술정보통신부 장관상', FALSE, 7, TRUE),
-    ('AWARD', '2021', 'Hello New() World', NULL, NULL, 'NewLife', '대상', FALSE, 8, TRUE);
+    ('EDUCATION', '2023.03 — 현재', '소프트웨어융합전공', '성공회대학교', NULL, NULL, '재학', 1, TRUE),
+    ('EDUCATION', '2020.03 — 2023.02', '스마트콘텐츠과', '경기경영고등학교', NULL, NULL, '졸업', 2, TRUE),
+    ('ACTIVITY', '2026.04 — 현재', 'QED', '성공회대학교', NULL, '성공회대학교 보안동아리', NULL, 1, TRUE),
+    ('ACTIVITY', '2023.03 — 2023.12', 'One Think IT''s', NULL, NULL, '특성화고 졸업자 네트워크', NULL, 2, TRUE),
+    ('AWARD', '2026', '성공회대학교 소프트웨어경진대회', '성공회대학교', NULL, 'SKHUTRack', '1등', 3, TRUE),
+    ('AWARD', '2026', 'KFIP 2026', NULL, NULL, 'KYvC', 'Toss 특별상', 4, TRUE),
+    ('AWARD', '2023', '성공회대학교 IT경진대회', '성공회대학교', NULL, 'SKHURoad', '3등', 5, TRUE),
+    ('CERTIFICATE', '2021', '현대오토에버 특성화 고교생 화이트해커 양성교육', '현대오토에버', NULL, NULL, '수료/입상', 6, TRUE),
+    ('AWARD', '2021', 'SW·AI 교육 수기 공모전', NULL, NULL, NULL, '최우수상 · 과학기술정보통신부 장관상', 7, TRUE),
+    ('AWARD', '2021', 'Hello New() World', NULL, NULL, 'NewLife', '대상', 8, TRUE);
 
 -- 기술 스택 마스터 초기값
 INSERT INTO technology_master (name, category, icon_url, enabled)
