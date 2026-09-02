@@ -1,9 +1,10 @@
 :root {
   color-scheme: light;
 
-  --bg-base: var(--sand-50);
-  --bg-surface: var(--sand-100);
-  --bg-elevated: var(--sand-200);
+  --bg-base: color-mix(in srgb, var(--sand-50) 86%, var(--ink-50));
+  --bg-surface: color-mix(in srgb, var(--sand-50) 70%, var(--sand-100));
+  --bg-elevated: color-mix(in srgb, var(--sand-50) 72%, var(--steel-50));
+  --text-heading: var(--steel-700);
   --text-primary: var(--ink-950);
   --text-secondary: var(--ink-700);
   --text-muted: var(--steel-700);
@@ -25,8 +26,9 @@
   --bg-base: var(--ink-950);
   --bg-surface: var(--ink-900);
   --bg-elevated: var(--ink-800);
-  --text-primary: var(--sand-200);
-  --text-secondary: var(--sage-400);
+  --text-heading: var(--sand-300);
+  --text-primary: var(--ink-50);
+  --text-secondary: var(--ink-200);
   --text-muted: var(--ink-300);
   --border-default: var(--ink-700);
   --border-accent: var(--steel-600);

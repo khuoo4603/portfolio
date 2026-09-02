@@ -132,6 +132,20 @@ describe("동적 Project Detail View", () => {
     expect(within(visual as HTMLElement).getByText("인프라 / 배포")).toBeInTheDocument();
   });
 
+  it("Technology와 Architecture 이미지 로딩 실패를 명시적 대체 상태로 전환", () => {
+    render(<ProjectDetailView project={mapProjectDetail(KYVC_PROJECT_FIXTURE)} portfolio={portfolio} />);
+
+    const stack = screen.getByRole("list", { name: "KYvC 전체 기술 스택" });
+    const technologyImage = stack.querySelector("img")!;
+    fireEvent.error(technologyImage);
+    expect(within(stack).getByRole("img", { name: /아이콘 없음/ })).toHaveClass("technology-icon-fallback");
+
+    const visual = document.querySelector<HTMLElement>("[data-architecture]")!;
+    fireEvent.error(within(visual).getByRole("img", { name: "KYvC 시스템 아키텍처" }));
+    expect(within(visual).getByRole("img", { name: "아키텍처 이미지 없음" })).toHaveTextContent("이미지 미리보기 없음");
+    expect(within(visual).getByText("인프라 / 배포")).toBeInTheDocument();
+  });
+
   it("Architecture Image가 없어도 Notes를 표시", () => {
     render(<ProjectDetailView project={mapProjectDetail(MEDIA_PROJECT_FIXTURE)} portfolio={portfolio} />);
 

@@ -20,7 +20,7 @@
   align-items: center;
   gap: var(--space-8);
   color: var(--text-muted);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   letter-spacing: 0.02em;
   text-decoration: none;
   transition: color var(--motion-duration-160) var(--motion-easing-default);
@@ -51,7 +51,8 @@
 .projectTitle {
   grid-column: 1 / 6;
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
   font-weight: 500;
 }
 
@@ -197,14 +198,14 @@
 
 .placeholderProject {
   color: var(--text-muted);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   letter-spacing: 0.02em;
 }
 
 .placeholderLabel {
   align-self: flex-end;
   color: var(--text-secondary);
-  font-family: var(--font-family-display);
+  font-family: var(--font-family-primary);
   font-weight: 500;
 }
 
@@ -231,7 +232,7 @@
   border-radius: 0;
   background: transparent;
   color: var(--text-secondary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: color var(--motion-duration-160) var(--motion-easing-default);
@@ -312,7 +313,7 @@
   align-items: center;
   gap: var(--space-12);
   color: var(--text-muted);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   letter-spacing: 0.02em;
   text-decoration: none;
   transition: color var(--motion-duration-160) var(--motion-easing-default);
@@ -356,7 +357,8 @@
 
 .sectionTitle {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
   font-weight: 600;
   word-break: keep-all;
 }
@@ -409,8 +411,9 @@
 .backgroundArea > h3,
 .featuresArea > h3 {
   margin: 0;
-  color: var(--text-primary);
-  font-weight: 500;
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
+  font-weight: 600;
 }
 
 .stackLegend {
@@ -444,7 +447,7 @@
   width: auto;
 }
 
-/* H-Creations 프로젝트 상세의 작은 흑백 기술 태그 밀도 */
+/* Project Detail의 작은 기술 태그 밀도와 원본 브랜드 색상 */
 .stackBlock {
   display: flex;
   width: auto;
@@ -467,9 +470,8 @@
   width: var(--space-20);
   height: var(--space-20);
   flex: 0 0 var(--space-20);
-  filter: grayscale(1) brightness(0);
   object-fit: contain;
-  opacity: 0.56;
+  opacity: 0.86;
   transition: opacity var(--motion-duration-160) var(--motion-easing-default);
 }
 
@@ -492,8 +494,7 @@
 }
 
 :global(html[data-theme="dark"]) .stackIcon {
-  filter: grayscale(1) brightness(0) invert(0.72);
-  opacity: 0.68;
+  opacity: 0.9;
 }
 
 .resultArea > h3 {
@@ -712,6 +713,15 @@
   object-fit: contain;
 }
 
+.architectureImagePlaceholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+}
+
 .architectureNotes {
   margin: 0;
   border-block: 1px solid var(--border-default);
@@ -880,6 +890,34 @@
   }
 }
 
+/* Compact Desktop의 Hero 여백 우선 축소 */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .projectHero {
+    padding-top: calc(var(--space-64) + var(--space-48));
+    padding-bottom: var(--section-gap);
+  }
+
+  .heroContent {
+    margin-top: var(--space-40);
+  }
+
+  .heroLabel {
+    margin-bottom: var(--space-20);
+  }
+
+  .heroMetadata {
+    margin-top: var(--space-40);
+  }
+
+  .carousel {
+    margin-top: var(--space-64);
+  }
+
+  .carouselStage {
+    height: calc(var(--space-160) * 2 + var(--space-112));
+  }
+}
+
 @media (max-width: 1023px) {
   .projectHero {
     padding-top: calc(var(--space-112) + var(--space-64));
@@ -968,29 +1006,29 @@
 
 @media (max-width: 767px) {
   .projectHero {
-    padding-top: calc(var(--space-112) + var(--space-48));
+    padding-top: calc(var(--space-112) + var(--space-24));
   }
 
   .heroContent {
     display: block;
-    margin-top: var(--space-48);
+    margin-top: var(--space-32);
   }
 
   .heroLabel {
-    margin-bottom: var(--space-20);
+    margin-bottom: var(--space-16);
   }
 
   .projectSummary {
-    margin-top: var(--space-32);
+    margin-top: var(--space-24);
   }
 
   .heroMetadata {
     grid-template-columns: minmax(0, 1fr);
-    margin-top: var(--space-48);
+    margin-top: var(--space-32);
   }
 
   .heroMetadataItem {
-    padding: var(--space-20) 0;
+    padding: var(--space-16) 0;
   }
 
   .heroMetadataItem + .heroMetadataItem {
@@ -1000,7 +1038,7 @@
   }
 
   .carousel {
-    margin-top: var(--space-64);
+    margin-top: var(--space-48);
   }
 
   .carouselStage {
@@ -1040,13 +1078,9 @@
     text-align: right;
   }
 
-  .projectRail {
-    display: none;
-  }
-
   .detailSection {
     padding-block: var(--section-gap);
-    scroll-margin-top: var(--space-112);
+    scroll-margin-top: calc(var(--space-112) + var(--space-48));
   }
 
   .stackResultGrid,

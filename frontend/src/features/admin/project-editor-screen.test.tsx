@@ -189,10 +189,12 @@ describe("Preview-first Project Editor", () => {
 
     expect(screen.queryByText("Clients")).not.toBeInTheDocument();
     expect(screen.getByText("현재 상태: KEEP")).toBeInTheDocument();
+    fireEvent.error(screen.getByRole("img", { name: "Architecture Preview" }));
+    expect(screen.getByText("Architecture Image 없음")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("파일 선택"), {
       target: { files: [new File(["architecture"], "architecture.png", { type: "image/png" })] },
     });
-    expect(screen.getByRole("img", { name: "Architecture Preview" })).toHaveAttribute("src", "blob:architecture-1");
+    await waitFor(() => expect(screen.getByRole("img", { name: "Architecture Preview" })).toHaveAttribute("src", "blob:architecture-1"));
     expect(screen.getByText("현재 상태: UPLOAD")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "항목 추가" }));

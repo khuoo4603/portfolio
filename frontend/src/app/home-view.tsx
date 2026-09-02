@@ -12,6 +12,7 @@ import HeroNetworkBackground from "./hero-network-background";
 import HeroSystemCard from "./hero-system-card";
 import { PortfolioFooter, SiteHeader } from "./portfolio-chrome";
 import ProjectsSection from "./projects-section";
+import TechnologyIcon from "./technology-icon";
 
 
 function lines(value: string, accentIndex?: number) {
@@ -168,16 +169,12 @@ function TechStackSection({ groups }: { groups: TechnologyGroup[] }) {
                     data-icon={technology.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
                     key={technology.id}
                   >
-                    {technology.iconUrl ? (
-                      <Image
-                        alt=""
-                        className="tech-icon"
-                        src={technology.iconUrl}
-                        width={24}
-                        height={24}
-                        unoptimized
-                      />
-                    ) : null}
+                    <TechnologyIcon
+                      className="tech-icon"
+                      name={technology.name}
+                      size={24}
+                      src={technology.iconUrl}
+                    />
                     <span>{technology.name}</span>
                   </li>
                 ))}
@@ -217,7 +214,7 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
                 {groups.education.map((item) => (
                   <li className="education-row education-info-row" key={item.id}>
                     {item.period ? <span className="education-period education-info-period type-small">{item.period}</span> : null}
-                    <strong className="education-info-title type-title">{item.title}</strong>
+                    <strong className="education-info-title type-body-lg">{item.title}</strong>
                     {item.detail ? <span className="education-program education-info-detail type-small">{item.detail}</span> : null}
                     {item.outcome ? <span className="education-status education-info-outcome type-small">{item.outcome}</span> : null}
                   </li>
@@ -233,7 +230,7 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
                 {groups.activity.map((activity) => (
                   <li className="activity-row education-info-row" key={activity.id}>
                     {activity.period ? <span className="activity-period education-info-period type-small">{activity.period}</span> : null}
-                    <strong className="education-info-title type-title">{activity.title}</strong>
+                    <strong className="education-info-title type-body-lg">{activity.title}</strong>
                     {activity.detail ? <span className="activity-description education-info-detail type-small">{activity.detail}</span> : null}
                     {activity.outcome ? <span className="education-info-outcome type-small">{activity.outcome}</span> : null}
                   </li>
@@ -249,7 +246,7 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
                 {groups.award.map((award) => (
                   <li className="award-row education-info-row" key={award.id}>
                     {award.period ? <span className="award-year education-info-period type-small">{award.period}</span> : null}
-                    <strong className="education-info-title type-title">{award.title}</strong>
+                    <strong className="education-info-title type-body-lg">{award.title}</strong>
                     {award.detail ? <span className="award-project education-info-detail type-small">{award.detail}</span> : null}
                     {award.outcome ? <span className="award-result education-info-outcome type-small">{award.outcome}</span> : null}
                   </li>
@@ -265,7 +262,7 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
                 {groups.certificate.map((certificate) => (
                   <li className="certificate-row education-info-row" key={certificate.id}>
                     {certificate.period ? <span className="certificate-period education-info-period type-small">{certificate.period}</span> : null}
-                    <strong className="education-info-title type-title">{certificate.title}</strong>
+                    <strong className="education-info-title type-body-lg">{certificate.title}</strong>
                     {certificate.detail ? <span className="certificate-organization education-info-detail type-small">{certificate.detail}</span> : null}
                     {certificate.outcome ? <span className="certificate-result education-info-outcome type-small">{certificate.outcome}</span> : null}
                   </li>

@@ -36,7 +36,7 @@
   border-radius: var(--radius-value-pill);
   background: var(--bg-elevated);
   color: var(--text-secondary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-small);
   font-weight: 700;
 }
@@ -123,8 +123,8 @@
   z-index: 2;
   width: 100%;
   margin: 0;
-  color: var(--ink-950);
-  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
   font-size: calc(var(--font-size-statement) + var(--space-4));
   font-weight: 700;
   line-height: var(--line-height-statement);
@@ -138,7 +138,6 @@
 }
 
 :global([data-theme="dark"]) .launcherTitle {
-  color: var(--ink-100);
   text-shadow: 0 1px 20px color-mix(in srgb, var(--ink-950) 18%, transparent);
 }
 
@@ -155,6 +154,12 @@
 .pageHeader h1,
 .pageHeader p {
   margin: 0;
+}
+
+.pageHeader h1 {
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
+  font-weight: 700;
 }
 
 .pageHeader p {
@@ -943,7 +948,8 @@
 
 .linkGroupHeading h2 {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
   font-weight: 600;
 }
 
@@ -1241,12 +1247,24 @@
   color: var(--text-secondary);
 }
 
+.sectionHeading h2 {
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
+  font-weight: 600;
+}
+
+.examHeading h2 {
+  color: var(--text-primary);
+  font-family: var(--font-family-primary);
+  font-weight: 600;
+}
+
 .textArea {
   min-height: calc(var(--space-160) + var(--space-80));
   padding: var(--space-16);
   margin-top: var(--space-20);
   resize: vertical;
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   line-height: var(--line-height-body);
   white-space: pre;
   overflow: auto;
@@ -1294,6 +1312,9 @@
 
 .listHeading h2 {
   margin: var(--space-16) 0 0;
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
+  font-weight: 600;
 }
 
 .questionCard {
@@ -1423,15 +1444,25 @@
 
 .answerPanel h2 {
   margin: 0 0 var(--space-16);
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
+  font-weight: 600;
 }
 
 .answerPreview {
   min-height: calc(var(--space-160) * 2);
   resize: vertical;
   overflow: auto;
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   line-height: var(--line-height-body);
   white-space: pre;
+}
+
+/* Compact Desktop의 Links Card 밀도 조정 */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .linkGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1023px) {
@@ -1523,8 +1554,12 @@
 }
 
 @media (max-width: 767px) {
-  .toolsShell :global(.primary-navigation) {
-    flex-wrap: wrap;
+  .profileBadge {
+    padding: var(--space-4);
+  }
+
+  .profileBadge > span:last-child {
+    display: none;
   }
 
   .pageHeader {

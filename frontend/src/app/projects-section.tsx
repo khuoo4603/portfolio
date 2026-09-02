@@ -27,6 +27,7 @@ export default function ProjectsSection({
   const projectRowRefs = useRef<Array<HTMLElement | null>>([]);
   const projectNodeRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const [activeProject, setActiveProject] = useState<string | null>(projects[0]?.slug ?? null);
+  const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -202,6 +203,8 @@ export default function ProjectsSection({
             {projects.map((project, index) => {
               const isActive = activeProject === project.slug;
               const showsYear = index === 0 || projects[index - 1].year !== project.year;
+              const thumbnailKey = `${project.id}:${project.thumbnailUrl ?? ""}`;
+              const showThumbnail = Boolean(project.thumbnailUrl) && !failedThumbnails.has(thumbnailKey);
 
               return (
                 <li
@@ -237,7 +240,7 @@ export default function ProjectsSection({
                       projectRowRefs.current[index] = row;
                     }}
                   >
-                    {project.thumbnailUrl ? (
+                    {showThumbnail && project.thumbnailUrl ? (
                       <a
                         className="project-thumbnail"
                         href={`/projects/${project.slug}`}
@@ -249,6 +252,7 @@ export default function ProjectsSection({
                           src={project.thumbnailUrl}
                           width={1280}
                           height={720}
+                          onError={() => setFailedThumbnails((current) => new Set(current).add(thumbnailKey))}
                           sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) 20vw, 260px"
                         />
                       </a>

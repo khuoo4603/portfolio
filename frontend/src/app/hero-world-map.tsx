@@ -13,11 +13,22 @@ export const EAST_ASIA_CROP = {
   lng: { min: 92, max: 157 },
 } as const;
 
+export const MOBILE_KOREA_CROP = {
+  lat: { min: 16, max: 59 },
+  lng: { min: 116, max: 138 },
+} as const;
+
 export const EAST_ASIA_ZOOM_SCALE = 1.75;
 
 export const EAST_ASIA_MAP_SIZE = {
   width: 1600,
   height: 900,
+} as const;
+
+export const EAST_ASIA_VIEWBOX = {
+  x: 0,
+  y: 0,
+  ...EAST_ASIA_MAP_SIZE,
 } as const;
 
 type GeoPoint = {
@@ -28,6 +39,13 @@ type GeoPoint = {
 type GeoRegion = {
   lat: { min: number; max: number };
   lng: { min: number; max: number };
+};
+
+export type MapViewBox = {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
 };
 
 // 단일 Equirectangular 좌표계 기반 위도·경도 투영
@@ -80,6 +98,51 @@ export function projectEastAsiaPoint({ lat, lng }: GeoPoint) {
 }
 
 export const EAST_ASIA_FOCUS_POINT = projectEastAsiaPoint(KOREA_ANCHOR);
+
+const TABLET_PORTRAIT_MAP_ASPECT = 4 / 5;
+const tabletPortraitViewBoxWidth = EAST_ASIA_MAP_SIZE.height * TABLET_PORTRAIT_MAP_ASPECT;
+
+// Tablet Portrait의 세로 Stage와 대한민국 중심을 함께 유지하는 Camera 영역
+export const TABLET_PORTRAIT_KOREA_VIEWBOX: MapViewBox = {
+  x: EAST_ASIA_FOCUS_POINT.x - tabletPortraitViewBoxWidth / 2,
+  y: 0,
+  width: tabletPortraitViewBoxWidth,
+  height: EAST_ASIA_MAP_SIZE.height,
+};
+
+// 지리 범위를 East Asia Asset ViewBox로 변환
+function calculateEastAsiaViewBox(region: GeoRegion): MapViewBox {
+  const topLeft = projectEastAsiaPoint({
+    lat: region.lat.max,
+    lng: region.lng.min,
+  });
+  const bottomRight = projectEastAsiaPoint({
+    lat: region.lat.min,
+    lng: region.lng.max,
+  });
+
+  return {
+    x: topLeft.x,
+    y: topLeft.y,
+    width: bottomRight.x - topLeft.x,
+    height: bottomRight.y - topLeft.y,
+  };
+}
+
+export const MOBILE_KOREA_VIEWBOX = calculateEastAsiaViewBox(MOBILE_KOREA_CROP);
+
+// 현재 Camera ViewBox 내부의 대한민국 상대 좌표 계산
+export function calculateEastAsiaFocusRatio(viewBox: MapViewBox) {
+  return {
+    x: (EAST_ASIA_FOCUS_POINT.x - viewBox.x) / viewBox.width,
+    y: (EAST_ASIA_FOCUS_POINT.y - viewBox.y) / viewBox.height,
+  };
+}
+
+// SVG viewBox Attribute 전용 좌표 문자열 구성
+export function formatMapViewBox(viewBox: MapViewBox) {
+  return [viewBox.x, viewBox.y, viewBox.width, viewBox.height].join(" ");
+}
 
 export const WORLD_MAP_GRID_HEIGHT = 280;
 export const WORLD_MAP_DOT_COUNT = 54643;
@@ -146,7 +209,7 @@ export function HeroEastAsiaMap() {
       focusable="false"
       preserveAspectRatio="xMidYMid meet"
       shapeRendering="geometricPrecision"
-      viewBox={`0 0 ${EAST_ASIA_MAP_SIZE.width} ${EAST_ASIA_MAP_SIZE.height}`}
+      viewBox={formatMapViewBox(EAST_ASIA_VIEWBOX)}
     >
       <g className="topology-focus-map-zoom">
         <use

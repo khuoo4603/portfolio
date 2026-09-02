@@ -91,7 +91,7 @@ export function LinkCard({
           fill
           unoptimized
           onError={handleImageError}
-          sizes="(min-width: 1440px) 244px, (min-width: 1024px) calc((100vw - 128px) / 5), (min-width: 768px) calc((100vw - 88px) / 3), calc(100vw - 40px)"
+          sizes="(min-width: 1440px) 244px, (min-width: 1200px) calc((100vw - 128px) / 5), (min-width: 1024px) calc((100vw - 112px) / 4), (min-width: 768px) calc((100vw - 88px) / 3), calc(100vw - 40px)"
           src={imageSrc}
         />
       </span>

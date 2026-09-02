@@ -68,13 +68,13 @@ export const PUBLIC_PORTFOLIO_FIXTURE: PublicPortfolio = {
     {
       id: 1, slug: "kyvc", name: "KYvC", year: 2026, tagline: "법인 KYC 자동 심사 서비스",
       description: "법인 서류를 기반으로 KYC 심사를 자동화하고 검증 결과를 전자 증명 형태로 연결하는 서비스",
-      cardRole: "백엔드 · 인프라", thumbnailUrl: "/images/profile/project-intro-kyvc.webp",
+      cardRole: "백엔드 · 인프라", thumbnailUrl: "/api/v1/public/media/projects/1/thumbnail",
       technologies: [technologies[0], technologies[2], technologies[3], technologies[6]],
     },
     {
       id: 2, slug: "shkutrack", name: "SHKUTrack", year: 2026, tagline: "성공회대학교 졸업 관리 서비스",
       description: "졸업요건 확인과 졸업 자료, 마이크로전공, 수강 전략을 하나의 흐름으로 관리하는 서비스",
-      cardRole: "풀스택 · 인프라", thumbnailUrl: "/images/profile/project-intro-skhutrack.webp",
+      cardRole: "풀스택 · 인프라", thumbnailUrl: "/api/v1/public/media/projects/2/thumbnail",
       technologies: [technologies[0], technologies[2], technologies[3], technologies[6], technologies[9], { id: 18, name: "Nginx", category: "INFRA", iconUrl: "/icons/tech/nginx.svg", displayOrder: 14 }],
     },
     {

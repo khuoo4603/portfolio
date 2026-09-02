@@ -60,6 +60,7 @@
   --color-bg-base: var(--bg-base);
   --color-bg-surface: var(--bg-surface);
   --color-bg-elevated: var(--bg-elevated);
+  --color-text-heading: var(--text-heading);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
@@ -81,9 +82,9 @@
   --text-display-lg: var(--font-size-display-lg);
   --text-display-lg--line-height: var(--line-height-display-lg);
   --text-display-lg--letter-spacing: var(--letter-spacing-display-lg);
-  --text-heading: var(--font-size-heading);
-  --text-heading--line-height: var(--line-height-heading);
-  --text-heading--letter-spacing: var(--letter-spacing-heading);
+  --text-heading-size: var(--font-size-heading);
+  --text-heading-size--line-height: var(--line-height-heading);
+  --text-heading-size--letter-spacing: var(--letter-spacing-heading);
   --text-title: var(--font-size-title);
   --text-title--line-height: var(--line-height-title);
   --text-title--letter-spacing: var(--letter-spacing-title);

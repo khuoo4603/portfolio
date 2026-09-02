@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 import type { ProjectArchitecture as ProjectArchitectureData } from "@/types/api";
 import styles from "./kyvc-detail.module.css";
 
@@ -14,6 +17,9 @@ export default function ProjectArchitecture({
   architectureImageUrl,
   architecture,
 }: ProjectArchitectureProps) {
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const imageFailed = architectureImageUrl === failedImageUrl;
+
   if (!architectureImageUrl && architecture.notes.length === 0) {
     return <p className={`${styles.emptyValue} type-body`}>-</p>;
   }
@@ -22,14 +28,21 @@ export default function ProjectArchitecture({
     <div className={styles.architectureVisual} data-architecture>
       {architectureImageUrl ? (
         <figure className={styles.architectureImageFrame}>
-          <Image
-            alt={`${projectName} 시스템 아키텍처`}
-            className={styles.architectureImage}
-            src={architectureImageUrl}
-            fill
-            sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) 84vw, 1040px"
-            unoptimized
-          />
+          {imageFailed ? (
+            <span className={`${styles.architectureImagePlaceholder} type-small`} role="img" aria-label="아키텍처 이미지 없음">
+              이미지 미리보기 없음
+            </span>
+          ) : (
+            <Image
+              alt={`${projectName} 시스템 아키텍처`}
+              className={styles.architectureImage}
+              fill
+              onError={() => setFailedImageUrl(architectureImageUrl)}
+              sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) 84vw, 1040px"
+              src={architectureImageUrl}
+              unoptimized
+            />
+          )}
         </figure>
       ) : null}
       {architecture.notes.length > 0 ? (

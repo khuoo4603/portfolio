@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Edit3, ImageIcon, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatApiError } from "@/lib/api/client";
 import type { ProjectCreateInput, ProjectSummary } from "./admin-types";
+import AdminImagePreview from "./admin-image-preview";
 import AdminActionDialog from "./admin-action-dialog";
 import {
   createProject,
@@ -212,9 +212,12 @@ export default function ProjectManagement() {
                   <tr key={project.id}>
                     <td data-label="Thumbnail">
                       <div className={styles.projectThumbnail}>
-                        {project.thumbnailUrl ? (
-                          <Image src={project.thumbnailUrl} alt="" fill sizes="72px" unoptimized />
-                        ) : <ImageIcon aria-label="Thumbnail 없음" />}
+                        <AdminImagePreview
+                          alt=""
+                          fallback={<ImageIcon aria-label="Thumbnail 없음" />}
+                          sizes="72px"
+                          src={project.thumbnailUrl}
+                        />
                       </div>
                     </td>
                     <td data-label="Name / Slug">

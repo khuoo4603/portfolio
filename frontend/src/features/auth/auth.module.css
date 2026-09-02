@@ -15,7 +15,7 @@
   min-height: 100dvh;
   overflow-x: clip;
   background: var(--bg-base);
-  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family: var(--font-family-primary);
 }
 
 :global([data-theme="dark"]) .authPage {
@@ -32,7 +32,7 @@
 .authPage :global(.type-title),
 .authPage :global(.type-body),
 .authPage :global(.type-small) {
-  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family: var(--font-family-primary);
 }
 
 /* 넓은 선형 Grid와 외곽 Fade 기반 인증 페이지 배경 */
@@ -86,7 +86,7 @@
   align-items: center;
   gap: var(--space-12);
   color: var(--text-secondary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-small);
   line-height: var(--line-height-small);
   letter-spacing: 0.02em;
@@ -126,7 +126,8 @@
   align-items: baseline;
   flex-wrap: nowrap;
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
   font-weight: 700;
   text-transform: none;
   white-space: nowrap;
@@ -811,7 +812,8 @@
 @media (max-width: 767px) {
   .authPage {
     min-height: 100dvh;
-    overflow: visible;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .authHeader {
@@ -849,7 +851,7 @@
 
   .loginSurface {
     width: 100%;
-    min-height: clamp(560px, 68dvh, 620px);
+    min-height: 0;
     align-self: stretch;
   }
 
