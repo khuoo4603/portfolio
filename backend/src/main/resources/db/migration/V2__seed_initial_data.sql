@@ -102,7 +102,7 @@ INSERT INTO projects (
     started_at,
     ended_at,
     team_size,
-    thumbnail_url,
+    thumbnail_storage_key,
     display_order,
     enabled
 )
@@ -119,7 +119,7 @@ VALUES
         DATE '2026-04-27',
         DATE '2026-08-18',
         9,
-        '/images/profile/project-intro-kyvc.webp',
+        NULL,
         1,
         TRUE
     ),
@@ -135,9 +135,9 @@ VALUES
         NULL,
         NULL,
         NULL,
-        '/images/profile/project-intro-skhutrack.webp',
+        NULL,
         2,
-        TRUE
+        FALSE
     ),
     (
         'shkuload',
@@ -153,8 +153,17 @@ VALUES
         NULL,
         NULL,
         3,
-        TRUE
+        FALSE
     );
+
+-- 기존 정적 대표 이미지를 단일 Persistent Storage로 복원할 Seed Key
+UPDATE projects
+SET thumbnail_storage_key = 'projects/' || id || '/thumbnail/2a22886f-378c-45cd-8548-4f93b9036594.webp'
+WHERE slug = 'kyvc';
+
+UPDATE projects
+SET thumbnail_storage_key = 'projects/' || id || '/thumbnail/383297dd-5394-5945-2c56-050f58034417.webp'
+WHERE slug = 'shkutrack';
 
 -- 프로젝트 기술 연결 초기값
 INSERT INTO project_technologies (
@@ -210,22 +219,22 @@ INSERT INTO project_contents (
 SELECT
     project.id,
     $json$[
-      {"title": "KFIP Toss 특별상 수상"},
-      {"title": "Toss PoC 협의 단계 진입"},
-      {"title": "BKL 법률 검토 단계 진입"}
+      {"title": "KFIP Toss 특별상 수상", "description": "Toss 특별상"},
+      {"title": "Toss PoC 협의 단계 진입", "description": "Toss PoC 협의 단계 진입"},
+      {"title": "BKL 법률 검토 단계 진입", "description": "BKL 법률 검토 단계 진입"}
     ]$json$::jsonb,
     $json$[
-      "기존 법인 KYC는 법인 정보와 각종 증빙서류를 제출하고 심사기관이 이를 반복적으로 검토하는 과정이 필요하다.",
-      "기관마다 동일하거나 유사한 법인 정보를 다시 확인해야 하고, 검증 완료된 결과를 다른 기관에서 그대로 활용하기 어렵다는 문제가 있다.",
-      "KYvC는 법인 KYC 신청과 제출서류 검토를 디지털화하고, 검증이 완료된 법인 정보를 Verifiable Credential 형태로 발급하여 이후 필요한 기관에서 Verifiable Presentation 방식으로 제출·검증할 수 있도록 하는 것을 목표로 했다."
+      {"body": "기존 법인 KYC는 법인 정보와 각종 증빙서류를 제출하고 심사기관이 이를 반복적으로 검토하는 과정이 필요하다."},
+      {"body": "기관마다 동일하거나 유사한 법인 정보를 다시 확인해야 하고, 검증 완료된 결과를 다른 기관에서 그대로 활용하기 어렵다는 문제가 있다."},
+      {"body": "KYvC는 법인 KYC 신청과 제출서류 검토를 디지털화하고, 검증이 완료된 법인 정보를 Verifiable Credential 형태로 발급하여 이후 필요한 기관에서 Verifiable Presentation 방식으로 제출·검증할 수 있도록 하는 것을 목표로 했다."}
     ]$json$::jsonb,
     $json$[
-      {"title": "법인 KYC 신청·서류 제출"},
-      {"title": "AI·관리자 KYC 심사"},
-      {"title": "VC 발급"},
-      {"title": "Wallet Credential 저장"},
-      {"title": "VP 제출·검증"},
-      {"title": "DID·Credential 상태 관리"}
+      {"title": "법인 KYC 신청·서류 제출", "description": "법인 KYC 신청·서류 제출"},
+      {"title": "AI·관리자 KYC 심사", "description": "AI·관리자 KYC 심사"},
+      {"title": "VC 발급", "description": "VC 발급"},
+      {"title": "Wallet Credential 저장", "description": "Wallet Credential 저장"},
+      {"title": "VP 제출·검증", "description": "VP 제출·검증"},
+      {"title": "DID·Credential 상태 관리", "description": "DID·Credential 상태 관리"}
     ]$json$::jsonb,
     $json$[
       {

@@ -2,20 +2,20 @@ package com.khuoo.portfolio.site.service;
 
 import com.khuoo.portfolio.common.error.ApiException;
 import com.khuoo.portfolio.common.error.ErrorCode;
-import com.khuoo.portfolio.site.domain.Project;
+import com.khuoo.portfolio.project.domain.Project;
 import com.khuoo.portfolio.site.dto.ExternalLinkResponse;
 import com.khuoo.portfolio.site.dto.PortfolioContentResponse;
 import com.khuoo.portfolio.site.dto.ProfileEntryResponse;
-import com.khuoo.portfolio.site.dto.ProjectCardResponse;
-import com.khuoo.portfolio.site.dto.ProjectContentResponse;
-import com.khuoo.portfolio.site.dto.ProjectMediaResponse;
-import com.khuoo.portfolio.site.dto.ProjectTechnologyResponse;
+import com.khuoo.portfolio.project.dto.ProjectCardResponse;
+import com.khuoo.portfolio.project.dto.ProjectContentResponse;
+import com.khuoo.portfolio.project.dto.ProjectMediaResponse;
+import com.khuoo.portfolio.project.dto.ProjectTechnologyResponse;
 import com.khuoo.portfolio.site.dto.PublicPortfolioResponse;
-import com.khuoo.portfolio.site.dto.PublicProjectResponse;
+import com.khuoo.portfolio.project.dto.PublicProjectResponse;
 import com.khuoo.portfolio.site.dto.ResumeMetadataResponse;
 import com.khuoo.portfolio.site.dto.TechnologyResponse;
-import com.khuoo.portfolio.site.repository.ProjectQueryRepository;
-import com.khuoo.portfolio.site.repository.ProjectTechnologyView;
+import com.khuoo.portfolio.project.repository.ProjectQueryRepository;
+import com.khuoo.portfolio.project.repository.ProjectTechnologyView;
 import com.khuoo.portfolio.site.repository.SiteQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -45,9 +45,9 @@ public class PublicSiteService {
         List<TechnologyResponse> portfolioTechnologies = siteQueryRepository.findPortfolioTechnologies().stream()
                 .map(TechnologyResponse::from)
                 .toList();
-        List<Project> projects = siteQueryRepository.findEnabledProjects();
+        List<Project> projects = projectQueryRepository.findEnabledProjects();
         List<Long> projectIds = projects.stream().map(Project::getId).toList();
-        Map<Long, List<ProjectTechnologyView>> cardTechnologies = siteQueryRepository
+        Map<Long, List<ProjectTechnologyView>> cardTechnologies = projectQueryRepository
                 .findCardTechnologies(projectIds)
                 .stream()
                 .collect(Collectors.groupingBy(ProjectTechnologyView::projectId));
@@ -90,7 +90,7 @@ public class PublicSiteService {
                 .orElseGet(ProjectContentResponse::empty);
         List<ProjectMediaResponse> media = projectQueryRepository.findMedia(project.getId())
                 .stream()
-                .map(ProjectMediaResponse::from)
+                .map(ProjectMediaResponse::fromPublic)
                 .toList();
 
         return PublicProjectResponse.from(project, technologies, content, media);

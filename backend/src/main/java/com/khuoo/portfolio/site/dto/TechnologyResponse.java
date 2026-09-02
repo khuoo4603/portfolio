@@ -2,7 +2,7 @@ package com.khuoo.portfolio.site.dto;
 
 import com.khuoo.portfolio.common.util.PortfolioEnums.TechnologyCategory;
 import com.khuoo.portfolio.site.repository.PortfolioTechnologyView;
-import com.khuoo.portfolio.site.repository.ProjectTechnologyView;
+import com.khuoo.portfolio.project.repository.ProjectTechnologyView;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 // 공개 포트폴리오와 프로젝트 카드 기술 응답

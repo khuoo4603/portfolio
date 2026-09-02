@@ -5,6 +5,7 @@ import com.khuoo.portfolio.file.config.FileStorageProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.nio.file.Files;
@@ -46,6 +47,17 @@ class FileStorageServiceTests {
         assertThat(storage.exists(stored.storageKey())).isTrue();
         assertThat(storage.open(stored.storageKey()).getContentAsByteArray()).isEqualTo(content);
         assertThat(Files.isRegularFile(root.resolve(stored.storageKey()))).isTrue();
+    }
+
+    // 신뢰 가능한 Seed 파일의 최초 복사와 기존 파일 비덮어쓰기 검증
+    @Test
+    void copiesSeedOnlyWhenStorageFileIsMissing() throws Exception {
+        String storageKey = "projects/7/thumbnail/seed.webp";
+
+        storage.copyIfMissing(new ByteArrayResource("first".getBytes()), storageKey);
+        storage.copyIfMissing(new ByteArrayResource("second".getBytes()), storageKey);
+
+        assertThat(storage.open(storageKey).getContentAsByteArray()).isEqualTo("first".getBytes());
     }
 
     // 검증 완료 JPEG·PNG·WEBP의 정규 확장자 UUID 저장 검증

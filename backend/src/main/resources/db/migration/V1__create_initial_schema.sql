@@ -122,18 +122,18 @@ CREATE TABLE projects (
     id BIGSERIAL NOT NULL,
     slug VARCHAR(100) NOT NULL,
     name VARCHAR(200) NOT NULL,
-    year SMALLINT NOT NULL,
-    tagline VARCHAR(300) NOT NULL,
-    description TEXT NOT NULL,
-    card_role VARCHAR(150) NOT NULL,
+    year SMALLINT,
+    tagline VARCHAR(300),
+    description TEXT,
+    card_role VARCHAR(150),
     summary TEXT,
     detail_role VARCHAR(200),
     started_at DATE,
     ended_at DATE,
     team_size SMALLINT,
-    thumbnail_url TEXT,
+    thumbnail_storage_key VARCHAR(255),
     display_order INTEGER NOT NULL DEFAULT 0,
-    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    enabled BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_projects PRIMARY KEY (id),
@@ -174,7 +174,8 @@ CREATE TABLE project_contents (
 CREATE TABLE project_media (
     id BIGSERIAL NOT NULL,
     project_id BIGINT NOT NULL,
-    image_url TEXT NOT NULL,
+    storage_key VARCHAR(255) NOT NULL,
+    media_type VARCHAR(30) NOT NULL,
     label VARCHAR(200),
     alt_text VARCHAR(300),
     display_order INTEGER NOT NULL DEFAULT 0,
@@ -184,6 +185,9 @@ CREATE TABLE project_media (
     CONSTRAINT fk_project_media_project
         FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
 );
+
+CREATE INDEX idx_project_media_project_type_order
+    ON project_media (project_id, media_type, display_order);
 
 -- 포트폴리오 외부 링크 테이블
 CREATE TABLE external_links (

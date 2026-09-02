@@ -27,12 +27,13 @@ class PortfolioEnumsTest {
                 + PortfolioEnums.PortfolioContentCode.values().length
                 + PortfolioEnums.ProfileEntryType.values().length
                 + PortfolioEnums.TechnologyCategory.values().length
+                + PortfolioEnums.ProjectMediaType.values().length
                 + PortfolioEnums.ToolLinkCategory.values().length
                 + PortfolioEnums.ServiceStatus.values().length
                 + PortfolioEnums.ErrorService.values().length;
 
-        assertThat(enumGroupCount).isEqualTo(15);
-        assertThat(totalCodeCount).isEqualTo(86);
+        assertThat(enumGroupCount).isEqualTo(16);
+        assertThat(totalCodeCount).isEqualTo(88);
         assertThat(PortfolioEnums.AccountRole.values())
                 .containsExactly(PortfolioEnums.AccountRole.ADMIN, PortfolioEnums.AccountRole.USER);
         assertThat(PortfolioEnums.AdminActionOperation.values()).hasSize(20);
@@ -67,6 +68,10 @@ class PortfolioEnumsTest {
                 PortfolioEnums.AdminActionTarget.PROJECT,
                 PortfolioEnums.AdminActionTarget.EXTERNAL_LINK,
                 PortfolioEnums.AdminActionTarget.ACCOUNT
+        );
+        assertThat(PortfolioEnums.ProjectMediaType.values()).containsExactly(
+                PortfolioEnums.ProjectMediaType.CAROUSEL,
+                PortfolioEnums.ProjectMediaType.CONTENT
         );
         assertThat(PortfolioEnums.ErrorService.values())
                 .containsExactly(PortfolioEnums.ErrorService.FRONTEND, PortfolioEnums.ErrorService.BACKEND);

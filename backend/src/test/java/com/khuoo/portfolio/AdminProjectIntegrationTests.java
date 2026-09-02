@@ -83,7 +83,10 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
         jdbcTemplate.update("INSERT INTO project_contents (project_id) VALUES (?)", projectId);
         Long technologyId = technology("Java", true);
         jdbcTemplate.update("INSERT INTO project_technologies VALUES (?, ?, TRUE, FALSE, 0)", projectId, technologyId);
-        jdbcTemplate.update("INSERT INTO project_media (project_id, image_url) VALUES (?, '/a.png')", projectId);
+        jdbcTemplate.update("""
+                INSERT INTO project_media (project_id, storage_key, media_type)
+                VALUES (?, 'projects/deleted/carousel/a.webp', 'CAROUSEL')
+                """, projectId);
         ActionChallenge deleteChallenge = challenge("PROJECT_DELETE", "PROJECT", projectId.toString());
         change(delete(PROJECTS_PATH + "/" + projectId), deleteChallenge, null)
                 .andExpect(status().isNoContent());
@@ -147,7 +150,7 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
         change(put(PROJECTS_PATH + "/" + projectId + "/content"), insert, first)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.results[0].title").value("First result"))
-                .andExpect(jsonPath("$.background[0]").value("First background"))
+                .andExpect(jsonPath("$.background[0].body").value("First background"))
                 .andExpect(jsonPath("$.features[0].title").value("First feature"))
                 .andExpect(jsonPath("$.development[0].items[0]").value("First API"))
                 .andExpect(jsonPath("$.architecture.services[0]").value("First service"))
@@ -205,12 +208,15 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
         ActionChallenge media = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
         change(put(PROJECTS_PATH + "/" + projectId + "/media"), media, """
                 {"items":[
-                  {"imageUrl":"/later.png","label":null,"altText":null,"displayOrder":2},
-                  {"imageUrl":"/first.png","label":"first","altText":"alt","displayOrder":0}
+                  {"imageUrl":"projects/%d/carousel/later.webp","label":null,"altText":null,"displayOrder":2},
+                  {"imageUrl":"projects/%d/carousel/first.webp","label":"first","altText":"alt","displayOrder":0}
                 ]}
-                """)
+                """.formatted(projectId, projectId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].imageUrl").value("/first.png"));
+                .andExpect(jsonPath("$.items[0].mediaType").value("CAROUSEL"))
+                .andExpect(jsonPath("$.items[0].imageUrl")
+                        .value(org.hamcrest.Matchers.startsWith(
+                                "/api/v1/admin/media/projects/" + projectId + "/")));
         String mediaChecksum = mediaChecksum(projectId);
         ActionChallenge invalidMedia = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
         change(put(PROJECTS_PATH + "/" + projectId + "/media"), invalidMedia,
@@ -296,9 +302,9 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
     private String contentBody(String prefix) {
         return """
                 {
-                  "results":[{"title":"%s result"}],
-                  "background":["%s background"],
-                  "features":[{"title":"%s feature"}],
+                  "results":[{"title":"%s result","description":"%s description"}],
+                  "background":[{"body":"%s background"}],
+                  "features":[{"title":"%s feature","description":"%s description"}],
                   "development":[{"title":"Backend","items":["%s API"]}],
                   "architecture":{"services":["%s service"]},
                   "engineering":[{
@@ -306,7 +312,7 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
                     "solution":"%s solution","result":"result"
                   }]
                 }
-                """.formatted(prefix, prefix, prefix, prefix, prefix, prefix, prefix);
+                """.formatted(prefix, prefix, prefix, prefix, prefix, prefix, prefix, prefix, prefix);
     }
 
     private Long project(String slug, boolean enabled) {
@@ -356,8 +362,8 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
 
     private String mediaChecksum(Long projectId) {
         return jdbcTemplate.queryForObject("""
-                SELECT md5(string_agg(image_url || coalesce(label, '') || coalesce(alt_text, '')
-                    || display_order::text, ',' ORDER BY display_order, id))
+                SELECT md5(string_agg(storage_key || media_type || coalesce(label, '')
+                    || coalesce(alt_text, '') || display_order::text, ',' ORDER BY display_order, id))
                 FROM project_media WHERE project_id = ?
                 """, String.class, projectId);
     }

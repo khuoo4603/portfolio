@@ -9,7 +9,7 @@ import com.khuoo.portfolio.common.util.PortfolioEnums.AdminActionOperation;
 import com.khuoo.portfolio.common.util.PortfolioEnums.AdminActionTarget;
 import com.khuoo.portfolio.site.domain.ResumeFile;
 import com.khuoo.portfolio.site.dto.ResumeUpdateResponse;
-import com.khuoo.portfolio.site.repository.ProjectRepository;
+import com.khuoo.portfolio.site.repository.SiteRepository;
 import com.khuoo.portfolio.site.repository.SiteQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -37,7 +37,7 @@ public class ResumeService {
     private static final byte[] PDF_HEADER = {'%', 'P', 'D', 'F'};
     private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 
-    private final ProjectRepository projectRepository;
+    private final SiteRepository siteRepository;
     private final SiteQueryRepository siteQueryRepository;
     private final ResumeStorage resumeStorage;
     private final AdminActionVerifier adminActionVerifier;
@@ -61,7 +61,7 @@ public class ResumeService {
                 null
         );
 
-        ResumeFile current = projectRepository.findResumeForUpdate().orElse(null);
+        ResumeFile current = siteRepository.findResumeForUpdate().orElse(null);
         String previousStorageKey = current == null ? null : current.getStorageKey();
         ResumeStorage.StoredFile stored = resumeStorage.store(file);
         registerCleanup(stored.storageKey(), previousStorageKey);
@@ -83,7 +83,7 @@ public class ResumeService {
                     OffsetDateTime.now(SERVICE_ZONE)
             );
         }
-        return ResumeUpdateResponse.from(projectRepository.saveResume(current));
+        return ResumeUpdateResponse.from(siteRepository.saveResume(current));
     }
 
     // 현재 이력서 Metadata와 공개 PDF Resource 조회
