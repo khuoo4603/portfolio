@@ -10,6 +10,9 @@ import java.util.Optional;
 // 공개 프로젝트 상세의 단건·조합 조회 경계
 public interface ProjectQueryRepository {
 
+    // 비공개를 포함한 관리자 프로젝트 전체 목록 조회
+    List<Project> findAllProjects();
+
     // 공개 상태 프로젝트 카드 기본정보 조회
     List<Project> findEnabledProjects();
 

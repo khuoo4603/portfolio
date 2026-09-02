@@ -43,7 +43,12 @@ public class GlobalExceptionHandler {
             errorLogService.recordBackend(request, errorCode);
         }
         return ResponseEntity.status(errorCode.status())
-                .body(ErrorResponse.from(errorCode, TraceContext.get(request)));
+                .body(new ErrorResponse(
+                        errorCode.code(),
+                        errorCode.message(),
+                        TraceContext.get(request),
+                        exception.getFieldErrors()
+                ));
     }
 
     // Request Body 필드 검증 오류 변환

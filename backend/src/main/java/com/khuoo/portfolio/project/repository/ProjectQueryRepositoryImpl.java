@@ -19,6 +19,17 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
 
     private final EntityManager entityManager;
 
+    // 표시 순서와 식별자 기준 관리자 프로젝트 전체 조회
+    @Override
+    public List<Project> findAllProjects() {
+        return entityManager.createQuery("""
+                        SELECT project
+                        FROM Project project
+                        ORDER BY project.displayOrder ASC, project.id ASC
+                        """, Project.class)
+                .getResultList();
+    }
+
     // 공개 상태와 표시 순서를 반영한 프로젝트 조회
     @Override
     public List<Project> findEnabledProjects() {

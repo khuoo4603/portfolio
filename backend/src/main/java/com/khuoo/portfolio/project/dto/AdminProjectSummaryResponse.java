@@ -11,29 +11,23 @@ public record AdminProjectSummaryResponse(
         @Schema(description = "프로젝트 식별자", example = "1")
         Long id,
 
-        @Schema(description = "프로젝트 slug", example = "kyvc")
-        String slug,
-
         @Schema(description = "프로젝트명", example = "KYvC")
         String name,
 
-        @Schema(description = "프로젝트 연도", example = "2026")
+        @Schema(description = "프로젝트 slug", example = "kyvc")
+        String slug,
+
+        @Schema(description = "프로젝트 연도", example = "2026", nullable = true)
         Short year,
 
-        @Schema(description = "프로젝트 한 줄 설명")
-        String tagline,
-
-        @Schema(description = "프로젝트 카드 역할")
-        String cardRole,
-
-        @Schema(description = "대표 이미지 경로", nullable = true)
-        String thumbnailUrl,
+        @Schema(description = "공개 활성 여부")
+        boolean enabled,
 
         @Schema(description = "표시 순서")
         int displayOrder,
 
-        @Schema(description = "공개 활성 여부")
-        boolean enabled,
+        @Schema(description = "대표 이미지 경로", nullable = true)
+        String thumbnailUrl,
 
         @Schema(description = "마지막 수정 시각")
         OffsetDateTime updatedAt
@@ -43,14 +37,12 @@ public record AdminProjectSummaryResponse(
     public static AdminProjectSummaryResponse from(Project project) {
         return new AdminProjectSummaryResponse(
                 project.getId(),
-                project.getSlug(),
                 project.getName(),
+                project.getSlug(),
                 project.getYear(),
-                project.getTagline(),
-                project.getCardRole(),
-                ProjectMediaUrl.adminThumbnail(project),
-                project.getDisplayOrder(),
                 project.isEnabled(),
+                project.getDisplayOrder(),
+                ProjectMediaUrl.adminThumbnail(project),
                 ResponseTime.kst(project.getUpdatedAt())
         );
     }

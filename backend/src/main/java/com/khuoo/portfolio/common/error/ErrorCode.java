@@ -26,6 +26,7 @@ public enum ErrorCode {
     ACCOUNT_EMAIL_CONFLICT(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
     ACCOUNT_LAST_ADMIN_PROTECTED(HttpStatus.CONFLICT, "마지막 활성 관리자 계정은 변경할 수 없습니다."),
     PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
+    PROJECT_PUBLISH_VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "프로젝트 공개에 필요한 정보를 확인하세요."),
     SITE_CONTENT_NOT_FOUND(HttpStatus.NOT_FOUND, "포트폴리오 콘텐츠를 찾을 수 없습니다."),
     PROFILE_ENTRY_NOT_FOUND(HttpStatus.NOT_FOUND, "프로필 항목을 찾을 수 없습니다."),
     TECHNOLOGY_NOT_FOUND(HttpStatus.NOT_FOUND, "기술 항목을 찾을 수 없습니다."),
