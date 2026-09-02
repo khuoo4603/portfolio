@@ -5,8 +5,10 @@ import com.khuoo.portfolio.site.domain.ExternalLink;
 import com.khuoo.portfolio.site.domain.PortfolioContent;
 import com.khuoo.portfolio.site.domain.PortfolioTechnology;
 import com.khuoo.portfolio.site.domain.ProfileEntry;
+import com.khuoo.portfolio.site.domain.ResumeFile;
 import com.khuoo.portfolio.site.domain.Technology;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SiteRepositoryImpl implements SiteRepository {
+
+    private static final short CURRENT_RESUME_ID = 1;
 
     private final EntityManager entityManager;
 
@@ -154,6 +158,28 @@ public class SiteRepositoryImpl implements SiteRepository {
     @Transactional
     public void deleteExternalLink(ExternalLink link) {
         entityManager.remove(link);
+    }
+
+    // 현재 이력서 Metadata Row의 배타 잠금 조회
+    @Override
+    public Optional<ResumeFile> findResumeForUpdate() {
+        return Optional.ofNullable(entityManager.find(
+                ResumeFile.class,
+                CURRENT_RESUME_ID,
+                LockModeType.PESSIMISTIC_WRITE
+        ));
+    }
+
+    // 신규 또는 기존 현재 이력서 Metadata 저장
+    @Override
+    @Transactional
+    public ResumeFile saveResume(ResumeFile resume) {
+        if (!entityManager.contains(resume)) {
+            entityManager.persist(resume);
+        }
+        entityManager.flush();
+        entityManager.refresh(resume);
+        return resume;
     }
 
     // 현재 Transaction 변경 SQL 즉시 반영

@@ -25,7 +25,7 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
-      max-request-size: 11MB
+      max-request-size: 100MB
   session:
     jdbc:
       initialize-schema: never

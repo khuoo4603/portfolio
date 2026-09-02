@@ -167,7 +167,7 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.serviceStatus[0].lastCheckedAt").value(
                         org.hamcrest.Matchers.endsWith("+09:00")))
                 .andExpect(jsonPath("$.serviceStatus[1].serviceKey").value("SHKUTRACK"))
-                .andExpect(jsonPath("$.siteSummary.publicProjects").value(3))
+                .andExpect(jsonPath("$.siteSummary.publicProjects").value(1))
                 .andExpect(jsonPath("$.siteSummary.portfolioTechnologies").value(12))
                 .andExpect(jsonPath("$.siteSummary.activeTools").value(2))
                 .andExpect(jsonPath("$.siteSummary.activeAccounts").value(1))
@@ -413,7 +413,11 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
         jdbcTemplate.update("DELETE FROM daily_visits");
         jdbcTemplate.update("DELETE FROM verification_challenges");
         jdbcTemplate.update("DELETE FROM accounts");
-        jdbcTemplate.update("UPDATE projects SET enabled = TRUE");
+        jdbcTemplate.update("""
+                UPDATE projects
+                SET enabled = CASE WHEN slug = 'kyvc' THEN TRUE ELSE FALSE END
+                WHERE slug IN ('kyvc', 'shkutrack', 'shkuload')
+                """);
     }
 
     // KST 날짜 경계와 보관기간 경계 재현용 고정 Clock

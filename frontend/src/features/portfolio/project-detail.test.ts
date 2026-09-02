@@ -39,9 +39,9 @@ describe("Project Detail Mapping", () => {
       "Docker Compose",
       "React",
     ]);
-    expect(model.content.results).toEqual([{ title: "Fixture 성과" }]);
-    expect(model.content.background).toEqual(["Fixture 문제 배경"]);
-    expect(model.content.features).toEqual([{ title: "Fixture 주요 기능" }]);
+    expect(model.content.results).toEqual([{ title: "Fixture 성과", description: "Fixture 성과 설명" }]);
+    expect(model.content.background).toEqual([{ title: "Fixture 배경 제목", body: "Fixture 문제 배경" }]);
+    expect(model.content.features).toEqual([{ title: "Fixture 주요 기능", description: "Fixture 기능 설명" }]);
     expect(model.content.development[0]).toEqual({ title: "Backend", items: ["Fixture Backend 작업"] });
     expect(model.content.engineering[0].title).toBe("Fixture 문제 해결");
     expect(model.sections.map((section) => section.id)).toEqual([
@@ -53,17 +53,11 @@ describe("Project Detail Mapping", () => {
     ]);
   });
 
-  it("Summary가 없으면 실제 tagline을 사용하고 빈 Content에도 고정 Section을 유지", () => {
+  it("Summary가 없으면 실제 tagline을 사용하고 빈 Content Section을 만들지 않음", () => {
     const model = mapProjectDetail(EMPTY_PROJECT_FIXTURE);
 
     expect(model.summaryText).toBe("실제 Fixture tagline");
-    expect(model.sections.map((section) => section.id)).toEqual([
-      "detail-stack-result",
-      "detail-background",
-      "detail-development",
-      "detail-architecture",
-      "detail-engineering",
-    ]);
+    expect(model.sections).toEqual([]);
     expect(model.media).toEqual([]);
     expect(model.period).toBeNull();
   });
@@ -79,8 +73,21 @@ describe("Project Detail Mapping", () => {
     expect(model.media[1]).toMatchObject({ label: "화면 2", altText: null });
   });
 
-  it("Backend Architecture Node Group이 하나라도 있을 때만 노출 대상으로 판단", () => {
-    expect(hasProjectArchitecture({})).toBe(false);
-    expect(hasProjectArchitecture({ clients: ["Fixture Client"] })).toBe(true);
+  it("Architecture Note가 하나라도 있을 때만 노출 대상으로 판단", () => {
+    expect(hasProjectArchitecture({ notes: [] })).toBe(false);
+    expect(hasProjectArchitecture({ notes: [{ title: "Runtime", body: "Docker" }] })).toBe(true);
+  });
+
+  it("성과·기능 Description이 없어도 실제 Title을 보존", () => {
+    const model = mapProjectDetail({
+      ...KYVC_PROJECT_FIXTURE,
+      content: {
+        ...KYVC_PROJECT_FIXTURE.content,
+        results: [{ title: "Title only", description: null }],
+        features: [{ title: "Feature only", description: null }],
+      },
+    });
+    expect(model.content.results).toEqual([{ title: "Title only", description: null }]);
+    expect(model.content.features).toEqual([{ title: "Feature only", description: null }]);
   });
 });

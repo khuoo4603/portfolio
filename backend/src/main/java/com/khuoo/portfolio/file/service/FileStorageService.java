@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -56,6 +57,36 @@ public class FileStorageService {
         } catch (IOException exception) {
             deleteQuietly(temporary);
             deleteQuietly(target);
+            throw new ApiException(ErrorCode.COMMON_INTERNAL_ERROR, exception);
+        }
+    }
+
+    // 신뢰 가능한 Classpath Seed 파일의 멱등 복원
+    public void copyIfMissing(Resource source, String storageKey) {
+        if (source == null) {
+            throw new ApiException(ErrorCode.COMMON_INTERNAL_ERROR);
+        }
+
+        Path target = resolve(storageKey);
+        if (Files.isRegularFile(target)) {
+            return;
+        }
+
+        Path temporary = null;
+        try {
+            Files.createDirectories(target.getParent());
+            temporary = Files.createTempFile(target.getParent(), ".seed-", ".tmp");
+            try (InputStream input = source.getInputStream()) {
+                Files.copy(input, temporary, StandardCopyOption.REPLACE_EXISTING);
+            }
+            move(temporary, target);
+        } catch (FileAlreadyExistsException exception) {
+            deleteQuietly(temporary);
+            if (!Files.isRegularFile(target)) {
+                throw new ApiException(ErrorCode.COMMON_INTERNAL_ERROR, exception);
+            }
+        } catch (IOException exception) {
+            deleteQuietly(temporary);
             throw new ApiException(ErrorCode.COMMON_INTERNAL_ERROR, exception);
         }
     }

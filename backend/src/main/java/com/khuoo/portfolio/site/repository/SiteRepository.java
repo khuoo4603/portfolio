@@ -5,6 +5,7 @@ import com.khuoo.portfolio.site.domain.ExternalLink;
 import com.khuoo.portfolio.site.domain.PortfolioContent;
 import com.khuoo.portfolio.site.domain.PortfolioTechnology;
 import com.khuoo.portfolio.site.domain.ProfileEntry;
+import com.khuoo.portfolio.site.domain.ResumeFile;
 import com.khuoo.portfolio.site.domain.Technology;
 
 import java.util.Collection;
@@ -52,6 +53,12 @@ public interface SiteRepository {
 
     // 외부 링크 삭제
     void deleteExternalLink(ExternalLink link);
+
+    // 현재 이력서 Metadata 쓰기 잠금 조회
+    Optional<ResumeFile> findResumeForUpdate();
+
+    // 현재 이력서 Metadata 저장
+    ResumeFile saveResume(ResumeFile resume);
 
     // 변경 SQL 즉시 반영
     void flush();

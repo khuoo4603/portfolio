@@ -62,7 +62,7 @@ describe("Admin Session Gate와 Sidebar", () => {
 
     const sidebar = screen.getByLabelText("관리자 Sidebar 공간");
     const navigationMenu = within(sidebar).getByRole("navigation", { name: "관리자 메뉴" });
-    for (const label of ["Dashboard", "Site", "Accounts", "Tools", "Logs"]) {
+    for (const label of ["Dashboard", "Site", "Projects", "Accounts", "Tools", "Logs"]) {
       expect(within(navigationMenu).getByText(label)).toBeInTheDocument();
     }
     expect(within(sidebar).getAllByText(admin.name).length).toBeGreaterThan(0);
@@ -70,6 +70,18 @@ describe("Admin Session Gate와 Sidebar", () => {
     expect(within(sidebar).getByText(admin.role)).toBeInTheDocument();
     expect(screen.getByText("관리 본문")).toBeInTheDocument();
     expect(screen.queryByText("admin@portfolio.local")).not.toBeInTheDocument();
+  });
+
+  it("Mobile Drawer에도 동일한 6개 관리자 메뉴를 제공", () => {
+    authState({ status: "authenticated", user: admin, error: null, refresh: vi.fn(), clear: vi.fn() });
+    render(<AdminShell><div>관리 본문</div></AdminShell>);
+
+    fireEvent.click(screen.getByRole("button", { name: "관리자 메뉴 열기" }));
+    const drawer = screen.getByRole("dialog", { name: "모바일 관리자 메뉴" });
+    const navigationMenu = within(drawer).getByRole("navigation", { name: "관리자 메뉴" });
+    for (const label of ["Dashboard", "Site", "Projects", "Accounts", "Tools", "Logs"]) {
+      expect(within(navigationMenu).getByRole("link", { name: label })).toBeInTheDocument();
+    }
   });
 
   it("Logout 성공 시 실제 요청·Session 초기화 후 /login으로 이동하고 중복 요청을 차단", async () => {

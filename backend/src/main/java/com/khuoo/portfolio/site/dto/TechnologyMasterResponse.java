@@ -1,5 +1,6 @@
 package com.khuoo.portfolio.site.dto;
 
+import com.khuoo.portfolio.common.util.ResponseTime;
 import com.khuoo.portfolio.common.util.PortfolioEnums.TechnologyCategory;
 import com.khuoo.portfolio.site.domain.Technology;
 import io.swagger.v3.oas.annotations.media.Schema;

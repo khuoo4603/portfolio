@@ -3,7 +3,6 @@ package com.khuoo.portfolio.site.repository;
 import com.khuoo.portfolio.site.domain.ExternalLink;
 import com.khuoo.portfolio.site.domain.PortfolioContent;
 import com.khuoo.portfolio.site.domain.ProfileEntry;
-import com.khuoo.portfolio.site.domain.Project;
 import com.khuoo.portfolio.site.domain.ResumeFile;
 import com.khuoo.portfolio.site.domain.Technology;
 import com.khuoo.portfolio.site.domain.PortfolioTechnology;
@@ -64,44 +63,6 @@ public class SiteQueryRepositoryImpl implements SiteQueryRepository {
                         WHERE technology.enabled = true
                         ORDER BY mapping.displayOrder ASC, technology.id ASC
                         """, PortfolioTechnologyView.class)
-                .getResultList();
-    }
-
-    // 공개 상태와 표시 순서를 반영한 프로젝트 조회
-    @Override
-    public List<Project> findEnabledProjects() {
-        return entityManager.createQuery("""
-                        SELECT project
-                        FROM Project project
-                        WHERE project.enabled = true
-                        ORDER BY project.displayOrder ASC, project.id ASC
-                        """, Project.class)
-                .getResultList();
-    }
-
-    // 공개 프로젝트 전체의 카드 노출 기술 일괄 조회
-    @Override
-    public List<ProjectTechnologyView> findCardTechnologies(List<Long> projectIds) {
-        if (projectIds.isEmpty()) {
-            return List.of();
-        }
-        return entityManager.createQuery("""
-                        SELECT new com.khuoo.portfolio.site.repository.ProjectTechnologyView(
-                            mapping.projectId,
-                            technology.id,
-                            technology.name,
-                            technology.category,
-                            technology.iconUrl,
-                            mapping.highlighted,
-                            mapping.displayOrder
-                        )
-                        FROM ProjectTechnology mapping
-                        JOIN Technology technology ON technology.id = mapping.technologyId
-                        WHERE mapping.projectId IN :projectIds
-                          AND mapping.showOnCard = true
-                        ORDER BY mapping.projectId ASC, mapping.displayOrder ASC, technology.id ASC
-                        """, ProjectTechnologyView.class)
-                .setParameter("projectIds", projectIds)
                 .getResultList();
     }
 

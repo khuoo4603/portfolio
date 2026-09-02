@@ -13,6 +13,7 @@ export const KYVC_PROJECT_FIXTURE: PublicProjectDetail = {
   endedAt: "2026-08-18",
   teamSize: 9,
   thumbnailUrl: "/fixture/kyvc.webp",
+  architectureImageUrl: "/fixture/kyvc-architecture.png",
   technologies: [
     { id: 1, name: "Java", category: "LANGUAGE", iconUrl: "/icons/tech/java.svg", highlighted: true, displayOrder: 1 },
     { id: 2, name: "Spring Boot", category: "BACKEND", iconUrl: "/icons/tech/spring-boot.svg", highlighted: true, displayOrder: 2 },
@@ -21,16 +22,15 @@ export const KYVC_PROJECT_FIXTURE: PublicProjectDetail = {
     { id: 5, name: "React", category: "FRONTEND", iconUrl: "/icons/tech/react.svg", highlighted: false, displayOrder: 5 },
   ],
   content: {
-    results: [{ title: "Fixture 성과" }],
-    background: ["Fixture 문제 배경"],
-    features: [{ title: "Fixture 주요 기능" }],
+    results: [{ title: "Fixture 성과", description: "Fixture 성과 설명" }],
+    background: [{ title: "Fixture 배경 제목", body: "Fixture 문제 배경" }],
+    features: [{ title: "Fixture 주요 기능", description: "Fixture 기능 설명" }],
     development: [{ title: "Backend", items: ["Fixture Backend 작업"] }],
     architecture: {
-      clients: ["User Web", "Admin Web", "Core Admin"],
-      services: ["Backend", "Backend Admin", "Core", "Core Admin API"],
-      dataAndExternal: ["Business Database", "Core Database", "OCR / LLM", "XRPL", "Android Wallet"],
-      runtime: ["Nginx", "Docker / Docker Compose"],
-      delivery: ["GitHub Actions", "GHCR", "Self-hosted Runner"],
+      notes: [
+        { title: "인프라 / 실행 환경", body: "Synology DSM Reverse Proxy → Nginx → Docker / Docker Compose" },
+        { title: "인프라 / 배포", body: "GitHub Actions → GHCR → Self-hosted Runner → Docker / Docker Compose" },
+      ],
     },
     engineering: [{
       title: "Fixture 문제 해결",
@@ -55,13 +55,14 @@ export const EMPTY_PROJECT_FIXTURE: PublicProjectDetail = {
   endedAt: null,
   teamSize: null,
   thumbnailUrl: null,
+  architectureImageUrl: null,
   technologies: [],
   content: {
     results: [],
     background: [],
     features: [],
     development: [],
-    architecture: {},
+    architecture: { notes: [] },
     engineering: [],
   },
   media: [],
@@ -78,8 +79,7 @@ export const MEDIA_PROJECT_FIXTURE: PublicProjectDetail = {
   content: {
     ...EMPTY_PROJECT_FIXTURE.content,
     architecture: {
-      clients: ["Fixture Client"],
-      services: ["Fixture Service"],
+      notes: [{ title: "Fixture", body: "Fixture architecture note" }],
     },
   },
   media: [

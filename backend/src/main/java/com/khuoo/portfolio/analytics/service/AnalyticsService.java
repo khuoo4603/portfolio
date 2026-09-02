@@ -2,7 +2,7 @@ package com.khuoo.portfolio.analytics.service;
 
 import com.khuoo.portfolio.analytics.dto.PageViewRequest;
 import com.khuoo.portfolio.analytics.repository.VisitRepository;
-import com.khuoo.portfolio.site.repository.ProjectQueryRepository;
+import com.khuoo.portfolio.project.repository.ProjectQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

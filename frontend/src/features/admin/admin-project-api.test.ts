@@ -1,15 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiRequest } from "@/lib/api/client";
-import type { ProjectContent, ProjectCreateInput } from "./admin-types";
+import type { ProjectSaveInput } from "./admin-types";
 import {
   createProject,
   deleteProject,
   getAdminProject,
+  getAdminProjects,
   projectActionBindings,
-  replaceProjectContent,
-  replaceProjectMedia,
-  replaceProjectTechnologies,
-  updateProject,
+  saveProject,
   updateProjectStatus,
 } from "./admin-project-api";
 
@@ -20,25 +18,50 @@ const headers = {
   "X-Admin-Challenge-Id": "challenge-project",
   "X-Admin-Verification-Code": "654321",
 };
-const project: ProjectCreateInput = {
-  slug: "project-one", name: "Project One", year: 2026, tagline: "Tagline",
-  description: "Description", cardRole: "Backend", summary: null, detailRole: null,
-  startedAt: null, endedAt: null, teamSize: null, thumbnailUrl: null,
-  displayOrder: 1, enabled: false,
-};
-const content: ProjectContent = {
-  results: [{ title: "Result" }], background: ["Background"], features: [{ title: "Feature" }],
-  development: [{ title: "Backend", items: ["API"] }],
-  architecture: { clients: ["Web"], services: ["API"], dataAndExternal: ["DB"], runtime: ["Docker"], delivery: ["CI"] },
-  engineering: [{ title: "Problem", summary: "Summary", problem: "P", solution: "S", result: "R" }],
+
+const saveInput: ProjectSaveInput = {
+  metadata: {
+    project: {
+      slug: "project-one",
+      name: "Project One",
+      year: 2026,
+      tagline: null,
+      description: null,
+      cardRole: null,
+      summary: null,
+      detailRole: null,
+      startedAt: null,
+      endedAt: null,
+      teamSize: null,
+      displayOrder: 1,
+    },
+    content: {
+      results: [{ title: "Result", description: "Description" }],
+      background: [{ title: "Background", body: "Body" }],
+      features: [{ title: "Feature", description: "Description" }],
+      development: [{ title: "Backend", items: ["API"] }],
+      architecture: { notes: [{ title: "Runtime", body: "Docker" }] },
+      engineering: [{ title: "Problem", summary: null, problem: "P", solution: "S", result: "R" }],
+    },
+    technologies: [{ technologyId: 3, showOnCard: true, highlighted: true, displayOrder: 0 }],
+    thumbnailMode: "UPLOAD",
+    architectureImageMode: "UPLOAD",
+    mediaChanges: [{ clientKey: "new-1", action: "UPLOAD", uploadIndex: 0, displayOrder: 0 }],
+  },
+  thumbnail: new File(["thumbnail"], "thumbnail.webp", { type: "image/webp" }),
+  architectureImage: new File(["architecture"], "architecture.png", { type: "image/png" }),
+  mediaFiles: [new File(["media"], "media.webp", { type: "image/webp" })],
 };
 
 describe("Admin Project API 계약", () => {
   beforeEach(() => vi.mocked(apiRequest).mockReset());
 
-  it("Summary와 분리된 실제 Detail Endpoint를 조회", () => {
+  it("독립 목록과 Editor Detail Endpoint를 조회", () => {
+    getAdminProjects();
     getAdminProject(12);
-    expect(apiRequest).toHaveBeenCalledWith("/admin/site/projects/12");
+
+    expect(apiRequest).toHaveBeenNthCalledWith(1, "/admin/projects");
+    expect(apiRequest).toHaveBeenNthCalledWith(2, "/admin/projects/12");
   });
 
   it("Create·Update·Status·Delete Binding을 정확히 구성", () => {
@@ -48,33 +71,30 @@ describe("Admin Project API 계약", () => {
     expect(projectActionBindings.delete(12)).toEqual({ operation: "PROJECT_DELETE", targetType: "PROJECT", targetId: "12" });
   });
 
-  it("기본정보 CRUD와 상태 Endpoint를 합치지 않음", () => {
-    createProject(project, verification);
-    updateProject(12, { name: "Updated" }, verification);
+  it("최소 생성·상태·삭제를 독립 Project Endpoint로 요청", () => {
+    createProject({ name: "Project One", slug: "project-one" }, verification);
     updateProjectStatus(12, true, verification);
     deleteProject(12, verification);
-    expect(apiRequest).toHaveBeenNthCalledWith(1, "/admin/site/projects", { method: "POST", headers, json: project });
-    expect(apiRequest).toHaveBeenNthCalledWith(2, "/admin/site/projects/12", { method: "PATCH", headers, json: { name: "Updated" } });
-    expect(apiRequest).toHaveBeenNthCalledWith(3, "/admin/site/projects/12/status", { method: "PATCH", headers, json: { enabled: true } });
-    expect(apiRequest).toHaveBeenNthCalledWith(4, "/admin/site/projects/12", { method: "DELETE", headers });
+
+    expect(apiRequest).toHaveBeenNthCalledWith(1, "/admin/projects", { method: "POST", headers, json: { name: "Project One", slug: "project-one" } });
+    expect(apiRequest).toHaveBeenNthCalledWith(2, "/admin/projects/12/status", { method: "PATCH", headers, json: { enabled: true } });
+    expect(apiRequest).toHaveBeenNthCalledWith(3, "/admin/projects/12", { method: "DELETE", headers });
   });
 
-  it("고정 6개 Content를 원래 구조로 PUT", () => {
-    replaceProjectContent(12, content, verification);
-    expect(apiRequest).toHaveBeenCalledWith("/admin/site/projects/12/content", { method: "PUT", headers, json: content });
-    expect(Object.keys(content)).toEqual(["results", "background", "features", "development", "architecture", "engineering"]);
-  });
+  it("Metadata·Thumbnail·Architecture Image·Media를 하나의 Multipart PUT으로 저장", async () => {
+    saveProject(12, saveInput, verification);
 
-  it("Technology Wrapper와 빈 목록을 그대로 PUT", () => {
-    replaceProjectTechnologies(12, [{ technologyId: 3, showOnCard: true, highlighted: true, displayOrder: 1 }], verification);
-    replaceProjectTechnologies(12, [], verification);
-    expect(apiRequest).toHaveBeenNthCalledWith(1, "/admin/site/projects/12/technologies", { method: "PUT", headers, json: { items: [{ technologyId: 3, showOnCard: true, highlighted: true, displayOrder: 1 }] } });
-    expect(apiRequest).toHaveBeenNthCalledWith(2, "/admin/site/projects/12/technologies", { method: "PUT", headers, json: { items: [] } });
-  });
+    expect(apiRequest).toHaveBeenCalledTimes(1);
+    const [path, options] = vi.mocked(apiRequest).mock.calls[0];
+    expect(path).toBe("/admin/projects/12");
+    expect(options).toMatchObject({ method: "PUT", headers });
+    expect(options?.body).toBeInstanceOf(FormData);
 
-  it("Media를 multipart 없이 URL Item Wrapper로 PUT", () => {
-    const items = [{ imageUrl: "/images/project.webp", label: "화면", altText: "프로젝트 화면", displayOrder: 1 }];
-    replaceProjectMedia(12, items, verification);
-    expect(apiRequest).toHaveBeenCalledWith("/admin/site/projects/12/media", { method: "PUT", headers, json: { items } });
+    const formData = options?.body as FormData;
+    const metadata = formData.get("metadata") as Blob;
+    expect(JSON.parse(await metadata.text())).toEqual(saveInput.metadata);
+    expect(formData.get("thumbnail")).toBe(saveInput.thumbnail);
+    expect(formData.get("architectureImage")).toBe(saveInput.architectureImage);
+    expect(formData.getAll("mediaFiles")).toEqual(saveInput.mediaFiles);
   });
 });

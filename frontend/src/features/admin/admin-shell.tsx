@@ -7,6 +7,7 @@ import {
   LogOut,
   Menu,
   PanelTop,
+  PanelsTopLeft,
   ScrollText,
   UserRound,
   Users,
@@ -24,6 +25,7 @@ import styles from "./admin.module.css";
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/site", label: "Site", icon: PanelTop },
+  { href: "/admin/projects", label: "Projects", icon: PanelsTopLeft },
   { href: "/admin/accounts", label: "Accounts", icon: Users },
   { href: "/admin/tools", label: "Tools", icon: Wrench },
   { href: "/admin/logs", label: "Logs", icon: ScrollText },

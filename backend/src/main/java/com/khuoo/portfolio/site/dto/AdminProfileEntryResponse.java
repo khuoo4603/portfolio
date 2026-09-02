@@ -1,5 +1,6 @@
 package com.khuoo.portfolio.site.dto;
 
+import com.khuoo.portfolio.common.util.ResponseTime;
 import com.khuoo.portfolio.common.util.PortfolioEnums.ProfileEntryType;
 import com.khuoo.portfolio.site.domain.ProfileEntry;
 import io.swagger.v3.oas.annotations.media.Schema;

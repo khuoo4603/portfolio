@@ -102,7 +102,7 @@ INSERT INTO projects (
     started_at,
     ended_at,
     team_size,
-    thumbnail_url,
+    thumbnail_storage_key,
     display_order,
     enabled
 )
@@ -119,7 +119,7 @@ VALUES
         DATE '2026-04-27',
         DATE '2026-08-18',
         9,
-        '/images/profile/project-intro-kyvc.webp',
+        NULL,
         1,
         TRUE
     ),
@@ -135,9 +135,9 @@ VALUES
         NULL,
         NULL,
         NULL,
-        '/images/profile/project-intro-skhutrack.webp',
+        NULL,
         2,
-        TRUE
+        FALSE
     ),
     (
         'shkuload',
@@ -153,8 +153,17 @@ VALUES
         NULL,
         NULL,
         3,
-        TRUE
+        FALSE
     );
+
+-- 기존 정적 대표 이미지를 단일 Persistent Storage로 복원할 Seed Key
+UPDATE projects
+SET thumbnail_storage_key = 'projects/' || id || '/thumbnail/2a22886f-378c-45cd-8548-4f93b9036594.webp'
+WHERE slug = 'kyvc';
+
+UPDATE projects
+SET thumbnail_storage_key = 'projects/' || id || '/thumbnail/383297dd-5394-5945-2c56-050f58034417.webp'
+WHERE slug = 'shkutrack';
 
 -- 프로젝트 기술 연결 초기값
 INSERT INTO project_technologies (
@@ -205,19 +214,20 @@ INSERT INTO project_contents (
     features_json,
     development_json,
     architecture_json,
+    architecture_image_storage_key,
     engineering_json
 )
 SELECT
     project.id,
     $json$[
-      {"title": "KFIP Toss 특별상 수상"},
+      {"title": "KFIP Toss 특별상 수상", "description": "Toss 특별상"},
       {"title": "Toss PoC 협의 단계 진입"},
       {"title": "BKL 법률 검토 단계 진입"}
     ]$json$::jsonb,
     $json$[
-      "기존 법인 KYC는 법인 정보와 각종 증빙서류를 제출하고 심사기관이 이를 반복적으로 검토하는 과정이 필요하다.",
-      "기관마다 동일하거나 유사한 법인 정보를 다시 확인해야 하고, 검증 완료된 결과를 다른 기관에서 그대로 활용하기 어렵다는 문제가 있다.",
-      "KYvC는 법인 KYC 신청과 제출서류 검토를 디지털화하고, 검증이 완료된 법인 정보를 Verifiable Credential 형태로 발급하여 이후 필요한 기관에서 Verifiable Presentation 방식으로 제출·검증할 수 있도록 하는 것을 목표로 했다."
+      {"body": "기존 법인 KYC는 법인 정보와 각종 증빙서류를 제출하고 심사기관이 이를 반복적으로 검토하는 과정이 필요합니다."},
+      {"body": "기관마다 동일하거나 유사한 법인 정보를 다시 확인해야 하며, 검증 완료된 결과를 다른 기관에서 그대로 활용하기 어렵다는 문제가 있습니다."},
+      {"body": "KYvC는 법인 KYC 신청과 제출서류 검토를 디지털화하고, 검증이 완료된 법인 정보를 Verifiable Credential 형태로 발급하여 이후 필요한 기관에서 Verifiable Presentation 방식으로 제출·검증할 수 있도록 하는 것을 목표로 했습니다."}
     ]$json$::jsonb,
     $json$[
       {"title": "법인 KYC 신청·서류 제출"},
@@ -261,40 +271,46 @@ SELECT
       }
     ]$json$::jsonb,
     $json$ {
-      "clients": ["User Web", "Admin Web", "Core Admin"],
-      "services": ["Backend", "Backend Admin", "Core", "Core Admin API"],
-      "dataAndExternal": ["Business Database", "Core Database", "OCR / LLM", "XRPL", "Android Wallet"],
-      "runtime": ["Synology DSM Reverse Proxy", "Nginx", "Docker / Docker Compose"],
-      "delivery": ["GitHub Actions", "GHCR", "Self-hosted Runner", "Docker / Docker Compose"]
+      "notes": [
+        {
+          "title": "인프라 / 실행 환경",
+          "body": "Synology DSM Reverse Proxy → Nginx → Docker / Docker Compose"
+        },
+        {
+          "title": "인프라 / 배포",
+          "body": "GitHub Actions → GHCR → Self-hosted Runner → Docker / Docker Compose"
+        }
+      ]
     }$json$::jsonb,
+    'projects/' || project.id || '/architecture/b2051589-7615-4bc8-aec5-f48f6ec84653.png',
     $json$[
       {
         "title": "업무 서비스와 Core 기술 서비스의 책임 분리",
         "summary": "KYC 업무 로직과 DID·VC·VP·AI 기술 기능을 분리해 서비스 간 책임과 변경 범위를 명확하게 구성",
-        "problem": "KYC 업무 처리와 DID, VC, VP, XRPL, AI 평가 같은 기술 기능이 하나의 서비스에 강하게 결합되면 업무 기능 변경과 기술 Provider 변경이 서로 영향을 주고 서비스 책임이 불명확해질 수 있었다.",
-        "solution": "사용자 업무 Backend와 Core 기술 서비스를 분리하고 Backend가 필요한 기술 처리만 Core에 요청하도록 책임을 나눴다. 관리자 업무 API와 Core 운영 API 역시 별도로 구분하고 관리자 업무 Backend가 Core를 직접 호출하지 않도록 데이터 책임을 분리했다.",
-        "result": "사용자 업무, 관리자 업무, Core 기술 기능의 변경 범위를 분리하고 서비스 간 통신 경계를 명확하게 구성했다. DID·VC·VP·AI 처리 방식이 변경되더라도 업무 Backend에 미치는 영향을 줄일 수 있는 구조를 확보했다."
+        "problem": "KYC 업무 처리와 DID, VC, VP, XRPL, AI 평가 같은 기술 기능이 하나의 서비스에 강하게 결합되면 업무 기능 변경과 기술 Provider 변경이 서로 영향을 주고 서비스 책임이 불명확해질 수 있었습니다.",
+        "solution": "사용자 업무 Backend와 Core 기술 서비스를 분리하고 Backend가 필요한 기술 처리만 Core에 요청하도록 책임을 나눴습니다. 관리자 업무 API와 Core 운영 API 역시 별도로 구분하고 관리자 업무 Backend가 Core를 직접 호출하지 않도록 데이터 책임을 분리했습니다.",
+        "result": "사용자 업무, 관리자 업무, Core 기술 기능의 변경 범위를 분리하고 서비스 간 통신 경계를 명확하게 구성했습니다. DID·VC·VP·AI 처리 방식이 변경되더라도 업무 Backend에 미치는 영향을 줄일 수 있는 구조를 확보했습니다."
       },
       {
         "title": "DEV / PROD Database 및 실행환경 분리",
         "summary": "개발과 운영 환경의 Container, Database, 설정을 분리해 환경 간 영향 범위를 차단",
-        "problem": "DEV와 PROD가 동일한 Database 또는 실행 설정을 공유하면 개발 중 변경이 운영 데이터에 영향을 줄 수 있고 배포 환경별 설정 관리가 불명확해질 수 있었다.",
-        "solution": "DEV와 PROD의 Docker Compose, Environment, Database, Network를 환경별로 분리하고 각 환경이 독립적인 Database와 Container 구성을 사용하도록 정리했다.",
-        "result": "개발 검증과 운영 환경을 분리해 데이터 오염 가능성을 줄이고 환경별 배포와 장애 대응이 독립적으로 가능하도록 구성했다."
+        "problem": "DEV와 PROD가 동일한 Database 또는 실행 설정을 공유하면 개발 중 변경이 운영 데이터에 영향을 줄 수 있고 배포 환경별 설정 관리가 불명확해질 수 있었습니다.",
+        "solution": "DEV와 PROD의 Docker Compose, Environment, Database, Network를 환경별로 분리하고 각 환경이 독립적인 Database와 Container 구성을 사용하도록 정리했습니다.",
+        "result": "개발 검증과 운영 환경을 분리해 데이터 오염 가능성을 줄이고 환경별 배포와 장애 대응이 독립적으로 가능하도록 구성했습니다."
       },
       {
         "title": "다중 서비스 CI/CD 배포 구조 구성",
         "summary": "Frontend, Backend, Core 등 여러 서비스를 GitHub Actions와 GHCR 기반 이미지 배포 흐름으로 통합",
-        "problem": "사용자 Frontend, 관리자 Frontend, Backend, Backend Admin, Core 등 여러 서비스가 존재하여 서버에서 서비스별 Source를 직접 관리하거나 수동 배포할 경우 배포 절차가 복잡해지고 버전 정합성을 유지하기 어려웠다.",
-        "solution": "GitHub Actions에서 Branch 기준으로 각 서비스 Image를 Build하고 GHCR에 Push한 뒤 Self-hosted Runner와 Docker Compose를 이용해 서버에서 배포하도록 구성했다. develop은 DEV, main은 PROD 배포 기준으로 분리했다.",
-        "result": "서버에서 직접 Application을 Build하지 않고 동일한 Image 기반으로 환경별 배포 흐름을 관리할 수 있게 되었으며 서비스별 배포 기준과 버전 관리가 명확해졌다."
+        "problem": "사용자 Frontend, 관리자 Frontend, Backend, Backend Admin, Core 등 여러 서비스가 존재하여 서버에서 서비스별 Source를 직접 관리하거나 수동 배포할 경우 배포 절차가 복잡해지고 버전 정합성을 유지하기 어려웠습니다.",
+        "solution": "GitHub Actions에서 Branch 기준으로 각 서비스 Image를 Build하고 GHCR에 Push한 뒤 Self-hosted Runner와 Docker Compose를 이용해 서버에서 배포하도록 구성했습니다. develop은 DEV, main은 PROD 배포 기준으로 분리했습니다.",
+        "result": "서버에서 직접 Application을 Build하지 않고 동일한 Image 기반으로 환경별 배포 흐름을 관리할 수 있게 되었으며 서비스별 배포 기준과 버전 관리가 명확해졌습니다."
       },
       {
         "title": "KYC와 Credential 전체 Flow의 데이터 연결",
         "summary": "법인 KYC 결과가 VC 발급과 VP 검증까지 이어질 수 있도록 업무 데이터와 Credential 상태 흐름을 연결",
-        "problem": "KYC 심사 결과, VC 발급 상태, Wallet 수락, VP 제출 및 검증 결과가 서로 다른 서비스와 단계에서 처리되기 때문에 상태 연결이 불명확하면 사용자에게 일관된 진행 상태를 제공하기 어렵다.",
-        "solution": "업무 Backend를 중심으로 법인과 KYC 상태를 관리하고 Credential 관련 기술 처리는 Core에서 처리하도록 분리하면서 필요한 상태만 업무 영역에 연결하도록 구성했다.",
-        "result": "법인 KYC 신청부터 심사, VC 발급, Wallet 활용, VP 제출·검증까지 이어지는 End-to-End Flow를 하나의 서비스 경험으로 연결할 수 있게 했다."
+        "problem": "KYC 심사 결과, VC 발급 상태, Wallet 수락, VP 제출 및 검증 결과가 서로 다른 서비스와 단계에서 처리되기 때문에 상태 연결이 불명확하면 사용자에게 일관된 진행 상태를 제공하기 어렵습니다.",
+        "solution": "업무 Backend를 중심으로 법인과 KYC 상태를 관리하고 Credential 관련 기술 처리는 Core에서 처리하도록 분리하면서 필요한 상태만 업무 영역에 연결하도록 구성했습니다.",
+        "result": "법인 KYC 신청부터 심사, VC 발급, Wallet 활용, VP 제출·검증까지 이어지는 End-to-End Flow를 하나의 서비스 경험으로 연결할 수 있게 했습니다."
       }
     ]$json$::jsonb
 FROM projects AS project

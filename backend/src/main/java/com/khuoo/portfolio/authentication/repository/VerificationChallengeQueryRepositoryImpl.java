@@ -32,6 +32,7 @@ public class VerificationChallengeQueryRepositoryImpl implements VerificationCha
                         """, VerificationChallenge.class)
                 .setParameter("accountId", accountId)
                 .setParameter("purpose", purpose)
+
                 .setParameter("status", ChallengeStatus.ACTIVE)
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .getResultList();

@@ -1,5 +1,6 @@
 package com.khuoo.portfolio.site.dto;
 
+import com.khuoo.portfolio.common.util.ResponseTime;
 import com.khuoo.portfolio.common.util.PortfolioEnums.PortfolioContentCategory;
 import com.khuoo.portfolio.common.util.PortfolioEnums.PortfolioContentCode;
 import com.khuoo.portfolio.site.domain.PortfolioContent;

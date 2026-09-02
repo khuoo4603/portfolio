@@ -101,26 +101,40 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
         jdbcTemplate.update("""
                 INSERT INTO project_contents (
                     project_id, results_json, background_json, features_json,
-                    development_json, architecture_json, engineering_json
+                    development_json, architecture_json, engineering_json,
+                    architecture_image_storage_key
                 )
-                VALUES (?, '[{"title":"Result"}]', '["Background"]', '[{"title":"Feature"}]',
+                VALUES (?, '[{"title":"Result","description":"Description"}]',
+                        '[{"body":"Background"}]',
+                        '[{"title":"Feature","description":"Description"}]',
                         '[{"title":"Backend","items":["API"]}]',
-                        '{"services":["Spring"]}',
-                        '[{"title":"Issue","summary":"S","problem":"P","solution":"F","result":"R"}]')
+                        '{"notes":[{"title":"Infra","body":"Spring"}]}',
+                        '[{"title":"Issue","summary":"S","problem":"P","solution":"F","result":"R"}]',
+                        'projects/typed/architecture/main.webp')
                 """, projectId);
         jdbcTemplate.update("""
-                INSERT INTO project_media (project_id, image_url, label, alt_text, display_order)
-                VALUES (?, '/two.png', NULL, NULL, 2), (?, '/one.png', 'one', 'alt', 0)
+                INSERT INTO project_media
+                    (project_id, storage_key, label, alt_text, display_order)
+                VALUES
+                    (?, 'projects/typed/carousel/two.webp', NULL, NULL, 2),
+                    (?, 'projects/typed/carousel/one.webp', 'one', 'alt', 0)
                 """, projectId, projectId);
+        Long firstMediaId = jdbcTemplate.queryForObject("""
+                SELECT id FROM project_media WHERE project_id = ? ORDER BY display_order, id LIMIT 1
+                """, Long.class, projectId);
 
         String response = mockMvc.perform(get("/api/v1/public/projects/typed-project"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.technologies.length()").value(1))
                 .andExpect(jsonPath("$.technologies[0].highlighted").value(true))
                 .andExpect(jsonPath("$.content.results[0].title").value("Result"))
-                .andExpect(jsonPath("$.content.background[0]").value("Background"))
-                .andExpect(jsonPath("$.content.architecture.services[0]").value("Spring"))
-                .andExpect(jsonPath("$.media[0].imageUrl").value("/one.png"))
+                .andExpect(jsonPath("$.content.background[0].body").value("Background"))
+                .andExpect(jsonPath("$.content.architecture.notes[0].body").value("Spring"))
+                .andExpect(jsonPath("$.architectureImageUrl").value(
+                        "/api/v1/public/media/projects/" + projectId + "/architecture"))
+                .andExpect(jsonPath("$.media[0].mediaType").doesNotExist())
+                .andExpect(jsonPath("$.media[0].imageUrl").value(
+                        "/api/v1/public/media/projects/" + projectId + "/" + firstMediaId))
                 .andReturn().getResponse().getContentAsString();
         JsonNode content = objectMapper.readTree(response).get("content");
         assertThat(content.isObject()).isTrue();

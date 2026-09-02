@@ -1,7 +1,7 @@
 package com.khuoo.portfolio.site.controller;
 
 import com.khuoo.portfolio.site.dto.PublicPortfolioResponse;
-import com.khuoo.portfolio.site.dto.PublicProjectResponse;
+import com.khuoo.portfolio.project.dto.PublicProjectResponse;
 import com.khuoo.portfolio.site.service.PublicSiteService;
 import com.khuoo.portfolio.site.service.ResumeService;
 import io.swagger.v3.oas.annotations.Operation;

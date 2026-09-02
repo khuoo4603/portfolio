@@ -1,13 +1,10 @@
 import { apiRequest } from "@/lib/api/client";
 import type {
-  Project,
-  ProjectContent,
   ProjectCreateInput,
+  ProjectCreateResult,
   ProjectDetail,
-  ProjectMedia,
-  ProjectMediaInput,
-  ProjectTechnologyInput,
-  ProjectUpdateInput,
+  ProjectSaveInput,
+  ProjectSummary,
 } from "./admin-types";
 import {
   adminActionHeaders,
@@ -31,37 +28,33 @@ export const projectActionBindings = {
   delete: (id: number) => projectBinding("PROJECT_DELETE", id),
 };
 
-export function getAdminProject(id: number) {
-  return apiRequest<ProjectDetail>(`/admin/site/projects/${id}`);
+// 관리자 Project 전체 목록 조회
+export function getAdminProjects() {
+  return apiRequest<{ items: ProjectSummary[] }>("/admin/projects");
 }
 
+// 비공개 Draft를 포함한 Project Editor 초기 상태 조회
+export function getAdminProject(id: number) {
+  return apiRequest<ProjectDetail>(`/admin/projects/${id}`);
+}
+
+// Name·Slug만 전달하는 최소 Draft 생성
 export function createProject(input: ProjectCreateInput, verification: AdminActionVerification) {
-  return apiRequest<Project & { createdAt: string }>("/admin/site/projects", {
+  return apiRequest<ProjectCreateResult>("/admin/projects", {
     method: "POST",
     headers: adminActionHeaders(verification),
     json: input,
   });
 }
 
-export function updateProject(
-  id: number,
-  input: ProjectUpdateInput,
-  verification: AdminActionVerification,
-) {
-  return apiRequest<Project>(`/admin/site/projects/${id}`, {
-    method: "PATCH",
-    headers: adminActionHeaders(verification),
-    json: input,
-  });
-}
-
+// 목록의 별도 공개 상태 변경
 export function updateProjectStatus(
   id: number,
   enabled: boolean,
   verification: AdminActionVerification,
 ) {
   return apiRequest<{ id: number; enabled: boolean; updatedAt: string }>(
-    `/admin/site/projects/${id}/status`,
+    `/admin/projects/${id}/status`,
     {
       method: "PATCH",
       headers: adminActionHeaders(verification),
@@ -70,45 +63,32 @@ export function updateProjectStatus(
   );
 }
 
+// Project와 하위 데이터 삭제
 export function deleteProject(id: number, verification: AdminActionVerification) {
-  return apiRequest(`/admin/site/projects/${id}`, {
+  return apiRequest(`/admin/projects/${id}`, {
     method: "DELETE",
     headers: adminActionHeaders(verification),
   });
 }
 
-export function replaceProjectContent(
+// Editor Draft와 신규 파일의 단일 Multipart 저장
+export function saveProject(
   id: number,
-  content: ProjectContent,
+  input: ProjectSaveInput,
   verification: AdminActionVerification,
 ) {
-  return apiRequest<ProjectContent & { updatedAt: string }>(`/admin/site/projects/${id}/content`, {
+  const formData = new FormData();
+  formData.append("metadata", new Blob([JSON.stringify(input.metadata)], { type: "application/json" }));
+  if (input.thumbnail) {
+    formData.append("thumbnail", input.thumbnail);
+  }
+  if (input.architectureImage) {
+    formData.append("architectureImage", input.architectureImage);
+  }
+  input.mediaFiles.forEach((file) => formData.append("mediaFiles", file));
+  return apiRequest<ProjectDetail>(`/admin/projects/${id}`, {
     method: "PUT",
     headers: adminActionHeaders(verification),
-    json: content,
-  });
-}
-
-export function replaceProjectTechnologies(
-  id: number,
-  items: ProjectTechnologyInput[],
-  verification: AdminActionVerification,
-) {
-  return apiRequest<{ items: ProjectTechnologyInput[] }>(`/admin/site/projects/${id}/technologies`, {
-    method: "PUT",
-    headers: adminActionHeaders(verification),
-    json: { items },
-  });
-}
-
-export function replaceProjectMedia(
-  id: number,
-  items: ProjectMediaInput[],
-  verification: AdminActionVerification,
-) {
-  return apiRequest<{ items: ProjectMedia[] }>(`/admin/site/projects/${id}/media`, {
-    method: "PUT",
-    headers: adminActionHeaders(verification),
-    json: { items },
+    body: formData,
   });
 }
