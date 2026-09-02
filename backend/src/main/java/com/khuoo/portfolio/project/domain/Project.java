@@ -198,4 +198,9 @@ public class Project {
         enabled = newEnabled;
         updatedAt = changedAt;
     }
+
+    // 통합 Editor 저장 시 프로젝트 전체 수정 시각 갱신
+    public void markEdited(OffsetDateTime changedAt) {
+        updatedAt = changedAt;
+    }
 }

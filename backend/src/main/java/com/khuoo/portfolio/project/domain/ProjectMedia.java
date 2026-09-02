@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 // 프로젝트 Carousel·본문 이미지의 내부 Storage 참조
 @Getter
@@ -77,5 +78,19 @@ public class ProjectMedia {
             int displayOrder
     ) {
         return new ProjectMedia(projectId, storageKey, mediaType, label, altText, displayOrder);
+    }
+
+    // 기존 미디어 용도 유지 기반 편집 Metadata와 순서 변경
+    public void update(String newLabel, String newAltText, int newDisplayOrder, OffsetDateTime changedAt) {
+        boolean changed = !Objects.equals(label, newLabel)
+                || !Objects.equals(altText, newAltText)
+                || displayOrder != newDisplayOrder;
+        if (!changed) {
+            return;
+        }
+        label = newLabel;
+        altText = newAltText;
+        displayOrder = newDisplayOrder;
+        updatedAt = changedAt;
     }
 }

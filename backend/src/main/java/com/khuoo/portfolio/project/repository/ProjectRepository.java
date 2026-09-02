@@ -33,7 +33,10 @@ public interface ProjectRepository {
     void replaceTechnologies(Long projectId, List<ProjectTechnology> mappings);
 
     // 프로젝트 이미지 갤러리 전체 교체
-    List<ProjectMedia> replaceMedia(Long projectId, List<ProjectMedia> media);
+    List<ProjectMedia> saveMedia(List<ProjectMedia> media);
+
+    // 지정 프로젝트 미디어 삭제
+    void deleteMedia(List<ProjectMedia> media);
 
     // 변경 SQL 즉시 반영
     void flush();

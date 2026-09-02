@@ -61,7 +61,8 @@ public class ProjectContent {
             JsonNode features,
             JsonNode development,
             JsonNode architecture,
-            JsonNode engineering
+            JsonNode engineering,
+            OffsetDateTime changedAt
     ) {
         this.projectId = projectId;
         this.results = results;
@@ -70,6 +71,7 @@ public class ProjectContent {
         this.development = development;
         this.architecture = architecture;
         this.engineering = engineering;
+        this.updatedAt = changedAt;
     }
 
     // 프로젝트 고정 본문 최초 생성
@@ -80,7 +82,8 @@ public class ProjectContent {
             JsonNode features,
             JsonNode development,
             JsonNode architecture,
-            JsonNode engineering
+            JsonNode engineering,
+            OffsetDateTime changedAt
     ) {
         return new ProjectContent(
                 projectId,
@@ -89,7 +92,8 @@ public class ProjectContent {
                 features,
                 development,
                 architecture,
-                engineering
+                engineering,
+                changedAt
         );
     }
 

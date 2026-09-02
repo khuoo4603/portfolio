@@ -108,16 +108,17 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     // 기존 갤러리 삭제 후 새 프로젝트 미디어 저장
     @Override
     @Transactional
-    public List<ProjectMedia> replaceMedia(Long projectId, List<ProjectMedia> media) {
-        entityManager.createQuery("""
-                        DELETE FROM ProjectMedia media
-                        WHERE media.projectId = :projectId
-                        """)
-                .setParameter("projectId", projectId)
-                .executeUpdate();
+    public List<ProjectMedia> saveMedia(List<ProjectMedia> media) {
         media.forEach(entityManager::persist);
         entityManager.flush();
         return media;
+    }
+
+    // 지정 프로젝트 미디어 삭제
+    @Override
+    @Transactional
+    public void deleteMedia(List<ProjectMedia> media) {
+        media.forEach(entityManager::remove);
     }
 
     // 현재 Transaction 변경 SQL 즉시 반영

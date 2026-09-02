@@ -33,4 +33,7 @@ public interface ProjectQueryRepository {
 
     // 프로젝트 이미지 갤러리 조회
     List<ProjectMedia> findMedia(Long projectId);
+
+    // 프로젝트 소속 미디어 단건 조회
+    Optional<ProjectMedia> findMedia(Long projectId, Long mediaId);
 }

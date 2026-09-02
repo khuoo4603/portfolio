@@ -144,4 +144,19 @@ public class ProjectQueryRepositoryImpl implements ProjectQueryRepository {
                 .setParameter("projectId", projectId)
                 .getResultList();
     }
+
+    // 프로젝트와 미디어 식별자를 함께 제한한 소속 미디어 조회
+    @Override
+    public Optional<ProjectMedia> findMedia(Long projectId, Long mediaId) {
+        return entityManager.createQuery("""
+                        SELECT media
+                        FROM ProjectMedia media
+                        WHERE media.projectId = :projectId
+                          AND media.id = :mediaId
+                        """, ProjectMedia.class)
+                .setParameter("projectId", projectId)
+                .setParameter("mediaId", mediaId)
+                .getResultStream()
+                .findFirst();
+    }
 }
