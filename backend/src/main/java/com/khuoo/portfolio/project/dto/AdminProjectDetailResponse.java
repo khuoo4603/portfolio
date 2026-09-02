@@ -9,6 +9,7 @@ public record AdminProjectDetailResponse(
         @Schema(description = "프로젝트 기본정보") AdminProjectResponse project,
         @Schema(description = "프로젝트 전체 연결 기술") List<AdminProjectTechnologyResponse> technologies,
         @Schema(description = "프로젝트 고정 본문") ProjectContentResponse content,
+        @Schema(description = "Architecture Image 조회 URL", nullable = true) String architectureImageUrl,
         @Schema(description = "프로젝트 이미지 갤러리") List<ProjectMediaResponse> media
 ) {
 

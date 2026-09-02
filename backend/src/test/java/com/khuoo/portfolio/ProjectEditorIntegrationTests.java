@@ -60,7 +60,8 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(jsonPath("$.technologies[0].technologyId").value(technologyId))
                 .andExpect(jsonPath("$.content.results[0].title").value("first"))
                 .andExpect(jsonPath("$.content.results[1].title").value("second"))
-                .andExpect(jsonPath("$.content.architecture.services[0]").value("API"))
+                .andExpect(jsonPath("$.content.architecture.notes[0].title").value("Runtime"))
+                .andExpect(jsonPath("$.architectureImageUrl").value((Object) null))
                 .andExpect(jsonPath("$.media.length()").value(0))
                 .andReturn().getResponse().getContentAsString();
 
@@ -75,9 +76,9 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
         )).isEqualTo("first");
     }
 
-    // Thumbnail·Carousel·Content 업로드와 clientKey 정규화·교체·삭제·Serving 검증
+    // Thumbnail·Architecture Image·Carousel 업로드와 교체·삭제·Serving 검증
     @Test
-    void uploadNormalizesContentReferenceAndCleansReplacedFiles() throws Exception {
+    void imageAndCarouselLifecycleCleansReplacedFiles() throws Exception {
         Long projectId = project("media-draft", false);
         Long technologyId = technology("Media Java", true);
         ActionChallenge uploadChallenge = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
@@ -88,81 +89,85 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
                 uploadMetadata,
                 uploadChallenge,
                 image("thumbnail", "thumbnail.webp", "image/webp", WEBP),
-                image("mediaFiles", "screen.jpg", "image/jpeg", JPEG),
-                image("mediaFiles", "content.png", "image/png", PNG)
+                image("architectureImage", "architecture.png", "image/png", PNG),
+                image("mediaFiles", "screen.jpg", "image/jpeg", JPEG)
         ).andExpect(status().isOk())
                 .andExpect(jsonPath("$.project.thumbnailUrl")
                         .value("/api/v1/admin/media/projects/" + projectId + "/thumbnail"))
-                .andExpect(jsonPath("$.media.length()").value(2))
-                .andExpect(jsonPath("$.media[0].mediaType").value("CONTENT"))
-                .andExpect(jsonPath("$.media[1].mediaType").value("CAROUSEL"))
+                .andExpect(jsonPath("$.architectureImageUrl")
+                        .value("/api/v1/admin/media/projects/" + projectId + "/architecture"))
+                .andExpect(jsonPath("$.media.length()").value(1))
+                .andExpect(jsonPath("$.media[0].mediaType").doesNotExist())
                 .andReturn().getResponse().getContentAsString();
 
         var json = objectMapper.readTree(uploadResponse);
-        long contentId = json.get("media").get(0).get("id").asLong();
-        long carouselId = json.get("media").get(1).get("id").asLong();
-        assertThat(json.get("content").get("background").get(0).get("mediaId").asLong())
-                .isEqualTo(contentId);
+        long carouselId = json.get("media").get(0).get("id").asLong();
         assertThat(uploadResponse).doesNotContain("storageKey", "clientKey", "uploadIndex");
 
         String oldThumbnailKey = thumbnailKey(projectId);
+        String oldArchitectureKey = architectureKey(projectId);
         String carouselKey = mediaKey(carouselId);
-        String contentKey = mediaKey(contentId);
         assertThat(fileStorageService.exists(oldThumbnailKey)).isTrue();
+        assertThat(fileStorageService.exists(oldArchitectureKey)).isTrue();
         assertThat(fileStorageService.exists(carouselKey)).isTrue();
-        assertThat(fileStorageService.exists(contentKey)).isTrue();
 
-        mockMvc.perform(get("/api/v1/admin/media/projects/" + projectId + "/" + contentId))
+        mockMvc.perform(get("/api/v1/admin/media/projects/" + projectId + "/architecture"))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/api/v1/admin/media/projects/" + projectId + "/" + contentId).with(user()))
+        mockMvc.perform(get("/api/v1/admin/media/projects/" + projectId + "/architecture").with(user()))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/v1/admin/media/projects/" + projectId + "/thumbnail").with(admin()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("image/webp"));
-        mockMvc.perform(get("/api/v1/admin/media/projects/" + projectId + "/" + contentId).with(admin()))
+        mockMvc.perform(get("/api/v1/admin/media/projects/" + projectId + "/architecture").with(admin()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.IMAGE_PNG));
         mockMvc.perform(get("/api/v1/public/media/projects/" + projectId + "/thumbnail"))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(get("/api/v1/public/media/projects/" + projectId + "/" + contentId))
+        mockMvc.perform(get("/api/v1/public/media/projects/" + projectId + "/architecture"))
                 .andExpect(status().isNotFound());
         jdbcTemplate.update("UPDATE projects SET enabled = TRUE WHERE id = ?", projectId);
         mockMvc.perform(get("/api/v1/public/media/projects/" + projectId + "/thumbnail"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("image/webp"));
-        mockMvc.perform(get("/api/v1/public/media/projects/" + projectId + "/" + contentId))
+        mockMvc.perform(get("/api/v1/public/media/projects/" + projectId + "/architecture"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.IMAGE_PNG));
         mockMvc.perform(get("/api/v1/public/media/projects/" + projectId + "/999999"))
                 .andExpect(status().isNotFound());
 
         ActionChallenge replaceChallenge = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
-        String replaceMetadata = replaceMetadata(technologyId, contentId, carouselId);
+        String replaceMetadata = replaceMetadata(technologyId, carouselId);
         save(
                 projectId,
                 replaceMetadata,
                 replaceChallenge,
-                image("thumbnail", "replacement.png", "image/png", PNG)
+                image("thumbnail", "replacement.png", "image/png", PNG),
+                image("architectureImage", "replacement.webp", "image/webp", WEBP)
         ).andExpect(status().isOk())
                 .andExpect(jsonPath("$.project.enabled").value(true))
-                .andExpect(jsonPath("$.media.length()").value(1))
-                .andExpect(jsonPath("$.media[0].id").value(contentId))
+                .andExpect(jsonPath("$.media[0].id").value(carouselId))
                 .andExpect(jsonPath("$.media[0].label").value("updated"))
                 .andExpect(jsonPath("$.media[0].displayOrder").value(7));
 
         String replacementKey = thumbnailKey(projectId);
+        String replacementArchitectureKey = architectureKey(projectId);
         assertThat(replacementKey).isNotEqualTo(oldThumbnailKey);
+        assertThat(replacementArchitectureKey).isNotEqualTo(oldArchitectureKey);
         assertThat(fileStorageService.exists(oldThumbnailKey)).isFalse();
-        assertThat(fileStorageService.exists(carouselKey)).isFalse();
-        assertThat(fileStorageService.exists(contentKey)).isTrue();
+        assertThat(fileStorageService.exists(oldArchitectureKey)).isFalse();
+        assertThat(fileStorageService.exists(carouselKey)).isTrue();
         assertThat(fileStorageService.exists(replacementKey)).isTrue();
+        assertThat(fileStorageService.exists(replacementArchitectureKey)).isTrue();
 
         ActionChallenge removeChallenge = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
-        save(projectId, removeThumbnailMetadata(technologyId, contentId), removeChallenge)
+        save(projectId, removeImagesMetadata(technologyId, carouselId), removeChallenge)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.project.thumbnailUrl").value((Object) null));
+                .andExpect(jsonPath("$.project.thumbnailUrl").value((Object) null))
+                .andExpect(jsonPath("$.architectureImageUrl").value((Object) null))
+                .andExpect(jsonPath("$.media.length()").value(0));
         assertThat(fileStorageService.exists(replacementKey)).isFalse();
-        assertThat(fileStorageService.exists(contentKey)).isTrue();
+        assertThat(fileStorageService.exists(replacementArchitectureKey)).isFalse();
+        assertThat(fileStorageService.exists(carouselKey)).isFalse();
     }
 
     // 고정 Section JSON Shape와 필수 Field 누락 차단 검증
@@ -192,32 +197,27 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
         assertThat(challengeStatus(missingField.id())).isEqualTo("ACTIVE");
     }
 
-    // 없는 ID·타 Project·CAROUSEL·삭제 예정 CONTENT 본문 참조 차단 검증
+    // 다른 Project 미디어 변경과 중복 미디어 변경 차단 검증
     @Test
-    void contentReferenceMustBelongToFinalContentMedia() throws Exception {
+    void mediaChangesMustBelongToProjectAndRemainUnique() throws Exception {
         Long projectId = project("reference-project", false);
         Long otherProjectId = project("reference-other", false);
         Long technologyId = technology("Reference Java", true);
-        Long carouselId = insertMedia(projectId, "CAROUSEL", "projects/" + projectId + "/carousel/current.webp");
-        Long otherContentId = insertMedia(
-                otherProjectId,
-                "CONTENT",
-                "projects/" + otherProjectId + "/content/other.webp"
-        );
-        Long ownContentId = insertMedia(projectId, "CONTENT", "projects/" + projectId + "/content/current.webp");
+        Long ownMediaId = insertMedia(projectId, "projects/" + projectId + "/carousel/current.webp");
+        Long otherMediaId = insertMedia(otherProjectId, "projects/" + otherProjectId + "/carousel/other.webp");
 
-        for (long invalidId : new long[]{999999L, carouselId, otherContentId}) {
-            ActionChallenge challenge = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
-            save(projectId, referenceMetadata(technologyId, invalidId, null), challenge)
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_ERROR"));
-            assertThat(challengeStatus(challenge.id())).isEqualTo("ACTIVE");
-        }
-
-        ActionChallenge deleting = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
-        save(projectId, referenceMetadata(technologyId, ownContentId, ownContentId), deleting)
+        ActionChallenge otherProject = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
+        save(projectId, mediaChangeMetadata(technologyId, "[{\"id\":" + otherMediaId
+                + ",\"action\":\"KEEP\",\"displayOrder\":0}]"), otherProject)
                 .andExpect(status().isBadRequest());
-        assertThat(challengeStatus(deleting.id())).isEqualTo("ACTIVE");
+        assertThat(challengeStatus(otherProject.id())).isEqualTo("ACTIVE");
+
+        ActionChallenge duplicate = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
+        save(projectId, mediaChangeMetadata(technologyId, "[{\"id\":" + ownMediaId
+                + ",\"action\":\"KEEP\",\"displayOrder\":0},{\"id\":" + ownMediaId
+                + ",\"action\":\"DELETE\"}]"), duplicate)
+                .andExpect(status().isBadRequest());
+        assertThat(challengeStatus(duplicate.id())).isEqualTo("ACTIVE");
     }
 
     // 기술 중복·비활성 신규 연결과 이미지 Signature mismatch 선검증
@@ -284,7 +284,9 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
         Long projectId = project("rollback-editor", false);
         Long technologyId = technology("Rollback Editor", true);
         Path thumbnailDirectory = STORAGE_ROOT.resolve("projects/" + projectId + "/thumbnail");
+        Path architectureDirectory = STORAGE_ROOT.resolve("projects/" + projectId + "/architecture");
         var existingFiles = regularFiles(thumbnailDirectory);
+        var existingArchitectureFiles = regularFiles(architectureDirectory);
         createUpdateFailureTrigger(projectId);
         try {
             ActionChallenge challenge = challenge("PROJECT_UPDATE", "PROJECT", projectId.toString());
@@ -292,7 +294,8 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
                     projectId,
                     thumbnailUploadMetadata(technologyId),
                     challenge,
-                    image("thumbnail", "rollback.webp", "image/webp", WEBP)
+                    image("thumbnail", "rollback.webp", "image/webp", WEBP),
+                    image("architectureImage", "rollback.png", "image/png", PNG)
             ).andExpect(status().isInternalServerError());
         } finally {
             dropUpdateFailureTrigger();
@@ -301,7 +304,10 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT slug FROM projects WHERE id = ?", String.class, projectId)).isEqualTo("rollback-editor");
         assertThat(thumbnailKey(projectId)).isNull();
+        assertThat(architectureKey(projectId)).isNull();
         assertThat(regularFiles(thumbnailDirectory)).containsExactlyInAnyOrderElementsOf(existingFiles);
+        assertThat(regularFiles(architectureDirectory))
+                .containsExactlyInAnyOrderElementsOf(existingArchitectureFiles);
     }
 
     private ResultActions save(Long projectId, String metadata, ActionChallenge challenge, MockMultipartFile... files)
@@ -346,12 +352,12 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
                 """, Long.class, name, enabled);
     }
 
-    private Long insertMedia(Long projectId, String mediaType, String storageKey) {
+    private Long insertMedia(Long projectId, String storageKey) {
         return jdbcTemplate.queryForObject("""
-                INSERT INTO project_media (project_id, storage_key, media_type, display_order)
-                VALUES (?, ?, ?, 0)
+                INSERT INTO project_media (project_id, storage_key, display_order)
+                VALUES (?, ?, 0)
                 RETURNING id
-                """, Long.class, projectId, storageKey, mediaType);
+                """, Long.class, projectId, storageKey);
     }
 
     private String thumbnailKey(Long projectId) {
@@ -364,6 +370,14 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
                 "SELECT storage_key FROM project_media WHERE id = ?", String.class, mediaId);
     }
 
+    private String architectureKey(Long projectId) {
+        return jdbcTemplate.query(
+                "SELECT architecture_image_storage_key FROM project_contents WHERE project_id = ?",
+                resultSet -> resultSet.next() ? resultSet.getString(1) : null,
+                projectId
+        );
+    }
+
     private String draftMetadata(String slug, Long technologyId) {
         return """
                 {
@@ -373,11 +387,11 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
                   "content":{
                     "results":[{"title":"first","description":"one"},{"title":"second","description":"two"}],
                     "background":[],"features":[],"development":[],
-                    "architecture":{"clients":[],"services":["API"],"dataAndExternal":[],"runtime":[],"delivery":[]},
+                    "architecture":{"notes":[{"title":"Runtime","body":"API"}]},
                     "engineering":[]
                   },
                   "technologies":[{"technologyId":%d,"showOnCard":true,"highlighted":true,"displayOrder":0}],
-                  "thumbnailMode":"KEEP","mediaChanges":[]
+                  "thumbnailMode":"KEEP","architectureImageMode":"KEEP","mediaChanges":[]
                 }
                 """.formatted(slug, technologyId);
     }
@@ -389,78 +403,75 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
                     "description":"Description","cardRole":"Backend","summary":"Summary","detailRole":"Backend",
                     "startedAt":"2026-01-01","endedAt":null,"teamSize":1,"displayOrder":2},
                   "content":{"results":[],
-                    "background":[{"body":"Background","clientKey":"content-new"}],
+                    "background":[{"body":"Background"}],
                     "features":[],"development":[],
-                    "architecture":{"clients":[],"services":[],"dataAndExternal":[],"runtime":[],"delivery":[]},
+                    "architecture":{"notes":[]},
                     "engineering":[]},
                   "technologies":[{"technologyId":%d,"showOnCard":true,"highlighted":true,"displayOrder":0}],
                   "thumbnailMode":"UPLOAD",
+                  "architectureImageMode":"UPLOAD",
                   "mediaChanges":[
-                    {"clientKey":"carousel-new","action":"UPLOAD","uploadIndex":0,"mediaType":"CAROUSEL",
-                      "label":"screen","altText":"screen","displayOrder":5},
-                    {"clientKey":"content-new","action":"UPLOAD","uploadIndex":1,"mediaType":"CONTENT",
-                      "label":"body","altText":"body","displayOrder":0}
+                    {"clientKey":"carousel-new","action":"UPLOAD","uploadIndex":0,
+                      "label":"screen","altText":"screen","displayOrder":5}
                   ]
                 }
                 """.formatted(technologyId);
     }
 
-    private String replaceMetadata(Long technologyId, long contentId, long carouselId) {
+    private String replaceMetadata(Long technologyId, long carouselId) {
         return """
                 {
                   "project":{"slug":"media-draft","name":"Media","year":2026,"tagline":"Tagline",
                     "description":"Description","cardRole":"Backend","summary":"Summary","detailRole":"Backend",
                     "startedAt":"2026-01-01","endedAt":null,"teamSize":1,"displayOrder":2},
-                  "content":{"results":[],"background":[{"body":"Background","mediaId":%d}],
+                  "content":{"results":[],"background":[{"body":"Background"}],
                     "features":[],"development":[],
-                    "architecture":{"clients":[],"services":[],"dataAndExternal":[],"runtime":[],"delivery":[]},
+                    "architecture":{"notes":[]},
                     "engineering":[]},
                   "technologies":[{"technologyId":%d,"showOnCard":true,"highlighted":true,"displayOrder":0}],
                   "thumbnailMode":"UPLOAD",
+                  "architectureImageMode":"UPLOAD",
                   "mediaChanges":[
-                    {"id":%d,"action":"KEEP","mediaType":"CONTENT","label":"updated","altText":"updated","displayOrder":7},
-                    {"id":%d,"action":"DELETE"}
+                    {"id":%d,"action":"KEEP","label":"updated","altText":"updated","displayOrder":7}
                   ]
                 }
-                """.formatted(contentId, technologyId, contentId, carouselId);
+                """.formatted(technologyId, carouselId);
     }
 
-    private String removeThumbnailMetadata(Long technologyId, long contentId) {
+    private String removeImagesMetadata(Long technologyId, long carouselId) {
         return """
                 {
                   "project":{"slug":"media-draft","name":"Media","year":2026,"tagline":"Tagline",
                     "description":"Description","cardRole":"Backend","summary":"Summary","detailRole":"Backend",
                     "startedAt":"2026-01-01","endedAt":null,"teamSize":1,"displayOrder":2},
-                  "content":{"results":[],"background":[{"body":"Background","mediaId":%d}],
+                  "content":{"results":[],"background":[{"body":"Background"}],
                     "features":[],"development":[],
-                    "architecture":{"clients":[],"services":[],"dataAndExternal":[],"runtime":[],"delivery":[]},
+                    "architecture":{"notes":[]},
                     "engineering":[]},
                   "technologies":[{"technologyId":%d,"showOnCard":true,"highlighted":true,"displayOrder":0}],
                   "thumbnailMode":"REMOVE",
+                  "architectureImageMode":"REMOVE",
                   "mediaChanges":[
-                    {"id":%d,"action":"KEEP","mediaType":"CONTENT","label":"updated","altText":"updated","displayOrder":7}
+                    {"id":%d,"action":"DELETE"}
                   ]
                 }
-                """.formatted(contentId, technologyId, contentId);
+                """.formatted(technologyId, carouselId);
     }
 
-    private String referenceMetadata(Long technologyId, long mediaId, Long deletedId) {
-        String mediaChanges = deletedId == null
-                ? "[]"
-                : "[{\"id\":" + deletedId + ",\"action\":\"DELETE\"}]";
+    private String mediaChangeMetadata(Long technologyId, String mediaChanges) {
         return """
                 {
                   "project":{"slug":"reference-project","name":"Reference","year":null,"tagline":null,
                     "description":null,"cardRole":null,"summary":null,"detailRole":null,
                     "startedAt":null,"endedAt":null,"teamSize":null,"displayOrder":0},
-                  "content":{"results":[],"background":[{"body":"Background","mediaId":%d}],
+                  "content":{"results":[],"background":[{"body":"Background"}],
                     "features":[],"development":[],
-                    "architecture":{"clients":[],"services":[],"dataAndExternal":[],"runtime":[],"delivery":[]},
+                    "architecture":{"notes":[]},
                     "engineering":[]},
                   "technologies":[{"technologyId":%d,"showOnCard":true,"highlighted":true,"displayOrder":0}],
-                  "thumbnailMode":"KEEP","mediaChanges":%s
+                  "thumbnailMode":"KEEP","architectureImageMode":"KEEP","mediaChanges":%s
                 }
-                """.formatted(mediaId, technologyId, mediaChanges);
+                """.formatted(technologyId, mediaChanges);
     }
 
     private String duplicateTechnologyMetadata(Long technologyId) {
@@ -476,7 +487,8 @@ class ProjectEditorIntegrationTests extends SiteIntegrationTestSupport {
 
     private String thumbnailUploadMetadata(Long technologyId) {
         return draftMetadata("rollback-editor-saved", technologyId)
-                .replace("\"thumbnailMode\":\"KEEP\"", "\"thumbnailMode\":\"UPLOAD\"");
+                .replace("\"thumbnailMode\":\"KEEP\"", "\"thumbnailMode\":\"UPLOAD\"")
+                .replace("\"architectureImageMode\":\"KEEP\"", "\"architectureImageMode\":\"UPLOAD\"");
     }
 
     private void createUpdateFailureTrigger(Long projectId) {

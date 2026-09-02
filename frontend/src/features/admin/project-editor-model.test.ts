@@ -29,39 +29,35 @@ const detail: ProjectDetail = {
   technologies: [],
   content: {
     results: [],
-    background: [{ title: null, body: "Body", mediaId: null }],
+    background: [{ title: null, body: "Body" }],
     features: [],
     development: [],
-    architecture: { clients: [], services: [], dataAndExternal: [], runtime: [], delivery: [] },
+    architecture: { notes: [] },
     engineering: [],
   },
+  architectureImageUrl: "/media/architecture",
   media: [
-    { id: 10, mediaType: "CAROUSEL", imageUrl: "/media/10", label: null, altText: null, displayOrder: 0 },
-    { id: 11, mediaType: "CONTENT", imageUrl: "/media/11", label: "Content", altText: null, displayOrder: 0 },
+    { id: 10, imageUrl: "/media/10", label: null, altText: null, displayOrder: 0 },
+    { id: 11, imageUrl: "/media/11", label: "Carousel", altText: null, displayOrder: 1 },
   ],
 };
 
 describe("Project Editor Local Draft 변환", () => {
-  it("기존·삭제·신규 Media와 Client Reference를 단일 Metadata·File 순서로 구성", () => {
+  it("기존·삭제·신규 Carousel을 단일 Metadata·File 순서로 구성", () => {
     const draft = createProjectDraft(detail);
-    const contentFile = new File(["content"], "content.webp", { type: "image/webp" });
     const carouselFile = new File(["carousel"], "carousel.webp", { type: "image/webp" });
     draft.media[0].deleted = true;
     draft.media.push(
-      { key: "content-new", id: null, clientKey: "content-new", mediaType: "CONTENT", imageUrl: "", file: contentFile, previewUrl: "blob:content", label: "New content", altText: null, displayOrder: 1, deleted: false },
-      { key: "carousel-new", id: null, clientKey: "carousel-new", mediaType: "CAROUSEL", imageUrl: "", file: carouselFile, previewUrl: "blob:carousel", label: "New carousel", altText: null, displayOrder: 0, deleted: false },
+      { key: "carousel-new", id: null, clientKey: "carousel-new", imageUrl: "", file: carouselFile, previewUrl: "blob:carousel", label: "New carousel", altText: null, displayOrder: 2, deleted: false },
     );
-    draft.content.background[0] = { ...draft.content.background[0], clientKey: "content-new" };
 
     const input = buildProjectSaveInput(draft);
 
-    expect(input.mediaFiles).toEqual([contentFile, carouselFile]);
-    expect(input.metadata.content.background[0]).toMatchObject({ mediaId: null, clientKey: "content-new" });
+    expect(input.mediaFiles).toEqual([carouselFile]);
     expect(input.metadata.mediaChanges).toEqual([
       { id: 10, action: "DELETE" },
-      { id: 11, action: "KEEP", mediaType: "CONTENT", label: "Content", altText: null, displayOrder: 0 },
-      { clientKey: "content-new", action: "UPLOAD", uploadIndex: 0, mediaType: "CONTENT", label: "New content", altText: null, displayOrder: 1 },
-      { clientKey: "carousel-new", action: "UPLOAD", uploadIndex: 1, mediaType: "CAROUSEL", label: "New carousel", altText: null, displayOrder: 0 },
+      { id: 11, action: "KEEP", label: "Carousel", altText: null, displayOrder: 1 },
+      { clientKey: "carousel-new", action: "UPLOAD", uploadIndex: 0, label: "New carousel", altText: null, displayOrder: 2 },
     ]);
   });
 
@@ -73,6 +69,16 @@ describe("Project Editor Local Draft 변환", () => {
 
     draft.thumbnail = { ...draft.thumbnail, mode: "REMOVE", file: null, previewUrl: null };
     expect(buildProjectSaveInput(draft).thumbnail).toBeNull();
+  });
+
+  it("Architecture Image mode별 File 포함 여부를 유지", () => {
+    const draft = createProjectDraft(detail);
+    const architectureImage = new File(["architecture"], "architecture.png", { type: "image/png" });
+    draft.architectureImage = { ...draft.architectureImage, mode: "UPLOAD", file: architectureImage, previewUrl: "blob:architecture" };
+    expect(buildProjectSaveInput(draft).architectureImage).toBe(architectureImage);
+
+    draft.architectureImage = { ...draft.architectureImage, mode: "REMOVE", file: null, previewUrl: null };
+    expect(buildProjectSaveInput(draft).architectureImage).toBeNull();
   });
 
   it("경계 밖 순서 이동과 허용하지 않은 이미지 형식을 안전하게 거부", () => {

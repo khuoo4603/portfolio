@@ -3,11 +3,8 @@
 import Image from "next/image";
 import { ArrowDown, ArrowUp, ImagePlus, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
-import type {
-  ProjectContentMediaReference,
-  ProjectSaveContent,
-  Technology,
-} from "./admin-types";
+import type { Technology } from "./admin-types";
+import { StateSwitch } from "./admin-ui";
 import type { EditorMedia, ProjectEditorDraft } from "./project-editor-model";
 import { moveProjectItem } from "./project-editor-model";
 import styles from "./admin.module.css";
@@ -21,7 +18,9 @@ type PanelProps = {
   technologyMaster: Technology[];
   onThumbnailFile: (file: File) => void;
   onThumbnailRemove: () => void;
-  onAddMedia: (file: File, mediaType: EditorMedia["mediaType"]) => EditorMedia | null;
+  onArchitectureImageFile: (file: File) => void;
+  onArchitectureImageRemove: () => void;
+  onAddMedia: (file: File) => EditorMedia | null;
   onDeleteMedia: (key: string) => void;
   onChangeMedia: (key: string, patch: Partial<EditorMedia>) => void;
   onMoveMedia: (key: string, direction: -1 | 1) => void;
@@ -83,12 +82,12 @@ function ResultsPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft"
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, results: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="성과 편집">
-      <PanelHeading title="성과" description="Title과 Description을 순서대로 관리합니다." onAdd={() => setItems([...items, { title: "", description: "" }])} />
+      <PanelHeading title="성과" description="Title과 선택 Description을 순서대로 관리합니다." onAdd={() => setItems([...items, { title: "", description: null }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`result-${index}`}>
           <div className={styles.projectItemFields}>
             <TextField label={`성과 ${index + 1} Title`} value={item.title} onChange={(title) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, title } : value))} />
-            <TextAreaField label={`성과 ${index + 1} Description`} value={item.description} onChange={(description) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, description } : value))} />
+            <TextAreaField label={`성과 ${index + 1} Description`} value={item.description} onChange={(description) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, description: description || null } : value))} />
           </div>
           <ItemActions index={index} length={items.length} label={`성과 ${index + 1}`} onMove={(direction) => setItems(moveProjectItem(items, index, direction))} onDelete={() => setItems(items.filter((_, itemIndex) => itemIndex !== index))} />
         </article>
@@ -97,55 +96,18 @@ function ResultsPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft"
   );
 }
 
-// CONTENT Media만 제공하는 Section Item 이미지 선택기
-function ContentImageField({ reference, media, onChange, onAddMedia }: {
-  reference: ProjectContentMediaReference;
-  media: EditorMedia[];
-  onChange: (reference: ProjectContentMediaReference) => void;
-  onAddMedia: PanelProps["onAddMedia"];
-}) {
-  const options = media.filter((item) => item.mediaType === "CONTENT" && !item.deleted);
-  const value = reference.clientKey ? `client:${reference.clientKey}` : reference.mediaId ? `id:${reference.mediaId}` : "";
-  return (
-    <div className={styles.contentImageField}>
-      <label className={styles.formField}>
-        <span className="type-small">Content Image</span>
-        <select className="type-body" value={value} onChange={(event) => {
-          const [kind, raw] = event.currentTarget.value.split(":");
-          onChange(kind === "id" ? { mediaId: Number(raw), clientKey: null } : kind === "client" ? { mediaId: null, clientKey: raw } : { mediaId: null, clientKey: null });
-        }}>
-          <option value="">이미지 없음</option>
-          {options.map((item) => <option key={item.key} value={item.id ? `id:${item.id}` : `client:${item.clientKey}`}>{item.label || item.file?.name || `CONTENT ${item.id}`}</option>)}
-        </select>
-      </label>
-      <label className={`${styles.secondaryButton} ${styles.compactFileButton} type-body`}>
-        <ImagePlus aria-hidden="true" />새 이미지
-        <input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => {
-          const file = event.currentTarget.files?.[0];
-          if (!file) return;
-          const added = onAddMedia(file, "CONTENT");
-          if (added?.clientKey) onChange({ mediaId: null, clientKey: added.clientKey });
-          event.currentTarget.value = "";
-        }} />
-      </label>
-    </div>
-  );
-}
-
-// 선택 Title·Body·Content Image 문제 배경 편집 패널
-function BackgroundPanel(props: Pick<PanelProps, "draft" | "setDraft" | "onAddMedia">) {
-  const { draft, setDraft, onAddMedia } = props;
+// 선택 Title과 Body 문제 배경 편집 패널
+function BackgroundPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">) {
   const items = draft.content.background;
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, background: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="문제 배경 편집">
-      <PanelHeading title="문제 배경" description="선택 Title, Body와 CONTENT 이미지를 관리합니다." onAdd={() => setItems([...items, { title: null, body: "", mediaId: null, clientKey: null }])} />
+      <PanelHeading title="문제 배경" description="선택 Title과 Body를 관리합니다." onAdd={() => setItems([...items, { title: null, body: "" }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`background-${index}`}>
           <div className={styles.projectItemFields}>
             <TextField label={`문제 배경 ${index + 1} Title`} value={item.title} onChange={(title) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, title: title || null } : value))} />
             <TextAreaField label={`문제 배경 ${index + 1} Body`} value={item.body} onChange={(body) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, body } : value))} />
-            <ContentImageField reference={item} media={draft.media} onAddMedia={onAddMedia} onChange={(reference) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, ...reference } : value))} />
           </div>
           <ItemActions index={index} length={items.length} label={`문제 배경 ${index + 1}`} onMove={(direction) => setItems(moveProjectItem(items, index, direction))} onDelete={() => setItems(items.filter((_, itemIndex) => itemIndex !== index))} />
         </article>
@@ -154,20 +116,18 @@ function BackgroundPanel(props: Pick<PanelProps, "draft" | "setDraft" | "onAddMe
   );
 }
 
-// 주요 기능 Title·Description·Content Image 편집 패널
-function FeaturesPanel(props: Pick<PanelProps, "draft" | "setDraft" | "onAddMedia">) {
-  const { draft, setDraft, onAddMedia } = props;
+// 주요 기능 Title과 선택 Description 편집 패널
+function FeaturesPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">) {
   const items = draft.content.features;
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, features: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="주요 기능 편집">
-      <PanelHeading title="주요 기능" description="Title, Description과 CONTENT 이미지를 관리합니다." onAdd={() => setItems([...items, { title: "", description: "", mediaId: null, clientKey: null }])} />
+      <PanelHeading title="주요 기능" description="Title과 선택 Description을 관리합니다." onAdd={() => setItems([...items, { title: "", description: null }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`feature-${index}`}>
           <div className={styles.projectItemFields}>
             <TextField label={`주요 기능 ${index + 1} Title`} value={item.title} onChange={(title) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, title } : value))} />
-            <TextAreaField label={`주요 기능 ${index + 1} Description`} value={item.description} onChange={(description) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, description } : value))} />
-            <ContentImageField reference={item} media={draft.media} onAddMedia={onAddMedia} onChange={(reference) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, ...reference } : value))} />
+            <TextAreaField label={`주요 기능 ${index + 1} Description`} value={item.description} onChange={(description) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, description: description || null } : value))} />
           </div>
           <ItemActions index={index} length={items.length} label={`주요 기능 ${index + 1}`} onMove={(direction) => setItems(moveProjectItem(items, index, direction))} onDelete={() => setItems(items.filter((_, itemIndex) => itemIndex !== index))} />
         </article>
@@ -177,13 +137,12 @@ function FeaturesPanel(props: Pick<PanelProps, "draft" | "setDraft" | "onAddMedi
 }
 
 // 개발 영역과 내부 작업 목록 편집 패널
-function DevelopmentPanel(props: Pick<PanelProps, "draft" | "setDraft" | "onAddMedia">) {
-  const { draft, setDraft, onAddMedia } = props;
+function DevelopmentPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">) {
   const items = draft.content.development;
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, development: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="직접 담당한 개발 영역 편집">
-      <PanelHeading title="직접 담당한 개발 영역" description="영역별 작업 목록과 CONTENT 이미지를 관리합니다." onAdd={() => setItems([...items, { title: "", items: [], mediaId: null, clientKey: null }])} />
+      <PanelHeading title="직접 담당한 개발 영역" description="영역별 작업 목록을 관리합니다." onAdd={() => setItems([...items, { title: "", items: [] }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`development-${index}`}>
           <div className={styles.projectItemFields}>
@@ -198,7 +157,6 @@ function DevelopmentPanel(props: Pick<PanelProps, "draft" | "setDraft" | "onAddM
               ))}
               <button className={`${styles.textButton} type-small`} type="button" onClick={() => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, items: [...value.items, ""] } : value))}>Item 추가</button>
             </div>
-            <ContentImageField reference={item} media={draft.media} onAddMedia={onAddMedia} onChange={(reference) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, ...reference } : value))} />
           </div>
           <ItemActions index={index} length={items.length} label={`개발 영역 ${index + 1}`} onMove={(direction) => setItems(moveProjectItem(items, index, direction))} onDelete={() => setItems(items.filter((_, itemIndex) => itemIndex !== index))} />
         </article>
@@ -207,39 +165,61 @@ function DevelopmentPanel(props: Pick<PanelProps, "draft" | "setDraft" | "onAddM
   );
 }
 
-// 고정 5개 Architecture 문자열 그룹 편집 패널
-function ArchitecturePanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">) {
-  const definitions: Array<{ key: keyof ProjectSaveContent["architecture"]; label: string }> = [
-    { key: "clients", label: "clients" }, { key: "services", label: "services" },
-    { key: "dataAndExternal", label: "dataAndExternal" }, { key: "runtime", label: "runtime" }, { key: "delivery", label: "delivery" },
-  ];
-  const update = (key: keyof ProjectSaveContent["architecture"], values: string[]) => setDraft((current) => ({ ...current, content: { ...current.content, architecture: { ...current.content.architecture, [key]: values } } }));
+// Architecture Image와 Notes 편집 패널
+function ArchitecturePanel({
+  draft,
+  setDraft,
+  onArchitectureImageFile,
+  onArchitectureImageRemove,
+  fileError,
+}: Pick<PanelProps, "draft" | "setDraft" | "onArchitectureImageFile" | "onArchitectureImageRemove" | "fileError">) {
+  const notes = draft.content.architecture.notes;
+  const imageSource = draft.architectureImage.previewUrl
+    || (draft.architectureImage.mode === "KEEP" ? draft.architectureImage.imageUrl : null);
+  const setNotes = (next: typeof notes) => setDraft((current) => ({
+    ...current,
+    content: { ...current.content, architecture: { notes: next } },
+  }));
   return (
     <section className={styles.projectEditorPanel} aria-label="아키텍처 편집">
-      <PanelHeading title="아키텍처" description="고정 5개 Node Group의 문자열 목록만 편집합니다." />
-      <div className={styles.architectureEditors}>{definitions.map(({ key, label }) => {
-        const values = draft.content.architecture[key] ?? [];
-        return <section className={styles.architectureGroupEditor} key={key}><div className={styles.architectureGroupHeading}><h3 className="type-body">{label}</h3><button className={`${styles.textButton} type-small`} type="button" onClick={() => update(key, [...values, ""])}>Node 추가</button></div>{values.map((value, index) => <div className={styles.stringItemRow} key={`${key}-${index}`}><input className="type-body" aria-label={`${label} ${index + 1}`} value={value} onChange={(event) => update(key, values.map((text, itemIndex) => itemIndex === index ? event.currentTarget.value : text))} /><ItemActions index={index} length={values.length} label={`${label} ${index + 1}`} onMove={(direction) => update(key, moveProjectItem(values, index, direction))} onDelete={() => update(key, values.filter((_, itemIndex) => itemIndex !== index))} /></div>)}</section>;
-      })}</div>
+      <PanelHeading title="아키텍처" description="Architecture Image와 이미지 하단 Notes를 관리합니다." onAdd={() => setNotes([...notes, { title: "", body: "" }])} />
+      <section className={styles.mediaGroup}>
+        <div className={styles.mediaGroupHeading}>
+          <div><h3 className="type-body">Architecture Image</h3><p className="type-small">현재 상태: {draft.architectureImage.mode}</p></div>
+          <div className={styles.mediaGroupActions}>
+            <label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onArchitectureImageFile(file); event.currentTarget.value = ""; }} /></label>
+            <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onArchitectureImageRemove}>Remove</button>
+          </div>
+        </div>
+        <div className={styles.architectureDraftPreview}>{imageSource ? <Image src={imageSource} alt="Architecture Preview" fill sizes="720px" unoptimized /> : <span className="type-small">Architecture Image 없음</span>}</div>
+      </section>
+      <div className={styles.projectItemList}>{notes.map((note, index) => (
+        <article className={styles.projectItemEditor} key={`architecture-note-${index}`}>
+          <div className={styles.projectItemFields}>
+            <TextField label={`Note ${index + 1} Title`} value={note.title} onChange={(title) => setNotes(notes.map((value, itemIndex) => itemIndex === index ? { ...value, title } : value))} />
+            <TextAreaField label={`Note ${index + 1} Body`} value={note.body} onChange={(body) => setNotes(notes.map((value, itemIndex) => itemIndex === index ? { ...value, body } : value))} />
+          </div>
+          <ItemActions index={index} length={notes.length} label={`Architecture Note ${index + 1}`} onMove={(direction) => setNotes(moveProjectItem(notes, index, direction))} onDelete={() => setNotes(notes.filter((_, itemIndex) => itemIndex !== index))} />
+        </article>
+      ))}</div>
+      {fileError ? <p className={`${styles.inlineError} type-small`} role="alert">{fileError}</p> : null}
     </section>
   );
 }
 
 // 기술적 문제 해결 항목 편집 패널
-function EngineeringPanel(props: Pick<PanelProps, "draft" | "setDraft" | "onAddMedia">) {
-  const { draft, setDraft, onAddMedia } = props;
+function EngineeringPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">) {
   const items = draft.content.engineering;
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, engineering: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="기술적 문제 해결 편집">
-      <PanelHeading title="기술적 문제 해결" description="Problem·Solution·Result와 선택 Summary·CONTENT 이미지를 관리합니다." onAdd={() => setItems([...items, { title: "", summary: null, problem: "", solution: "", result: "", mediaId: null, clientKey: null }])} />
+      <PanelHeading title="기술적 문제 해결" description="Problem·Solution·Result와 선택 Summary를 관리합니다." onAdd={() => setItems([...items, { title: "", summary: null, problem: "", solution: "", result: "" }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`engineering-${index}`}>
           <div className={styles.projectItemFields}>
             <TextField label={`문제 해결 ${index + 1} Title`} value={item.title} onChange={(title) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, title } : value))} />
             <TextField label={`문제 해결 ${index + 1} Summary`} value={item.summary} onChange={(summary) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, summary: summary || null } : value))} />
             {(["problem", "solution", "result"] as const).map((field) => <TextAreaField key={field} label={`문제 해결 ${index + 1} ${field[0].toUpperCase()}${field.slice(1)}`} value={item[field]} onChange={(text) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, [field]: text } : value))} />)}
-            <ContentImageField reference={item} media={draft.media} onAddMedia={onAddMedia} onChange={(reference) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, ...reference } : value))} />
           </div>
           <ItemActions index={index} length={items.length} label={`문제 해결 ${index + 1}`} onMove={(direction) => setItems(moveProjectItem(items, index, direction))} onDelete={() => setItems(items.filter((_, itemIndex) => itemIndex !== index))} />
         </article>
@@ -255,14 +235,34 @@ function TechnologyPanel({ draft, setDraft, technologyMaster }: Pick<PanelProps,
   const setItems = (technologies: ProjectEditorDraft["technologies"]) => setDraft((current) => ({ ...current, technologies }));
   return (
     <section className={styles.projectEditorPanel} aria-label="기술 편집">
-      <PanelHeading title="기술" description="technology_master에서 선택하고 카드 노출·강조·순서를 관리합니다." />
+      <PanelHeading title="기술" description="technology_master에서 선택하고 강조·순서를 관리합니다." />
       <div className={styles.technologyPicker}>
         <label className={styles.formField}><span className="type-small">프로젝트 기술 선택</span><select className="type-body" value={selectedId} onChange={(event) => setSelectedId(event.currentTarget.value)}><option value="">기술 선택</option>{technologyMaster.filter((item) => !selected.has(item.id)).map((item) => <option key={item.id} value={item.id} disabled={!item.enabled}>{item.name}{item.enabled ? "" : " · 비활성"}</option>)}</select></label>
         <button className={`${styles.secondaryButton} type-body`} type="button" disabled={!selectedId} onClick={() => { const id = Number(selectedId); setItems([...draft.technologies, { technologyId: id, showOnCard: false, highlighted: false, displayOrder: draft.technologies.length }]); setSelectedId(""); }}>추가</button>
       </div>
       <div className={styles.projectItemList}>{draft.technologies.map((item, index) => {
         const technology = technologyMaster.find((value) => value.id === item.technologyId);
-        return <article className={styles.technologyDraftRow} key={item.technologyId}><div><strong className="type-body">{technology?.name ?? `Technology #${item.technologyId}`}</strong><span className="type-small">{technology?.category}{technology && !technology.enabled ? " · 기존 비활성 연결" : ""}</span></div><label className={styles.checkField}><input type="checkbox" checked={item.showOnCard} onChange={(event) => setItems(draft.technologies.map((value, itemIndex) => itemIndex === index ? { ...value, showOnCard: event.currentTarget.checked } : value))} />Card 노출</label><label className={styles.checkField}><input type="checkbox" checked={item.highlighted} onChange={(event) => setItems(draft.technologies.map((value, itemIndex) => itemIndex === index ? { ...value, highlighted: event.currentTarget.checked } : value))} />Highlighted</label><NumberField label="Display Order" value={item.displayOrder} min={0} onChange={(displayOrder) => setItems(draft.technologies.map((value, itemIndex) => itemIndex === index ? { ...value, displayOrder: displayOrder ?? 0 } : value))} /><ItemActions index={index} length={draft.technologies.length} label={`${technology?.name ?? "기술"}`} onMove={(direction) => setItems(moveProjectItem(draft.technologies, index, direction).map((value, itemIndex) => ({ ...value, displayOrder: itemIndex })))} onDelete={() => setItems(draft.technologies.filter((_, itemIndex) => itemIndex !== index))} /></article>;
+        const technologyName = technology?.name ?? `Technology #${item.technologyId}`;
+        return (
+          <article className={styles.technologyDraftRow} key={item.technologyId}>
+            <div>
+              <strong className="type-body">{technologyName}</strong>
+              <span className="type-small">{technology?.category}{technology && !technology.enabled ? " · 기존 비활성 연결" : ""}</span>
+            </div>
+            <div className={styles.technologyHighlight}>
+              <span className="type-small">Highlighted</span>
+              <StateSwitch
+                enabled={item.highlighted}
+                label={`${technologyName} Highlighted ${item.highlighted ? "OFF" : "ON"} 전환`}
+                onClick={() => setItems(draft.technologies.map((value, itemIndex) => (
+                  itemIndex === index ? { ...value, highlighted: !value.highlighted } : value
+                )))}
+              />
+            </div>
+            <NumberField label="Display Order" value={item.displayOrder} min={0} onChange={(displayOrder) => setItems(draft.technologies.map((value, itemIndex) => itemIndex === index ? { ...value, displayOrder: displayOrder ?? 0 } : value))} />
+            <ItemActions index={index} length={draft.technologies.length} label={technologyName} onMove={(direction) => setItems(moveProjectItem(draft.technologies, index, direction).map((value, itemIndex) => ({ ...value, displayOrder: itemIndex })))} onDelete={() => setItems(draft.technologies.filter((_, itemIndex) => itemIndex !== index))} />
+          </article>
+        );
       })}</div>
     </section>
   );
@@ -282,24 +282,21 @@ function MediaRow({ item, index, length, onDelete, onRestore, onChange, onMove }
         <TextField label="Alt Text" value={item.altText} onChange={(altText) => onChange({ altText: altText || null })} />
         <NumberField label="Display Order" value={item.displayOrder} min={0} onChange={(displayOrder) => onChange({ displayOrder: displayOrder ?? 0 })} />
       </div>
-      {item.deleted ? <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onRestore}><RotateCcw aria-hidden="true" />삭제 취소</button> : <ItemActions index={index} length={length} label={`${item.mediaType} ${index + 1}`} onMove={onMove} onDelete={onDelete} />}
+      {item.deleted ? <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onRestore}><RotateCcw aria-hidden="true" />삭제 취소</button> : <ItemActions index={index} length={length} label={`Carousel ${index + 1}`} onMove={onMove} onDelete={onDelete} />}
     </article>
   );
 }
 
-// Thumbnail·Carousel·Content Image 통합 Local Draft 패널
+// Thumbnail과 Carousel 통합 Local Draft 패널
 function MediaPanel(props: Pick<PanelProps, "draft" | "onThumbnailFile" | "onThumbnailRemove" | "onAddMedia" | "onDeleteMedia" | "onChangeMedia" | "onMoveMedia" | "fileError">) {
   const { draft, onThumbnailFile, onThumbnailRemove, onAddMedia, onDeleteMedia, onChangeMedia, onMoveMedia, fileError } = props;
   const thumbnailSource = draft.thumbnail.previewUrl || (draft.thumbnail.mode === "KEEP" ? draft.thumbnail.imageUrl : null);
   return (
     <section className={styles.projectEditorPanel} aria-label="미디어 편집">
-      <PanelHeading title="미디어" description="Thumbnail·Carousel·Content Image를 Local Draft에서 함께 관리합니다." />
+      <PanelHeading title="미디어" description="Thumbnail과 Carousel을 Local Draft에서 함께 관리합니다." />
       <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Thumbnail</h3><p className="type-small">현재 상태: {draft.thumbnail.mode}</p></div><div className={styles.mediaGroupActions}><label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onThumbnailFile(file); event.currentTarget.value = ""; }} /></label><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onThumbnailRemove}>Remove</button></div></div><div className={styles.thumbnailDraftPreview}>{thumbnailSource ? <Image src={thumbnailSource} alt="Thumbnail Preview" fill sizes="420px" unoptimized /> : <span className="type-small">Thumbnail 없음</span>}</div></section>
-      {(["CAROUSEL", "CONTENT"] as const).map((mediaType) => {
-        const items = draft.media.filter((item) => item.mediaType === mediaType);
-        return <section className={styles.mediaGroup} key={mediaType}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">{mediaType === "CAROUSEL" ? "Carousel" : "Content Image"}</h3><p className="type-small">{items.filter((item) => !item.deleted).length}개 사용</p></div><label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />이미지 추가<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onAddMedia(file, mediaType); event.currentTarget.value = ""; }} /></label></div><div className={styles.projectItemList}>{items.map((item, index) => <MediaRow key={item.key} item={item} index={index} length={items.length} onDelete={() => onDeleteMedia(item.key)} onRestore={() => onChangeMedia(item.key, { deleted: false })} onChange={(patch) => onChangeMedia(item.key, patch)} onMove={(direction) => onMoveMedia(item.key, direction)} />)}</div></section>;
-      })}
-      <p className={`${styles.inlineError} type-small`} role="alert">{fileError}</p>
+      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Carousel</h3><p className="type-small">{draft.media.filter((item) => !item.deleted).length}개 사용</p></div><label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />이미지 추가<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onAddMedia(file); event.currentTarget.value = ""; }} /></label></div><div className={styles.projectItemList}>{draft.media.map((item, index) => <MediaRow key={item.key} item={item} index={index} length={draft.media.length} onDelete={() => onDeleteMedia(item.key)} onRestore={() => onChangeMedia(item.key, { deleted: false })} onChange={(patch) => onChangeMedia(item.key, patch)} onMove={(direction) => onMoveMedia(item.key, direction)} />)}</div></section>
+      {fileError ? <p className={`${styles.inlineError} type-small`} role="alert">{fileError}</p> : null}
     </section>
   );
 }

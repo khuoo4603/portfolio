@@ -1,6 +1,5 @@
 package com.khuoo.portfolio.project.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.khuoo.portfolio.common.error.ApiException;
 import com.khuoo.portfolio.common.error.ErrorCode;
@@ -8,7 +7,6 @@ import com.khuoo.portfolio.project.domain.ProjectContent;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -29,7 +27,7 @@ public record ProjectContentResponse(
         @Schema(description = "직접 담당 개발 영역")
         List<DevelopmentItem> development,
 
-        @Schema(description = "아키텍처 노드 텍스트")
+        @Schema(description = "아키텍처 설명")
         Architecture architecture,
 
         @Schema(description = "기술적 문제 해결 목록")
@@ -94,19 +92,17 @@ public record ProjectContentResponse(
     // 프로젝트 성과 항목
     public record ResultItem(
             @NotBlank @Schema(description = "성과 제목") String title,
-            @NotBlank @Schema(description = "성과 설명") String description
+            @Schema(description = "성과 설명", nullable = true) String description
     ) {
         public ResultItem {
             Objects.requireNonNull(title);
-            Objects.requireNonNull(description);
         }
     }
 
     // 프로젝트 문제 배경 항목
     public record BackgroundItem(
             @Schema(description = "선택 제목", nullable = true) String title,
-            @NotBlank @Schema(description = "문제 배경 본문") String body,
-            @Positive @Schema(description = "본문 CONTENT 미디어 식별자", nullable = true) Long mediaId
+            @NotBlank @Schema(description = "문제 배경 본문") String body
     ) {
         public BackgroundItem {
             Objects.requireNonNull(body);
@@ -116,12 +112,10 @@ public record ProjectContentResponse(
     // 프로젝트 주요 기능 항목
     public record FeatureItem(
             @NotBlank @Schema(description = "기능 제목") String title,
-            @NotBlank @Schema(description = "기능 설명") String description,
-            @Positive @Schema(description = "본문 CONTENT 미디어 식별자", nullable = true) Long mediaId
+            @Schema(description = "기능 설명", nullable = true) String description
     ) {
         public FeatureItem {
             Objects.requireNonNull(title);
-            Objects.requireNonNull(description);
         }
     }
 
@@ -131,10 +125,7 @@ public record ProjectContentResponse(
             @NotBlank String title,
 
             @Schema(description = "담당 작업 목록")
-            @NotNull List<@NotBlank String> items,
-
-            @Schema(description = "본문 CONTENT 미디어 식별자", nullable = true)
-            @Positive Long mediaId
+            @NotNull List<@NotBlank String> items
     ) {
         public DevelopmentItem {
             Objects.requireNonNull(title);
@@ -142,35 +133,29 @@ public record ProjectContentResponse(
         }
     }
 
-    // Frontend 고정 Layout에 전달할 아키텍처 노드 그룹
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    // 아키텍처 이미지 하단 설명 그룹
     public record Architecture(
-            @Schema(description = "Client 노드")
-            List<String> clients,
-
-            @Schema(description = "Service 노드")
-            List<String> services,
-
-            @Schema(description = "Data 및 외부 연동 노드")
-            List<String> dataAndExternal,
-
-            @Schema(description = "Runtime 노드")
-            List<String> runtime,
-
-            @Schema(description = "Delivery 노드")
-            List<String> delivery
+            @Schema(description = "아키텍처 설명 목록")
+            List<Note> notes
     ) {
         public Architecture {
-            clients = clients == null ? List.of() : List.copyOf(clients);
-            services = services == null ? List.of() : List.copyOf(services);
-            dataAndExternal = dataAndExternal == null ? List.of() : List.copyOf(dataAndExternal);
-            runtime = runtime == null ? List.of() : List.copyOf(runtime);
-            delivery = delivery == null ? List.of() : List.copyOf(delivery);
+            notes = notes == null ? List.of() : List.copyOf(notes);
         }
 
         // 본문 미등록 상태의 빈 아키텍처 객체
         public static Architecture empty() {
-            return new Architecture(List.of(), List.of(), List.of(), List.of(), List.of());
+            return new Architecture(List.of());
+        }
+    }
+
+    // 아키텍처 운영 메모
+    public record Note(
+            @NotBlank @Schema(description = "설명 제목") String title,
+            @NotBlank @Schema(description = "설명 본문") String body
+    ) {
+        public Note {
+            Objects.requireNonNull(title);
+            Objects.requireNonNull(body);
         }
     }
 
@@ -189,10 +174,7 @@ public record ProjectContentResponse(
             @NotBlank String solution,
 
             @Schema(description = "적용 결과")
-            @NotBlank String result,
-
-            @Schema(description = "본문 CONTENT 미디어 식별자", nullable = true)
-            @Positive Long mediaId
+            @NotBlank String result
     ) {
         public EngineeringItem {
             Objects.requireNonNull(title);

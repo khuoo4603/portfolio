@@ -12,7 +12,6 @@ export type EditorMedia = {
   key: string;
   id: number | null;
   clientKey: string | null;
-  mediaType: "CAROUSEL" | "CONTENT";
   imageUrl: string;
   file: File | null;
   previewUrl: string | null;
@@ -29,11 +28,14 @@ export type ThumbnailDraft = {
   previewUrl: string | null;
 };
 
+export type ArchitectureImageDraft = ThumbnailDraft;
+
 export type ProjectEditorDraft = {
   project: ProjectFields;
   content: ProjectSaveContent;
   technologies: ProjectTechnologyInput[];
   thumbnail: ThumbnailDraft;
+  architectureImage: ArchitectureImageDraft;
   media: EditorMedia[];
 };
 
@@ -56,17 +58,13 @@ export function createProjectDraft(detail: ProjectDetail): ProjectEditorDraft {
     },
     content: {
       results: detail.content.results.map((item) => ({ ...item })),
-      background: detail.content.background.map((item) => ({ ...item, clientKey: null })),
-      features: detail.content.features.map((item) => ({ ...item, clientKey: null })),
-      development: detail.content.development.map((item) => ({ ...item, items: [...item.items], clientKey: null })),
+      background: detail.content.background.map((item) => ({ ...item })),
+      features: detail.content.features.map((item) => ({ ...item })),
+      development: detail.content.development.map((item) => ({ ...item, items: [...item.items] })),
       architecture: {
-        clients: [...(detail.content.architecture.clients ?? [])],
-        services: [...(detail.content.architecture.services ?? [])],
-        dataAndExternal: [...(detail.content.architecture.dataAndExternal ?? [])],
-        runtime: [...(detail.content.architecture.runtime ?? [])],
-        delivery: [...(detail.content.architecture.delivery ?? [])],
+        notes: detail.content.architecture.notes.map((note) => ({ ...note })),
       },
-      engineering: detail.content.engineering.map((item) => ({ ...item, clientKey: null })),
+      engineering: detail.content.engineering.map((item) => ({ ...item })),
     },
     technologies: detail.technologies.map((item) => ({
       technologyId: item.technologyId,
@@ -80,6 +78,12 @@ export function createProjectDraft(detail: ProjectDetail): ProjectEditorDraft {
       file: null,
       previewUrl: null,
     },
+    architectureImage: {
+      mode: "KEEP",
+      imageUrl: detail.architectureImageUrl,
+      file: null,
+      previewUrl: null,
+    },
     media: detail.media.map(toEditorMedia),
   };
 }
@@ -89,7 +93,6 @@ function toEditorMedia(media: ProjectMedia): EditorMedia {
     key: `media-${media.id}`,
     id: media.id,
     clientKey: null,
-    mediaType: media.mediaType,
     imageUrl: media.imageUrl,
     file: null,
     previewUrl: null,
@@ -110,6 +113,11 @@ export function projectDraftSignature(draft: ProjectEditorDraft) {
       mode: draft.thumbnail.mode,
       imageUrl: draft.thumbnail.imageUrl,
       file: fileSignature(draft.thumbnail.file),
+    },
+    architectureImage: {
+      mode: draft.architectureImage.mode,
+      imageUrl: draft.architectureImage.imageUrl,
+      file: fileSignature(draft.architectureImage.file),
     },
     media: draft.media.map((item) => ({
       ...item,
@@ -133,12 +141,12 @@ export function buildProjectSaveInput(draft: ProjectEditorDraft): ProjectSaveInp
       content: draft.content,
       technologies: [...draft.technologies].sort((left, right) => left.displayOrder - right.displayOrder),
       thumbnailMode: draft.thumbnail.mode,
+      architectureImageMode: draft.architectureImage.mode,
       mediaChanges: draft.media.flatMap<ProjectMediaChange>((item) => {
         if (item.id !== null) {
           return item.deleted ? [{ id: item.id, action: "DELETE" as const }] : [{
             id: item.id,
             action: "KEEP" as const,
-            mediaType: item.mediaType,
             label: item.label,
             altText: item.altText,
             displayOrder: item.displayOrder,
@@ -149,7 +157,6 @@ export function buildProjectSaveInput(draft: ProjectEditorDraft): ProjectSaveInp
           clientKey: item.clientKey,
           action: "UPLOAD" as const,
           uploadIndex: uploadIndexes.get(item.clientKey),
-          mediaType: item.mediaType,
           label: item.label,
           altText: item.altText,
           displayOrder: item.displayOrder,
@@ -157,6 +164,7 @@ export function buildProjectSaveInput(draft: ProjectEditorDraft): ProjectSaveInp
       }),
     },
     thumbnail: draft.thumbnail.mode === "UPLOAD" ? draft.thumbnail.file : null,
+    architectureImage: draft.architectureImage.mode === "UPLOAD" ? draft.architectureImage.file : null,
     mediaFiles: uploads.flatMap((item) => item.file ? [item.file] : []),
   };
 }

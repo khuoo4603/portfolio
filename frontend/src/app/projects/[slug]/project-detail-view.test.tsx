@@ -100,9 +100,14 @@ describe("동적 Project Detail View", () => {
     expect(within(stack).getByText("Java").closest("li")).toHaveAttribute("data-mine", "true");
     expect(within(stack).getByText("React").closest("li")).toHaveAttribute("data-mine", "false");
     expect(screen.getByText("Fixture 성과")).toBeInTheDocument();
+    expect(screen.getByText("Fixture 성과 설명")).toBeInTheDocument();
+    expect(screen.getByText("Fixture 배경 제목")).toBeInTheDocument();
     expect(screen.getByText("Fixture 문제 배경")).toBeInTheDocument();
     expect(screen.getByText("Fixture 주요 기능")).toBeInTheDocument();
+    expect(screen.getByText("Fixture 기능 설명")).toBeInTheDocument();
     expect(screen.getByText("Fixture Backend 작업")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "KYvC 시스템 아키텍처" })).toBeInTheDocument();
+    expect(screen.getByText("Synology DSM Reverse Proxy → Nginx → Docker / Docker Compose")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "아키텍처" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "기술적 문제 해결" })).toBeInTheDocument();
 
@@ -118,24 +123,22 @@ describe("동적 Project Detail View", () => {
     ]);
   });
 
-  it("KYvC에만 기존 SVG 좌표·Edge Visual Config와 API Node Label을 주입", () => {
+  it("Architecture Image와 Notes를 동일 Section에 표시", () => {
     render(<ProjectDetailView project={mapProjectDetail(KYVC_PROJECT_FIXTURE)} portfolio={portfolio} />);
 
-    const visual = document.querySelector('[data-visual-config="kyvc"]')!;
+    const visual = document.querySelector("[data-architecture]")!;
     expect(visual).toBeInTheDocument();
-    expect(visual.querySelector("svg")).toBeInTheDocument();
-    expect(within(visual as HTMLElement).getAllByText("Core Admin API").length).toBeGreaterThan(0);
-    expect(screen.getByRole("img", { name: /KYvC 서비스와 데이터/ })).toBeInTheDocument();
+    expect(within(visual as HTMLElement).getByRole("img", { name: "KYvC 시스템 아키텍처" })).toBeInTheDocument();
+    expect(within(visual as HTMLElement).getByText("인프라 / 배포")).toBeInTheDocument();
   });
 
-  it("다른 slug는 Backend Node Group만 표시하고 SVG Edge를 만들지 않음", () => {
+  it("Architecture Image가 없어도 Notes를 표시", () => {
     render(<ProjectDetailView project={mapProjectDetail(MEDIA_PROJECT_FIXTURE)} portfolio={portfolio} />);
 
-    const groups = document.querySelector("[data-architecture-groups]")!;
-    expect(groups).toBeInTheDocument();
-    expect(groups.querySelector("svg")).not.toBeInTheDocument();
-    expect(within(groups as HTMLElement).getByText("Fixture Client")).toBeInTheDocument();
-    expect(within(groups as HTMLElement).getByText("Fixture Service")).toBeInTheDocument();
+    const visual = document.querySelector("[data-architecture]")!;
+    expect(visual).toBeInTheDocument();
+    expect(within(visual as HTMLElement).queryByRole("img")).not.toBeInTheDocument();
+    expect(within(visual as HTMLElement).getByText("Fixture architecture note")).toBeInTheDocument();
   });
 
   it("API Media가 있을 때 실제 imageUrl·altText·label 순서로 Carousel을 구성", () => {
@@ -203,7 +206,7 @@ describe("동적 Project Detail View", () => {
     expect(within(carousel).queryByText(/이미지 준비 중/)).not.toBeInTheDocument();
   });
 
-  it("빈 Content·Media에서도 Metadata·Media·Rail·5개 Detail Section 구조를 유지", () => {
+  it("빈 Content에서는 Metadata와 Demo Media만 유지하고 빈 Detail Section을 만들지 않음", () => {
     render(<ProjectDetailView project={mapProjectDetail(EMPTY_PROJECT_FIXTURE)} portfolio={portfolio} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Empty Project" })).toBeInTheDocument();
@@ -222,30 +225,29 @@ describe("동적 Project Detail View", () => {
     expect(within(media).getByRole("button", { name: "다음 프로젝트 미디어" })).toBeInTheDocument();
     expect(within(media).getByText("01 / 05")).toBeInTheDocument();
 
-    const rail = screen.getByRole("complementary", { name: "프로젝트 상세 영역" });
-    expect(within(rail).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
-      "#detail-stack-result",
-      "#detail-background",
-      "#detail-development",
-      "#detail-architecture",
-      "#detail-engineering",
-    ]);
-
+    expect(screen.queryByRole("complementary", { name: "프로젝트 상세 영역" })).not.toBeInTheDocument();
     const main = screen.getByRole("main");
-    expect(main.querySelectorAll('section[id^="detail-"]')).toHaveLength(5);
+    expect(main.querySelectorAll('section[id^="detail-"]')).toHaveLength(0);
     [
       "기술 스택 · 성과",
-      "기술 스택",
-      "성과",
       "문제 배경 · 주요 기능",
-      "문제 배경",
-      "주요 기능",
       "직접 담당한 개발 영역",
       "아키텍처",
       "기술적 문제 해결",
-    ].forEach((heading) => expect(within(main).getByRole("heading", { name: heading })).toBeInTheDocument());
-    expect(within(main).getAllByText("-", { exact: true })).toHaveLength(10);
+    ].forEach((heading) => expect(within(main).queryByRole("heading", { name: heading })).not.toBeInTheDocument());
     expect(screen.queryByText(/정보 없음|Coming Soon|Placeholder/i)).not.toBeInTheDocument();
+  });
+
+  it("Project Media는 별도 타입 구분 없이 Carousel에만 연결", () => {
+    const carouselOnly = mapProjectDetail({
+      ...KYVC_PROJECT_FIXTURE,
+      media: [{ id: 91, imageUrl: "/fixture/carousel.webp", label: "화면", altText: "프로젝트 화면", displayOrder: 0 }],
+    });
+    render(<ProjectDetailView project={carouselOnly} portfolio={portfolio} />);
+
+    expect(document.querySelector("[data-content-media]")).not.toBeInTheDocument();
+    const carousel = screen.getByRole("region", { name: "KYvC 프로젝트 미디어" });
+    expect(carousel.querySelectorAll('[data-carousel-media="true"]')).toHaveLength(1);
   });
 
   it("진행 중 기간은 종료일·총 일수 없이 진행 상태만 표시", () => {

@@ -4,7 +4,7 @@ import { ArrowLeft, Eye, Save, SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { formatApiError } from "@/lib/api/client";
-import type { ProjectContentMediaReference, ProjectDetail, Technology } from "./admin-types";
+import type { ProjectDetail, Technology } from "./admin-types";
 import AdminActionDialog from "./admin-action-dialog";
 import { getAdminProject, projectActionBindings, saveProject } from "./admin-project-api";
 import { getAdminSite } from "./admin-site-api";
@@ -34,11 +34,6 @@ const SECTIONS: Array<{ id: ProjectEditorSection; label: string }> = [
   { id: "media", label: "미디어" },
 ];
 
-function clearReference(reference: ProjectContentMediaReference, item: EditorMedia) {
-  const matches = item.id !== null ? reference.mediaId === item.id : item.clientKey !== null && reference.clientKey === item.clientKey;
-  return matches ? { ...reference, mediaId: null, clientKey: null } : reference;
-}
-
 // Project Editor GET·Local Draft·Object URL·단일 Save 흐름 조정
 export default function ProjectEditorScreen({ projectId }: { projectId: number }) {
   const router = useRouter();
@@ -48,7 +43,7 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
   const [technologyMaster, setTechnologyMaster] = useState<Technology[]>([]);
   const [initialSignature, setInitialSignature] = useState("");
   const [section, setSection] = useState<ProjectEditorSection>("basic");
-  const [mobileView, setMobileView] = useState<"editor" | "preview">("editor");
+  const [viewMode, setViewMode] = useState<"editor" | "preview">("editor");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -145,8 +140,31 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
     return { ...current, thumbnail: { ...current.thumbnail, mode: "REMOVE", file: null, previewUrl: null } };
   });
 
-  // Carousel·Content 신규 File의 Client Key·Object URL 등록
-  const addMedia = (file: File, mediaType: EditorMedia["mediaType"]) => {
+  // Architecture Image File 검증·Local Preview 교체
+  const selectArchitectureImage = (file: File) => {
+    const validation = validateProjectImage(file);
+    if (validation) {
+      setFileError(validation);
+      return;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    objectUrls.current.add(previewUrl);
+    setFileError("");
+    setDraft((current) => {
+      if (!current) return current;
+      revokeUrl(current.architectureImage.previewUrl);
+      return { ...current, architectureImage: { ...current.architectureImage, mode: "UPLOAD", file, previewUrl } };
+    });
+  };
+
+  const removeArchitectureImage = () => setDraft((current) => {
+    if (!current) return current;
+    revokeUrl(current.architectureImage.previewUrl);
+    return { ...current, architectureImage: { ...current.architectureImage, mode: "REMOVE", file: null, previewUrl: null } };
+  });
+
+  // Carousel 신규 File의 Client Key·Object URL 등록
+  const addMedia = (file: File) => {
     const validation = validateProjectImage(file);
     if (validation) {
       setFileError(validation);
@@ -159,13 +177,12 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
       key: `client-${clientKey}`,
       id: null,
       clientKey,
-      mediaType,
       imageUrl: "",
       file,
       previewUrl,
       label: file.name,
       altText: "",
-      displayOrder: draft?.media.filter((value) => value.mediaType === mediaType && !value.deleted).length ?? 0,
+      displayOrder: draft?.media.filter((value) => !value.deleted).length ?? 0,
       deleted: false,
     };
     setDraft((current) => current ? { ...current, media: [...current.media, item] } : current);
@@ -173,25 +190,16 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
     return item;
   };
 
-  const clearMediaReferences = (current: ProjectEditorDraft, item: EditorMedia) => ({
-    ...current.content,
-    background: current.content.background.map((value) => ({ ...value, ...clearReference(value, item) })),
-    features: current.content.features.map((value) => ({ ...value, ...clearReference(value, item) })),
-    development: current.content.development.map((value) => ({ ...value, ...clearReference(value, item) })),
-    engineering: current.content.engineering.map((value) => ({ ...value, ...clearReference(value, item) })),
-  });
-
-  // Media 삭제와 연결된 Content Item 참조 해제
+  // Carousel 삭제 상태 반영
   const deleteMedia = (key: string) => setDraft((current) => {
     if (!current) return current;
     const item = current.media.find((value) => value.key === key);
     if (!item) return current;
-    const content = clearMediaReferences(current, item);
     if (item.id === null) {
       revokeUrl(item.previewUrl);
-      return { ...current, content, media: current.media.filter((value) => value.key !== key) };
+      return { ...current, media: current.media.filter((value) => value.key !== key) };
     }
-    return { ...current, content, media: current.media.map((value) => value.key === key ? { ...value, deleted: true } : value) };
+    return { ...current, media: current.media.map((value) => value.key === key ? { ...value, deleted: true } : value) };
   });
 
   const changeMedia = (key: string, patch: Partial<EditorMedia>) => setDraft((current) => current ? {
@@ -199,18 +207,18 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
     media: current.media.map((item) => item.key === key ? { ...item, ...patch } : item),
   } : current);
 
-  // 동일 Media Type 내부 표시 순서 이동
+  // Carousel 표시 순서 이동
   const moveMedia = (key: string, direction: -1 | 1) => setDraft((current) => {
     if (!current) return current;
     const source = current.media.find((item) => item.key === key);
     if (!source) return current;
-    const group = current.media.filter((item) => item.mediaType === source.mediaType);
+    const group = [...current.media];
     const index = group.findIndex((item) => item.key === key);
     const target = index + direction;
     if (target < 0 || target >= group.length) return current;
     [group[index], group[target]] = [group[target], group[index]];
     const order = new Map(group.map((item, itemIndex) => [item.key, itemIndex]));
-    return { ...current, media: current.media.map((item) => item.mediaType === source.mediaType ? { ...item, displayOrder: order.get(item.key) ?? item.displayOrder } : item) };
+    return { ...current, media: current.media.map((item) => ({ ...item, displayOrder: order.get(item.key) ?? item.displayOrder })) };
   });
 
   // Local Draft 전체를 PROJECT_UPDATE 1회 Multipart로 저장
@@ -243,16 +251,16 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
       {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
 
-      <div className={styles.projectMobileViewSwitch} role="group" aria-label="Editor 표시 영역">
-        <button type="button" aria-pressed={mobileView === "editor"} onClick={() => setMobileView("editor")}><SlidersHorizontal aria-hidden="true" />Editor</button>
-        <button type="button" aria-pressed={mobileView === "preview"} onClick={() => setMobileView("preview")}><Eye aria-hidden="true" />Preview</button>
+      <div className={styles.projectModeSwitch} role="group" aria-label="Project Editor 모드">
+        <button type="button" aria-pressed={viewMode === "editor"} onClick={() => setViewMode("editor")}><SlidersHorizontal aria-hidden="true" />편집 모드</button>
+        <button type="button" aria-pressed={viewMode === "preview"} onClick={() => setViewMode("preview")}><Eye aria-hidden="true" />미리보기 모드</button>
       </div>
 
-      <div className={styles.projectEditorLayout}>
-        <aside className={styles.projectSectionNav} data-mobile-visible={mobileView === "editor" ? "true" : "false"}>
-          <nav aria-label="Project Editor Section">{SECTIONS.map((item, index) => <button key={item.id} type="button" aria-current={section === item.id ? "step" : undefined} onClick={() => { setSection(item.id); setMobileView("editor"); }}><span>{String(index + 1).padStart(2, "0")}</span>{item.label}</button>)}</nav>
+      <div className={styles.projectEditorLayout} data-view-mode={viewMode}>
+        <aside className={styles.projectSectionNav} data-mode-visible={viewMode === "editor" ? "true" : "false"} hidden={viewMode !== "editor"}>
+          <nav aria-label="Project Editor Section">{SECTIONS.map((item, index) => <button key={item.id} type="button" aria-current={section === item.id ? "step" : undefined} onClick={() => setSection(item.id)}><span>{String(index + 1).padStart(2, "0")}</span>{item.label}</button>)}</nav>
         </aside>
-        <div className={styles.projectEditorWorkspace} data-mobile-visible={mobileView === "editor" ? "true" : "false"}>
+        <div className={styles.projectEditorWorkspace} data-mode-visible={viewMode === "editor" ? "true" : "false"} hidden={viewMode !== "editor"}>
           <ProjectEditorPanel
             section={section}
             draft={draft}
@@ -260,6 +268,8 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
             technologyMaster={technologyMaster}
             onThumbnailFile={selectThumbnail}
             onThumbnailRemove={removeThumbnail}
+            onArchitectureImageFile={selectArchitectureImage}
+            onArchitectureImageRemove={removeArchitectureImage}
             onAddMedia={addMedia}
             onDeleteMedia={deleteMedia}
             onChangeMedia={changeMedia}
@@ -267,7 +277,7 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
             fileError={fileError}
           />
         </div>
-        <div className={styles.projectPreviewWorkspace} data-mobile-visible={mobileView === "preview" ? "true" : "false"}>
+        <div className={styles.projectPreviewWorkspace} data-mode-visible={viewMode === "preview" ? "true" : "false"} hidden={viewMode !== "preview"}>
           <ProjectPreview draft={draft} technologyMaster={technologyMaster} />
         </div>
       </div>

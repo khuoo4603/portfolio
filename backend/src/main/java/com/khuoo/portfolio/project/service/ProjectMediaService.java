@@ -4,6 +4,7 @@ import com.khuoo.portfolio.common.error.ApiException;
 import com.khuoo.portfolio.common.error.ErrorCode;
 import com.khuoo.portfolio.file.service.FileStorageService;
 import com.khuoo.portfolio.project.domain.Project;
+import com.khuoo.portfolio.project.domain.ProjectContent;
 import com.khuoo.portfolio.project.domain.ProjectMedia;
 import com.khuoo.portfolio.project.repository.ProjectQueryRepository;
 import com.khuoo.portfolio.project.repository.ProjectRepository;
@@ -30,6 +31,13 @@ public class ProjectMediaService {
         return open(project.getThumbnailStorageKey());
     }
 
+    // ADMIN Session의 비공개 포함 Architecture Image 조회
+    @Transactional(readOnly = true)
+    public ProjectImage findAdminArchitecture(Long projectId) {
+        requireProject(projectId);
+        return open(requireContent(projectId).getArchitectureImageStorageKey());
+    }
+
     // ADMIN Session용 프로젝트 소속 Media 조회
     @Transactional(readOnly = true)
     public ProjectImage findAdminMedia(Long projectId, Long mediaId) {
@@ -42,6 +50,13 @@ public class ProjectMediaService {
     public ProjectImage findPublicThumbnail(Long projectId) {
         Project project = requireEnabledProject(projectId);
         return open(project.getThumbnailStorageKey());
+    }
+
+    // 공개 상태 프로젝트 Architecture Image 조회
+    @Transactional(readOnly = true)
+    public ProjectImage findPublicArchitecture(Long projectId) {
+        requireEnabledProject(projectId);
+        return open(requireContent(projectId).getArchitectureImageStorageKey());
     }
 
     // 공개 상태 프로젝트 소속 Media 조회
@@ -76,6 +91,11 @@ public class ProjectMediaService {
 
     private ProjectMedia requireMedia(Long projectId, Long mediaId) {
         return projectQueryRepository.findMedia(projectId, mediaId)
+                .orElseThrow(() -> new ApiException(ErrorCode.COMMON_NOT_FOUND));
+    }
+
+    private ProjectContent requireContent(Long projectId) {
+        return projectQueryRepository.findContent(projectId)
                 .orElseThrow(() -> new ApiException(ErrorCode.COMMON_NOT_FOUND));
     }
 

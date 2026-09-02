@@ -1,6 +1,5 @@
 package com.khuoo.portfolio.project.dto;
 
-import com.khuoo.portfolio.common.util.PortfolioEnums.ProjectMediaType;
 import com.khuoo.portfolio.project.domain.ProjectMedia;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -8,9 +7,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record ProjectMediaResponse(
         @Schema(description = "프로젝트 미디어 식별자", example = "1")
         Long id,
-
-        @Schema(description = "미디어 용도")
-        ProjectMediaType mediaType,
 
         @Schema(description = "Backend 미디어 조회 URL")
         String imageUrl,
@@ -29,7 +25,6 @@ public record ProjectMediaResponse(
     public static ProjectMediaResponse fromAdmin(ProjectMedia media) {
         return new ProjectMediaResponse(
                 media.getId(),
-                media.getMediaType(),
                 ProjectMediaUrl.adminMedia(media),
                 media.getLabel(),
                 media.getAltText(),
@@ -41,7 +36,6 @@ public record ProjectMediaResponse(
     public static ProjectMediaResponse fromPublic(ProjectMedia media) {
         return new ProjectMediaResponse(
                 media.getId(),
-                media.getMediaType(),
                 ProjectMediaUrl.publicMedia(media),
                 media.getLabel(),
                 media.getAltText(),

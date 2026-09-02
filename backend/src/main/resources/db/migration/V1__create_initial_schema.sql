@@ -162,6 +162,7 @@ CREATE TABLE project_contents (
     features_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     development_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     architecture_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    architecture_image_storage_key VARCHAR(255),
     engineering_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -175,7 +176,6 @@ CREATE TABLE project_media (
     id BIGSERIAL NOT NULL,
     project_id BIGINT NOT NULL,
     storage_key VARCHAR(255) NOT NULL,
-    media_type VARCHAR(30) NOT NULL,
     label VARCHAR(200),
     alt_text VARCHAR(300),
     display_order INTEGER NOT NULL DEFAULT 0,
@@ -186,8 +186,8 @@ CREATE TABLE project_media (
         FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_project_media_project_type_order
-    ON project_media (project_id, media_type, display_order);
+CREATE INDEX idx_project_media_project_order
+    ON project_media (project_id, display_order);
 
 -- 포트폴리오 외부 링크 테이블
 CREATE TABLE external_links (

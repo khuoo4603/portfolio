@@ -1,10 +1,7 @@
 package com.khuoo.portfolio.project.domain;
 
-import com.khuoo.portfolio.common.util.PortfolioEnums.ProjectMediaType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -16,7 +13,7 @@ import lombok.NoArgsConstructor;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-// 프로젝트 Carousel·본문 이미지의 내부 Storage 참조
+// 프로젝트 Carousel 이미지의 내부 Storage 참조
 @Getter
 @Entity
 @Table(name = "project_media")
@@ -32,10 +29,6 @@ public class ProjectMedia {
 
     @Column(name = "storage_key", nullable = false, length = 255)
     private String storageKey;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "media_type", nullable = false, length = 30)
-    private ProjectMediaType mediaType;
 
     @Column(length = 200)
     private String label;
@@ -55,14 +48,12 @@ public class ProjectMedia {
     private ProjectMedia(
             Long projectId,
             String storageKey,
-            ProjectMediaType mediaType,
             String label,
             String altText,
             int displayOrder
     ) {
         this.projectId = projectId;
         this.storageKey = storageKey;
-        this.mediaType = mediaType;
         this.label = label;
         this.altText = altText;
         this.displayOrder = displayOrder;
@@ -72,15 +63,14 @@ public class ProjectMedia {
     public static ProjectMedia create(
             Long projectId,
             String storageKey,
-            ProjectMediaType mediaType,
             String label,
             String altText,
             int displayOrder
     ) {
-        return new ProjectMedia(projectId, storageKey, mediaType, label, altText, displayOrder);
+        return new ProjectMedia(projectId, storageKey, label, altText, displayOrder);
     }
 
-    // 기존 미디어 용도 유지 기반 편집 Metadata와 순서 변경
+    // 기존 Carousel 편집 Metadata와 순서 변경
     public void update(String newLabel, String newAltText, int newDisplayOrder, OffsetDateTime changedAt) {
         boolean changed = !Objects.equals(label, newLabel)
                 || !Objects.equals(altText, newAltText)

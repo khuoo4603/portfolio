@@ -148,12 +148,6 @@ public final class PortfolioEnums {
         DEVOPS
     }
 
-    // 프로젝트 미디어 용도 코드
-    public enum ProjectMediaType {
-        CAROUSEL,
-        CONTENT
-    }
-
     // Tool 링크 분류 코드
     public enum ToolLinkCategory {
         REFERENCE,

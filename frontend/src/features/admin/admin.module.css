@@ -1781,8 +1781,7 @@
 
 .projectThumbnail,
 .mediaDraftPreview,
-.thumbnailDraftPreview,
-.projectPreviewImage {
+.thumbnailDraftPreview {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--border-default);
@@ -1800,8 +1799,7 @@
 
 .projectThumbnail img,
 .mediaDraftPreview img,
-.thumbnailDraftPreview img,
-.projectPreviewImage img {
+.thumbnailDraftPreview img {
   object-fit: cover;
 }
 
@@ -1872,7 +1870,7 @@
   font-weight: 700;
 }
 
-/* Project Editor의 Section·Draft·실제 상세 Preview 3단 구조 */
+/* Project Editor의 편집·실제 상세 Preview 전환 구조 */
 .projectEditorPage {
   min-width: 0;
 }
@@ -1910,16 +1908,54 @@
   font-family: var(--font-family-mono);
 }
 
-.projectMobileViewSwitch {
-  display: none;
+.projectModeSwitch {
+  display: flex;
+  width: min(100%, 440px);
+  gap: var(--space-4);
+  margin-bottom: var(--space-16);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  background: var(--admin-surface);
+}
+
+.projectModeSwitch button {
+  min-height: 40px;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+}
+
+.projectModeSwitch button[aria-pressed="true"] {
+  background: var(--admin-elevated);
+  color: var(--text-primary);
+}
+
+.projectModeSwitch svg {
+  width: 17px;
+  height: 17px;
 }
 
 .projectEditorLayout {
   min-width: 0;
   display: grid;
-  grid-template-columns: 152px minmax(340px, 0.82fr) minmax(430px, 1.18fr);
+  grid-template-columns: 168px minmax(0, 1fr);
   align-items: start;
   gap: var(--space-16);
+}
+
+.projectEditorLayout[data-view-mode="preview"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.projectEditorLayout [hidden] {
+  display: none !important;
 }
 
 .projectSectionNav,
@@ -1982,10 +2018,8 @@
 }
 
 .projectPreviewWorkspace {
-  position: sticky;
-  top: 82px;
-  max-height: calc(100dvh - 106px);
-  overflow: auto;
+  grid-column: 1 / -1;
+  overflow: hidden;
 }
 
 .projectEditorPanel {
@@ -1997,8 +2031,7 @@
 }
 
 .projectPanelHeading,
-.mediaGroupHeading,
-.architectureGroupHeading {
+.mediaGroupHeading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -2008,8 +2041,7 @@
 .projectPanelHeading h2,
 .projectPanelHeading p,
 .mediaGroupHeading h3,
-.mediaGroupHeading p,
-.architectureGroupHeading h3 {
+.mediaGroupHeading p {
   margin: 0;
 }
 
@@ -2032,14 +2064,12 @@
 }
 
 .projectItemList,
-.nestedStringList,
-.architectureEditors {
+.nestedStringList {
   display: grid;
   gap: var(--space-12);
 }
 
 .projectItemEditor,
-.architectureGroupEditor,
 .mediaGroup {
   display: grid;
   gap: var(--space-16);
@@ -2057,7 +2087,6 @@
   justify-content: flex-end;
 }
 
-.contentImageField,
 .technologyPicker {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -2089,7 +2118,7 @@
 
 .technologyDraftRow {
   display: grid;
-  grid-template-columns: minmax(132px, 1fr) auto auto 112px auto;
+  grid-template-columns: minmax(132px, 1fr) auto 112px auto;
   align-items: center;
   gap: var(--space-12);
   padding: var(--space-12) 0;
@@ -2109,7 +2138,7 @@
   color: var(--text-muted);
 }
 
-.checkField {
+.technologyHighlight {
   display: flex;
   align-items: center;
   gap: var(--space-8);
@@ -2151,187 +2180,40 @@
   aspect-ratio: 16 / 9;
 }
 
-/* Local Draft를 공개 상세 흐름으로 확인하는 편집 Preview */
+.architectureDraftPreview {
+  position: relative;
+  width: min(100%, 760px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  background: var(--admin-input);
+}
+
+.architectureDraftPreview img {
+  object-fit: contain;
+}
+
+.architectureDraftPreview > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+/* Local Draft의 Public 공용 상세 렌더러 Preview Shell */
 .projectPreview {
   background: var(--admin-canvas);
   color: var(--text-primary);
 }
 
-.projectPreviewHero,
-.projectPreviewSection,
-.projectPreviewMedia {
-  padding: var(--space-24);
-  border-bottom: 1px solid var(--border-default);
-}
-
-.projectPreviewHero > span {
-  color: var(--accent-primary);
-  font-family: var(--font-family-mono);
-  letter-spacing: 0.08em;
-}
-
-.projectPreviewHero h2 {
-  margin: var(--space-12) 0 var(--space-8);
-  font-size: clamp(1.8rem, 4vw, 3rem);
-  line-height: 1.05;
-}
-
-.projectPreviewHero > p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-.projectPreviewHero dl {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-12);
-  margin: var(--space-24) 0 0;
-}
-
-.projectPreviewHero dl > div {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.projectPreviewHero dt,
-.projectPreviewEngineering dt {
-  color: var(--text-muted);
-  font-size: var(--font-size-small);
-}
-
-.projectPreviewHero dd,
-.projectPreviewEngineering dd {
-  margin: 0;
-}
-
-.projectPreviewMedia {
-  min-height: 180px;
-  display: grid;
-  align-items: center;
-}
-
-.projectPreviewMedia > p {
-  margin: 0;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.projectPreviewSection {
-  display: grid;
-  gap: var(--space-20);
-}
-
-.projectPreviewSection > h3 {
-  margin: 0;
-  font-size: var(--font-size-title);
-}
-
-.projectPreviewSection h4,
-.projectPreviewSection p,
-.projectPreviewSection ul,
-.projectPreviewSection ol {
-  margin-block: 0;
-}
-
-.projectPreviewSplit,
-.projectPreviewColumns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-20);
-}
-
-.projectPreviewSplit > div,
-.projectPreviewColumns > article {
-  display: grid;
-  align-content: start;
-  gap: var(--space-12);
-}
-
-.projectPreviewImage {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  margin-top: var(--space-12);
-}
-
-.projectPreviewEngineering {
-  display: grid;
-  gap: var(--space-16);
-}
-
-.projectPreviewEngineering > article {
-  display: grid;
-  gap: var(--space-8);
-  padding-left: var(--space-16);
-  border-left: 2px solid var(--border-accent);
-}
-
-.projectPreviewEngineering > article > span {
-  color: var(--accent-primary);
-  font-family: var(--font-family-mono);
-}
-
-.projectPreviewEngineering h4,
-.projectPreviewEngineering dl {
-  margin: 0;
-}
-
-.projectPreviewEngineering dl {
-  display: grid;
-  gap: var(--space-8);
-}
-
-.projectPreviewEngineering dl > div {
-  display: grid;
-  grid-template-columns: 70px minmax(0, 1fr);
-  gap: var(--space-8);
-}
-
-/* Tablet의 Editor·Preview 명시적 전환 */
+/* Tablet의 Project Editor 폭 조정 */
 @media (max-width: 1199px) {
-  .projectMobileViewSwitch {
-    display: flex;
-    gap: var(--space-4);
-    margin-bottom: var(--space-16);
-    padding: var(--space-4);
-    border: 1px solid var(--border-default);
-    background: var(--admin-surface);
-  }
-
-  .projectMobileViewSwitch button {
-    min-height: 40px;
-    flex: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-8);
-    border: 0;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-family: var(--font-family-primary);
-  }
-
-  .projectMobileViewSwitch button[aria-pressed="true"] {
-    background: var(--admin-elevated);
-    color: var(--text-primary);
-  }
-
-  .projectMobileViewSwitch svg {
-    width: 17px;
-    height: 17px;
-  }
-
   .projectEditorLayout {
     grid-template-columns: 168px minmax(0, 1fr);
   }
 
-  .projectEditorLayout [data-mobile-visible="false"] {
-    display: none;
-  }
-
   .projectPreviewWorkspace {
-    position: static;
-    max-height: none;
     grid-column: 1 / -1;
   }
 }
@@ -2846,10 +2728,7 @@
 
   .projectFieldsGrid,
   .projectItemFields,
-  .mediaDraftFields,
-  .projectPreviewHero dl,
-  .projectPreviewSplit,
-  .projectPreviewColumns {
+  .mediaDraftFields {
     grid-template-columns: 1fr;
   }
 
@@ -2867,12 +2746,10 @@
     width: min(100%, 220px);
   }
 
-  .contentImageField,
   .technologyPicker {
     grid-template-columns: 1fr;
   }
 
-  .contentImageField .secondaryButton,
   .technologyPicker .secondaryButton {
     justify-self: start;
   }

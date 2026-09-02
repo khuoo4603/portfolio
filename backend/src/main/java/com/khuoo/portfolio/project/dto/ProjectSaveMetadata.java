@@ -1,6 +1,5 @@
 package com.khuoo.portfolio.project.dto;
 
-import com.khuoo.portfolio.common.util.PortfolioEnums.ProjectMediaType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -32,6 +31,10 @@ public record ProjectSaveMetadata(
         @NotNull
         @Schema(description = "Thumbnail 처리 방식")
         ThumbnailMode thumbnailMode,
+
+        @NotNull
+        @Schema(description = "Architecture Image 처리 방식")
+        ArchitectureImageMode architectureImageMode,
 
         @NotNull
         @Schema(description = "기존·신규 미디어 변경 목록")
@@ -104,7 +107,6 @@ public record ProjectSaveMetadata(
             @Size(max = 100) @Schema(description = "신규 업로드 임시 식별자", nullable = true) String clientKey,
             @NotNull @Schema(description = "미디어 처리 방식") MediaAction action,
             @PositiveOrZero @Schema(description = "mediaFiles 배열 인덱스", nullable = true) Integer uploadIndex,
-            @Schema(description = "미디어 용도", nullable = true) ProjectMediaType mediaType,
             @Size(max = 200) @Schema(description = "관리용 Label", nullable = true) String label,
             @Size(max = 300) @Schema(description = "접근성 대체 텍스트", nullable = true) String altText,
             @PositiveOrZero @Schema(description = "표시 순서", nullable = true) Integer displayOrder
@@ -113,6 +115,13 @@ public record ProjectSaveMetadata(
 
     // Thumbnail 파일 처리 방식
     public enum ThumbnailMode {
+        KEEP,
+        REMOVE,
+        UPLOAD
+    }
+
+    // Architecture Image 파일 처리 방식
+    public enum ArchitectureImageMode {
         KEEP,
         REMOVE,
         UPLOAD

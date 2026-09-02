@@ -99,8 +99,19 @@ export type PublicProjectTechnology = PublicTechnology & {
   highlighted: boolean;
 };
 
-export type ProjectTitleItem = {
+export type ProjectResultItem = {
   title: string;
+  description: string | null;
+};
+
+export type ProjectBackgroundItem = {
+  title: string | null;
+  body: string;
+};
+
+export type ProjectFeatureItem = {
+  title: string;
+  description: string | null;
 };
 
 export type ProjectDevelopmentItem = {
@@ -109,25 +120,21 @@ export type ProjectDevelopmentItem = {
 };
 
 export type ProjectArchitecture = {
-  clients?: string[];
-  services?: string[];
-  dataAndExternal?: string[];
-  runtime?: string[];
-  delivery?: string[];
+  notes: Array<{ title: string; body: string }>;
 };
 
 export type ProjectEngineeringItem = {
   title: string;
-  summary: string;
+  summary: string | null;
   problem: string;
   solution: string;
   result: string;
 };
 
 export type ProjectContent = {
-  results: ProjectTitleItem[];
-  background: string[];
-  features: ProjectTitleItem[];
+  results: ProjectResultItem[];
+  background: ProjectBackgroundItem[];
+  features: ProjectFeatureItem[];
   development: ProjectDevelopmentItem[];
   architecture: ProjectArchitecture;
   engineering: ProjectEngineeringItem[];
@@ -145,14 +152,15 @@ export type PublicProjectDetail = {
   id: number;
   slug: string;
   name: string;
-  year: number;
-  tagline: string;
+  year: number | null;
+  tagline: string | null;
   summary: string | null;
   detailRole: string | null;
   startedAt: string | null;
   endedAt: string | null;
   teamSize: number | null;
   thumbnailUrl: string | null;
+  architectureImageUrl: string | null;
   technologies: PublicProjectTechnology[];
   content: ProjectContent;
   media: ProjectMedia[];

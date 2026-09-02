@@ -41,6 +41,9 @@ public record PublicProjectResponse(
         @Schema(description = "대표 이미지 경로", nullable = true)
         String thumbnailUrl,
 
+        @Schema(description = "Architecture Image 조회 URL", nullable = true)
+        String architectureImageUrl,
+
         @Schema(description = "프로젝트 전체 기술")
         List<ProjectTechnologyResponse> technologies,
 
@@ -56,6 +59,7 @@ public record PublicProjectResponse(
             Project project,
             List<ProjectTechnologyResponse> technologies,
             ProjectContentResponse content,
+            String architectureImageUrl,
             List<ProjectMediaResponse> media
     ) {
         return new PublicProjectResponse(
@@ -70,6 +74,7 @@ public record PublicProjectResponse(
                 project.getEndedAt(),
                 project.getTeamSize(),
                 ProjectMediaUrl.publicThumbnail(project),
+                architectureImageUrl,
                 technologies,
                 content,
                 media

@@ -33,6 +33,13 @@ public class ProjectMediaController {
         return response(projectMediaService.findAdminThumbnail(projectId), false);
     }
 
+    // 비공개 Draft를 포함한 ADMIN Architecture Image 조회
+    @Operation(summary = "관리자 프로젝트 Architecture Image 조회")
+    @GetMapping("/api/v1/admin/media/projects/{projectId}/architecture")
+    public ResponseEntity<Resource> findAdminArchitecture(@PathVariable Long projectId) {
+        return response(projectMediaService.findAdminArchitecture(projectId), false);
+    }
+
     // 비공개 Draft를 포함한 ADMIN 소속 Media 조회
     @Operation(summary = "관리자 프로젝트 Media 조회")
     @GetMapping("/api/v1/admin/media/projects/{projectId}/{mediaId}")
@@ -45,6 +52,13 @@ public class ProjectMediaController {
     @GetMapping("/api/v1/public/media/projects/{projectId}/thumbnail")
     public ResponseEntity<Resource> findPublicThumbnail(@PathVariable Long projectId) {
         return response(projectMediaService.findPublicThumbnail(projectId), true);
+    }
+
+    // 공개 상태 프로젝트 Architecture Image 조회
+    @Operation(summary = "공개 프로젝트 Architecture Image 조회")
+    @GetMapping("/api/v1/public/media/projects/{projectId}/architecture")
+    public ResponseEntity<Resource> findPublicArchitecture(@PathVariable Long projectId) {
+        return response(projectMediaService.findPublicArchitecture(projectId), true);
     }
 
     // 공개 상태 프로젝트 소속 Media 조회

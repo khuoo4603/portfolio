@@ -97,24 +97,18 @@ export function formatProjectPeriod(startedAt: string | null, endedAt: string | 
   };
 }
 
-// Backend가 제공한 Architecture Node Group 존재 여부 확인
+// Backend가 제공한 Architecture Notes 존재 여부 확인
 export function hasProjectArchitecture(architecture: ProjectArchitecture) {
-  return [
-    architecture.clients,
-    architecture.services,
-    architecture.dataAndExternal,
-    architecture.runtime,
-    architecture.delivery,
-  ].some((nodes) => (nodes?.length ?? 0) > 0);
+  return (architecture.notes?.length ?? 0) > 0;
 }
 
 function mapArchitecture(architecture: ProjectArchitecture): ProjectArchitecture {
   return {
-    clients: cleanList(architecture.clients),
-    services: cleanList(architecture.services),
-    dataAndExternal: cleanList(architecture.dataAndExternal),
-    runtime: cleanList(architecture.runtime),
-    delivery: cleanList(architecture.delivery),
+    notes: (architecture.notes ?? []).flatMap((note) => {
+      const title = clean(note.title);
+      const body = clean(note.body);
+      return title && body ? [{ title, body }] : [];
+    }),
   };
 }
 
@@ -130,16 +124,30 @@ export function mapProjectDetail(project: PublicProjectDetail): ProjectDetailMod
   const content: ProjectContent = {
     results: project.content.results.flatMap((item) => {
       const title = clean(item.title);
-      return title ? [{ title }] : [];
+      const description = clean(item.description);
+      return title ? [{ title, description }] : [];
     }),
-    background: cleanList(project.content.background),
+    background: project.content.background.flatMap((item) => {
+      const body = clean(item.body);
+      return body ? [{
+        title: clean(item.title),
+        body,
+      }] : [];
+    }),
     features: project.content.features.flatMap((item) => {
       const title = clean(item.title);
-      return title ? [{ title }] : [];
+      const description = clean(item.description);
+      return title ? [{
+        title,
+        description,
+      }] : [];
     }),
     development: project.content.development.flatMap((item) => {
       const title = clean(item.title);
-      return title ? [{ title, items: cleanList(item.items) }] : [];
+      return title ? [{
+        title,
+        items: cleanList(item.items),
+      }] : [];
     }),
     architecture,
     engineering: project.content.engineering.flatMap((item) => {
@@ -149,7 +157,7 @@ export function mapProjectDetail(project: PublicProjectDetail): ProjectDetailMod
       }
       return [{
         title,
-        summary: clean(item.summary) ?? "",
+        summary: clean(item.summary),
         problem: clean(item.problem) ?? "",
         solution: clean(item.solution) ?? "",
         result: clean(item.result) ?? "",
@@ -168,11 +176,13 @@ export function mapProjectDetail(project: PublicProjectDetail): ProjectDetailMod
     })
     .sort((left, right) => left.displayOrder - right.displayOrder);
   const sections: ProjectSection[] = [
-    SECTION_LABELS.stackResult,
-    SECTION_LABELS.background,
-    SECTION_LABELS.development,
-    SECTION_LABELS.architecture,
-    SECTION_LABELS.engineering,
+    ...(technologies.length > 0 || content.results.length > 0 ? [SECTION_LABELS.stackResult] : []),
+    ...(content.background.length > 0 || content.features.length > 0 ? [SECTION_LABELS.background] : []),
+    ...(content.development.length > 0 ? [SECTION_LABELS.development] : []),
+    ...(project.architectureImageUrl || hasProjectArchitecture(content.architecture)
+      ? [SECTION_LABELS.architecture]
+      : []),
+    ...(content.engineering.length > 0 ? [SECTION_LABELS.engineering] : []),
   ];
 
   return {

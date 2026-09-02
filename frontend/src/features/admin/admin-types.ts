@@ -115,33 +115,26 @@ export type ProjectFields = Omit<Project, "id" | "thumbnailUrl" | "enabled" | "u
 
 export type ProjectResultItem = {
   title: string;
-  description: string;
+  description: string | null;
 };
 
 export type ProjectBackgroundItem = {
   title: string | null;
   body: string;
-  mediaId: number | null;
 };
 
 export type ProjectFeatureItem = {
   title: string;
-  description: string;
-  mediaId: number | null;
+  description: string | null;
 };
 
 export type ProjectDevelopmentItem = {
   title: string;
   items: string[];
-  mediaId: number | null;
 };
 
 export type ProjectArchitecture = {
-  clients: string[];
-  services: string[];
-  dataAndExternal: string[];
-  runtime: string[];
-  delivery: string[];
+  notes: Array<{ title: string; body: string }>;
 };
 
 export type ProjectEngineeringItem = {
@@ -150,7 +143,6 @@ export type ProjectEngineeringItem = {
   problem: string;
   solution: string;
   result: string;
-  mediaId: number | null;
 };
 
 export type ProjectContent = {
@@ -179,7 +171,6 @@ export type ProjectTechnologyInput = Pick<
 
 export type ProjectMedia = {
   id: number;
-  mediaType: "CAROUSEL" | "CONTENT";
   imageUrl: string;
   label: string | null;
   altText: string | null;
@@ -190,29 +181,17 @@ export type ProjectDetail = {
   project: Project;
   technologies: ProjectTechnology[];
   content: ProjectContent;
+  architectureImageUrl: string | null;
   media: ProjectMedia[];
 };
 
-export type ProjectContentMediaReference = {
-  mediaId: number | null;
-  clientKey?: string | null;
-};
-
-export type ProjectSaveContent = {
-  results: ProjectResultItem[];
-  background: Array<ProjectBackgroundItem & ProjectContentMediaReference>;
-  features: Array<ProjectFeatureItem & ProjectContentMediaReference>;
-  development: Array<ProjectDevelopmentItem & ProjectContentMediaReference>;
-  architecture: ProjectArchitecture;
-  engineering: Array<ProjectEngineeringItem & ProjectContentMediaReference>;
-};
+export type ProjectSaveContent = ProjectContent;
 
 export type ProjectMediaChange = {
   id?: number;
   clientKey?: string;
   action: "KEEP" | "DELETE" | "UPLOAD";
   uploadIndex?: number;
-  mediaType?: "CAROUSEL" | "CONTENT";
   label?: string | null;
   altText?: string | null;
   displayOrder?: number;
@@ -223,12 +202,14 @@ export type ProjectSaveMetadata = {
   content: ProjectSaveContent;
   technologies: ProjectTechnologyInput[];
   thumbnailMode: "KEEP" | "REMOVE" | "UPLOAD";
+  architectureImageMode: "KEEP" | "REMOVE" | "UPLOAD";
   mediaChanges: ProjectMediaChange[];
 };
 
 export type ProjectSaveInput = {
   metadata: ProjectSaveMetadata;
   thumbnail: File | null;
+  architectureImage: File | null;
   mediaFiles: File[];
 };
 

@@ -233,6 +233,24 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                   AND column_name = 'enabled'
                 """, String.class)).isEqualTo("false");
         assertThat(jdbcTemplate.queryForList("""
+                SELECT column_name || ':' || is_nullable
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'project_contents'
+                ORDER BY ordinal_position
+                """, String.class)).containsExactly(
+                "project_id:NO",
+                "results_json:NO",
+                "background_json:NO",
+                "features_json:NO",
+                "development_json:NO",
+                "architecture_json:NO",
+                "architecture_image_storage_key:YES",
+                "engineering_json:NO",
+                "created_at:NO",
+                "updated_at:NO"
+        );
+        assertThat(jdbcTemplate.queryForList("""
                 SELECT column_name
                 FROM information_schema.columns
                 WHERE table_schema = 'public'
@@ -242,7 +260,6 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 "id",
                 "project_id",
                 "storage_key",
-                "media_type",
                 "label",
                 "alt_text",
                 "display_order",
@@ -254,7 +271,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 FROM pg_indexes
                 WHERE schemaname = 'public'
                   AND tablename = 'project_media'
-                  AND indexname = 'idx_project_media_project_type_order'
+                  AND indexname = 'idx_project_media_project_order'
                 """, Integer.class)).isOne();
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
@@ -265,7 +282,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 """, Integer.class)).isZero();
     }
 
-    // 프로젝트 기본정보·관계·Content·Thumbnail Seed 보존 검증
+    // 프로젝트 기본정보·관계·Content·이미지 Seed 보존 검증
     @Test
     void projectSeedsMatchPublicData() throws Exception {
         assertThat(jdbcTemplate.queryForList(
@@ -390,7 +407,11 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                     content.background_json -> 0 ->> 'body' AS background_body,
                     content.features_json -> 0 ->> 'description' AS feature_description,
                     jsonb_array_length(content.development_json) AS development_count,
-                    content.architecture_json -> 'services' ->> 0 AS first_service,
+                    jsonb_array_length(content.architecture_json -> 'notes') AS architecture_note_count,
+                    content.architecture_json -> 'notes' -> 0 ->> 'title' AS first_architecture_note,
+                    content.architecture_json -> 'notes' -> 0 ->> 'body' AS first_architecture_body,
+                    content.architecture_json -> 'notes' -> 1 ->> 'title' AS second_architecture_note,
+                    content.architecture_json -> 'notes' -> 1 ->> 'body' AS second_architecture_body,
                     jsonb_array_length(content.engineering_json) AS engineering_count
                 FROM project_contents AS content
                 JOIN projects AS project ON project.id = content.project_id
@@ -399,23 +420,50 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 .containsEntry("results_type", "array")
                 .containsEntry("result_description", "Toss 특별상")
                 .containsEntry("background_type", "object")
-                .containsEntry("background_body", "기존 법인 KYC는 법인 정보와 각종 증빙서류를 제출하고 심사기관이 이를 반복적으로 검토하는 과정이 필요하다.")
-                .containsEntry("feature_description", "법인 KYC 신청·서류 제출")
+                .containsEntry("background_body", "기존 법인 KYC는 법인 정보와 각종 증빙서류를 제출하고 심사기관이 이를 반복적으로 검토하는 과정이 필요합니다.")
+                .containsEntry("feature_description", null)
                 .containsEntry("development_count", 3)
-                .containsEntry("first_service", "Backend")
+                .containsEntry("architecture_note_count", 2)
+                .containsEntry("first_architecture_note", "인프라 / 실행 환경")
+                .containsEntry(
+                        "first_architecture_body",
+                        "Synology DSM Reverse Proxy → Nginx → Docker / Docker Compose"
+                )
+                .containsEntry("second_architecture_note", "인프라 / 배포")
+                .containsEntry(
+                        "second_architecture_body",
+                        "GitHub Actions → GHCR → Self-hosted Runner → Docker / Docker Compose"
+                )
                 .containsEntry("engineering_count", 4);
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM project_contents AS content,
+                     jsonb_array_elements(content.results_json || content.features_json) AS item
+                WHERE item ? 'description'
+                  AND item ->> 'title' = item ->> 'description'
+                """, Integer.class)).isZero();
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM project_media", Integer.class)).isZero();
         String kyvcKey = jdbcTemplate.queryForObject(
                 "SELECT thumbnail_storage_key FROM projects WHERE slug = 'kyvc'", String.class);
         String trackKey = jdbcTemplate.queryForObject(
                 "SELECT thumbnail_storage_key FROM projects WHERE slug = 'shkutrack'", String.class);
+        String architectureKey = jdbcTemplate.queryForObject("""
+                SELECT content.architecture_image_storage_key
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                WHERE project.slug = 'kyvc'
+                """, String.class);
         assertThat(kyvcKey).matches("projects/\\d+/thumbnail/2a22886f-378c-45cd-8548-4f93b9036594\\.webp");
         assertThat(trackKey).matches("projects/\\d+/thumbnail/383297dd-5394-5945-2c56-050f58034417\\.webp");
+        assertThat(architectureKey)
+                .matches("projects/\\d+/architecture/b2051589-7615-4bc8-aec5-f48f6ec84653\\.png");
         assertThat(fileStorageService.open(kyvcKey).getContentAsByteArray())
                 .isEqualTo(new ClassPathResource("seed/projects/kyvc-thumbnail.webp").getContentAsByteArray());
         assertThat(fileStorageService.open(trackKey).getContentAsByteArray())
                 .isEqualTo(new ClassPathResource("seed/projects/shkutrack-thumbnail.webp").getContentAsByteArray());
+        assertThat(fileStorageService.open(architectureKey).getContentAsByteArray())
+                .isEqualTo(new ClassPathResource("seed/projects/kyvc-architecture.png").getContentAsByteArray());
         assertThat(jdbcTemplate.queryForList(
                 "SELECT name FROM external_links ORDER BY display_order", String.class))
                 .containsExactly("Instagram", "GitHub", "LinkedIn");

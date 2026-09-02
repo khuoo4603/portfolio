@@ -21,6 +21,7 @@ import com.khuoo.portfolio.project.dto.ProjectContentResponse;
 import com.khuoo.portfolio.project.dto.ProjectCreateRequest;
 import com.khuoo.portfolio.project.dto.ProjectCreateResponse;
 import com.khuoo.portfolio.project.dto.ProjectMediaResponse;
+import com.khuoo.portfolio.project.dto.ProjectMediaUrl;
 import com.khuoo.portfolio.project.dto.ProjectStatusRequest;
 import com.khuoo.portfolio.project.dto.ProjectStatusResponse;
 import com.khuoo.portfolio.project.repository.ProjectQueryRepository;
@@ -107,14 +108,14 @@ public class AdminProjectService {
     @Transactional(readOnly = true)
     public AdminProjectDetailResponse find(Long projectId) {
         Project project = requireProject(projectId);
+        ProjectContent content = projectQueryRepository.findContent(projectId).orElse(null);
         return new AdminProjectDetailResponse(
                 AdminProjectResponse.from(project),
                 projectQueryRepository.findAdminTechnologies(projectId).stream()
                         .map(AdminProjectTechnologyResponse::from)
                         .toList(),
-                projectQueryRepository.findContent(projectId)
-                        .map(content -> ProjectContentResponse.from(content, objectMapper))
-                        .orElseGet(ProjectContentResponse::empty),
+                content == null ? ProjectContentResponse.empty() : ProjectContentResponse.from(content, objectMapper),
+                ProjectMediaUrl.adminArchitecture(content),
                 projectQueryRepository.findMedia(projectId).stream()
                         .map(ProjectMediaResponse::fromAdmin)
                         .toList()
@@ -155,6 +156,10 @@ public class AdminProjectService {
         if (project.getThumbnailStorageKey() != null) {
             storageKeys.add(project.getThumbnailStorageKey());
         }
+        projectQueryRepository.findContent(projectId)
+                .map(ProjectContent::getArchitectureImageStorageKey)
+                .filter(key -> key != null)
+                .ifPresent(storageKeys::add);
         storageKeys.addAll(projectQueryRepository.findMedia(projectId).stream()
                 .map(ProjectMedia::getStorageKey)
                 .toList());
@@ -218,7 +223,7 @@ public class AdminProjectService {
         }
 
         if (response.results().isEmpty() || response.results().stream()
-                .anyMatch(item -> blank(item.title()) || blank(item.description()))) {
+                .anyMatch(item -> blank(item.title()))) {
             errors.add(new FieldErrorResponse("content.results", "성과 내용을 한 개 이상 입력하세요."));
         }
         if (response.background().isEmpty() || response.background().stream()
@@ -226,7 +231,7 @@ public class AdminProjectService {
             errors.add(new FieldErrorResponse("content.background", "문제 배경을 한 개 이상 입력하세요."));
         }
         if (response.features().isEmpty() || response.features().stream()
-                .anyMatch(item -> blank(item.title()) || blank(item.description()))) {
+                .anyMatch(item -> blank(item.title()))) {
             errors.add(new FieldErrorResponse("content.features", "주요 기능을 한 개 이상 입력하세요."));
         }
         if (response.development().isEmpty() || response.development().stream()
@@ -234,14 +239,11 @@ public class AdminProjectService {
                         || item.items().stream().anyMatch(this::blank))) {
             errors.add(new FieldErrorResponse("content.development", "개발 영역을 한 개 이상 입력하세요."));
         }
-        ProjectContentResponse.Architecture architecture = response.architecture();
-        List<String> architectureNodes = new ArrayList<>();
-        architectureNodes.addAll(architecture.clients());
-        architectureNodes.addAll(architecture.services());
-        architectureNodes.addAll(architecture.dataAndExternal());
-        architectureNodes.addAll(architecture.runtime());
-        architectureNodes.addAll(architecture.delivery());
-        if (architectureNodes.isEmpty() || architectureNodes.stream().anyMatch(this::blank)) {
+        if (content.getArchitectureImageStorageKey() == null
+                || !fileExists(content.getArchitectureImageStorageKey())
+                || response.architecture().notes().isEmpty()
+                || response.architecture().notes().stream()
+                        .anyMatch(note -> blank(note.title()) || blank(note.body()))) {
             errors.add(new FieldErrorResponse("content.architecture", "아키텍처 내용을 입력하세요."));
         }
         if (response.engineering().isEmpty() || response.engineering().stream()

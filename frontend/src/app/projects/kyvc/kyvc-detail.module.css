@@ -529,6 +529,19 @@
   word-break: keep-all;
 }
 
+.resultCopy {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.resultDescription,
+.featureDescription {
+  margin: 0;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+  word-break: keep-all;
+}
+
 .backgroundFeaturesGrid {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
@@ -547,8 +560,14 @@
   word-break: keep-all;
 }
 
-.backgroundCopy p + p {
-  margin-top: var(--space-20);
+.backgroundItem + .backgroundItem {
+  margin-top: var(--space-32);
+}
+
+.backgroundItem h4 {
+  margin: 0 0 var(--space-12);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .featureList {
@@ -578,6 +597,11 @@
   color: var(--text-primary);
   font-weight: 600;
   word-break: keep-all;
+}
+
+.featureCopy {
+  display: grid;
+  gap: var(--space-8);
 }
 
 .developmentList {
@@ -633,6 +657,12 @@
   font-weight: 600;
 }
 
+.developmentContent {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-24);
+}
+
 .developmentTasks {
   display: grid;
   margin: 0;
@@ -662,231 +692,53 @@
 }
 
 .architectureVisual {
-  margin-top: var(--space-64);
-}
-
-/* 고정 좌표 SVG Line과 비확대 HTML Label의 Architecture 조합 */
-.architectureMap {
-  position: relative;
-  min-height: calc(var(--space-160) * 4);
-  overflow: hidden;
-  border-top: 1px solid var(--border-accent);
-  border-bottom: 1px solid var(--border-default);
-  background: var(--bg-surface);
-}
-
-.architectureDesktop {
-  position: absolute;
-  inset: 0;
-}
-
-.architectureConnections {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.connectionGuide path {
-  fill: none;
-  stroke: var(--border-default);
-  stroke-dasharray: 4 8;
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
-.connectionPrimary path {
-  fill: none;
-  stroke: var(--accent-primary);
-  stroke-width: 1.25;
-  vector-effect: non-scaling-stroke;
-}
-
-.architectureArrow {
-  fill: var(--accent-primary);
-}
-
-.connectionBlocked path {
-  fill: none;
-  stroke: var(--text-muted);
-  stroke-dasharray: 4 8;
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-
-.layerLabel {
-  position: absolute;
-  left: var(--space-24);
-  z-index: 3;
-  color: var(--text-muted);
-  font-family: var(--font-family-mono);
-  letter-spacing: 0.02em;
-}
-
-.clientLabel {
-  top: var(--space-24);
-}
-
-.serviceLabel {
-  top: calc(var(--space-160) + var(--space-40));
-}
-
-.dataLabel {
-  top: calc(var(--space-160) * 2 + var(--space-64));
-}
-
-.archNode {
-  position: absolute;
-  z-index: 2;
   display: grid;
-  width: min(16%, calc(var(--space-160) - var(--space-16)));
-  min-height: var(--space-48);
-  padding: var(--space-8) var(--space-12);
-  place-items: center;
-  border: 1px solid var(--border-default);
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-family-mono);
-  letter-spacing: 0.02em;
-  text-align: center;
-  text-wrap: balance;
-  transform: translateX(-50%);
+  margin-top: var(--space-64);
+  gap: var(--space-32);
 }
 
-.userWeb,
-.adminWeb,
-.coreAdmin {
-  top: var(--space-80);
-}
-
-.backend,
-.backendAdmin,
-.core,
-.coreAdminApi {
-  top: calc(var(--space-160) + var(--space-96));
-  border-color: var(--border-accent);
-  background: color-mix(in srgb, var(--bg-base) 76%, var(--accent-soft));
-}
-
-.businessDatabase,
-.coreDatabase,
-.ocrLlm,
-.xrpl,
-.androidWallet {
-  top: calc(var(--space-160) * 2 + var(--space-112));
-}
-
-.userWeb,
-.backend {
-  left: 12%;
-}
-
-.adminWeb,
-.backendAdmin {
-  left: 37%;
-}
-
-.core {
-  left: 63%;
-}
-
-.coreAdmin,
-.coreAdminApi {
-  left: 86%;
-}
-
-.businessDatabase {
-  left: 10%;
-}
-
-.coreDatabase {
-  left: 32%;
-}
-
-.ocrLlm {
-  left: 52%;
-}
-
-.xrpl {
-  left: 72%;
-}
-
-.androidWallet {
-  left: 90%;
-}
-
-.boundaryNote {
-  position: absolute;
-  top: calc(var(--space-160) * 2);
-  left: 48%;
-  z-index: 3;
-  max-width: var(--space-160);
-  padding: var(--space-4) var(--space-8);
+.architectureImageFrame {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 0;
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-value-sm);
   background: var(--bg-surface);
-  color: var(--text-muted);
-  font-family: var(--font-family-mono);
-  letter-spacing: 0.02em;
-  text-align: center;
-  transform: translate(-50%, -50%);
 }
 
-.architectureMobile {
-  display: none;
+.architectureImage {
+  object-fit: contain;
 }
 
-/* KYvC 전용 Edge 없이 Backend Node Group만 표시하는 다른 프로젝트 구성 */
-.architectureGroups {
+.architectureNotes {
+  margin: 0;
   border-block: 1px solid var(--border-default);
 }
 
-.architectureGroups .infrastructureLabel {
-  margin: 0;
-  font-weight: 400;
-}
-
-.infrastructureFlows {
-  border-bottom: 1px solid var(--border-default);
-}
-
-.infrastructureFlow {
+.architectureNote {
   display: grid;
   grid-template-columns: calc(var(--space-160) + var(--space-48)) minmax(0, 1fr);
-  align-items: center;
-  min-height: var(--space-96);
-  padding-block: var(--space-20);
-  column-gap: var(--space-24);
+  gap: var(--space-24);
+  padding: var(--space-24) 0;
 }
 
-.infrastructureFlow + .infrastructureFlow {
+.architectureNote + .architectureNote {
   border-top: 1px solid var(--border-default);
 }
 
-.infrastructureLabel {
-  color: var(--text-muted);
-  font-family: var(--font-family-mono);
-  letter-spacing: 0.02em;
+.architectureNote dt,
+.architectureNote dd {
+  margin: 0;
 }
 
-.infrastructureNodes {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-12);
-}
-
-.infrastructureNode {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-12);
+.architectureNote dt {
   color: var(--text-primary);
-  font-family: var(--font-family-mono);
-  letter-spacing: 0.02em;
 }
 
-.infrastructureArrow {
-  color: var(--accent-primary);
+.architectureNote dd {
+  color: var(--text-secondary);
 }
 
 .engineeringList {
@@ -1112,51 +964,6 @@
     column-gap: var(--space-16);
   }
 
-  .architectureMap {
-    min-height: calc(var(--space-160) * 3 + var(--space-96));
-  }
-
-  .archNode {
-    width: min(18%, var(--space-128));
-    padding-inline: var(--space-8);
-  }
-
-  .architectureConnections {
-    inset: 0;
-    height: 100%;
-  }
-
-  .serviceLabel {
-    top: calc(var(--space-160) + var(--space-16));
-  }
-
-  .dataLabel {
-    top: calc(var(--space-160) * 2 + var(--space-20));
-  }
-
-  .backend,
-  .backendAdmin,
-  .core,
-  .coreAdminApi {
-    top: calc(var(--space-160) + var(--space-64));
-  }
-
-  .businessDatabase,
-  .coreDatabase,
-  .ocrLlm,
-  .xrpl,
-  .androidWallet {
-    top: calc(var(--space-160) * 2 + var(--space-64));
-  }
-
-  .boundaryNote {
-    top: calc(var(--space-160) + var(--space-112));
-  }
-
-  .infrastructureFlow {
-    grid-template-columns: var(--space-160) minmax(0, 1fr);
-  }
-
 }
 
 @media (max-width: 767px) {
@@ -1289,7 +1096,7 @@
     padding-left: var(--space-24);
   }
 
-  .developmentTasks {
+  .developmentContent {
     grid-column: 2;
     margin-top: var(--space-20);
   }
@@ -1302,76 +1109,14 @@
     margin-top: var(--space-48);
   }
 
-  .architectureMap {
-    min-height: 0;
-    padding: var(--space-24) var(--space-20);
+  .architectureVisual {
+    margin-top: var(--space-48);
+    gap: var(--space-24);
   }
 
-  .architectureDesktop {
-    display: none;
-  }
-
-  .architectureMobile {
-    display: grid;
-    gap: var(--space-32);
-  }
-
-  .mobileFlow {
-    position: relative;
-    display: grid;
-    gap: var(--space-12);
-    padding-left: var(--space-24);
-    border-left: 1px solid var(--border-default);
-  }
-
-  .mobileFlow::before {
-    position: absolute;
-    top: var(--space-4);
-    left: calc(var(--space-4) * -1 - 1px);
-    width: var(--space-8);
-    height: var(--space-8);
-    border: 1px solid var(--accent-secondary);
-    border-radius: var(--radius-value-pill);
-    background: var(--bg-surface);
-    content: "";
-  }
-
-  .mobileLayerLabel {
-    color: var(--accent-primary);
-    font-family: var(--font-family-mono);
-    letter-spacing: 0.02em;
-  }
-
-  .mobileFlow p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-family: var(--font-family-mono);
-  }
-
-  .mobileFlow b {
-    color: var(--accent-primary);
-    font-weight: 500;
-  }
-
-  .infrastructureFlow {
-    display: block;
-    padding-block: var(--space-24);
-  }
-
-  .infrastructureNodes {
-    display: grid;
-    margin-top: var(--space-16);
-    gap: var(--space-12);
-  }
-
-  .infrastructureNode {
-    display: grid;
-    grid-template-columns: var(--space-20) minmax(0, 1fr);
-  }
-
-  .infrastructureNode:first-child {
-    grid-template-columns: minmax(0, 1fr);
-    padding-left: var(--space-32);
+  .architectureNote {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
   }
 
   .engineeringList {

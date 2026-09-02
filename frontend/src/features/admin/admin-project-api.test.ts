@@ -37,17 +37,19 @@ const saveInput: ProjectSaveInput = {
     },
     content: {
       results: [{ title: "Result", description: "Description" }],
-      background: [{ title: "Background", body: "Body", mediaId: null, clientKey: null }],
-      features: [{ title: "Feature", description: "Description", mediaId: null, clientKey: null }],
-      development: [{ title: "Backend", items: ["API"], mediaId: null, clientKey: null }],
-      architecture: { clients: ["Web"], services: ["API"], dataAndExternal: ["DB"], runtime: ["Docker"], delivery: ["CI"] },
-      engineering: [{ title: "Problem", summary: null, problem: "P", solution: "S", result: "R", mediaId: null, clientKey: null }],
+      background: [{ title: "Background", body: "Body" }],
+      features: [{ title: "Feature", description: "Description" }],
+      development: [{ title: "Backend", items: ["API"] }],
+      architecture: { notes: [{ title: "Runtime", body: "Docker" }] },
+      engineering: [{ title: "Problem", summary: null, problem: "P", solution: "S", result: "R" }],
     },
     technologies: [{ technologyId: 3, showOnCard: true, highlighted: true, displayOrder: 0 }],
     thumbnailMode: "UPLOAD",
-    mediaChanges: [{ clientKey: "new-1", action: "UPLOAD", uploadIndex: 0, mediaType: "CAROUSEL", displayOrder: 0 }],
+    architectureImageMode: "UPLOAD",
+    mediaChanges: [{ clientKey: "new-1", action: "UPLOAD", uploadIndex: 0, displayOrder: 0 }],
   },
   thumbnail: new File(["thumbnail"], "thumbnail.webp", { type: "image/webp" }),
+  architectureImage: new File(["architecture"], "architecture.png", { type: "image/png" }),
   mediaFiles: [new File(["media"], "media.webp", { type: "image/webp" })],
 };
 
@@ -79,7 +81,7 @@ describe("Admin Project API 계약", () => {
     expect(apiRequest).toHaveBeenNthCalledWith(3, "/admin/projects/12", { method: "DELETE", headers });
   });
 
-  it("Metadata·Thumbnail·Media를 하나의 Multipart PUT으로 저장", async () => {
+  it("Metadata·Thumbnail·Architecture Image·Media를 하나의 Multipart PUT으로 저장", async () => {
     saveProject(12, saveInput, verification);
 
     expect(apiRequest).toHaveBeenCalledTimes(1);
@@ -92,6 +94,7 @@ describe("Admin Project API 계약", () => {
     const metadata = formData.get("metadata") as Blob;
     expect(JSON.parse(await metadata.text())).toEqual(saveInput.metadata);
     expect(formData.get("thumbnail")).toBe(saveInput.thumbnail);
+    expect(formData.get("architectureImage")).toBe(saveInput.architectureImage);
     expect(formData.getAll("mediaFiles")).toEqual(saveInput.mediaFiles);
   });
 });

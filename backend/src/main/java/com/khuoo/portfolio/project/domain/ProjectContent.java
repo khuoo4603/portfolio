@@ -44,6 +44,9 @@ public class ProjectContent {
     @Column(name = "architecture_json", nullable = false, columnDefinition = "jsonb")
     private JsonNode architecture;
 
+    @Column(name = "architecture_image_storage_key", length = 255)
+    private String architectureImageStorageKey;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "engineering_json", nullable = false, columnDefinition = "jsonb")
     private JsonNode engineering;
@@ -61,6 +64,7 @@ public class ProjectContent {
             JsonNode features,
             JsonNode development,
             JsonNode architecture,
+            String architectureImageStorageKey,
             JsonNode engineering,
             OffsetDateTime changedAt
     ) {
@@ -70,6 +74,7 @@ public class ProjectContent {
         this.features = features;
         this.development = development;
         this.architecture = architecture;
+        this.architectureImageStorageKey = architectureImageStorageKey;
         this.engineering = engineering;
         this.updatedAt = changedAt;
     }
@@ -82,6 +87,7 @@ public class ProjectContent {
             JsonNode features,
             JsonNode development,
             JsonNode architecture,
+            String architectureImageStorageKey,
             JsonNode engineering,
             OffsetDateTime changedAt
     ) {
@@ -92,6 +98,7 @@ public class ProjectContent {
                 features,
                 development,
                 architecture,
+                architectureImageStorageKey,
                 engineering,
                 changedAt
         );
@@ -104,6 +111,7 @@ public class ProjectContent {
             JsonNode newFeatures,
             JsonNode newDevelopment,
             JsonNode newArchitecture,
+            String newArchitectureImageStorageKey,
             JsonNode newEngineering,
             OffsetDateTime changedAt
     ) {
@@ -112,6 +120,7 @@ public class ProjectContent {
         features = newFeatures;
         development = newDevelopment;
         architecture = newArchitecture;
+        architectureImageStorageKey = newArchitectureImageStorageKey;
         engineering = newEngineering;
         updatedAt = changedAt;
     }

@@ -9,7 +9,6 @@ import com.khuoo.portfolio.common.error.ErrorCode;
 import com.khuoo.portfolio.common.logging.LogEventLogger;
 import com.khuoo.portfolio.common.util.PortfolioEnums.AdminActionOperation;
 import com.khuoo.portfolio.common.util.PortfolioEnums.AdminActionTarget;
-import com.khuoo.portfolio.common.util.PortfolioEnums.ProjectMediaType;
 import com.khuoo.portfolio.file.service.FileStorageService;
 import com.khuoo.portfolio.file.service.ImageFileValidator;
 import com.khuoo.portfolio.project.domain.Project;
@@ -22,6 +21,7 @@ import com.khuoo.portfolio.project.dto.AdminProjectTechnologyResponse;
 import com.khuoo.portfolio.project.dto.ProjectContentResponse;
 import com.khuoo.portfolio.project.dto.ProjectContentSaveRequest;
 import com.khuoo.portfolio.project.dto.ProjectMediaResponse;
+import com.khuoo.portfolio.project.dto.ProjectMediaUrl;
 import com.khuoo.portfolio.project.dto.ProjectSaveMetadata;
 import com.khuoo.portfolio.project.repository.ProjectQueryRepository;
 import com.khuoo.portfolio.project.repository.ProjectRepository;
@@ -38,7 +38,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -71,12 +70,14 @@ public class ProjectEditorService {
             Long projectId,
             ProjectSaveMetadata metadata,
             MultipartFile thumbnail,
+            MultipartFile architectureImage,
             List<MultipartFile> mediaFiles,
             AccountPrincipal currentAdmin,
             UUID challengeId,
             String code
     ) {
         Project project = requireProject(projectId);
+        ProjectContent currentContent = projectQueryRepository.findContent(projectId).orElse(null);
         List<MultipartFile> files = mediaFiles == null ? List.of() : List.copyOf(mediaFiles);
         List<ProjectMedia> currentMedia = projectQueryRepository.findMedia(projectId);
         Map<Long, ProjectMedia> currentById = currentMedia.stream()
@@ -85,8 +86,8 @@ public class ProjectEditorService {
         validateProject(projectId, metadata.project());
         validateTechnologies(projectId, metadata.technologies());
         validateThumbnail(metadata.thumbnailMode(), thumbnail);
+        validateArchitectureImage(metadata.architectureImageMode(), architectureImage);
         MediaPlan mediaPlan = validateMedia(metadata.mediaChanges(), files, currentById);
-        validateContentReferences(metadata.content(), mediaPlan, currentById);
 
         adminActionVerifier.verifyAndConsume(
                 currentAdmin,
@@ -101,13 +102,27 @@ public class ProjectEditorService {
         List<String> oldStorageKeys = new ArrayList<>();
         StoredChanges stored;
         try {
-            stored = storeFiles(projectId, metadata, thumbnail, files, newStorageKeys);
+            stored = storeFiles(
+                    projectId,
+                    metadata,
+                    thumbnail,
+                    architectureImage,
+                    files,
+                    newStorageKeys
+            );
         } catch (ApiException exception) {
             cleanupNow(projectId, newStorageKeys);
             throw exception;
         }
 
-        collectOldFiles(project, mediaPlan.deleted(), metadata.thumbnailMode(), oldStorageKeys);
+        collectOldFiles(
+                project,
+                currentContent,
+                mediaPlan.deleted(),
+                metadata.thumbnailMode(),
+                metadata.architectureImageMode(),
+                oldStorageKeys
+        );
         registerFileLifecycle(projectId, newStorageKeys, oldStorageKeys);
 
         OffsetDateTime changedAt = now();
@@ -115,6 +130,11 @@ public class ProjectEditorService {
             case KEEP -> project.getThumbnailStorageKey();
             case REMOVE -> null;
             case UPLOAD -> stored.thumbnailStorageKey();
+        };
+        String architectureImageKey = switch (metadata.architectureImageMode()) {
+            case KEEP -> currentContent == null ? null : currentContent.getArchitectureImageStorageKey();
+            case REMOVE -> null;
+            case UPLOAD -> stored.architectureImageStorageKey();
         };
         ProjectSaveMetadata.ProjectFields fields = metadata.project();
         project.update(
@@ -141,14 +161,10 @@ public class ProjectEditorService {
                 change.displayOrder(),
                 changedAt
         ));
-        List<ProjectMedia> uploadedMedia = projectRepository.saveMedia(stored.uploadedMedia());
-        Map<String, Long> uploadedIds = new HashMap<>();
-        for (int index = 0; index < stored.uploadClientKeys().size(); index++) {
-            uploadedIds.put(stored.uploadClientKeys().get(index), uploadedMedia.get(index).getId());
-        }
+        projectRepository.saveMedia(stored.uploadedMedia());
 
-        ProjectContentResponse normalizedContent = normalizeContent(metadata.content(), uploadedIds);
-        saveContent(projectId, normalizedContent, changedAt);
+        ProjectContentResponse normalizedContent = normalizeContent(metadata.content());
+        saveContent(projectId, normalizedContent, architectureImageKey, changedAt);
         projectRepository.replaceTechnologies(projectId, metadata.technologies().stream()
                 .map(item -> ProjectTechnology.create(
                         projectId,
@@ -206,6 +222,19 @@ public class ProjectEditorService {
         }
     }
 
+    private void validateArchitectureImage(
+            ProjectSaveMetadata.ArchitectureImageMode mode,
+            MultipartFile architectureImage
+    ) {
+        boolean hasFile = architectureImage != null && !architectureImage.isEmpty();
+        if ((mode == ProjectSaveMetadata.ArchitectureImageMode.UPLOAD) != hasFile) {
+            throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
+        }
+        if (hasFile) {
+            imageFileValidator.validate(architectureImage);
+        }
+    }
+
     private MediaPlan validateMedia(
             List<ProjectSaveMetadata.MediaChange> changes,
             List<MultipartFile> files,
@@ -216,8 +245,6 @@ public class ProjectEditorService {
         Set<Integer> uploadIndexes = new HashSet<>();
         Map<ProjectMedia, ProjectSaveMetadata.MediaChange> kept = new LinkedHashMap<>();
         List<ProjectMedia> deleted = new ArrayList<>();
-        Map<String, ProjectMediaType> uploadedTypes = new HashMap<>();
-
         for (ProjectSaveMetadata.MediaChange change : changes) {
             switch (change.action()) {
                 case KEEP -> {
@@ -229,14 +256,12 @@ public class ProjectEditorService {
                     if (change.id() != null
                             || blank(change.clientKey())
                             || change.uploadIndex() == null
-                            || change.mediaType() == null
                             || change.displayOrder() == null
                             || !clientKeys.add(change.clientKey())
                             || !uploadIndexes.add(change.uploadIndex())
                             || change.uploadIndex() >= files.size()) {
                         throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
                     }
-                    uploadedTypes.put(change.clientKey(), change.mediaType());
                 }
             }
         }
@@ -244,7 +269,7 @@ public class ProjectEditorService {
             throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
         }
         files.forEach(imageFileValidator::validate);
-        return new MediaPlan(kept, deleted, uploadedTypes);
+        return new MediaPlan(kept, deleted);
     }
 
     private ProjectMedia validateExistingChange(
@@ -261,11 +286,10 @@ public class ProjectEditorService {
             throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
         }
         if (keep) {
-            if (change.mediaType() != media.getMediaType() || change.displayOrder() == null) {
+            if (change.displayOrder() == null) {
                 throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
             }
-        } else if (change.mediaType() != null
-                || change.label() != null
+        } else if (change.label() != null
                 || change.altText() != null
                 || change.displayOrder() != null) {
             throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
@@ -273,42 +297,11 @@ public class ProjectEditorService {
         return media;
     }
 
-    private void validateContentReferences(
-            ProjectContentSaveRequest content,
-            MediaPlan mediaPlan,
-            Map<Long, ProjectMedia> currentById
-    ) {
-        Set<Long> deletedIds = mediaPlan.deleted().stream()
-                .map(ProjectMedia::getId)
-                .collect(Collectors.toSet());
-        List<ProjectContentSaveRequest.MediaReference> references = new ArrayList<>();
-        references.addAll(content.background());
-        references.addAll(content.features());
-        references.addAll(content.development());
-        references.addAll(content.engineering());
-        for (ProjectContentSaveRequest.MediaReference reference : references) {
-            if (reference.mediaId() != null && !blank(reference.clientKey())) {
-                throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
-            }
-            if (reference.mediaId() != null) {
-                ProjectMedia media = currentById.get(reference.mediaId());
-                if (media == null
-                        || media.getMediaType() != ProjectMediaType.CONTENT
-                        || deletedIds.contains(media.getId())) {
-                    throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
-                }
-            }
-            if (!blank(reference.clientKey())
-                    && mediaPlan.uploadedTypes().get(reference.clientKey()) != ProjectMediaType.CONTENT) {
-                throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
-            }
-        }
-    }
-
     private StoredChanges storeFiles(
             Long projectId,
             ProjectSaveMetadata metadata,
             MultipartFile thumbnail,
+            MultipartFile architectureImage,
             List<MultipartFile> files,
             List<String> newStorageKeys
     ) {
@@ -323,57 +316,59 @@ public class ProjectEditorService {
             newStorageKeys.add(thumbnailKey);
         }
 
+        String architectureImageKey = null;
+        if (metadata.architectureImageMode() == ProjectSaveMetadata.ArchitectureImageMode.UPLOAD) {
+            ImageFileValidator.ValidatedImage validated = imageFileValidator.validate(architectureImage);
+            architectureImageKey = fileStorageService.store(
+                    architectureImage,
+                    "projects/" + projectId + "/architecture",
+                    validated.extension()
+            ).storageKey();
+            newStorageKeys.add(architectureImageKey);
+        }
+
         List<ProjectMedia> uploaded = new ArrayList<>();
-        List<String> uploadClientKeys = new ArrayList<>();
         List<ProjectSaveMetadata.MediaChange> uploadChanges = metadata.mediaChanges().stream()
                 .filter(change -> change.action() == ProjectSaveMetadata.MediaAction.UPLOAD)
                 .toList();
         for (ProjectSaveMetadata.MediaChange change : uploadChanges) {
             MultipartFile file = files.get(change.uploadIndex());
             ImageFileValidator.ValidatedImage validated = imageFileValidator.validate(file);
-            String directory = "projects/" + projectId + "/"
-                    + (change.mediaType() == ProjectMediaType.CAROUSEL ? "carousel" : "content");
+            String directory = "projects/" + projectId + "/carousel";
             String storageKey = fileStorageService.store(file, directory, validated.extension()).storageKey();
             newStorageKeys.add(storageKey);
             uploaded.add(ProjectMedia.create(
                     projectId,
                     storageKey,
-                    change.mediaType(),
                     change.label(),
                     change.altText(),
                     change.displayOrder()
             ));
-            uploadClientKeys.add(change.clientKey());
         }
-        return new StoredChanges(thumbnailKey, uploaded, uploadClientKeys);
+        return new StoredChanges(thumbnailKey, architectureImageKey, uploaded);
     }
 
-    private ProjectContentResponse normalizeContent(
-            ProjectContentSaveRequest content,
-            Map<String, Long> uploadedIds
-    ) {
+    private ProjectContentResponse normalizeContent(ProjectContentSaveRequest content) {
         return new ProjectContentResponse(
                 content.results().stream()
                         .map(item -> new ProjectContentResponse.ResultItem(item.title(), item.description()))
                         .toList(),
                 content.background().stream()
                         .map(item -> new ProjectContentResponse.BackgroundItem(
-                                item.title(), item.body(), mediaId(item, uploadedIds)))
+                                item.title(), item.body()))
                         .toList(),
                 content.features().stream()
                         .map(item -> new ProjectContentResponse.FeatureItem(
-                                item.title(), item.description(), mediaId(item, uploadedIds)))
+                                item.title(), item.description()))
                         .toList(),
                 content.development().stream()
                         .map(item -> new ProjectContentResponse.DevelopmentItem(
-                                item.title(), item.items(), mediaId(item, uploadedIds)))
+                                item.title(), item.items()))
                         .toList(),
                 new ProjectContentResponse.Architecture(
-                        content.architecture().clients(),
-                        content.architecture().services(),
-                        content.architecture().dataAndExternal(),
-                        content.architecture().runtime(),
-                        content.architecture().delivery()
+                        content.architecture().notes().stream()
+                                .map(note -> new ProjectContentResponse.Note(note.title(), note.body()))
+                                .toList()
                 ),
                 content.engineering().stream()
                         .map(item -> new ProjectContentResponse.EngineeringItem(
@@ -381,18 +376,18 @@ public class ProjectEditorService {
                                 item.summary(),
                                 item.problem(),
                                 item.solution(),
-                                item.result(),
-                                mediaId(item, uploadedIds)
+                                item.result()
                         ))
                         .toList()
         );
     }
 
-    private Long mediaId(ProjectContentSaveRequest.MediaReference reference, Map<String, Long> uploadedIds) {
-        return blank(reference.clientKey()) ? reference.mediaId() : uploadedIds.get(reference.clientKey());
-    }
-
-    private void saveContent(Long projectId, ProjectContentResponse content, OffsetDateTime changedAt) {
+    private void saveContent(
+            Long projectId,
+            ProjectContentResponse content,
+            String architectureImageKey,
+            OffsetDateTime changedAt
+    ) {
         JsonNode results = CONTENT_MAPPER.valueToTree(content.results());
         JsonNode background = CONTENT_MAPPER.valueToTree(content.background());
         JsonNode features = CONTENT_MAPPER.valueToTree(content.features());
@@ -408,6 +403,7 @@ public class ProjectEditorService {
                     features,
                     development,
                     architecture,
+                    architectureImageKey,
                     engineering,
                     changedAt
             );
@@ -418,6 +414,7 @@ public class ProjectEditorService {
                     features,
                     development,
                     architecture,
+                    architectureImageKey,
                     engineering,
                     changedAt
             );
@@ -426,14 +423,14 @@ public class ProjectEditorService {
     }
 
     private AdminProjectDetailResponse detail(Project project) {
+        ProjectContent content = projectQueryRepository.findContent(project.getId()).orElse(null);
         return new AdminProjectDetailResponse(
                 AdminProjectResponse.from(project),
                 projectQueryRepository.findAdminTechnologies(project.getId()).stream()
                         .map(AdminProjectTechnologyResponse::from)
                         .toList(),
-                projectQueryRepository.findContent(project.getId())
-                        .map(content -> ProjectContentResponse.from(content, objectMapper))
-                        .orElseGet(ProjectContentResponse::empty),
+                content == null ? ProjectContentResponse.empty() : ProjectContentResponse.from(content, objectMapper),
+                ProjectMediaUrl.adminArchitecture(content),
                 projectQueryRepository.findMedia(project.getId()).stream()
                         .map(ProjectMediaResponse::fromAdmin)
                         .toList()
@@ -442,13 +439,20 @@ public class ProjectEditorService {
 
     private void collectOldFiles(
             Project project,
+            ProjectContent content,
             List<ProjectMedia> deleted,
             ProjectSaveMetadata.ThumbnailMode thumbnailMode,
+            ProjectSaveMetadata.ArchitectureImageMode architectureImageMode,
             List<String> oldStorageKeys
     ) {
         if (thumbnailMode != ProjectSaveMetadata.ThumbnailMode.KEEP
                 && project.getThumbnailStorageKey() != null) {
             oldStorageKeys.add(project.getThumbnailStorageKey());
+        }
+        if (architectureImageMode != ProjectSaveMetadata.ArchitectureImageMode.KEEP
+                && content != null
+                && content.getArchitectureImageStorageKey() != null) {
+            oldStorageKeys.add(content.getArchitectureImageStorageKey());
         }
         deleted.stream().map(ProjectMedia::getStorageKey).forEach(oldStorageKeys::add);
     }
@@ -503,15 +507,14 @@ public class ProjectEditorService {
 
     private record MediaPlan(
             Map<ProjectMedia, ProjectSaveMetadata.MediaChange> kept,
-            List<ProjectMedia> deleted,
-            Map<String, ProjectMediaType> uploadedTypes
+            List<ProjectMedia> deleted
     ) {
     }
 
     private record StoredChanges(
             String thumbnailStorageKey,
-            List<ProjectMedia> uploadedMedia,
-            List<String> uploadClientKeys
+            String architectureImageStorageKey,
+            List<ProjectMedia> uploadedMedia
     ) {
     }
 }

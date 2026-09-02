@@ -82,6 +82,9 @@ export function saveProject(
   if (input.thumbnail) {
     formData.append("thumbnail", input.thumbnail);
   }
+  if (input.architectureImage) {
+    formData.append("architectureImage", input.architectureImage);
+  }
   input.mediaFiles.forEach((file) => formData.append("mediaFiles", file));
   return apiRequest<ProjectDetail>(`/admin/projects/${id}`, {
     method: "PUT",

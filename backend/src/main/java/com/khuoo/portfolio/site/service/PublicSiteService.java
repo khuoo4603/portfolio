@@ -3,12 +3,14 @@ package com.khuoo.portfolio.site.service;
 import com.khuoo.portfolio.common.error.ApiException;
 import com.khuoo.portfolio.common.error.ErrorCode;
 import com.khuoo.portfolio.project.domain.Project;
+import com.khuoo.portfolio.project.domain.ProjectContent;
 import com.khuoo.portfolio.site.dto.ExternalLinkResponse;
 import com.khuoo.portfolio.site.dto.PortfolioContentResponse;
 import com.khuoo.portfolio.site.dto.ProfileEntryResponse;
 import com.khuoo.portfolio.project.dto.ProjectCardResponse;
 import com.khuoo.portfolio.project.dto.ProjectContentResponse;
 import com.khuoo.portfolio.project.dto.ProjectMediaResponse;
+import com.khuoo.portfolio.project.dto.ProjectMediaUrl;
 import com.khuoo.portfolio.project.dto.ProjectTechnologyResponse;
 import com.khuoo.portfolio.site.dto.PublicPortfolioResponse;
 import com.khuoo.portfolio.project.dto.PublicProjectResponse;
@@ -85,14 +87,21 @@ public class PublicSiteService {
                 .stream()
                 .map(ProjectTechnologyResponse::from)
                 .toList();
-        ProjectContentResponse content = projectQueryRepository.findContent(project.getId())
-                .map(value -> ProjectContentResponse.from(value, objectMapper))
-                .orElseGet(ProjectContentResponse::empty);
+        ProjectContent contentEntity = projectQueryRepository.findContent(project.getId()).orElse(null);
+        ProjectContentResponse content = contentEntity == null
+                ? ProjectContentResponse.empty()
+                : ProjectContentResponse.from(contentEntity, objectMapper);
         List<ProjectMediaResponse> media = projectQueryRepository.findMedia(project.getId())
                 .stream()
                 .map(ProjectMediaResponse::fromPublic)
                 .toList();
 
-        return PublicProjectResponse.from(project, technologies, content, media);
+        return PublicProjectResponse.from(
+                project,
+                technologies,
+                content,
+                ProjectMediaUrl.publicArchitecture(contentEntity),
+                media
+        );
     }
 }

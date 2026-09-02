@@ -35,7 +35,7 @@ export default function EngineeringList({ items }: EngineeringListProps) {
               </span>
               <span className={styles.engineeringHeading}>
                 <span className={`${styles.engineeringTitle} type-title`}>{item.title}</span>
-                <span className={`${styles.engineeringSummary} type-body`}>{item.summary}</span>
+                {item.summary ? <span className={`${styles.engineeringSummary} type-body`}>{item.summary}</span> : null}
               </span>
               <span className={`${styles.engineeringIndicator} type-title`} aria-hidden="true">
                 {isOpen ? "−" : "+"}

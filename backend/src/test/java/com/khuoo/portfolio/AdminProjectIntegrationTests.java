@@ -208,17 +208,18 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
     void deleteCascadesRowsAndRemovesFilesOnlyAfterCommit() throws Exception {
         Long projectId = publishableProject("delete-project");
         String thumbnailKey = thumbnailKey(projectId);
+        String architectureKey = architectureKey(projectId);
         List<String> mediaKeys = List.of(
                 "projects/" + projectId + "/carousel/first.webp",
-                "projects/" + projectId + "/content/second.webp"
+                "projects/" + projectId + "/carousel/second.webp"
         );
         for (String key : mediaKeys) {
             fileStorageService.copyIfMissing(new ByteArrayResource(THUMBNAIL), key);
         }
         jdbcTemplate.update("""
                 INSERT INTO project_media
-                    (project_id, storage_key, media_type, display_order)
-                VALUES (?, ?, 'CAROUSEL', 0), (?, ?, 'CONTENT', 0)
+                    (project_id, storage_key, display_order)
+                VALUES (?, ?, 0), (?, ?, 1)
                 """, projectId, mediaKeys.get(0), projectId, mediaKeys.get(1));
 
         ActionChallenge wrongTarget = challenge("PROJECT_DELETE", "PROJECT", "999999");
@@ -232,6 +233,7 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
         assertThat(childCount("project_technologies", projectId)).isZero();
         assertThat(childCount("project_media", projectId)).isZero();
         assertThat(fileStorageService.exists(thumbnailKey)).isFalse();
+        assertThat(fileStorageService.exists(architectureKey)).isFalse();
         assertThat(mediaKeys).allMatch(key -> !fileStorageService.exists(key));
 
         Long failureId = publishableProject("delete-failure-project");
@@ -286,8 +288,10 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
                 RETURNING id
                 """, Long.class, slug);
         String thumbnailKey = "projects/" + projectId + "/thumbnail/publishable.webp";
+        String architectureKey = "projects/" + projectId + "/architecture/publishable.webp";
         jdbcTemplate.update("UPDATE projects SET thumbnail_storage_key = ? WHERE id = ?", thumbnailKey, projectId);
         fileStorageService.copyIfMissing(new ByteArrayResource(THUMBNAIL), thumbnailKey);
+        fileStorageService.copyIfMissing(new ByteArrayResource(THUMBNAIL), architectureKey);
         Long technologyId = jdbcTemplate.queryForObject("""
                 INSERT INTO technology_master (name, category, enabled)
                 VALUES (?, 'BACKEND', TRUE)
@@ -301,17 +305,19 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
         jdbcTemplate.update("""
                 INSERT INTO project_contents (
                     project_id, results_json, background_json, features_json,
-                    development_json, architecture_json, engineering_json
+                    development_json, architecture_json, engineering_json,
+                    architecture_image_storage_key
                 ) VALUES (
                     ?,
                     '[{"title":"Result","description":"Description"}]',
                     '[{"body":"Background"}]',
                     '[{"title":"Feature","description":"Description"}]',
                     '[{"title":"Backend","items":["API"]}]',
-                    '{"services":["Backend"]}',
-                    '[{"title":"Issue","problem":"Problem","solution":"Solution","result":"Result"}]'
+                    '{"notes":[{"title":"Infra","body":"Backend"}]}',
+                    '[{"title":"Issue","problem":"Problem","solution":"Solution","result":"Result"}]',
+                    ?
                 )
-                """, projectId);
+                """, projectId, architectureKey);
         return projectId;
     }
 
@@ -332,6 +338,14 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
     private String thumbnailKey(Long projectId) {
         return jdbcTemplate.queryForObject(
                 "SELECT thumbnail_storage_key FROM projects WHERE id = ?", String.class, projectId);
+    }
+
+    private String architectureKey(Long projectId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT architecture_image_storage_key FROM project_contents WHERE project_id = ?",
+                String.class,
+                projectId
+        );
     }
 
     private int projectCount(Long projectId) {
