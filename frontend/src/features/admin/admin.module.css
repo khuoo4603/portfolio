@@ -77,7 +77,7 @@
   border-radius: var(--radius-value-sm);
   background: var(--admin-input);
   color: var(--text-primary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-small);
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -264,7 +264,9 @@
 }
 
 .pageHeader h1 {
-  color: var(--text-primary);
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
+  font-weight: 700;
 }
 
 .pageHeader h1 + p {
@@ -281,7 +283,6 @@
 .secondaryButton,
 .textButton,
 .iconButton,
-.periodTabs button,
 .lineTabs button,
 .rowMenu button,
 .drawerClose,
@@ -298,14 +299,15 @@
   gap: var(--space-8);
   padding: var(--space-8) var(--space-16);
   border-radius: var(--radius-value-sm);
+  box-shadow: var(--control-shadow-rest);
   cursor: pointer;
   font-weight: 700;
   white-space: nowrap;
   transition:
     background-color var(--motion-duration-160) var(--motion-easing-default),
     border-color var(--motion-duration-160) var(--motion-easing-default),
-    color var(--motion-duration-160) var(--motion-easing-default),
-    transform var(--motion-duration-100) var(--motion-easing-default);
+    box-shadow var(--motion-duration-160) var(--motion-easing-default),
+    color var(--motion-duration-160) var(--motion-easing-default);
 }
 
 .primaryButton {
@@ -322,7 +324,7 @@
 
 .primaryButton:hover:not(:disabled),
 .secondaryButton:hover:not(:disabled) {
-  transform: translateY(-1px);
+  box-shadow: var(--control-shadow-hover);
 }
 
 .primaryButton:hover:not(:disabled) {
@@ -340,6 +342,11 @@
 .iconButton:disabled {
   cursor: not-allowed;
   opacity: 0.48;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  box-shadow: none;
 }
 
 .primaryButton svg,
@@ -551,29 +558,6 @@
   opacity: 0.5;
 }
 
-.periodTabs {
-  display: inline-flex;
-  border-bottom: 1px solid var(--border-default);
-}
-
-.periodTabs button {
-  min-width: 68px;
-  padding: var(--space-8) var(--space-12);
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
-}
-
-.periodTabs .periodTabActive {
-  border-color: var(--accent-primary);
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
 .dashboardFlow,
 .pageSections {
   display: grid;
@@ -601,6 +585,12 @@
 .sectionHeading p,
 .sectionHeading h2 {
   margin: 0;
+}
+
+.sectionHeading h2 {
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
+  font-weight: 600;
 }
 
 .sectionHeading h2 + p {
@@ -940,9 +930,27 @@
   color: var(--text-secondary);
 }
 
+.linkFilters {
+  margin-bottom: var(--space-20);
+}
+
+/* Site 이력 Filter 전용 부유형 Segment 표현 */
+.profileFilters {
+  --segment-active-background: var(--admin-surface);
+}
+
+:global([data-theme="dark"]) .profileFilters {
+  --segment-active-border: color-mix(in srgb, var(--accent-primary) 86%, var(--ink-200));
+  --segment-track-border: color-mix(in srgb, var(--border-accent) 88%, var(--ink-200));
+}
+
 .dataTableWrap {
   min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
   border-block: 1px solid var(--border-default);
+  scrollbar-color: var(--border-accent) transparent;
+  scrollbar-width: thin;
 }
 
 .dataTable {
@@ -1101,6 +1109,39 @@
   font-weight: 500;
 }
 
+/* Project 정보와 고정 Control 열을 일치시키는 전용 Registry Row */
+.projectRegistryRow {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.projectRegistryInfo {
+  min-width: 0;
+  display: grid;
+}
+
+.projectRegistryMeta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectRegistryTagline {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.projectRegistryControls {
+  display: grid;
+  grid-template-columns: var(--space-64) 66px var(--space-112);
+  align-items: center;
+  justify-items: start;
+  gap: var(--space-12);
+}
+
+.projectRegistryControls .secondaryButton {
+  width: 100%;
+}
+
 .toolMark {
   width: 40px;
   height: 40px;
@@ -1155,8 +1196,9 @@
   display: grid;
   place-items: center;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-24);
-  background: color-mix(in srgb, var(--ink-950) 72%, transparent);
+  background: color-mix(in srgb, var(--ink-950) 78%, transparent);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
@@ -1170,11 +1212,11 @@
   position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  border: 1px solid var(--border-accent);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-value-md);
   background: var(--admin-surface);
   color: var(--text-primary);
-  box-shadow: 0 24px 64px color-mix(in srgb, var(--ink-950) 28%, transparent);
+  box-shadow: 0 20px 48px color-mix(in srgb, var(--ink-950) 24%, transparent);
   animation: dialog-enter var(--motion-duration-240) var(--motion-easing-default) both;
 }
 
@@ -1182,18 +1224,8 @@
   width: min(calc(var(--space-160) * 3), 100%);
 }
 
-.secureDialog::before {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  content: "";
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--border-default) 18%, transparent) 1px, transparent 1px),
-    linear-gradient(0deg, color-mix(in srgb, var(--border-default) 14%, transparent) 1px, transparent 1px),
-    linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 34%, transparent), transparent 52%);
-  background-size: 44px 44px, 44px 44px, 100% 100%;
-  mask-image: linear-gradient(to bottom right, black, transparent 72%);
-  opacity: 0.7;
+.secureDialog {
+  border-color: var(--border-accent);
 }
 
 .dialogHeader,
@@ -1204,6 +1236,7 @@
 }
 
 .dialogHeader {
+  grid-row: 1;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1212,9 +1245,18 @@
   border-bottom: 1px solid var(--border-default);
 }
 
+.dialogHeader > div {
+  min-width: 0;
+}
+
 .dialogHeader h2,
 .dialogHeader p {
   margin: 0;
+}
+
+.dialogHeader h2 {
+  color: var(--text-heading);
+  font-weight: 700;
 }
 
 .dialogHeader p {
@@ -1223,17 +1265,24 @@
 }
 
 .dialogBody {
+  grid-row: 2;
   overflow-y: auto;
   padding: var(--space-24);
 }
 
 .dialogFooter {
+  grid-row: 3;
   display: flex;
   justify-content: flex-end;
   gap: var(--space-8);
   padding: var(--space-16) var(--space-24);
   border-top: 1px solid var(--border-default);
   background: var(--admin-elevated);
+}
+
+.confirmMessage {
+  margin: 0;
+  color: var(--admin-data-text);
 }
 
 .editorForm,
@@ -1262,6 +1311,59 @@
   font-size: var(--font-size-small);
 }
 
+.linkImageEditor {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1fr);
+  gap: var(--space-20);
+  align-items: center;
+}
+
+.linkImagePreview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: var(--admin-elevated);
+}
+
+.linkImagePreview img {
+  object-fit: cover;
+}
+
+.linkImageControls {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-12);
+}
+
+.linkImageControls > span:first-child,
+.selectedFileName {
+  color: var(--text-secondary);
+}
+
+.linkImageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.linkImageActions > label {
+  cursor: pointer;
+}
+
+.linkImageActions [aria-pressed="true"] {
+  border-color: var(--border-accent);
+  background: var(--admin-elevated);
+}
+
+.selectedFileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .checkboxField {
   min-height: 42px;
   display: flex;
@@ -1287,14 +1389,18 @@
   color: var(--status-error);
 }
 
+.challengeState {
+  display: grid;
+  gap: var(--space-12);
+}
+
 .secureActionSummary {
   display: flex;
   align-items: center;
   gap: var(--space-12);
-  margin-bottom: var(--space-20);
-  padding: var(--space-12);
-  border: 1px solid var(--border-default);
-  background: color-mix(in srgb, var(--admin-input) 72%, transparent);
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .secureActionSummary > svg {
@@ -1313,12 +1419,12 @@
 .challengeMeta {
   display: flex;
   justify-content: space-between;
-  margin-top: var(--space-12);
   color: var(--text-muted);
   font-family: var(--font-family-mono) !important;
 }
 
-.challengeLoading {
+.challengeLoading,
+.challengeVerifying {
   min-height: 96px;
   display: grid;
   place-items: center;
@@ -1327,8 +1433,36 @@
   color: var(--text-secondary);
 }
 
-.challengeLoading p {
+.challengeLoading p,
+.challengeVerifying p {
   margin: 0;
+}
+
+.challengeVerifying {
+  min-height: auto;
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+  padding-block: var(--space-4);
+}
+
+.challengeIssueError {
+  min-height: 96px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: var(--space-8);
+}
+
+.challengeIssueError p,
+.challengeError p {
+  margin: 0;
+}
+
+.challengeError {
+  padding: var(--space-12) var(--space-16);
+  border-left: 2px solid var(--status-error);
+  background: color-mix(in srgb, var(--status-error) 7%, transparent);
+  color: var(--status-error);
 }
 
 .lineTabs {
@@ -1373,6 +1507,29 @@
   padding: var(--space-24);
   border-block: 1px solid var(--border-default);
   background: color-mix(in srgb, var(--admin-surface) 70%, transparent);
+}
+
+.contentGroup {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-20);
+  min-width: 0;
+}
+
+.contentGroup + .contentGroup {
+  padding-top: var(--space-24);
+  border-top: 1px solid var(--border-default);
+}
+
+.contentGroupHeading {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.contentGroupHeading p {
+  color: var(--text-secondary);
 }
 
 .wideField,
@@ -1581,7 +1738,7 @@
 
 .gateMark {
   color: var(--accent-primary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-small);
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -1619,6 +1776,480 @@
   color: var(--text-secondary);
 }
 
+/* Project 목록의 운영 정보 밀도와 직접 작업 영역 */
+.projectTableSection {
+  min-width: 0;
+}
+
+.projectTable th:first-child,
+.projectTable td:first-child {
+  width: 96px;
+}
+
+.projectTable th:nth-child(2) {
+  width: 30%;
+}
+
+.projectThumbnail,
+.mediaDraftPreview,
+.thumbnailDraftPreview {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: var(--admin-elevated);
+}
+
+.projectThumbnail {
+  width: 72px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.projectThumbnail img,
+.mediaDraftPreview img,
+.thumbnailDraftPreview img {
+  object-fit: cover;
+}
+
+.mediaDraftPreview > span,
+.thumbnailDraftPreview > span,
+.previewUnavailable {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  padding: var(--space-8);
+  place-items: center;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.projectThumbnail svg {
+  width: 20px;
+  height: 20px;
+}
+
+.projectIdentity,
+.projectStatusCell {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.projectIdentity code {
+  overflow-wrap: anywhere;
+}
+
+.projectStatusCell {
+  grid-template-columns: auto 44px;
+  align-items: center;
+  justify-content: start;
+  gap: var(--space-12);
+}
+
+.projectStatusCell > span {
+  color: var(--text-secondary);
+  font-size: var(--font-size-small);
+}
+
+.projectRowActions,
+.projectItemActions,
+.mediaGroupActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.projectCreateFields {
+  display: grid;
+  gap: var(--space-20);
+}
+
+.deleteWarning {
+  margin: 0;
+  padding: var(--space-16);
+  border-left: 2px solid var(--status-error);
+  background: var(--admin-elevated);
+  color: var(--text-secondary);
+}
+
+.deleteWarning strong {
+  color: var(--text-primary);
+}
+
+.dangerButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-16);
+  border: 1px solid var(--status-error);
+  border-radius: var(--radius-value-sm);
+  background: var(--status-error);
+  box-shadow: var(--control-shadow-rest);
+  color: var(--sand-50);
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+  font-weight: 700;
+}
+
+.dangerButton:hover:not(:disabled) {
+  box-shadow: var(--control-shadow-hover);
+}
+
+.dangerButton:disabled {
+  box-shadow: none;
+}
+
+/* Project Editor의 편집·실제 상세 Preview 전환 구조 */
+.projectEditorPage {
+  min-width: 0;
+}
+
+.projectEditorHeader {
+  position: sticky;
+  z-index: 16;
+  top: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-16);
+  margin-bottom: var(--space-20);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--border-accent);
+  background: color-mix(in srgb, var(--admin-canvas) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.projectEditorHeader > div {
+  min-width: 0;
+}
+
+.projectEditorHeader span,
+.projectEditorHeader h1 {
+  display: block;
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectEditorHeader span {
+  color: var(--text-muted);
+  font-family: var(--font-family-primary);
+}
+
+.projectModeSwitch {
+  display: flex;
+  width: min(100%, 440px);
+  gap: var(--space-4);
+  margin-bottom: var(--space-16);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  background: var(--admin-surface);
+}
+
+.projectModeSwitch button {
+  min-height: 40px;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+}
+
+.projectModeSwitch button[aria-pressed="true"] {
+  background: var(--admin-elevated);
+  color: var(--text-primary);
+}
+
+.projectModeSwitch svg {
+  width: 17px;
+  height: 17px;
+}
+
+.projectEditorLayout {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-16);
+}
+
+.projectEditorLayout[data-view-mode="preview"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.projectEditorLayout [hidden] {
+  display: none !important;
+}
+
+.projectSectionNav,
+.projectEditorWorkspace,
+.projectPreviewWorkspace {
+  min-width: 0;
+}
+
+.projectSectionNav {
+  position: sticky;
+  top: 82px;
+}
+
+.projectSectionNav nav {
+  display: grid;
+  border-block: 1px solid var(--border-default);
+}
+
+.projectSectionNav button {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  border: 0;
+  border-bottom: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-small);
+  text-align: left;
+}
+
+.projectSectionNav button:last-child {
+  border-bottom: 0;
+}
+
+.projectSectionNav button > span {
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+}
+
+.projectSectionNav button:hover,
+.projectSectionNav button:focus-visible,
+.projectSectionNav button[aria-current="step"] {
+  background: var(--admin-elevated);
+  color: var(--text-primary);
+}
+
+.projectSectionNav button[aria-current="step"] {
+  box-shadow: inset 2px 0 var(--accent-primary);
+}
+
+.projectEditorWorkspace,
+.projectPreviewWorkspace {
+  border: 1px solid var(--border-default);
+  background: var(--admin-surface);
+}
+
+.projectPreviewWorkspace {
+  grid-column: 1 / -1;
+  overflow: hidden;
+}
+
+.projectEditorPanel {
+  min-height: 560px;
+  display: grid;
+  align-content: start;
+  gap: var(--space-24);
+  padding: var(--space-20);
+}
+
+.projectPanelHeading,
+.mediaGroupHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.projectPanelHeading h2,
+.projectPanelHeading p,
+.mediaGroupHeading h3,
+.mediaGroupHeading p {
+  margin: 0;
+}
+
+.projectPanelHeading p,
+.mediaGroupHeading p {
+  margin-top: var(--space-4);
+  color: var(--text-secondary);
+}
+
+.projectFieldsGrid,
+.projectItemFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+.projectFieldsGrid .wideField,
+.projectItemFields .wideField {
+  grid-column: 1 / -1;
+}
+
+.projectItemList,
+.nestedStringList {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.projectItemEditor,
+.mediaGroup {
+  display: grid;
+  gap: var(--space-16);
+  padding: var(--space-16);
+  border: 1px solid var(--border-default);
+  background: color-mix(in srgb, var(--admin-elevated) 45%, transparent);
+}
+
+.projectItemEditor {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.projectItemActions {
+  justify-content: flex-end;
+}
+
+.technologyPicker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-12);
+}
+
+.compactFileButton {
+  min-height: 42px;
+}
+
+.stringItemRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.stringItemRow > input {
+  width: 100%;
+  min-height: 42px;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-sm);
+  background: var(--admin-input);
+  color: var(--admin-data-text);
+  font-family: var(--font-family-primary);
+}
+
+.technologyDraftRow {
+  display: grid;
+  grid-template-columns: minmax(132px, 1fr) auto 112px auto;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.technologyDraftRow:last-child {
+  border-bottom: 0;
+}
+
+.technologyDraftRow > div:first-child {
+  min-width: 0;
+  display: grid;
+}
+
+.technologyDraftRow > div:first-child span {
+  color: var(--text-muted);
+}
+
+.technologyHighlight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.mediaDraftRow {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-16);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.mediaDraftRow[data-deleted="true"] {
+  opacity: 0.58;
+}
+
+.mediaDraftPreview {
+  width: 104px;
+  aspect-ratio: 4 / 3;
+}
+
+.mediaDraftFields {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+
+.mediaDraftFields .formField:last-child {
+  grid-column: 1 / -1;
+}
+
+.thumbnailDraftPreview {
+  width: min(100%, 520px);
+  aspect-ratio: 16 / 9;
+}
+
+.architectureDraftPreview {
+  position: relative;
+  width: min(100%, 760px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  background: var(--admin-input);
+}
+
+.architectureDraftPreview img {
+  object-fit: contain;
+}
+
+.architectureDraftPreview > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+/* Local Draft의 Public 공용 상세 렌더러 Preview Shell */
+.projectPreview {
+  background: var(--admin-canvas);
+  color: var(--text-primary);
+}
+
+/* Tablet의 Project Editor 폭 조정 */
+@media (max-width: 1199px) {
+  .projectEditorLayout {
+    grid-template-columns: 168px minmax(0, 1fr);
+  }
+
+  .projectPreviewWorkspace {
+    grid-column: 1 / -1;
+  }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -1640,6 +2271,40 @@
 @keyframes dialog-enter {
   from { opacity: 0; transform: translateY(var(--space-8)); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* 고정 Sidebar가 유지되는 좁은 Desktop 운영 화면 재배치 */
+@media (min-width: 1080px) and (max-width: 1279px) {
+  .summaryRow,
+  .compactSummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summaryRow > div:nth-child(2),
+  .compactSummary > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .summaryRow > div:nth-child(-n + 2),
+  .compactSummary > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  .dashboardPrimaryGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .logFilters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .logSearchField {
+    grid-column: 1 / -1;
+  }
+
+  .filterSubmit {
+    justify-self: start;
+  }
 }
 
 @media (max-width: 1079px) {
@@ -1667,7 +2332,7 @@
 
   .mobileHeader > span {
     color: var(--text-primary);
-    font-family: var(--font-family-mono);
+    font-family: var(--font-family-primary);
     font-size: var(--font-size-small);
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -1765,6 +2430,10 @@
     grid-column: 2;
     justify-self: start;
   }
+
+  .projectEditorHeader {
+    top: 64px;
+  }
 }
 
 @keyframes drawer-enter {
@@ -1851,6 +2520,19 @@
     max-width: 100%;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  .projectTable tr > td:first-child {
+    grid-column: 1;
+    padding-right: 0;
+  }
+
+  .projectTable tr > td:nth-child(2) {
+    grid-column: 2;
+  }
+
+  .projectTable tr > td:last-child {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1948,14 +2630,45 @@
     grid-row: 2;
   }
 
+  .projectRegistryRow {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: var(--space-16);
+  }
+
+  .projectRegistryMeta {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .projectRegistryControls {
+    width: 100%;
+    grid-template-columns: var(--space-64) 66px minmax(var(--space-96), var(--space-112));
+    justify-content: start;
+  }
+
+  .projectRegistryRow .projectRegistryControls .statusLabel,
+  .projectRegistryRow .projectRegistryControls .stateSwitch {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
   .contentForm {
     grid-template-columns: 1fr;
     gap: var(--space-20);
     padding: var(--space-16);
   }
 
+  .contentGroup {
+    grid-template-columns: 1fr;
+  }
+
   .editorForm {
     gap: var(--space-20);
+  }
+
+  .linkImageEditor {
+    grid-template-columns: 1fr;
   }
 
   .wideField,
@@ -2026,6 +2739,85 @@
 
   .errorState .secondaryButton {
     grid-column: 1 / -1;
+  }
+
+  .projectEditorHeader {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--space-8);
+  }
+
+  .projectEditorHeader .secondaryButton,
+  .projectEditorHeader .primaryButton {
+    padding-inline: var(--space-12);
+  }
+
+  .projectEditorLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .projectSectionNav {
+    position: static;
+    overflow-x: auto;
+  }
+
+  .projectSectionNav nav {
+    width: max-content;
+    min-width: 100%;
+    display: flex;
+    border: 1px solid var(--border-default);
+  }
+
+  .projectSectionNav button {
+    min-width: 126px;
+    border-right: 1px solid var(--border-default);
+    border-bottom: 0;
+  }
+
+  .projectSectionNav button[aria-current="step"] {
+    box-shadow: inset 0 -2px var(--accent-primary);
+  }
+
+  .projectEditorWorkspace,
+  .projectPreviewWorkspace {
+    grid-column: 1;
+  }
+
+  .projectEditorPanel {
+    min-height: 0;
+    padding: var(--space-16);
+  }
+
+  .projectPanelHeading,
+  .mediaGroupHeading {
+    display: grid;
+  }
+
+  .projectFieldsGrid,
+  .projectItemFields,
+  .mediaDraftFields {
+    grid-template-columns: 1fr;
+  }
+
+  .projectItemEditor,
+  .mediaDraftRow,
+  .technologyDraftRow {
+    grid-template-columns: 1fr;
+  }
+
+  .projectItemActions {
+    justify-content: flex-start;
+  }
+
+  .mediaDraftPreview {
+    width: min(100%, 220px);
+  }
+
+  .technologyPicker {
+    grid-template-columns: 1fr;
+  }
+
+  .technologyPicker .secondaryButton {
+    justify-self: start;
   }
 }
 

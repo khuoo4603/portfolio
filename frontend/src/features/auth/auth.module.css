@@ -15,7 +15,7 @@
   min-height: 100dvh;
   overflow-x: clip;
   background: var(--bg-base);
-  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family: var(--font-family-primary);
 }
 
 :global([data-theme="dark"]) .authPage {
@@ -32,7 +32,7 @@
 .authPage :global(.type-title),
 .authPage :global(.type-body),
 .authPage :global(.type-small) {
-  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family: var(--font-family-primary);
 }
 
 /* 넓은 선형 Grid와 외곽 Fade 기반 인증 페이지 배경 */
@@ -86,7 +86,7 @@
   align-items: center;
   gap: var(--space-12);
   color: var(--text-secondary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-small);
   line-height: var(--line-height-small);
   letter-spacing: 0.02em;
@@ -126,7 +126,8 @@
   align-items: baseline;
   flex-wrap: nowrap;
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
   font-weight: 700;
   text-transform: none;
   white-space: nowrap;
@@ -508,6 +509,7 @@
   border: 1px solid transparent;
   border-radius: var(--radius-value-sm);
   background: var(--accent-strong);
+  box-shadow: var(--control-shadow-rest);
   color: var(--sand-50);
   font-weight: 650;
   cursor: pointer;
@@ -515,16 +517,17 @@
     color var(--motion-duration-160) var(--motion-easing-default),
     background-color var(--motion-duration-160) var(--motion-easing-default),
     border-color var(--motion-duration-160) var(--motion-easing-default),
-    transform var(--motion-duration-160) var(--motion-easing-default);
+    box-shadow var(--motion-duration-160) var(--motion-easing-default);
 }
 
 .primaryButton:hover:not(:disabled) {
   background: var(--accent-primary);
-  transform: translateY(-1px);
+  box-shadow: var(--control-shadow-hover);
 }
 
 .primaryButton:disabled {
   cursor: not-allowed;
+  box-shadow: none;
   opacity: 0.6;
 }
 
@@ -616,6 +619,7 @@
   min-width: 0;
   height: var(--space-48);
   padding: 0;
+  border-color: var(--border-default);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-title);
   line-height: var(--line-height-title);
@@ -811,7 +815,8 @@
 @media (max-width: 767px) {
   .authPage {
     min-height: 100dvh;
-    overflow: visible;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .authHeader {
@@ -849,7 +854,7 @@
 
   .loginSurface {
     width: 100%;
-    min-height: clamp(560px, 68dvh, 620px);
+    min-height: 0;
     align-self: stretch;
   }
 

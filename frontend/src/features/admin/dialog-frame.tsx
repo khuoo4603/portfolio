@@ -9,7 +9,7 @@ type DialogFrameProps = {
   title: string;
   description?: string;
   onClose: () => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   footer?: React.ReactNode;
   secure?: boolean;
   compact?: boolean;
@@ -116,7 +116,7 @@ export default function DialogFrame({
             <X aria-hidden="true" />
           </button>
         </header>
-        <div className={styles.dialogBody}>{children}</div>
+        {children !== undefined && children !== null ? <div className={styles.dialogBody}>{children}</div> : null}
         {footer && <footer className={styles.dialogFooter}>{footer}</footer>}
       </div>
     </div>

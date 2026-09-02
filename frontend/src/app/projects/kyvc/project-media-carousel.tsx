@@ -2,15 +2,21 @@
 
 import Image from "next/image";
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
-import type { ProjectMedia } from "./kyvc-data";
+import type { ProjectMedia } from "@/types/api";
 import styles from "./kyvc-detail.module.css";
 
 type ProjectMediaCarouselProps = {
   media: readonly ProjectMedia[];
+  projectName: string;
 };
+
+type CarouselSlide =
+  | { type: "demo"; number: string }
+  | { type: "media"; media: ProjectMedia };
 
 const SWIPE_THRESHOLD = 48;
 const MAX_DRAG_OFFSET = 160;
+const DEMO_SLIDE_NUMBERS = ["01", "02", "03", "04", "05"] as const;
 
 // 순환형 Carousel에서 현재 Slide 기준 최단 상대 위치 계산
 export function getCarouselOffset(index: number, activeIndex: number, length: number) {
@@ -26,19 +32,25 @@ export function getCarouselOffset(index: number, activeIndex: number, length: nu
   return offset;
 }
 
-// Placeholder와 실제 이미지 경로를 동일 구조로 처리하는 Project Media Carousel
-export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProps) {
+// 실제 API Media 우선과 기존 5개 Demo Fallback을 처리하는 Project Media Carousel
+export default function ProjectMediaCarousel({ media, projectName }: ProjectMediaCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [failedMedia, setFailedMedia] = useState<ReadonlySet<number>>(new Set());
   const dragStartRef = useRef<number | null>(null);
+  const slides: CarouselSlide[] = media.length > 0
+    ? media.map((item) => ({ type: "media", media: item }))
+    : DEMO_SLIDE_NUMBERS.map((number) => ({ type: "demo", number }));
+  const slideCount = slides.length;
+  const currentIndex = activeIndex % slideCount;
 
   const moveTo = (index: number) => {
-    setActiveIndex((index + media.length) % media.length);
+    setActiveIndex((index + slideCount) % slideCount);
   };
 
-  const movePrevious = () => moveTo(activeIndex - 1);
-  const moveNext = () => moveTo(activeIndex + 1);
+  const movePrevious = () => moveTo(currentIndex - 1);
+  const moveNext = () => moveTo(currentIndex + 1);
 
   // Pointer 시작점 저장과 Drag 상태 진입
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -97,7 +109,7 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
   return (
     <section
       className={styles.carousel}
-      aria-label="KYvC 프로젝트 미디어"
+      aria-label={`${projectName} 프로젝트 미디어`}
       tabIndex={0}
       onKeyDown={(event) => {
         if (event.key === "ArrowLeft") {
@@ -118,33 +130,47 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
         onPointerCancel={cancelDrag}
         style={{ "--carousel-drag": `${dragOffset}px` } as CSSProperties}
       >
-        {media.map((item, index) => {
-          const offset = getCarouselOffset(index, activeIndex, media.length);
-          const isActive = index === activeIndex;
+        {slides.map((slide, index) => {
+          const offset = getCarouselOffset(index, currentIndex, slideCount);
+          const isActive = index === currentIndex;
 
           return (
             <figure
               className={styles.carouselSlide}
               data-active={isActive ? "true" : "false"}
               data-carousel-slide
+              data-carousel-demo={slide.type === "demo" ? "true" : undefined}
+              data-carousel-media={slide.type === "media" ? "true" : undefined}
               data-offset={offset}
               aria-hidden={!isActive}
-              key={item.label}
+              key={slide.type === "demo" ? `demo-${slide.number}` : `media-${slide.media.id}`}
             >
-              {item.src ? (
+              {slide.type === "demo" ? (
+                <div className={styles.mediaPlaceholder}>
+                  <span className={`${styles.placeholderProject} type-small`}>
+                    {projectName} / 이미지 준비 중
+                  </span>
+                  <span className={`${styles.placeholderLabel} type-title`}>
+                    {projectName} 화면 {slide.number}
+                  </span>
+                </div>
+              ) : !failedMedia.has(slide.media.id) ? (
                 <Image
-                  alt={item.alt}
+                  alt={slide.media.altText ?? ""}
                   className={styles.carouselImage}
-                  src={item.src}
-                  width={item.width}
-                  height={item.height}
+                  src={slide.media.imageUrl}
+                  fill
                   draggable={false}
+                  unoptimized
                   sizes="(max-width: 767px) calc(100vw - 40px), (max-width: 1023px) 72vw, 820px"
+                  onError={() => setFailedMedia((current) => new Set(current).add(slide.media.id))}
                 />
               ) : (
                 <div className={styles.mediaPlaceholder}>
-                  <span className={`${styles.placeholderProject} type-small`}>KYvC / 이미지 준비 중</span>
-                  <span className={`${styles.placeholderLabel} type-title`}>{item.label}</span>
+                  <span className={`${styles.placeholderProject} type-small`}>{projectName}</span>
+                  {slide.media.label ? (
+                    <span className={`${styles.placeholderLabel} type-title`}>{slide.media.label}</span>
+                  ) : null}
                 </div>
               )}
             </figure>
@@ -152,7 +178,7 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
         })}
       </div>
 
-      <div className={styles.carouselControls}>
+      {slideCount > 1 ? <div className={styles.carouselControls}>
         <button
           className={`${styles.carouselButton} type-body`}
           type="button"
@@ -162,7 +188,7 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
           ← PREV
         </button>
         <p className={`${styles.carouselCount} type-small`} aria-live="polite">
-          {String(activeIndex + 1).padStart(2, "0")} / {String(media.length).padStart(2, "0")}
+          {String(currentIndex + 1).padStart(2, "0")} / {String(slideCount).padStart(2, "0")}
         </p>
         <button
           className={`${styles.carouselButton} type-body`}
@@ -172,7 +198,7 @@ export default function ProjectMediaCarousel({ media }: ProjectMediaCarouselProp
         >
           NEXT →
         </button>
-      </div>
+      </div> : null}
     </section>
   );
 }

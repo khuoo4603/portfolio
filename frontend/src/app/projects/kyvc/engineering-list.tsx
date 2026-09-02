@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { EngineeringItem } from "./kyvc-data";
+import type { ProjectEngineeringItem } from "@/types/api";
 import styles from "./kyvc-detail.module.css";
 
 type EngineeringListProps = {
-  items: readonly EngineeringItem[];
+  items: readonly ProjectEngineeringItem[];
 };
 
 const flowLabels = ["문제", "개선 방안", "결과"] as const;
@@ -35,7 +35,7 @@ export default function EngineeringList({ items }: EngineeringListProps) {
               </span>
               <span className={styles.engineeringHeading}>
                 <span className={`${styles.engineeringTitle} type-title`}>{item.title}</span>
-                <span className={`${styles.engineeringSummary} type-body`}>{item.summary}</span>
+                {item.summary ? <span className={`${styles.engineeringSummary} type-body`}>{item.summary}</span> : null}
               </span>
               <span className={`${styles.engineeringIndicator} type-title`} aria-hidden="true">
                 {isOpen ? "−" : "+"}

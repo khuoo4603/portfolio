@@ -2,19 +2,27 @@
 
 import Image from "next/image";
 import { ExternalLink } from "lucide-react";
-import { useState } from "react";
-import {
-  DEFAULT_LINK_IMAGE_URL,
-  MOCK_TOOL_LINKS,
-  type ToolLink,
-  type ToolLinkCategory,
-} from "./mock-tools";
+import { useEffect, useState } from "react";
+import SegmentedControl from "@/components/ui/segmented-control";
+import { formatApiError } from "@/lib/api/client";
+import type { ToolLink, ToolLinkCategory } from "@/types/api";
+import { getToolLinks } from "./tools-api";
 import { useToolsSession } from "./tools-shell";
 import styles from "./tools.module.css";
+
+export const DEFAULT_LINK_IMAGE_URL = "/images/tools/links/default-link-preview.svg";
 
 const CATEGORIES: ReadonlyArray<{ key: ToolLinkCategory; label: string }> = [
   { key: "REFERENCE", label: "Reference" },
   { key: "MY_SERVICES", label: "My Services" },
+];
+
+type LinkFilter = "ALL" | ToolLinkCategory;
+
+const LINK_FILTERS: ReadonlyArray<{ value: LinkFilter; label: string }> = [
+  { value: "ALL", label: "전체" },
+  { value: "REFERENCE", label: "Reference" },
+  { value: "MY_SERVICES", label: "My Services" },
 ];
 
 export function getLinkMeta(value: string) {
@@ -31,12 +39,12 @@ export function getLinkMeta(value: string) {
   }
 }
 
-// 활성 Link의 기존 Category 및 데이터 표시 순서 유지
+// Backend 활성 Link의 실제 Category 및 데이터 표시 순서 유지
 export function groupActiveLinks(links: readonly ToolLink[]) {
   return CATEGORIES.map((category) => ({
     ...category,
     items: links.flatMap((link) => {
-      if (!link.enabled || link.category !== category.key) {
+      if (link.category !== category.key) {
         return [];
       }
 
@@ -44,6 +52,11 @@ export function groupActiveLinks(links: readonly ToolLink[]) {
       return metadata ? [{ link, metadata }] : [];
     }),
   })).filter((category) => category.items.length > 0);
+}
+
+// 한 번 조회한 Link 배열의 선택 Category 필터링
+export function filterActiveLinks(links: readonly ToolLink[], filter: LinkFilter) {
+  return filter === "ALL" ? [...links] : links.filter((link) => link.category === filter);
 }
 
 export function LinkCard({
@@ -77,8 +90,9 @@ export function LinkCard({
           alt={link.name || metadata.domain}
           className={styles.linkCoverImage}
           fill
+          unoptimized
           onError={handleImageError}
-          sizes="(min-width: 1440px) 244px, (min-width: 1024px) calc((100vw - 128px) / 5), (min-width: 768px) calc((100vw - 88px) / 3), calc(100vw - 40px)"
+          sizes="(min-width: 1440px) 244px, (min-width: 1200px) calc((100vw - 128px) / 5), (min-width: 1024px) calc((100vw - 112px) / 4), (min-width: 768px) calc((100vw - 88px) / 3), calc(100vw - 40px)"
           src={imageSrc}
         />
       </span>
@@ -104,10 +118,32 @@ export function LinkCard({
 // 이미지 중심 Blog Grid로 구성된 Category별 Link 조회 화면
 export default function LinksScreen() {
   const { hasTool } = useToolsSession();
-  const groups = groupActiveLinks(MOCK_TOOL_LINKS);
+  const [links, setLinks] = useState<ToolLink[] | null>(null);
+  const [linkFilter, setLinkFilter] = useState<LinkFilter>("ALL");
+  const [error, setError] = useState("");
+  const linksEnabled = hasTool("LINKS");
+  const groups = groupActiveLinks(filterActiveLinks(links ?? [], linkFilter));
   const totalLinks = groups.reduce((total, group) => total + group.items.length, 0);
 
-  if (!hasTool("LINKS")) {
+  useEffect(() => {
+    if (!linksEnabled) {
+      return;
+    }
+
+    let active = true;
+    void getToolLinks()
+      .then((response) => {
+        if (active) setLinks(response.items);
+      })
+      .catch((caught: unknown) => {
+        if (active) setError(formatApiError(caught));
+      });
+    return () => {
+      active = false;
+    };
+  }, [linksEnabled]);
+
+  if (!linksEnabled) {
     return (
       <main className={styles.toolsPage}>
         <div className="content-container">
@@ -123,6 +159,18 @@ export default function LinksScreen() {
     );
   }
 
+  if (error) {
+    return (
+      <main className={styles.toolsPage} role="alert">
+        <div className="content-container">{error}</div>
+      </main>
+    );
+  }
+
+  if (!links) {
+    return <main className={styles.toolsPage} aria-busy="true" aria-label="Links 불러오는 중" />;
+  }
+
   return (
     <main className={styles.toolsPage}>
       <div className="content-container">
@@ -132,6 +180,8 @@ export default function LinksScreen() {
             {totalLinks} {totalLinks === 1 ? "link" : "links"}
           </span>
         </header>
+
+        <SegmentedControl className={styles.linksFilters} label="Link 분류" options={LINK_FILTERS} value={linkFilter} onChange={setLinkFilter} />
 
         {groups.length === 0 ? (
           <div className={styles.emptyState}>

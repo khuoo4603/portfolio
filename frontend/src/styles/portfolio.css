@@ -38,7 +38,7 @@
   gap: var(--space-12);
   justify-self: start;
   color: var(--text-primary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   letter-spacing: 0.02em;
   text-decoration: none;
 }
@@ -209,7 +209,7 @@
   display: flex;
   align-items: center;
   color: var(--accent-primary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -225,7 +225,7 @@
   grid-column: 1 / 8;
   flex-direction: column;
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-heading);
   font-size: calc(var(--font-size-display-xl) + var(--font-size-title));
   font-weight: 500;
   text-transform: uppercase;
@@ -245,7 +245,7 @@
 
 .hero-statement {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-heading);
   font-size: var(--font-size-heading);
   font-weight: 700;
   line-height: var(--line-height-heading);
@@ -264,7 +264,7 @@
   align-self: flex-start;
   margin-top: var(--space-48);
   color: var(--text-secondary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   letter-spacing: 0.02em;
   text-decoration: none;
 }
@@ -282,7 +282,7 @@
 
 .section-title {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-heading);
   font-weight: 600;
 }
 
@@ -314,12 +314,13 @@
 
 .about-statement {
   margin: var(--space-40) 0 0;
-  color: var(--text-primary);
+  color: var(--text-heading);
   font-weight: 500;
 }
 
 .about-statement span {
-  color: var(--accent-primary);
+  color: inherit;
+  font-weight: 600;
 }
 
 .profile-portrait {
@@ -361,7 +362,7 @@
 
 .about-position {
   color: var(--accent-primary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -373,8 +374,8 @@
 .about-values > h3 {
   grid-column: 1 / 13;
   margin: 0;
-  color: var(--text-primary);
-  font-weight: 500;
+  color: var(--text-heading);
+  font-weight: 600;
 }
 
 .about-values {
@@ -500,17 +501,24 @@
   transition: transform var(--motion-duration-160) var(--motion-easing-default);
 }
 
+.technology-icon-fallback {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-xs);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+  line-height: 1;
+}
+
 .tech-item:hover {
   color: var(--text-primary);
 }
 
 .tech-item:hover .tech-icon {
   transform: translateY(-1px);
-}
-
-.tech-item[data-icon="ghcr"] .tech-icon {
-  border-radius: var(--radius-value-pill);
-  background: var(--sand-200);
 }
 
 /* 실제 Project Row와 정렬된 연도 Timeline 목록 */
@@ -541,8 +549,8 @@
 .projects-heading h2 {
   grid-column: 1 / 8;
   margin: var(--space-24) 0 0;
-  color: var(--text-primary);
-  font-weight: 500;
+  color: var(--text-heading);
+  font-weight: 600;
 }
 
 .project-stage {
@@ -644,7 +652,7 @@
 
 .project-tab-name {
   min-width: 0;
-  font-family: var(--font-family-display);
+  font-family: var(--font-family-primary);
   font-weight: 500;
   overflow-wrap: normal;
   white-space: nowrap;
@@ -775,7 +783,7 @@ a.project-thumbnail {
   gap: var(--space-8);
   overflow: hidden;
   color: var(--accent-primary);
-  font-family: var(--font-family-mono);
+  font-family: var(--font-family-primary);
   text-decoration: none;
   opacity: 1;
   transform: translateY(0);
@@ -826,14 +834,13 @@ a.project-thumbnail {
   }
 
   .project-information {
-    align-self: stretch;
+    display: flex;
+    align-items: center;
   }
 
   .project-information-group {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
+    position: static;
+    transform: none;
   }
 
   .project-detail-link {
@@ -893,8 +900,8 @@ a.project-thumbnail {
   grid-column: 1 / 3;
   margin: 0;
   padding-top: var(--space-32);
-  color: var(--text-primary);
-  font-weight: 500;
+  color: var(--text-heading);
+  font-weight: 600;
 }
 
 .education-info-list {
@@ -930,7 +937,7 @@ a.project-thumbnail {
 .education-info-title {
   grid-column: 2;
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .education-info-detail {
@@ -982,14 +989,15 @@ a.project-thumbnail {
 
 .footer-name {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--text-heading);
+  font-family: var(--font-family-primary);
   font-weight: 600;
 }
 
 .footer-role {
   margin: var(--space-8) 0 0;
   color: var(--accent-primary);
-  font-family: var(--font-jetbrains-mono);
+  font-family: var(--font-family-primary);
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -1015,19 +1023,26 @@ a.project-thumbnail {
   letter-spacing: 0.02em;
 }
 
-.footer-disabled-actions {
+.footer-resume-actions {
   display: grid;
   gap: var(--space-12);
 }
 
-.footer-disabled-actions span {
+.footer-resume-actions span {
   color: var(--text-secondary);
   opacity: 0.82;
 }
 
+.footer-resume-actions a {
+  width: fit-content;
+  color: var(--text-primary);
+  text-decoration-color: var(--border-accent);
+  text-underline-offset: var(--space-4);
+}
+
 .footer-contact-links {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: var(--space-12);
 }
 
@@ -1047,6 +1062,13 @@ a.project-thumbnail {
     border-color var(--motion-duration-160) var(--motion-easing-default),
     color var(--motion-duration-160) var(--motion-easing-default),
     transform var(--motion-duration-240) var(--motion-easing-default);
+}
+
+.footer-contact-links a.footer-text-link {
+  width: auto;
+  min-width: var(--space-48);
+  padding-inline: var(--space-16);
+  white-space: nowrap;
 }
 
 .footer-contact-links svg {
@@ -1098,8 +1120,21 @@ a.project-thumbnail {
     justify-content: center;
     gap: var(--space-20);
     min-height: var(--space-48);
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
     border-bottom: 1px solid var(--border-default);
     background: var(--bg-base);
+    scrollbar-width: none;
+  }
+
+  .primary-navigation::-webkit-scrollbar {
+    display: none;
+  }
+
+  .primary-navigation .navigation-link {
+    flex: none;
+    white-space: nowrap;
   }
 
   .hero {
@@ -1132,7 +1167,7 @@ a.project-thumbnail {
   }
 
   .hero-copy {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     margin-top: var(--space-32);
   }
 
@@ -1294,8 +1329,8 @@ a.project-thumbnail {
     grid-template-rows: auto minmax(430px, 1fr);
     min-height: max(calc(100svh - var(--hero-header-offset)), 960px);
     padding-top: var(--space-40);
-    padding-bottom: var(--space-32);
-    row-gap: var(--space-40);
+    padding-bottom: 0;
+    row-gap: var(--space-16);
   }
 
   .hero-identity {
@@ -1309,7 +1344,7 @@ a.project-thumbnail {
 
   .hero-name {
     grid-column: 1 / 5;
-    font-size: var(--font-size-display-xl);
+    font-size: calc(var(--font-size-display-xl) - var(--font-size-small));
   }
 
   .hero-name-second {
@@ -1318,12 +1353,27 @@ a.project-thumbnail {
 
   .hero-copy {
     grid-template-columns: minmax(0, 1fr);
-    margin-top: var(--space-32);
+    margin-top: var(--space-24);
     row-gap: var(--space-16);
+  }
+
+  .hero-statement {
+    font-size: var(--font-size-title);
+    line-height: var(--line-height-title);
+    letter-spacing: var(--letter-spacing-title);
+  }
+
+  .hero-description {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
   }
 
   .hero-description {
     margin-bottom: 0;
+  }
+
+  .hero .section-cue {
+    display: none;
   }
 
   .footer-inner {
@@ -1340,21 +1390,22 @@ a.project-thumbnail {
   }
 
   .about-statement {
-    margin-top: var(--space-32);
+    margin-top: var(--space-24);
+    font-size: var(--font-size-heading);
   }
 
   .profile-portrait {
-    width: 72%;
-    margin: var(--space-64) 0 0 auto;
+    width: 64%;
+    margin: var(--space-48) 0 0 auto;
   }
 
   .about-introduction {
-    margin-top: var(--space-64);
+    margin-top: var(--space-48);
   }
 
   .about-values {
     display: block;
-    margin-top: var(--space-64);
+    margin-top: var(--space-48);
   }
 
   .value-list {
@@ -1477,7 +1528,8 @@ a.project-thumbnail {
   }
 
   .activities-group,
-  .awards-group {
+  .awards-group,
+  .certificates-group {
     margin-top: var(--space-64);
   }
 
@@ -2202,6 +2254,114 @@ a.project-thumbnail {
 
 }
 
+/* Wide Desktop Hero Identity와 Topology의 안전 간격 */
+@media (min-width: 1440px) {
+  .hero-inner {
+    margin-inline: auto;
+  }
+
+  .hero-name {
+    font-size: clamp(108px, 7.5vw, 128px);
+  }
+
+  .hero-name-second {
+    margin-left: 8%;
+  }
+
+  .hero-copy {
+    max-width: calc(var(--space-160) * 3);
+    margin-top: var(--space-32);
+    row-gap: var(--space-16);
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    width: min(36vw, calc(var(--space-160) * 4 + var(--space-80)));
+  }
+}
+
+/* Compact Laptop Hero Identity와 Topology의 압축된 2열 균형 */
+@media (min-width: 1180px) and (max-width: 1439px) {
+  .hero-inner {
+    width: calc(100% - var(--page-padding) - var(--page-padding));
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+  }
+
+  .hero-name {
+    font-size: clamp(82px, 6.4vw, 90px);
+  }
+
+  .hero-name-second {
+    margin-left: 8%;
+  }
+
+  .hero-copy {
+    max-width: calc(var(--space-160) * 2 + var(--space-112));
+    margin-top: var(--space-32);
+    row-gap: var(--space-16);
+  }
+
+  .section-cue {
+    margin-top: var(--space-32);
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    width: min(35vw, calc(var(--space-160) * 3 + var(--space-80)));
+  }
+}
+
+/* Small Desktop의 낮은 화면을 위한 Compact 2열 Hero */
+@media (min-width: 1024px) and (max-width: 1179px) {
+  .hero-inner {
+    width: calc(100% - var(--page-padding) - var(--page-padding));
+    max-width: var(--content-max-width);
+    margin-inline: auto;
+  }
+
+  .hero-identity {
+    grid-column: 1 / 6;
+    padding-block: var(--space-32);
+  }
+
+  .hero-name-block {
+    margin-top: var(--space-16);
+  }
+
+  .hero-name {
+    font-size: clamp(68px, 6.8vw, 76px);
+  }
+
+  .hero-name-second {
+    margin-left: 6%;
+  }
+
+  .hero-copy {
+    max-width: calc(var(--space-160) * 2 + var(--space-64));
+    margin-top: var(--space-24);
+    row-gap: var(--space-12);
+  }
+
+  .hero-statement {
+    font-size: 28px;
+  }
+
+  .hero-description {
+    font-size: var(--font-size-body-lg);
+    line-height: var(--line-height-body-lg);
+  }
+
+  .section-cue {
+    margin-top: var(--space-20);
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    width: min(40vw, calc(var(--space-160) * 2 + var(--space-128) + var(--space-16)));
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .service-graph:hover .topology-card-frame {
     border-color: var(--accent-primary);
@@ -2311,45 +2471,315 @@ a.project-thumbnail {
 
 }
 
+/* 900px 이상 Stacked Tablet의 정보 밀도 */
+@media (min-width: 900px) and (max-width: 1023px) {
+  .hero-inner {
+    grid-template-rows: auto auto;
+    min-height: 0;
+    padding-top: var(--space-16);
+    padding-bottom: 0;
+    row-gap: var(--space-8);
+  }
+
+  .hero-identity {
+    align-self: start;
+    justify-content: flex-start;
+  }
+
+  .hero-name-block {
+    margin-top: var(--space-8);
+  }
+
+  .hero-name {
+    font-size: 52px;
+  }
+
+  .hero-name-second {
+    margin-left: 6%;
+  }
+
+  .hero-copy {
+    max-width: calc(var(--space-160) * 4 + var(--space-80));
+    margin-top: var(--space-12);
+    row-gap: var(--space-8);
+  }
+
+  .hero-statement {
+    font-size: var(--font-size-title);
+    line-height: var(--line-height-title);
+  }
+
+  .hero-description {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+  }
+
+  .hero .section-cue {
+    display: none;
+  }
+
+  .hero-visual-stage {
+    min-height: 0;
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    top: 0;
+    width: min(58vw, calc(var(--space-160) * 3 + var(--space-64)));
+    transform: translateX(50%);
+  }
+}
+
+/* Tablet Landscape의 첫 Viewport 좌우 2열 Pinned Hero */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+  .hero {
+    min-height: var(--hero-stage-height, 226.5svh);
+  }
+
+  .hero-inner {
+    position: sticky;
+    top: var(--hero-header-offset);
+    width: min(calc(100% - var(--page-padding) - var(--page-padding)), 960px);
+    height: calc(100svh - var(--hero-header-offset));
+    min-height: calc(100svh - var(--hero-header-offset));
+    padding-block: var(--space-24);
+    margin-inline: auto;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: 1fr;
+    column-gap: var(--grid-gutter);
+    row-gap: 0;
+  }
+
+  .hero-identity {
+    z-index: 5;
+    grid-column: 1 / 5;
+    grid-row: 1;
+    align-self: stretch;
+    justify-content: center;
+    padding-block: var(--space-24);
+    text-align: left;
+  }
+
+  .hero-name-block {
+    margin-top: var(--space-12);
+  }
+
+  .hero-name {
+    font-size: clamp(44px, 5.2vw, 52px);
+  }
+
+  .hero-name-second {
+    margin-left: 4%;
+  }
+
+  .hero-copy {
+    max-width: calc(var(--space-160) * 2 + var(--space-32));
+    margin-top: var(--space-20);
+    row-gap: var(--space-12);
+  }
+
+  .hero-statement {
+    font-size: var(--font-size-title);
+    line-height: var(--line-height-title);
+  }
+
+  .hero-description {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+  }
+
+  .hero .section-cue {
+    display: none;
+  }
+
+  .hero-system {
+    position: absolute;
+    inset: 0;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    height: auto;
+    min-height: 0;
+  }
+
+  .hero-visual-stage {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    min-height: 0;
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    top: 50%;
+    right: 0;
+    left: auto;
+    width: min(48%, calc(var(--space-160) * 3));
+    transform: translateY(-50%);
+  }
+}
+
+/* Portrait World와 Focus Stage의 동일 화면 점유율 */
+@media (max-width: 899px) and (orientation: portrait) {
+  .topology-narrative-world-map-viewport {
+    left: calc(50% + var(--portrait-world-map-offset-x, 0px));
+    width: var(--portrait-world-map-width, 210svh);
+    height: auto;
+    max-width: none;
+    overflow: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+    transform: translate(-50%, -50%);
+  }
+
+  .topology-focus-map-viewport {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    aspect-ratio: auto;
+    -webkit-mask-image:
+      linear-gradient(to bottom, transparent, black 4%, black 96%, transparent),
+      linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+    mask-image:
+      linear-gradient(to bottom, transparent, black 4%, black 96%, transparent),
+      linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  }
+}
+
+/* Tablet Portrait의 짧은 Text 흐름과 즉시 이어지는 Topology */
+@media (min-width: 768px) and (max-width: 899px) and (orientation: portrait) {
+  .hero-inner {
+    grid-template-rows: auto auto;
+    min-height: 0;
+    padding-top: var(--space-24);
+    padding-bottom: 0;
+    row-gap: var(--space-16);
+  }
+
+  .hero-identity {
+    align-items: center;
+    align-self: start;
+    justify-content: flex-start;
+    text-align: center;
+  }
+
+  .hero-intro {
+    justify-content: center;
+  }
+
+  .hero-name-block {
+    width: 100%;
+    margin-top: var(--space-12);
+  }
+
+  .hero-name {
+    align-items: center;
+    font-size: 64px;
+    text-align: center;
+  }
+
+  .hero-name-second {
+    margin-left: 0;
+  }
+
+  .hero-copy {
+    max-width: calc(var(--space-160) * 4);
+    margin-top: var(--space-16);
+    margin-inline: auto;
+    row-gap: var(--space-8);
+    justify-items: center;
+  }
+
+  .hero-statement {
+    font-size: 26px;
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .hero-description {
+    font-size: var(--font-size-body-lg);
+    line-height: var(--line-height-body-lg);
+    text-align: center;
+  }
+
+  .hero .section-cue {
+    display: none;
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    top: var(--space-8);
+    width: min(86vw, calc(var(--space-160) * 4));
+    transform: translateX(50%);
+  }
+}
+
+/* 낮은 Portrait 계열 화면의 첫 장면 수직 안전 영역 */
+@media (min-width: 768px) and (max-width: 899px) and (orientation: portrait) and (max-height: 820px) {
+  .hero-inner {
+    padding-top: var(--space-16);
+    row-gap: var(--space-8);
+  }
+
+  .hero-name-block {
+    margin-top: var(--space-8);
+  }
+
+  .hero-name {
+    font-size: 52px;
+  }
+
+  .hero-copy {
+    margin-top: var(--space-12);
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    top: 0;
+    width: min(58vw, calc(var(--space-160) * 3 + var(--space-64)));
+  }
+}
+
 @media (max-width: 767px) {
   .hero-system {
     grid-column: 1 / 5;
-    height: var(--hero-stage-height, 218svh);
-    min-height: 1440px;
+    height: var(--hero-stage-height, 176svh);
+    min-height: calc(var(--space-160) * 6 + var(--space-112));
   }
 
   .hero-visual-stage {
     top: var(--hero-header-offset);
     height: calc(100svh - var(--hero-header-offset));
-    min-height: 620px;
+    min-height: calc(var(--space-160) * 3);
   }
 
   .service-graph,
   .topology-marker-plane {
+    top: var(--space-16);
     right: 50%;
-    width: min(100%, 520px);
+    width: min(
+      calc(100vw - var(--space-32)),
+      calc(var(--space-160) * 2 + var(--space-48))
+    );
     max-width: 100%;
-    aspect-ratio: 5 / 7;
-  }
-
-  .topology-map-layer,
-  .topology-marker-layer {
-    top: 4%;
-    height: auto;
-    aspect-ratio: 2 / 1;
+    aspect-ratio: 8 / 5;
+    transform: translateX(50%);
   }
 
   .topology-project-gallery-frame {
-    width: clamp(280px, 78vw, 420px);
-  }
-
-  .topology-resource-group,
-  .topology-resource-standalone {
-    padding: var(--space-8);
+    width: clamp(
+      calc(var(--space-160) + var(--space-16)),
+      52vw,
+      calc(var(--space-160) + var(--space-64) + var(--space-8))
+    );
   }
 
   .topology-resource-group {
-    gap: var(--space-8);
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .topology-resource-standalone {
+    padding: var(--space-8);
   }
 
   .topology-stack {
@@ -2362,23 +2792,28 @@ a.project-thumbnail {
   }
 
   .topology-resource-platform {
-    top: 41%;
+    top: 6%;
     left: 3%;
-    width: 46%;
+    width: 38%;
   }
 
   .topology-resource-application {
-    top: 62%;
+    top: auto;
     right: 3%;
-    bottom: auto;
-    width: 46%;
+    bottom: 4%;
+    width: 40%;
   }
 
   .topology-resource-storage {
-    top: 86%;
-    bottom: auto;
-    left: 3%;
-    width: 40%;
+    top: auto;
+    bottom: 8%;
+    left: 8%;
+    width: 24%;
+  }
+
+  .topology-server-label {
+    right: var(--space-24);
+    left: auto;
   }
 
 }
@@ -2535,13 +2970,5 @@ a.project-thumbnail {
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
   .hero-visual-stage {
     gap: var(--space-48);
-  }
-
-  .service-graph {
-    aspect-ratio: 5 / 7;
-  }
-
-  .topology-marker-plane {
-    aspect-ratio: 5 / 7;
   }
 }

@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import type { TrafficPoint } from "./admin-types";
-import { EmptyState, PageHeader, StatusLabel, formatDateTime } from "./admin-ui";
-import { MOCK_DASHBOARD } from "./mock-data";
+import { useCallback, useEffect, useRef, useState } from "react";
+import SegmentedControl from "@/components/ui/segmented-control";
+import { formatApiError } from "@/lib/api/client";
+import type { DashboardData, TrafficPoint } from "./admin-types";
+import { EmptyState, PageError, PageHeader, PageLoading, StatusLabel, formatDateTime } from "./admin-ui";
+import { getAdminDashboard, type DashboardMonths } from "./admin-read-api";
 import styles from "./admin.module.css";
+
+const PERIOD_FILTERS: ReadonlyArray<{ value: DashboardMonths; label: string }> = [
+  { value: 6, label: "6개월" },
+  { value: 12, label: "12개월" },
+];
 
 const SERVICE_NAMES: Record<string, string> = {
   PORTFOLIO_FRONTEND: "Portfolio Frontend",
@@ -14,8 +21,6 @@ const SERVICE_NAMES: Record<string, string> = {
   KYVC_CORE: "KYvC Core",
   SHKUTRACK: "SHKUTrack",
 };
-
-const SERVICE_KEYS = Object.keys(SERVICE_NAMES);
 
 function chartPoints(items: TrafficPoint[], key: "visitors" | "pageViews", maxValue: number) {
   if (items.length === 0) {
@@ -29,7 +34,7 @@ function chartPoints(items: TrafficPoint[], key: "visitors" | "pageViews", maxVa
   }).join(" ");
 }
 
-// Mock 월별 방문자·Page View 데이터의 절제된 SVG 추이 표현
+// Backend 월별 방문자·Page View 데이터의 절제된 SVG 추이 표현
 function TrafficChart({ trend }: { trend: TrafficPoint[] }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -100,12 +105,49 @@ function TrafficChart({ trend }: { trend: TrafficPoint[] }) {
 
 // 방문 현황과 운영 상태를 한 화면에 정렬한 Admin Dashboard
 export default function DashboardScreen() {
-  const [months, setMonths] = useState<6 | 12>(6);
-  const data = MOCK_DASHBOARD;
-  const trend = data.traffic.trends[months];
+  const [months, setMonths] = useState<DashboardMonths>(6);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const requestSequence = useRef(0);
+
+  // 선택 기간의 Dashboard 조회와 오래된 응답 무시
+  const loadDashboard = useCallback(async () => {
+    const requestId = ++requestSequence.current;
+    setLoading(true);
+    setError("");
+    try {
+      const response = await getAdminDashboard(months);
+      if (requestSequence.current === requestId) {
+        setData(response);
+      }
+    } catch (caught) {
+      if (requestSequence.current === requestId) {
+        setError(formatApiError(caught));
+        setData(null);
+      }
+    } finally {
+      if (requestSequence.current === requestId) {
+        setLoading(false);
+      }
+    }
+  }, [months]);
+
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (active) {
+        void loadDashboard();
+      }
+    });
+    return () => {
+      active = false;
+      requestSequence.current += 1;
+    };
+  }, [loadDashboard]);
 
   // 방문 추이 조회 기간 전환
-  const selectMonths = (value: 6 | 12) => {
+  const selectMonths = (value: DashboardMonths) => {
     if (value === months) {
       return;
     }
@@ -119,23 +161,16 @@ export default function DashboardScreen() {
         title="Dashboard"
         description="방문 현황, 서비스 상태와 사이트 현황을 한눈에 확인합니다."
         action={(
-          <div className={styles.periodTabs} aria-label="방문 추이 기간">
-            {[6, 12].map((value) => (
-              <button
-                key={value}
-                className={months === value ? styles.periodTabActive : ""}
-                type="button"
-                onClick={() => selectMonths(value as 6 | 12)}
-                aria-pressed={months === value}
-              >
-                {value}개월
-              </button>
-            ))}
-          </div>
+          <SegmentedControl label="방문 추이 기간" options={PERIOD_FILTERS} value={months} onChange={selectMonths} />
         )}
       />
 
-      <div className={styles.dashboardFlow}>
+      {loading ? (
+        <PageLoading rows={6} />
+      ) : error ? (
+        <PageError message={error} onRetry={() => void loadDashboard()} />
+      ) : data ? (
+        <div className={styles.dashboardFlow}>
           <section className={styles.summarySection} aria-labelledby="traffic-summary-title">
             <div className={styles.sectionHeading}>
               <div>
@@ -157,7 +192,7 @@ export default function DashboardScreen() {
                   <h2 id="trend-title" className="type-title">방문 추이</h2>
                 </div>
               </div>
-              <TrafficChart trend={trend} />
+              <TrafficChart trend={data.traffic.trend} />
             </section>
 
             <section className={styles.serviceSection} aria-labelledby="service-title">
@@ -167,28 +202,23 @@ export default function DashboardScreen() {
                 </div>
               </div>
               <div className={styles.serviceRows}>
-                {SERVICE_KEYS.map((serviceKey) => {
-                  const service = data.serviceStatus.find((item) => item.serviceKey === serviceKey);
-                  return (
-                    <div key={serviceKey} className={styles.serviceRow}>
-                      <div>
-                        <strong className="type-body">{SERVICE_NAMES[serviceKey]}</strong>
-                        <span className="type-small">{formatDateTime(service?.lastCheckedAt)}</span>
-                      </div>
-                      {service ? (
-                        <StatusLabel tone={service.status === "UP" ? "success" : "error"}>
-                          {service.status === "UP" ? "정상" : "장애"}
-                        </StatusLabel>
-                      ) : (
-                        <StatusLabel tone="neutral">미수신</StatusLabel>
-                      )}
-                      <div className={`${styles.serviceMeta} type-small`}>
-                        <span>{service?.responseTimeMs === null || service?.responseTimeMs === undefined ? "-" : `${service.responseTimeMs} ms`}</span>
-                        <span>{service?.httpStatus ?? "-"}</span>
-                      </div>
+                {data.serviceStatus.length === 0 ? (
+                  <EmptyState title="서비스 상태 없음" description="수신된 서비스 상태가 없습니다." />
+                ) : data.serviceStatus.map((service) => (
+                  <div key={service.serviceKey} className={styles.serviceRow}>
+                    <div>
+                      <strong className="type-body">{SERVICE_NAMES[service.serviceKey] ?? service.serviceKey}</strong>
+                      <span className="type-small">{formatDateTime(service.lastCheckedAt)}</span>
                     </div>
-                  );
-                })}
+                    <StatusLabel tone={service.status === "UP" ? "success" : "error"}>
+                      {service.status === "UP" ? "정상" : "장애"}
+                    </StatusLabel>
+                    <div className={`${styles.serviceMeta} type-small`}>
+                      <span>{service.responseTimeMs === null ? "-" : `${service.responseTimeMs} ms`}</span>
+                      <span>{service.httpStatus ?? "-"}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
           </div>
@@ -201,13 +231,14 @@ export default function DashboardScreen() {
             </div>
             <dl className={styles.compactSummary}>
               <div><dt className="type-small">공개 프로젝트</dt><dd>{data.siteSummary.publicProjects}</dd></div>
-              <div><dt className="type-small">활성 기술</dt><dd>{data.siteSummary.technologies}</dd></div>
+              <div><dt className="type-small">활성 기술</dt><dd>{data.siteSummary.portfolioTechnologies}</dd></div>
               <div><dt className="type-small">활성 Tool</dt><dd>{data.siteSummary.activeTools}</dd></div>
               <div><dt className="type-small">활성 계정</dt><dd>{data.siteSummary.activeAccounts}</dd></div>
             </dl>
           </section>
 
-      </div>
+        </div>
+      ) : null}
     </>
   );
 }

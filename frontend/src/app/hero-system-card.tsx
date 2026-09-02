@@ -11,13 +11,23 @@ import HeroWorldMap, {
   EAST_ASIA_FOCUS_POINT,
   EAST_ASIA_MAP_SIZE,
   EAST_ASIA_SOURCE_CROP,
+  EAST_ASIA_VIEWBOX,
   EAST_ASIA_ZOOM_SCALE,
   HeroEastAsiaMap,
   HeroNarrativeWorldMap,
   KOREA_ANCHOR,
+  MOBILE_KOREA_VIEWBOX,
+  TABLET_PORTRAIT_KOREA_VIEWBOX,
   WORLD_MAP_SIZE,
+  calculateEastAsiaFocusRatio,
+  formatMapViewBox,
   projectPoint,
 } from "./hero-world-map";
+
+type IdleWindow = Window & {
+  requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
 
 const serverPoint = projectPoint(KOREA_ANCHOR);
 const resetProperties = ["--card-rotate-x", "--card-rotate-y"] as const;
@@ -35,14 +45,33 @@ export const HERO_SCROLL_TIMING = {
   tailDuration: 0.2,
 } as const;
 
+export const PORTRAIT_HERO_SCROLL_TIMING = {
+  topologyHoldEnd: 0.015,
+  topologyExitStart: 0,
+  topologyExitEnd: 0.08,
+  mapCenterStart: 0.01,
+  mapCenterEnd: 0.1,
+  zoomStart: 0.03,
+  fullMapHoldDuration: 0,
+  baseZoomDuration: 0.3,
+  postZoomHoldDuration: 0.12,
+  sceneExitDuration: 0.12,
+  tailDuration: 0.2,
+} as const;
+
 export const KOREA_ZOOM_DISTANCE_MULTIPLIER = 3.2;
 export const KOREA_ZOOM_SCALE_MULTIPLIER = EAST_ASIA_ZOOM_SCALE;
+export const MOBILE_KOREA_ZOOM_SCALE = 1.08 * 1.5;
+export const TABLET_PORTRAIT_KOREA_ZOOM_SCALE = (
+  TABLET_PORTRAIT_KOREA_VIEWBOX.width * EAST_ASIA_ZOOM_SCALE * 1.5
+) / EAST_ASIA_MAP_SIZE.width;
 export const WORLD_TO_FOCUS_SCALE = 360
   / (EAST_ASIA_SOURCE_CROP.lng.max - EAST_ASIA_SOURCE_CROP.lng.min);
 export const FINAL_VIRTUAL_ZOOM_SCALE = WORLD_TO_FOCUS_SCALE * EAST_ASIA_ZOOM_SCALE;
 export const FOCUS_HANDOFF_START_SCALE = WORLD_TO_FOCUS_SCALE * 0.97;
 export const FOCUS_HANDOFF_END_SCALE = WORLD_TO_FOCUS_SCALE * 1.05;
 export const WORLD_CAMERA_PAN_START_SCALE = 1.35;
+export const PORTRAIT_WORLD_CAMERA_PAN_START_SCALE = 1.08;
 
 export const MAP_DOT_SCREEN_WIDTH = {
   worldStart: 1.65,
@@ -88,21 +117,18 @@ const vmResources = [
 const connectionRoutes = [
   {
     delay: "0s",
-    desktop: `M${serverPoint.x.toFixed(1)} 166.5H410V110H288`,
     id: "topology-route-platform",
-    mobile: `M${serverPoint.x.toFixed(1)} 161.3V408H208V470`,
+    path: `M${serverPoint.x.toFixed(1)} 166.5H410V110H288`,
   },
   {
     delay: "0.4s",
-    desktop: `M${serverPoint.x.toFixed(1)} 166.5V250H640V310`,
     id: "topology-route-application",
-    mobile: `M${serverPoint.x.toFixed(1)} 161.3H752V694H616`,
+    path: `M${serverPoint.x.toFixed(1)} 166.5V250H640V310`,
   },
   {
     delay: "0.8s",
-    desktop: `M${serverPoint.x.toFixed(1)} 166.5H360V430H248`,
     id: "topology-route-storage",
-    mobile: `M${serverPoint.x.toFixed(1)} 161.3H72V984H344`,
+    path: `M${serverPoint.x.toFixed(1)} 166.5H360V430H248`,
   },
 ] as const;
 
@@ -150,7 +176,9 @@ type GalleryFrameStyle = CSSProperties & {
   "--gallery-z": string;
 };
 
-export type GalleryViewport = "desktop" | "tablet" | "mobile";
+export type GalleryViewport = "desktop" | "tablet" | "tabletPortrait" | "mobile";
+export type HeroScrollProfile = "default" | "portrait";
+export type MapCameraProfile = "default" | "mobilePortrait" | "tabletPortrait";
 
 const galleryViewportMotion = {
   desktop: {
@@ -171,14 +199,23 @@ const galleryViewportMotion = {
     x: 0.72,
     y: 0.75,
   },
+  tabletPortrait: {
+    blur: 14,
+    depth: 1,
+    offscreenMargin: 24,
+    perspective: 1200,
+    safeMargin: 20,
+    x: 1,
+    y: 1,
+  },
   mobile: {
-    blur: 9,
+    blur: 5,
     depth: 0.72,
     offscreenMargin: 16,
-    perspective: 1000,
+    perspective: 900,
     safeMargin: 16,
-    x: 0.42,
-    y: 0.65,
+    x: 0.45,
+    y: 0.63,
   },
 } as const;
 
@@ -251,13 +288,25 @@ export function calculateFocusTransition(virtualZoomScale: number) {
 }
 
 // 단일 Virtual Zoom에서 파생된 지도 LOD 상태 계산
-export function calculateMapZoomState(zoomProgress: number) {
+export function calculateMapZoomState(
+  zoomProgress: number,
+  cameraProfile: MapCameraProfile = "default",
+) {
   const virtualZoomScale = calculateVirtualZoomScale(zoomProgress);
-  const focusMapScale = Math.min(
+  const desktopFocusScale = Math.min(
     Math.max(virtualZoomScale / WORLD_TO_FOCUS_SCALE, 1),
     EAST_ASIA_ZOOM_SCALE,
   );
-  const focusDotProgress = phaseProgress(focusMapScale, 1, EAST_ASIA_ZOOM_SCALE);
+  const focusDotProgress = phaseProgress(desktopFocusScale, 1, EAST_ASIA_ZOOM_SCALE);
+  const finalFocusScale = cameraProfile === "mobilePortrait"
+    ? MOBILE_KOREA_ZOOM_SCALE
+    : cameraProfile === "tabletPortrait"
+      ? TABLET_PORTRAIT_KOREA_ZOOM_SCALE
+      : EAST_ASIA_ZOOM_SCALE;
+  const cameraPanStart = cameraProfile === "default"
+    ? WORLD_CAMERA_PAN_START_SCALE
+    : PORTRAIT_WORLD_CAMERA_PAN_START_SCALE;
+  const focusMapScale = interpolate(1, finalFocusScale, focusDotProgress);
   const worldDotProgress = smoothProgress(
     virtualZoomScale,
     1,
@@ -271,7 +320,7 @@ export function calculateMapZoomState(zoomProgress: number) {
     focusTransition: calculateFocusTransition(virtualZoomScale),
     cameraPanProgress: smoothProgress(
       virtualZoomScale,
-      WORLD_CAMERA_PAN_START_SCALE,
+      cameraPanStart,
       FOCUS_HANDOFF_START_SCALE,
     ),
     worldMapDotWidth: interpolate(
@@ -351,6 +400,7 @@ type SceneGeometry = {
   graph: SceneRect;
   isDesktop: boolean;
   isReducedMotion: boolean;
+  mapCameraProfile: MapCameraProfile;
   narrativeTargetX: number;
   narrativeTargetY: number;
   scrollLayout: {
@@ -518,6 +568,15 @@ export function calculateGalleryPlaneLayout(
   };
 }
 
+// Portrait World Map의 대한민국 Anchor를 목표 수평 비율에 배치하는 Offset 계산
+export function calculatePortraitWorldOffsetX(
+  mapWidth: number,
+  koreaRatioX: number,
+  targetRatio = 0.5,
+) {
+  return (targetRatio - koreaRatioX) * mapWidth;
+}
+
 // Map Camera 이동이 반영된 Seoul Marker의 Gallery Plane Local 좌표 계산
 export function calculateGalleryOrigin(
   anchorGlobalX: number,
@@ -532,24 +591,30 @@ export function calculateGalleryOrigin(
   };
 }
 
-// 각 단계 종료점을 기준으로 한 Hero Scroll Narrative 픽셀 타임라인 계산
-export function calculateHeroScrollMetrics(baseDistance: number) {
+// Viewport Profile별 Hero Scroll Narrative 픽셀 타임라인 계산
+export function calculateHeroScrollMetrics(
+  baseDistance: number,
+  profile: HeroScrollProfile = "default",
+) {
   const safeDistance = Math.max(baseDistance, 1);
-  const baseZoomDistance = safeDistance * HERO_SCROLL_TIMING.baseZoomDuration;
+  const timing = profile === "portrait" ? PORTRAIT_HERO_SCROLL_TIMING : HERO_SCROLL_TIMING;
+  const baseZoomDistance = safeDistance * timing.baseZoomDuration;
   const zoomDistance = baseZoomDistance * KOREA_ZOOM_DISTANCE_MULTIPLIER;
-  const mapCenterEnd = safeDistance * HERO_SCROLL_TIMING.mapCenterEnd;
-  const fullMapHoldEnd = mapCenterEnd + safeDistance * HERO_SCROLL_TIMING.fullMapHoldDuration;
-  const zoomStart = fullMapHoldEnd;
+  const mapCenterEnd = safeDistance * timing.mapCenterEnd;
+  const fullMapHoldEnd = mapCenterEnd + safeDistance * timing.fullMapHoldDuration;
+  const zoomStart = profile === "portrait"
+    ? safeDistance * PORTRAIT_HERO_SCROLL_TIMING.zoomStart
+    : fullMapHoldEnd;
   const zoomEnd = zoomStart + zoomDistance;
-  const sceneExitStart = zoomEnd + safeDistance * HERO_SCROLL_TIMING.postZoomHoldDuration;
-  const sceneExitEnd = sceneExitStart + safeDistance * HERO_SCROLL_TIMING.sceneExitDuration;
-  const totalDistance = sceneExitEnd + safeDistance * HERO_SCROLL_TIMING.tailDuration;
+  const sceneExitStart = zoomEnd + safeDistance * timing.postZoomHoldDuration;
+  const sceneExitEnd = sceneExitStart + safeDistance * timing.sceneExitDuration;
+  const totalDistance = sceneExitEnd + safeDistance * timing.tailDuration;
 
   return {
-    topologyHoldEnd: safeDistance * HERO_SCROLL_TIMING.topologyHoldEnd,
-    topologyExitStart: safeDistance * HERO_SCROLL_TIMING.topologyExitStart,
-    topologyExitEnd: safeDistance * HERO_SCROLL_TIMING.topologyExitEnd,
-    mapCenterStart: safeDistance * HERO_SCROLL_TIMING.mapCenterStart,
+    topologyHoldEnd: safeDistance * timing.topologyHoldEnd,
+    topologyExitStart: safeDistance * timing.topologyExitStart,
+    topologyExitEnd: safeDistance * timing.topologyExitEnd,
+    mapCenterStart: safeDistance * timing.mapCenterStart,
     mapCenterEnd,
     fullMapHoldStart: mapCenterEnd,
     fullMapHoldEnd,
@@ -569,10 +634,11 @@ export function calculateHeroSceneState(
   scrollPixels: number,
   metrics: ReturnType<typeof calculateHeroScrollMetrics>,
   galleryViewport: GalleryViewport = "desktop",
+  mapCameraProfile: MapCameraProfile = "default",
 ) {
   const centerProgress = smoothProgress(scrollPixels, metrics.mapCenterStart, metrics.mapCenterEnd);
   const zoomProgress = phaseProgress(scrollPixels, metrics.zoomStart, metrics.zoomEnd);
-  const zoomState = calculateMapZoomState(zoomProgress);
+  const zoomState = calculateMapZoomState(zoomProgress, mapCameraProfile);
   const mapExit = scrollPixels > metrics.sceneExitStart
     ? smoothProgress(scrollPixels, metrics.sceneExitStart, metrics.sceneExitEnd)
     : 0;
@@ -616,9 +682,7 @@ function TopologyConnectionLines() {
       {connectionRoutes.map((route) => (
         <path
           className="topology-connection-line topology-route-path"
-          d={route.desktop}
-          data-desktop-d={route.desktop}
-          data-mobile-d={route.mobile}
+          d={route.path}
           id={`${route.id}-line`}
           key={route.id}
         />
@@ -646,9 +710,7 @@ function TopologyFlowOverlay() {
         >
           <path
             className="topology-flow-guide topology-route-path"
-            d={route.desktop}
-            data-desktop-d={route.desktop}
-            data-mobile-d={route.mobile}
+            d={route.path}
             id={`${route.id}-guide`}
           />
           <g className="topology-flow-point" opacity="0">
@@ -716,6 +778,37 @@ export default function HeroSystemCard() {
   const progressRef = useRef(0);
   const galleryReadyRef = useRef(false);
   const [galleryReady, setGalleryReady] = useState(false);
+  const [mapGeometryReady, setMapGeometryReady] = useState(false);
+
+  useEffect(() => {
+    const idleWindow = window as IdleWindow;
+    let idleCallbackId = 0;
+    let fallbackTimeoutId = 0;
+    let activated = false;
+
+    // 최초 Idle 또는 첫 Scroll 중 빠른 시점의 후반 지도 Geometry 활성화
+    const activateGeometry = () => {
+      if (activated) return;
+      activated = true;
+      if (idleCallbackId) idleWindow.cancelIdleCallback?.(idleCallbackId);
+      if (fallbackTimeoutId) window.clearTimeout(fallbackTimeoutId);
+      window.removeEventListener("scroll", activateGeometry);
+      setMapGeometryReady(true);
+    };
+
+    window.addEventListener("scroll", activateGeometry, { passive: true, once: true });
+    if (idleWindow.requestIdleCallback) {
+      idleCallbackId = idleWindow.requestIdleCallback(activateGeometry, { timeout: 80 });
+    } else {
+      fallbackTimeoutId = window.setTimeout(activateGeometry, 0);
+    }
+
+    return () => {
+      if (idleCallbackId) idleWindow.cancelIdleCallback?.(idleCallbackId);
+      if (fallbackTimeoutId) window.clearTimeout(fallbackTimeoutId);
+      window.removeEventListener("scroll", activateGeometry);
+    };
+  }, []);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -728,11 +821,11 @@ export default function HeroSystemCard() {
       ".topology-narrative-world-map-zoom",
     );
     const focusMapZoom = focusMapViewport?.querySelector<SVGGElement>(".topology-focus-map-zoom");
+    const focusMapSvg = focusMapViewport?.querySelector<SVGSVGElement>(".topology-focus-map-svg");
     const hero = stage?.closest<HTMLElement>(".hero");
     const heroSystem = stage?.closest<HTMLElement>(".hero-system");
     const aboutSection = document.querySelector<HTMLElement>(".about-section");
     const aboutAnchor = aboutSection?.querySelector<HTMLElement>(".about-anchor");
-    const connectionSvg = graph?.querySelector<SVGSVGElement>(".topology-connection-lines");
     const flowSvg = graph?.querySelector<SVGSVGElement>(".topology-flow-overlay");
 
     if (
@@ -743,12 +836,12 @@ export default function HeroSystemCard() {
       || !focusMapViewport
       || !narrativeMapZoom
       || !focusMapZoom
+      || !focusMapSvg
       || !galleryPlane
       || !hero
       || !heroSystem
       || !aboutSection
       || !aboutAnchor
-      || !connectionSvg
       || !flowSvg
     ) return;
 
@@ -757,6 +850,10 @@ export default function HeroSystemCard() {
     );
     const desktopQuery = window.matchMedia("(min-width: 1024px)");
     const mobileQuery = window.matchMedia("(max-width: 767px)");
+    const portraitMapQuery = window.matchMedia("(max-width: 899px) and (orientation: portrait)");
+    const tabletLandscapeQuery = window.matchMedia(
+      "(min-width: 768px) and (max-width: 1023px) and (orientation: landscape)",
+    );
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
     let animationFrame = 0;
@@ -780,18 +877,29 @@ export default function HeroSystemCard() {
     let flowActive: boolean | null = null;
     let sceneGeometry: SceneGeometry | null = null;
 
-    // Responsive Resource 배치와 동일 Connection Path 좌표 동기화
-    const updateConnectionLayout = () => {
-      const mobile = mobileQuery.matches;
+    const getMapCameraProfile = (): MapCameraProfile => {
+      if (!portraitMapQuery.matches) return "default";
 
-      [connectionSvg, flowSvg].forEach((svg) => {
-        svg.setAttribute("viewBox", mobile ? "0 0 800 1120" : "0 0 800 500");
-        svg.querySelectorAll<SVGPathElement>(".topology-route-path").forEach((path) => {
-          const route = mobile ? path.dataset.mobileD : path.dataset.desktopD;
+      return mobileQuery.matches ? "mobilePortrait" : "tabletPortrait";
+    };
 
-          if (route) path.setAttribute("d", route);
-        });
-      });
+    const getFocusViewBox = (cameraProfile: MapCameraProfile) => {
+      if (cameraProfile === "mobilePortrait") return MOBILE_KOREA_VIEWBOX;
+      if (cameraProfile === "tabletPortrait") return TABLET_PORTRAIT_KOREA_VIEWBOX;
+
+      return EAST_ASIA_VIEWBOX;
+    };
+
+    // Portrait Profile별 East Asia Camera와 SVG 채움 방식 동기화
+    const updateFocusMapLayout = () => {
+      const cameraProfile = getMapCameraProfile();
+      const viewBox = getFocusViewBox(cameraProfile);
+
+      focusMapSvg.setAttribute("viewBox", formatMapViewBox(viewBox));
+      focusMapSvg.setAttribute(
+        "preserveAspectRatio",
+        cameraProfile === "default" ? "xMidYMid meet" : "xMidYMid slice",
+      );
     };
 
     // Marker Pointer Offset 즉시 복원
@@ -934,11 +1042,11 @@ export default function HeroSystemCard() {
     };
 
     // 기존 Layout 높이 기반 Hero 실제 Scroll 거리 계산
-    const getBaseScrollDistance = (isDesktop: boolean) => {
+    const getBaseScrollDistance = (isPinnedHeroLayout: boolean) => {
       hero.style.removeProperty("--hero-stage-height");
       heroSystem.style.removeProperty("--hero-stage-height");
 
-      if (isDesktop) {
+      if (isPinnedHeroLayout) {
         return Math.max(hero.offsetHeight - window.innerHeight, 1);
       }
 
@@ -946,11 +1054,15 @@ export default function HeroSystemCard() {
     };
 
     // 확대 거리와 About 중첩 구간·Anchor 진입 위치를 반영한 Layout 높이 동기화
-    const updateScrollLayout = (isDesktop: boolean, stickyTop: number) => {
-      const baseDistance = getBaseScrollDistance(isDesktop);
-      const metrics = calculateHeroScrollMetrics(baseDistance);
+    const updateScrollLayout = (
+      isPinnedHeroLayout: boolean,
+      stickyTop: number,
+      scrollProfile: HeroScrollProfile,
+    ) => {
+      const baseDistance = getBaseScrollDistance(isPinnedHeroLayout);
+      const metrics = calculateHeroScrollMetrics(baseDistance, scrollProfile);
 
-      if (isDesktop) {
+      if (isPinnedHeroLayout) {
         hero.style.setProperty("--hero-stage-height", `${window.innerHeight + metrics.totalDistance}px`);
         heroSystem.style.removeProperty("--hero-stage-height");
       } else {
@@ -961,7 +1073,9 @@ export default function HeroSystemCard() {
       const heroRect = hero.getBoundingClientRect();
       const systemRect = heroSystem.getBoundingClientRect();
       const heroTop = window.scrollY + heroRect.top;
-      const sceneStart = isDesktop ? heroTop : window.scrollY + systemRect.top - stickyTop;
+      const sceneStart = isPinnedHeroLayout
+        ? heroTop
+        : window.scrollY + systemRect.top - stickyTop;
       const aboutTop = sceneStart + metrics.sceneExitStart + stickyTop;
       const overlap = Math.max(heroTop + hero.offsetHeight - aboutTop, 0);
       const anchorScrollMargin = Number.parseFloat(window.getComputedStyle(aboutAnchor).scrollMarginTop) || 0;
@@ -978,7 +1092,13 @@ export default function HeroSystemCard() {
     };
 
     const getGalleryViewport = (isDesktop: boolean): GalleryViewport => (
-      mobileQuery.matches ? "mobile" : isDesktop ? "desktop" : "tablet"
+      mobileQuery.matches
+        ? "mobile"
+        : portraitMapQuery.matches
+          ? "tabletPortrait"
+          : isDesktop
+            ? "desktop"
+            : "tablet"
     );
 
     // Resize 또는 Image Layout 완료 시 Gallery Geometry 일괄 측정
@@ -1012,7 +1132,10 @@ export default function HeroSystemCard() {
     // Resize·Breakpoint·Image Layout 변경 시 Hero Scene Geometry 일괄 측정
     const measureSceneGeometry = () => {
       const isDesktop = desktopQuery.matches;
+      const isPinnedHeroLayout = isDesktop || tabletLandscapeQuery.matches;
       const isReducedMotion = reducedMotionQuery.matches;
+      const mapCameraProfile = getMapCameraProfile();
+      const scrollProfile: HeroScrollProfile = portraitMapQuery.matches ? "portrait" : "default";
       const galleryViewport = getGalleryViewport(isDesktop);
       const stickyTop = Number.parseFloat(window.getComputedStyle(stage).top) || 0;
 
@@ -1023,8 +1146,26 @@ export default function HeroSystemCard() {
         aboutSection.style.setProperty("--about-anchor-offset", "0px");
       }
 
-      const scrollLayout = isReducedMotion ? null : updateScrollLayout(isDesktop, stickyTop);
+      const scrollLayout = isReducedMotion
+        ? null
+        : updateScrollLayout(isPinnedHeroLayout, stickyTop, scrollProfile);
       const stageRect = stage.getBoundingClientRect();
+
+      if (portraitMapQuery.matches) {
+        const portraitWorldMapWidth = stageRect.height * 2.1;
+        const worldKoreaRatioX = serverPoint.x / WORLD_MAP_SIZE.width;
+        const portraitWorldOffsetX = calculatePortraitWorldOffsetX(
+          portraitWorldMapWidth,
+          worldKoreaRatioX,
+        );
+
+        stage.style.setProperty("--portrait-world-map-width", `${portraitWorldMapWidth}px`);
+        stage.style.setProperty("--portrait-world-map-offset-x", `${portraitWorldOffsetX}px`);
+      } else {
+        stage.style.removeProperty("--portrait-world-map-width");
+        stage.style.removeProperty("--portrait-world-map-offset-x");
+      }
+
       const graphRect = graph.getBoundingClientRect();
       const narrativeMapRect = narrativeMapViewport.getBoundingClientRect();
       const focusMapRect = focusMapViewport.getBoundingClientRect();
@@ -1042,10 +1183,10 @@ export default function HeroSystemCard() {
       const narrativeTop = narrativeMapRect.top - stageRect.top;
       const narrativeTargetX = narrativeLeft + narrativeMapRect.width * worldKoreaX;
       const narrativeTargetY = narrativeTop + narrativeMapRect.height * worldKoreaY;
-      const focusKoreaX = EAST_ASIA_FOCUS_POINT.x / EAST_ASIA_MAP_SIZE.width;
-      const focusKoreaY = EAST_ASIA_FOCUS_POINT.y / EAST_ASIA_MAP_SIZE.height;
-      const focusTargetX = focusMapRect.left - stageRect.left + focusMapRect.width * focusKoreaX;
-      const focusTargetY = focusMapRect.top - stageRect.top + focusMapRect.height * focusKoreaY;
+      const focusViewBox = getFocusViewBox(mapCameraProfile);
+      const focusRatio = calculateEastAsiaFocusRatio(focusViewBox);
+      const focusTargetX = focusMapRect.left - stageRect.left + focusMapRect.width * focusRatio.x;
+      const focusTargetY = focusMapRect.top - stageRect.top + focusMapRect.height * focusRatio.y;
 
       galleryLayout = isReducedMotion ? null : measureGalleryLayout(stageRect, galleryViewport);
       sceneGeometry = {
@@ -1064,6 +1205,7 @@ export default function HeroSystemCard() {
         },
         isDesktop,
         isReducedMotion,
+        mapCameraProfile,
         narrativeTargetX,
         narrativeTargetY,
         scrollLayout,
@@ -1207,9 +1349,11 @@ export default function HeroSystemCard() {
 
       if (!geometry) return;
 
-      const { galleryViewport, isReducedMotion } = geometry;
+      const { galleryViewport, isReducedMotion, mapCameraProfile } = geometry;
 
       if (isReducedMotion) {
+        const finalFocusScale = calculateMapZoomState(1, mapCameraProfile).focusMapScale;
+
         cancelGalleryFrame();
         galleryInitialized = false;
         progressRef.current = 0;
@@ -1228,7 +1372,7 @@ export default function HeroSystemCard() {
         );
         focusMapZoom.setAttribute(
           "transform",
-          `translate(${EAST_ASIA_FOCUS_POINT.x} ${EAST_ASIA_FOCUS_POINT.y}) scale(${KOREA_ZOOM_SCALE_MULTIPLIER}) translate(${-EAST_ASIA_FOCUS_POINT.x} ${-EAST_ASIA_FOCUS_POINT.y})`,
+          `translate(${EAST_ASIA_FOCUS_POINT.x} ${EAST_ASIA_FOCUS_POINT.y}) scale(${finalFocusScale}) translate(${-EAST_ASIA_FOCUS_POINT.x} ${-EAST_ASIA_FOCUS_POINT.y})`,
         );
         stage.style.setProperty("--card-map-opacity", "0");
         stage.style.setProperty("--focus-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.focusFinal));
@@ -1266,7 +1410,12 @@ export default function HeroSystemCard() {
       }
 
       progressRef.current = scrollPixels / baseDistance;
-      const state = calculateHeroSceneState(scrollPixels, metrics, galleryViewport);
+      const state = calculateHeroSceneState(
+        scrollPixels,
+        metrics,
+        galleryViewport,
+        mapCameraProfile,
+      );
 
       // World Camera와 Marker의 동일 Pan 좌표 적용
       const worldCameraShiftX = (
@@ -1351,7 +1500,7 @@ export default function HeroSystemCard() {
       galleryLayout = null;
       galleryInitialized = false;
       sceneGeometry = null;
-      updateConnectionLayout();
+      updateFocusMapLayout();
       window.cancelAnimationFrame(animationFrame);
       animationFrame = 0;
       window.cancelAnimationFrame(layoutFrame);
@@ -1368,7 +1517,7 @@ export default function HeroSystemCard() {
       handleLayoutChange();
     };
 
-    updateConnectionLayout();
+    updateFocusMapLayout();
     measureSceneGeometry();
     updateScene();
     galleryImages.forEach((image) => image.addEventListener("load", handleLayoutChange));
@@ -1382,6 +1531,8 @@ export default function HeroSystemCard() {
     window.addEventListener("resize", handleLayoutChange);
     desktopQuery.addEventListener("change", handleLayoutChange);
     mobileQuery.addEventListener("change", handleLayoutChange);
+    portraitMapQuery.addEventListener("change", handleLayoutChange);
+    tabletLandscapeQuery.addEventListener("change", handleLayoutChange);
     reducedMotionQuery.addEventListener("change", handleInteractionPreferenceChange);
     finePointerQuery.addEventListener("change", handleInteractionPreferenceChange);
 
@@ -1404,11 +1555,15 @@ export default function HeroSystemCard() {
       window.removeEventListener("resize", handleLayoutChange);
       desktopQuery.removeEventListener("change", handleLayoutChange);
       mobileQuery.removeEventListener("change", handleLayoutChange);
+      portraitMapQuery.removeEventListener("change", handleLayoutChange);
+      tabletLandscapeQuery.removeEventListener("change", handleLayoutChange);
       reducedMotionQuery.removeEventListener("change", handleInteractionPreferenceChange);
       finePointerQuery.removeEventListener("change", handleInteractionPreferenceChange);
       hero.style.removeProperty("--identity-opacity");
       hero.style.removeProperty("--hero-stage-height");
       heroSystem.style.removeProperty("--hero-stage-height");
+      stage.style.removeProperty("--portrait-world-map-width");
+      stage.style.removeProperty("--portrait-world-map-offset-x");
       aboutSection.style.removeProperty("--about-opacity");
       aboutSection.style.removeProperty("--about-transition-height");
       aboutSection.style.removeProperty("--about-anchor-offset");
@@ -1419,13 +1574,13 @@ export default function HeroSystemCard() {
     <div className="hero-visual-stage" ref={stageRef} style={initialStyle}>
       <div aria-hidden="true" className="topology-narrative-world-map-plane">
         <div className="topology-narrative-world-map-viewport" ref={narrativeMapRef}>
-          <HeroNarrativeWorldMap />
+          <HeroNarrativeWorldMap geometryReady={mapGeometryReady} />
         </div>
       </div>
 
       <div aria-hidden="true" className="topology-focus-map-plane">
         <div className="topology-focus-map-viewport" ref={focusMapRef}>
-          <HeroEastAsiaMap />
+          <HeroEastAsiaMap geometryReady={mapGeometryReady} />
         </div>
       </div>
 
@@ -1464,7 +1619,7 @@ export default function HeroSystemCard() {
                   fetchPriority="low"
                   height={frame.height}
                   loading="lazy"
-                  sizes="(max-width: 767px) 78vw, (max-width: 1023px) 50vw, 31vw"
+                  sizes="(max-width: 767px) 52vw, (max-width: 1023px) 50vw, 31vw"
                   src={frame.src}
                   width={frame.width}
                 />

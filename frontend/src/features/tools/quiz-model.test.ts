@@ -4,6 +4,7 @@ import {
   normalizeCodeBlocks,
   parseExamJson,
   parseFencedCode,
+  restoreQuizAnswers,
   type QuizExam,
 } from "./quiz-model";
 import { QUIZ_PROMPT } from "./quiz-prompt";
@@ -94,5 +95,30 @@ describe("기존 QuizPage 데이터 계약", () => {
     expect(QUIZ_PROMPT).toContain("출력은 반드시 JSON만 하고");
     expect(QUIZ_PROMPT).toContain("choices 안의 객체");
     expect(QUIZ_PROMPT).toContain('"code": "int a = 3;\\nSystem.out.println(a + 2);"');
+  });
+
+  it("저장 답안의 single·multiple·short·essay 유효 값만 부분 복원", () => {
+    const exam = parseExamJson(JSON.stringify({
+      questions: [
+        { type: "single", question: "단일", choices: ["A", "B"] },
+        { type: "multiple", question: "복수", choices: ["A", "B", "C"] },
+        { type: "short", question: "단답" },
+        { type: "essay", question: "서술" },
+      ],
+    }));
+
+    expect(restoreQuizAnswers(exam, {
+      0: ["2", "1"],
+      1: ["3", "1", "3", "invalid"],
+      2: "단답 복원",
+      3: "서술 복원",
+      4: "범위 밖",
+    })).toEqual({
+      0: ["2"],
+      1: ["3", "1"],
+      2: "단답 복원",
+      3: "서술 복원",
+    });
+    expect(restoreQuizAnswers(exam, ["invalid"])).toEqual({});
   });
 });

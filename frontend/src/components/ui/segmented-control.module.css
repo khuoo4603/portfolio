@@ -1,0 +1,91 @@
+.viewport {
+  --segment-active-background: var(--bg-surface);
+  --segment-active-border: transparent;
+  --segment-active-shadow: var(--control-shadow-active);
+  --segment-track-border: var(--border-default);
+  --segment-track-shadow: var(--control-shadow-rest);
+
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-color: var(--border-accent) transparent;
+  scrollbar-width: thin;
+}
+
+.track {
+  position: relative;
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+  grid-template-columns: repeat(var(--segment-count), minmax(max-content, 1fr));
+  padding: var(--space-4);
+  border: 1px solid var(--segment-track-border);
+  border-radius: var(--radius-value-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--segment-track-shadow);
+  isolation: isolate;
+}
+
+.activeTile {
+  position: absolute;
+  z-index: 0;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  width: calc((100% - var(--space-8)) / var(--segment-count));
+  border: 1px solid var(--segment-active-border);
+  border-radius: var(--radius-value-sm);
+  background: var(--segment-active-background);
+  box-shadow: var(--segment-active-shadow);
+  pointer-events: none;
+  transform: translateX(calc(var(--active-index) * 100%));
+  transition:
+    background-color var(--motion-duration-160) var(--motion-easing-default),
+    box-shadow var(--motion-duration-160) var(--motion-easing-default),
+    transform var(--motion-duration-240) var(--motion-easing-default);
+}
+
+.segment {
+  position: relative;
+  z-index: 1;
+  min-height: 40px;
+  padding: var(--space-8) var(--space-16);
+  border: 0;
+  border-radius: var(--radius-value-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    color var(--motion-duration-160) var(--motion-easing-default),
+    font-weight var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.segment:hover {
+  color: var(--text-primary);
+}
+
+.segment[aria-pressed="true"] {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Dark Theme의 Track 및 Active Tile 경계 강화 */
+:global([data-theme="dark"]) .viewport {
+  --segment-active-border: color-mix(in srgb, var(--accent-primary) 78%, var(--ink-300));
+  --segment-track-border: color-mix(in srgb, var(--border-accent) 82%, var(--ink-300));
+}
+
+@media (max-width: 767px) {
+  .segment {
+    padding-inline: var(--space-8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activeTile,
+  .segment {
+    transition: none;
+  }
+}

@@ -17,7 +17,7 @@ import styles from "./admin.module.css";
 
 type EditorState<T> = { item?: T } | null;
 
-// 경력·활동·수상·자격 화면 Model 기반 Editor
+// 학력·경력·활동·수상·자격·교육 Backend Model 기반 Editor
 export function ProfileEditor({
   state,
   onClose,
@@ -35,7 +35,6 @@ export function ProfileEditor({
   const [role, setRole] = useState(item?.role || "");
   const [description, setDescription] = useState(item?.description || "");
   const [achievement, setAchievement] = useState(item?.achievement || "");
-  const [featured, setFeatured] = useState(item?.featured ?? false);
   const [displayOrder, setDisplayOrder] = useState(item?.displayOrder || 0);
   const [enabled, setEnabled] = useState(item?.enabled ?? true);
   const [error, setError] = useState("");
@@ -55,7 +54,6 @@ export function ProfileEditor({
       role: role.trim() || null,
       description: description.trim() || null,
       achievement: achievement.trim() || null,
-      featured,
       displayOrder,
       enabled,
     }, item);
@@ -65,12 +63,12 @@ export function ProfileEditor({
     <DialogFrame
       open={state !== null}
       title={item ? "프로필 항목 수정" : "프로필 항목 추가"}
-      description="Public의 경력·활동 또는 수상·교육 영역에 연결되는 반복 항목"
+      description="Public의 학력·경력·활동·수상·자격·교육 영역에 연결되는 반복 항목"
       onClose={onClose}
       footer={(
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>인증 후 저장</SubmitButton>
+          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
         </>
       )}
     >
@@ -79,10 +77,11 @@ export function ProfileEditor({
           <label className={styles.formField}>
             <span className="type-small">유형</span>
             <select className="type-body" value={entryType} onChange={(event) => setEntryType(event.currentTarget.value as ProfileEntryType)}>
+              <option value="EDUCATION">학력</option>
               <option value="EXPERIENCE">경력</option>
               <option value="ACTIVITY">활동</option>
               <option value="AWARD">수상</option>
-              <option value="CERTIFICATE">자격/교육</option>
+              <option value="CERTIFICATE">자격·교육</option>
             </select>
           </label>
           <label className={styles.formField}>
@@ -117,7 +116,6 @@ export function ProfileEditor({
           <input className="type-body" type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(Number(event.currentTarget.value))} />
         </label>
         <div className={styles.checkRow}>
-          <label className={styles.checkboxField}><input type="checkbox" checked={featured} onChange={(event) => setFeatured(event.currentTarget.checked)} /><span className="type-body">대표/강조</span></label>
           <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">노출 ON</span></label>
         </div>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
@@ -126,7 +124,7 @@ export function ProfileEditor({
   );
 }
 
-// 기술 Enum과 Icon Key 문자열 기반 Editor
+// 6개 기술 분류와 iconUrl 기반 기술 사전 Editor
 export function TechnologyEditor({
   state,
   onClose,
@@ -139,8 +137,7 @@ export function TechnologyEditor({
   const item = state?.item;
   const [name, setName] = useState(item?.name || "");
   const [category, setCategory] = useState<TechnologyCategory>(item?.category || "LANGUAGE");
-  const [iconKey, setIconKey] = useState(item?.iconKey || "");
-  const [displayOrder, setDisplayOrder] = useState(item?.displayOrder || 0);
+  const [iconUrl, setIconUrl] = useState(item?.iconUrl || "");
   const [enabled, setEnabled] = useState(item?.enabled ?? true);
   const [error, setError] = useState("");
 
@@ -150,19 +147,19 @@ export function TechnologyEditor({
       setError("기술명을 입력해 주세요.");
       return;
     }
-    onSubmit({ name: name.trim(), category, iconKey: iconKey.trim() || null, displayOrder, enabled }, item);
+    onSubmit({ name: name.trim(), category, iconUrl: iconUrl.trim() || null, enabled }, item);
   };
 
   return (
     <DialogFrame
       open={state !== null}
       title={item ? "기술 수정" : "기술 추가"}
-      description="업로드 없이 Registry에서 사용하는 Icon Key만 관리합니다."
+      description="기술 사전의 이름, 분류와 공개 Icon URL을 관리합니다."
       onClose={onClose}
       footer={(
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>인증 후 저장</SubmitButton>
+          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
         </>
       )}
     >
@@ -174,14 +171,15 @@ export function TechnologyEditor({
             <select className="type-body" value={category} onChange={(event) => setCategory(event.currentTarget.value as TechnologyCategory)}>
               <option value="LANGUAGE">LANGUAGE</option>
               <option value="BACKEND">BACKEND</option>
+              <option value="DATABASE">DATABASE</option>
+              <option value="FRONTEND">FRONTEND</option>
               <option value="INFRA">INFRA</option>
               <option value="DEVOPS">DEVOPS</option>
             </select>
           </label>
-          <label className={styles.formField}><span className="type-small">Icon Key</span><input className="type-body" value={iconKey} onChange={(event) => setIconKey(event.currentTarget.value)} /></label>
+          <label className={styles.formField}><span className="type-small">Icon URL</span><input className="type-body" value={iconUrl} onChange={(event) => setIconUrl(event.currentTarget.value)} placeholder="/icons/tech/example.svg" /></label>
         </div>
-        <label className={styles.formField}><span className="type-small">표시 순서</span><input className="type-body" type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(Number(event.currentTarget.value))} /></label>
-        <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">노출 ON</span></label>
+        <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">신규 연결 가능</span></label>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
       </form>
     </DialogFrame>
@@ -234,7 +232,7 @@ export function ExternalLinkEditor({
       footer={(
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>인증 후 저장</SubmitButton>
+          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
         </>
       )}
     >
