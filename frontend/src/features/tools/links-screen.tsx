@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
+import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type { ToolLink, ToolLinkCategory } from "@/types/api";
 import { getToolLinks } from "./tools-api";
@@ -180,19 +181,7 @@ export default function LinksScreen() {
           </span>
         </header>
 
-        <div className={styles.linksFilters} role="group" aria-label="Link 분류">
-          {LINK_FILTERS.map((filter) => (
-            <button
-              key={filter.value}
-              className="type-body"
-              type="button"
-              aria-pressed={linkFilter === filter.value}
-              onClick={() => setLinkFilter(filter.value)}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl className={styles.linksFilters} label="Link 분류" options={LINK_FILTERS} value={linkFilter} onChange={setLinkFilter} />
 
         {groups.length === 0 ? (
           <div className={styles.emptyState}>

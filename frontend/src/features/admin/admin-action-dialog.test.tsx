@@ -100,6 +100,7 @@ describe("관리자 ADMIN_ACTION 재인증 Dialog", () => {
 
     expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
     expect(screen.getByRole("button", { name: "변경 실행" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("인증번호 확인 중...");
   });
 
   it("재발급으로 challengeId가 바뀌면 기존 입력을 제거", () => {

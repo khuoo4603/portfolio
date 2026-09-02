@@ -58,7 +58,6 @@ describe("Quiz 저장 Workspace", () => {
     mocks.deleteQuiz.mockReset().mockResolvedValue(undefined);
     mocks.getQuiz.mockReset().mockResolvedValue(savedQuiz);
     mocks.getQuizzes.mockReset().mockResolvedValue({ items: [summary] });
-    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -149,17 +148,20 @@ describe("Quiz 저장 Workspace", () => {
   it("잘못된 저장 JSON과 Dirty 교체 취소가 현재 화면을 덮어쓰지 않음", async () => {
     render(<QuizScreen />);
     loadJson();
-    vi.mocked(window.confirm).mockReturnValueOnce(false);
     fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
     let dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
+    let confirm = screen.getByRole("dialog", { name: "문제 교체" });
+    fireEvent.click(within(confirm).getByRole("button", { name: "취소" }));
     expect(mocks.getQuiz).not.toHaveBeenCalled();
     expect(screen.getByRole("heading", { name: "자바 기초" })).toBeInTheDocument();
 
-    vi.mocked(window.confirm).mockReturnValueOnce(true);
     mocks.getQuiz.mockResolvedValueOnce({ ...savedQuiz, quizJson: { questions: [] } });
     dialog = screen.getByRole("dialog", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
+    confirm = screen.getByRole("dialog", { name: "문제 교체" });
+    fireEvent.click(within(confirm).getByRole("button", { name: "교체" }));
+    dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
     await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("questions 배열이 필요합니다."));
     expect(screen.getByRole("heading", { name: "자바 기초" })).toBeInTheDocument();
 
@@ -167,8 +169,27 @@ describe("Quiz 저장 Workspace", () => {
       code: "COMMON_SERVICE_UNAVAILABLE", message: "상세 조회 실패", traceId: "detail-trace", fieldErrors: [],
     }));
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
+    confirm = screen.getByRole("dialog", { name: "문제 교체" });
+    fireEvent.click(within(confirm).getByRole("button", { name: "교체" }));
+    dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
     await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("상세 조회 실패 (추적 ID: detail-trace)"));
     expect(screen.getByRole("heading", { name: "자바 기초" })).toBeInTheDocument();
+  });
+
+  it("미저장 문제를 새 JSON으로 교체하기 전에 사이트 확인 Dialog를 사용", () => {
+    render(<QuizScreen />);
+    loadJson();
+    fireEvent.change(screen.getByLabelText("문제 JSON"), { target: { value: JSON.stringify({ ...examData, title: "교체 문제" }) } });
+    fireEvent.click(screen.getByRole("button", { name: "문제 불러오기" }));
+
+    const confirm = screen.getByRole("dialog", { name: "문제 교체" });
+    expect(within(confirm).getByText("저장하지 않은 변경사항을 새 JSON으로 교체할까요?")).toBeInTheDocument();
+    fireEvent.click(within(confirm).getByRole("button", { name: "취소" }));
+    expect(screen.getByRole("heading", { name: "자바 기초" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "문제 불러오기" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "문제 교체" })).getByRole("button", { name: "교체" }));
+    expect(screen.getByRole("heading", { name: "교체 문제" })).toBeInTheDocument();
   });
 
   it("저장 목록 Empty와 조회 오류를 Dialog 안에서 분리", async () => {
@@ -197,6 +218,7 @@ describe("Quiz 저장 Workspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
     dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByRole("button", { name: "저장된 자바 삭제" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "저장된 문제 삭제" })).getByRole("button", { name: "삭제" }));
     await waitFor(() => expect(mocks.deleteQuiz).toHaveBeenCalledWith(11));
     expect(screen.getByRole("heading", { name: "자바 기초" })).toBeInTheDocument();
     expect(screen.getByLabelText("단답형 답안")).toHaveValue("5");
@@ -213,12 +235,17 @@ describe("Quiz 저장 Workspace", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
     dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
-    vi.mocked(window.confirm).mockReturnValueOnce(false);
     fireEvent.click(within(dialog).getByRole("button", { name: "이전 문제 삭제" }));
+    let confirm = screen.getByRole("dialog", { name: "저장된 문제 삭제" });
+    expect(within(confirm).getByText("이전 문제")).toBeInTheDocument();
+    fireEvent.click(within(confirm).getByRole("button", { name: "취소" }));
     expect(mocks.deleteQuiz).not.toHaveBeenCalled();
 
-    vi.mocked(window.confirm).mockReturnValueOnce(true);
+    dialog = screen.getByRole("dialog", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByRole("button", { name: "이전 문제 삭제" }));
+    confirm = screen.getByRole("dialog", { name: "저장된 문제 삭제" });
+    fireEvent.click(within(confirm).getByRole("button", { name: "삭제" }));
+    dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
     await waitFor(() => expect(mocks.deleteQuiz).toHaveBeenCalledWith(12));
     expect(within(dialog).queryByText("이전 문제")).not.toBeInTheDocument();
     expect(screen.getByText("저장됨")).toBeInTheDocument();

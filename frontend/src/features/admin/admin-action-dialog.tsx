@@ -52,6 +52,9 @@ function AdminActionDialogContent({
   const busy = issuing || submitting;
   const inputDisabled = phase === "SENDING" || phase === "VERIFYING" || !ready;
   const validCode = /^\d{6}$/.test(code);
+  const readyError = expiresIn === 0 && !error
+    ? "인증번호가 만료되었습니다. 새 인증번호를 요청해 주세요."
+    : error;
 
   return (
     <DialogFrame
@@ -73,13 +76,13 @@ function AdminActionDialogContent({
         </>
       )}
     >
-      <div data-admin-action-phase={phase}>
+      <div className={styles.challengeState} data-admin-action-phase={phase} aria-busy={busy}>
         <div className={styles.secureActionSummary}>
-        <MailCheck aria-hidden="true" />
-        <div>
-          <span className="type-small">현재 작업</span>
-          <strong className="type-body">{actionLabel}</strong>
-        </div>
+          <MailCheck aria-hidden="true" />
+          <div>
+            <span className="type-small">현재 작업</span>
+            <strong className="type-body">{actionLabel}</strong>
+          </div>
         </div>
 
         {phase === "SENDING" && (
@@ -91,26 +94,33 @@ function AdminActionDialogContent({
 
         <OtpInput value={code} onChange={setCode} disabled={inputDisabled} autoFocus={phase === "READY"} label="관리자 인증번호" />
 
+        {phase === "VERIFYING" && (
+          <div className={styles.challengeVerifying} role="status" aria-live="polite">
+            <LoaderCircle className={styles.spinIcon} aria-hidden="true" />
+            <p className="type-body">인증번호 확인 중...</p>
+          </div>
+        )}
+
         {ready ? (
           <>
-          <div className={`${styles.challengeMeta} type-small`}>
-            <span>남은 시간</span>
-            <strong>{formatCountdown(expiresIn)}</strong>
-          </div>
-          <button
-            className={`${styles.textButton} type-small`}
-            type="button"
-            onClick={() => void onResend()}
-            disabled={busy}
-          >
-            인증번호 재전송
-          </button>
+            <div className={`${styles.challengeMeta} type-small`}>
+              <span>남은 시간</span>
+              <strong>{formatCountdown(expiresIn)}</strong>
+            </div>
+            <button
+              className={`${styles.textButton} type-small`}
+              type="button"
+              onClick={() => void onResend()}
+              disabled={busy}
+            >
+              인증번호 재전송
+            </button>
 
-          <p className={`${styles.inlineError} type-small`} role="alert" aria-live="polite">
-            {expiresIn === 0 && !error
-              ? "인증번호가 만료되었습니다. 새 인증번호를 요청해 주세요."
-              : error}
-          </p>
+            {readyError ? (
+              <div className={styles.challengeError} role="alert" aria-live="polite">
+                <p className="type-body">{readyError}</p>
+              </div>
+            ) : null}
           </>
         ) : phase === "ERROR" ? (
           <div className={styles.challengeIssueError}>

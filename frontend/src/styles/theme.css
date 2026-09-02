@@ -18,6 +18,9 @@
   --status-success: var(--sage-700);
   --status-error: var(--sand-800);
   --status-warning: var(--sand-700);
+  --control-shadow-rest: 0 4px 10px -8px color-mix(in srgb, var(--ink-950) 30%, transparent);
+  --control-shadow-hover: 0 6px 14px -8px color-mix(in srgb, var(--ink-950) 38%, transparent);
+  --control-shadow-active: 0 7px 16px -7px color-mix(in srgb, var(--ink-950) 42%, transparent);
 }
 
 :root[data-theme="dark"] {
@@ -40,4 +43,13 @@
   --status-success: var(--sage-400);
   --status-error: var(--sand-400);
   --status-warning: var(--sand-500);
+  --control-shadow-rest:
+    0 5px 10px -4px color-mix(in srgb, var(--ink-950) 94%, transparent),
+    0 10px 22px -8px color-mix(in srgb, var(--steel-900) 58%, transparent);
+  --control-shadow-hover:
+    0 7px 14px -4px color-mix(in srgb, var(--ink-950) 98%, transparent),
+    0 12px 26px -7px color-mix(in srgb, var(--steel-900) 68%, transparent);
+  --control-shadow-active:
+    0 8px var(--space-16) -4px var(--ink-950),
+    0 14px 30px -6px color-mix(in srgb, var(--steel-900) 78%, transparent);
 }

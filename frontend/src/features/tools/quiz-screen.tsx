@@ -1,7 +1,8 @@
 "use client";
 
 import { Copy, Eraser, FileJson, FolderOpen, Save, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import ConfirmDialog from "@/features/admin/confirm-dialog";
 import DialogFrame from "@/features/admin/dialog-frame";
 import { formatApiError } from "@/lib/api/client";
 import type { QuizSummary } from "@/types/api";
@@ -31,6 +32,11 @@ type Status = {
   message: string;
   success?: boolean;
 };
+
+type QuizConfirmation =
+  | { kind: "replace-json" }
+  | { kind: "restore"; quizId: number; title: string }
+  | { kind: "delete"; quizId: number; title: string };
 
 type SaveStatus = "unsaved" | "saved" | "changes" | "saving" | "error";
 
@@ -250,6 +256,9 @@ export default function QuizScreen() {
   const [savedLoading, setSavedLoading] = useState(false);
   const [savedError, setSavedError] = useState("");
   const [actionQuizId, setActionQuizId] = useState<number | null>(null);
+  const [confirmation, setConfirmation] = useState<QuizConfirmation | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const confirmInFlight = useRef(false);
   const preview = useMemo(() => exam ? buildAnswerText(exam, answers) : "", [answers, exam]);
 
   if (!hasTool("QUIZ")) {
@@ -273,11 +282,7 @@ export default function QuizScreen() {
   };
 
   // 기존 Parser 검증 후 신규 미저장 Workspace 교체
-  const handleLoad = () => {
-    if (exam && dirty && !window.confirm("저장하지 않은 변경사항을 새 JSON으로 교체할까요?")) {
-      return;
-    }
-
+  const loadJson = () => {
     try {
       const parsedExam = parseExamJson(jsonInput);
       const parsedJson: unknown = JSON.parse(jsonInput);
@@ -296,6 +301,15 @@ export default function QuizScreen() {
         message: `불러오기 실패: ${caught instanceof Error ? caught.message : "JSON 내용을 확인하세요."}`,
       });
     }
+  };
+
+  // 미저장 Workspace가 있을 때 사이트 확인 Dialog 우선 표시
+  const handleLoad = () => {
+    if (exam && dirty) {
+      setConfirmation({ kind: "replace-json" });
+      return;
+    }
+    loadJson();
   };
 
   // 입력·문제·답안·저장 상태 전체 초기화
@@ -361,11 +375,7 @@ export default function QuizScreen() {
   };
 
   // 저장 Quiz 상세의 기존 Parser·답안 구조 기반 안전 복원
-  const handleRestore = async (quizId: number) => {
-    if (dirty && !window.confirm("저장하지 않은 변경사항을 선택한 문제로 교체할까요?")) {
-      return;
-    }
-
+  const restoreQuiz = async (quizId: number) => {
     setActionQuizId(quizId);
     setSavedError("");
     try {
@@ -389,21 +399,19 @@ export default function QuizScreen() {
       setLoadStatus({ message: "저장된 문제를 불러왔습니다.", success: true });
       setCopyStatus({ message: "" });
       setSavedOpen(false);
+      return true;
     } catch (caught) {
       setSavedError(caught instanceof SyntaxError || caught instanceof Error && !("status" in caught)
         ? caught.message
         : formatApiError(caught));
+      return false;
     } finally {
       setActionQuizId(null);
     }
   };
 
-  // 확인 후 저장 Quiz 삭제와 열린 Workspace의 미저장 전환
-  const handleDelete = async (quizId: number) => {
-    if (!window.confirm("저장된 문제를 삭제할까요?")) {
-      return;
-    }
-
+  // 저장 Quiz 삭제와 열린 Workspace의 미저장 전환
+  const removeQuiz = async (quizId: number) => {
     setActionQuizId(quizId);
     setSavedError("");
     try {
@@ -415,11 +423,61 @@ export default function QuizScreen() {
         setSaveStatus("unsaved");
         setSaveError("");
       }
+      return true;
     } catch (caught) {
       setSavedError(formatApiError(caught));
+      return false;
     } finally {
       setActionQuizId(null);
     }
+  };
+
+  const requestRestore = (quizId: number) => {
+    if (!dirty) {
+      void restoreQuiz(quizId);
+      return;
+    }
+    const quiz = savedQuizzes.find((item) => item.id === quizId);
+    setSavedOpen(false);
+    setConfirmation({ kind: "restore", quizId, title: quiz?.title ?? "저장된 문제" });
+  };
+
+  const requestDelete = (quizId: number) => {
+    const quiz = savedQuizzes.find((item) => item.id === quizId);
+    setSavedOpen(false);
+    setConfirmation({ kind: "delete", quizId, title: quiz?.title ?? "저장된 문제" });
+  };
+
+  // 확인 종류별 기존 교체·복원·삭제 흐름 실행
+  const confirmAction = async () => {
+    if (!confirmation || confirmInFlight.current) {
+      return;
+    }
+    if (confirmation.kind === "replace-json") {
+      setConfirmation(null);
+      loadJson();
+      return;
+    }
+
+    confirmInFlight.current = true;
+    setConfirmBusy(true);
+    const current = confirmation;
+    const succeeded = current.kind === "restore"
+      ? await restoreQuiz(current.quizId)
+      : await removeQuiz(current.quizId);
+    confirmInFlight.current = false;
+    setConfirmBusy(false);
+    setConfirmation(null);
+    if (current.kind === "delete" || !succeeded) {
+      setSavedOpen(true);
+    }
+  };
+
+  const cancelConfirmation = () => {
+    if (confirmBusy || !confirmation) return;
+    const returnToSaved = confirmation.kind !== "replace-json";
+    setConfirmation(null);
+    if (returnToSaved) setSavedOpen(true);
   };
 
   const handlePromptCopy = async () => {
@@ -582,8 +640,23 @@ export default function QuizScreen() {
         actionQuizId={actionQuizId}
         error={savedError}
         onClose={() => setSavedOpen(false)}
-        onLoad={(quizId) => void handleRestore(quizId)}
-        onDelete={(quizId) => void handleDelete(quizId)}
+        onLoad={requestRestore}
+        onDelete={requestDelete}
+      />
+      <ConfirmDialog
+        open={confirmation !== null}
+        title={confirmation?.kind === "delete" ? "저장된 문제 삭제" : "문제 교체"}
+        description={confirmation?.kind === "replace-json"
+          ? "저장하지 않은 변경사항을 새 JSON으로 교체할까요?"
+          : confirmation?.kind === "restore"
+            ? "저장하지 않은 변경사항을 선택한 문제로 교체할까요?"
+            : "저장된 문제를 삭제할까요?"}
+        detail={confirmation && confirmation.kind !== "replace-json" ? confirmation.title : undefined}
+        confirmLabel={confirmation?.kind === "delete" ? "삭제" : "교체"}
+        danger={confirmation?.kind === "delete"}
+        busy={confirmBusy}
+        onCancel={cancelConfirmation}
+        onConfirm={confirmAction}
       />
     </main>
   );

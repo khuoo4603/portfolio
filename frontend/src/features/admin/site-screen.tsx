@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type {
   ExternalLink,
@@ -507,12 +508,8 @@ function ProfileEntriesPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onD
 
   return (
     <section className={styles.operationalSection} aria-labelledby="profile-entries-title">
-      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">학력·경력·활동·수상·자격·교육</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</button></div>
-      <div className={styles.linkFilters} role="group" aria-label="이력 유형">
-        {PROFILE_FILTERS.map((item) => (
-          <button key={item.value} className="type-body" type="button" aria-pressed={filter === item.value} onClick={() => setFilter(item.value)}>{item.label}</button>
-        ))}
-      </div>
+      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">이력</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</button></div>
+      <SegmentedControl className={`${styles.linkFilters} ${styles.profileFilters}`} label="이력 유형" options={PROFILE_FILTERS} value={filter} onChange={setFilter} />
       {items.length === 0 ? <EmptyState title="등록 항목 없음" description="등록된 프로필 반복 항목이 없습니다." /> : (
         filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>항목</th><th>기간</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
           {filteredItems.map((item) => { const key = `profile-${item.id}`; return (

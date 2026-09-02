@@ -92,7 +92,11 @@ describe("Tools 실제 연동 Workspace", () => {
     expect(mocks.getTools).toHaveBeenCalledOnce();
     expect(within(launcher).getByRole("link", { name: /Quiz/ })).toHaveAttribute("href", "/tools/quiz");
     expect(within(launcher).getByRole("link", { name: /Links/ })).toHaveAttribute("href", "/tools/links");
-    expect(within(launcher).getAllByLabelText("제작 중")).toHaveLength(2);
+    expect(launcher.children).toHaveLength(6);
+    expect(within(launcher).getAllByLabelText("제작 중")).toHaveLength(4);
+    expect(within(launcher).getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "Quiz", "Links", "제작 중", "제작 중", "제작 중", "제작 중",
+    ]);
     expect(screen.getByRole("button", { name: user.name })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Tools 주요 메뉴" })).toHaveTextContent("QuizLinks");
   });
@@ -102,7 +106,7 @@ describe("Tools 실제 연동 Workspace", () => {
     render(<ToolsShell><ToolsLauncher /></ToolsShell>);
 
     const launcher = await screen.findByLabelText("Tools Launcher");
-    expect(launcher.children).toHaveLength(4);
+    expect(launcher.children).toHaveLength(6);
     expect(within(launcher).getByRole("link", { name: /Quiz/ })).toHaveAttribute("href", "/tools/quiz");
     const disabledLinks = within(launcher).getByRole("article", { name: "Links 비활성" });
     expect(disabledLinks).not.toHaveAttribute("href");
@@ -118,21 +122,21 @@ describe("Tools 실제 연동 Workspace", () => {
     render(<ToolsShell><ToolsLauncher /></ToolsShell>);
 
     const launcher = await screen.findByLabelText("Tools Launcher");
-    expect(launcher.children).toHaveLength(4);
+    expect(launcher.children).toHaveLength(6);
     expect(within(launcher).getByRole("article", { name: "Quiz 비활성" })).not.toHaveAttribute("href");
     expect(within(launcher).queryByRole("link", { name: /Quiz/ })).not.toBeInTheDocument();
     expect(within(launcher).getByRole("link", { name: /Links/ })).toHaveAttribute("href", "/tools/links");
   });
 
-  it("두 Tool이 모두 비활성이어도 실제 Tool 2개와 제작 중 2개의 Geometry를 유지", async () => {
+  it("두 Tool이 모두 비활성이어도 실제 Tool 2개와 제작 중 4개의 Geometry를 유지", async () => {
     mocks.getTools.mockResolvedValue({ items: [] });
     render(<ToolsShell><ToolsLauncher /></ToolsShell>);
 
     const launcher = await screen.findByLabelText("Tools Launcher");
-    expect(launcher.children).toHaveLength(4);
+    expect(launcher.children).toHaveLength(6);
     expect(within(launcher).getByRole("article", { name: "Quiz 비활성" })).toBeInTheDocument();
     expect(within(launcher).getByRole("article", { name: "Links 비활성" })).toBeInTheDocument();
-    expect(within(launcher).getAllByLabelText("제작 중")).toHaveLength(2);
+    expect(within(launcher).getAllByLabelText("제작 중")).toHaveLength(4);
     expect(within(launcher).queryAllByRole("link")).toHaveLength(0);
   });
 
@@ -192,6 +196,43 @@ describe("Tools 실제 연동 Workspace", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "비밀번호 변경" }));
     await act(async () => { await Promise.resolve(); });
     expect(mocks.changePassword).toHaveBeenCalledWith("challenge-2", "123456", "new-password-2");
+  });
+
+  it("Password Challenge 응답 전 Dialog를 열고 SENDING 상태에서 입력을 잠금", async () => {
+    let resolveChallenge: ((value: { challengeId: string; expiresAt: string }) => void) | undefined;
+    mocks.issuePasswordChallenge.mockReset().mockReturnValue(new Promise((resolve) => { resolveChallenge = resolve; }));
+    render(<ToolsShell><ToolsLauncher /></ToolsShell>);
+    await screen.findByRole("button", { name: user.name });
+
+    const dialog = openPasswordDialog();
+    expect(within(dialog).getByRole("status")).toHaveTextContent("인증번호 요청 중");
+    expect(within(dialog).getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "비밀번호 변경" })).toBeDisabled();
+
+    await act(async () => resolveChallenge?.({
+      challengeId: "password-pending",
+      expiresAt: new Date(Date.now() + 300_000).toISOString(),
+    }));
+    await waitFor(() => expect(within(dialog).getByLabelText("인증번호 1번째 숫자")).toBeEnabled());
+  });
+
+  it("Password VERIFYING 상태에서 입력과 중복 제출을 차단", async () => {
+    let resolveChange: (() => void) | undefined;
+    mocks.changePassword.mockReset().mockReturnValue(new Promise<void>((resolve) => { resolveChange = resolve; }));
+    render(<ToolsShell><ToolsLauncher /></ToolsShell>);
+    await screen.findByRole("button", { name: user.name });
+    const dialog = openPasswordDialog();
+    await waitFor(() => expect(within(dialog).getByLabelText("인증번호 1번째 숫자")).toBeEnabled());
+    fillPassword(dialog, "654321", "new-password-1");
+    const submit = within(dialog).getByRole("button", { name: "비밀번호 변경" });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+
+    expect(mocks.changePassword).toHaveBeenCalledOnce();
+    expect(within(dialog).getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
+    expect(within(dialog).getByRole("status")).toHaveTextContent("인증번호 확인 중");
+    expect(submit).toBeDisabled();
+    await act(async () => resolveChange?.());
   });
 
   it("비밀번호 변경 성공 시 Challenge ID와 답을 전달하고 Session을 비움", async () => {

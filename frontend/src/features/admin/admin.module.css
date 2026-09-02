@@ -283,7 +283,6 @@
 .secondaryButton,
 .textButton,
 .iconButton,
-.periodTabs button,
 .lineTabs button,
 .rowMenu button,
 .drawerClose,
@@ -300,14 +299,15 @@
   gap: var(--space-8);
   padding: var(--space-8) var(--space-16);
   border-radius: var(--radius-value-sm);
+  box-shadow: var(--control-shadow-rest);
   cursor: pointer;
   font-weight: 700;
   white-space: nowrap;
   transition:
     background-color var(--motion-duration-160) var(--motion-easing-default),
     border-color var(--motion-duration-160) var(--motion-easing-default),
-    color var(--motion-duration-160) var(--motion-easing-default),
-    transform var(--motion-duration-100) var(--motion-easing-default);
+    box-shadow var(--motion-duration-160) var(--motion-easing-default),
+    color var(--motion-duration-160) var(--motion-easing-default);
 }
 
 .primaryButton {
@@ -324,7 +324,7 @@
 
 .primaryButton:hover:not(:disabled),
 .secondaryButton:hover:not(:disabled) {
-  transform: translateY(-1px);
+  box-shadow: var(--control-shadow-hover);
 }
 
 .primaryButton:hover:not(:disabled) {
@@ -342,6 +342,11 @@
 .iconButton:disabled {
   cursor: not-allowed;
   opacity: 0.48;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  box-shadow: none;
 }
 
 .primaryButton svg,
@@ -551,29 +556,6 @@
 .stateSwitch:disabled {
   cursor: wait;
   opacity: 0.5;
-}
-
-.periodTabs {
-  display: inline-flex;
-  border-bottom: 1px solid var(--border-default);
-}
-
-.periodTabs button {
-  min-width: 68px;
-  padding: var(--space-8) var(--space-12);
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
-}
-
-.periodTabs .periodTabActive {
-  border-color: var(--accent-primary);
-  color: var(--text-primary);
-  font-weight: 600;
 }
 
 .dashboardFlow,
@@ -949,28 +931,17 @@
 }
 
 .linkFilters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-8);
   margin-bottom: var(--space-20);
-  padding-bottom: var(--space-16);
-  border-bottom: 1px solid var(--border-default);
 }
 
-.linkFilters button {
-  min-height: 40px;
-  padding: var(--space-8) var(--space-16);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-value-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
+/* Site 이력 Filter 전용 부유형 Segment 표현 */
+.profileFilters {
+  --segment-active-background: var(--admin-surface);
 }
 
-.linkFilters button[aria-pressed="true"] {
-  border-color: var(--border-accent);
-  background: var(--admin-elevated);
-  color: var(--text-primary);
+:global([data-theme="dark"]) .profileFilters {
+  --segment-active-border: color-mix(in srgb, var(--accent-primary) 86%, var(--ink-200));
+  --segment-track-border: color-mix(in srgb, var(--border-accent) 88%, var(--ink-200));
 }
 
 .dataTableWrap {
@@ -1225,8 +1196,9 @@
   display: grid;
   place-items: center;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-24);
-  background: color-mix(in srgb, var(--ink-950) 72%, transparent);
+  background: color-mix(in srgb, var(--ink-950) 78%, transparent);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
@@ -1240,11 +1212,11 @@
   position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  border: 1px solid var(--border-accent);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-value-md);
   background: var(--admin-surface);
   color: var(--text-primary);
-  box-shadow: 0 24px 64px color-mix(in srgb, var(--ink-950) 28%, transparent);
+  box-shadow: 0 20px 48px color-mix(in srgb, var(--ink-950) 24%, transparent);
   animation: dialog-enter var(--motion-duration-240) var(--motion-easing-default) both;
 }
 
@@ -1252,18 +1224,8 @@
   width: min(calc(var(--space-160) * 3), 100%);
 }
 
-.secureDialog::before {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  content: "";
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--border-default) 18%, transparent) 1px, transparent 1px),
-    linear-gradient(0deg, color-mix(in srgb, var(--border-default) 14%, transparent) 1px, transparent 1px),
-    linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 34%, transparent), transparent 52%);
-  background-size: 44px 44px, 44px 44px, 100% 100%;
-  mask-image: linear-gradient(to bottom right, black, transparent 72%);
-  opacity: 0.7;
+.secureDialog {
+  border-color: var(--border-accent);
 }
 
 .dialogHeader,
@@ -1274,6 +1236,7 @@
 }
 
 .dialogHeader {
+  grid-row: 1;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1282,9 +1245,18 @@
   border-bottom: 1px solid var(--border-default);
 }
 
+.dialogHeader > div {
+  min-width: 0;
+}
+
 .dialogHeader h2,
 .dialogHeader p {
   margin: 0;
+}
+
+.dialogHeader h2 {
+  color: var(--text-heading);
+  font-weight: 700;
 }
 
 .dialogHeader p {
@@ -1293,17 +1265,24 @@
 }
 
 .dialogBody {
+  grid-row: 2;
   overflow-y: auto;
   padding: var(--space-24);
 }
 
 .dialogFooter {
+  grid-row: 3;
   display: flex;
   justify-content: flex-end;
   gap: var(--space-8);
   padding: var(--space-16) var(--space-24);
   border-top: 1px solid var(--border-default);
   background: var(--admin-elevated);
+}
+
+.confirmMessage {
+  margin: 0;
+  color: var(--admin-data-text);
 }
 
 .editorForm,
@@ -1410,14 +1389,18 @@
   color: var(--status-error);
 }
 
+.challengeState {
+  display: grid;
+  gap: var(--space-12);
+}
+
 .secureActionSummary {
   display: flex;
   align-items: center;
   gap: var(--space-12);
-  margin-bottom: var(--space-20);
-  padding: var(--space-12);
-  border: 1px solid var(--border-default);
-  background: color-mix(in srgb, var(--admin-input) 72%, transparent);
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .secureActionSummary > svg {
@@ -1436,12 +1419,12 @@
 .challengeMeta {
   display: flex;
   justify-content: space-between;
-  margin-top: var(--space-12);
   color: var(--text-muted);
   font-family: var(--font-family-mono) !important;
 }
 
-.challengeLoading {
+.challengeLoading,
+.challengeVerifying {
   min-height: 96px;
   display: grid;
   place-items: center;
@@ -1450,8 +1433,16 @@
   color: var(--text-secondary);
 }
 
-.challengeLoading p {
+.challengeLoading p,
+.challengeVerifying p {
   margin: 0;
+}
+
+.challengeVerifying {
+  min-height: auto;
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+  padding-block: var(--space-4);
 }
 
 .challengeIssueError {
@@ -1462,8 +1453,16 @@
   gap: var(--space-8);
 }
 
-.challengeIssueError p {
+.challengeIssueError p,
+.challengeError p {
   margin: 0;
+}
+
+.challengeError {
+  padding: var(--space-12) var(--space-16);
+  border-left: 2px solid var(--status-error);
+  background: color-mix(in srgb, var(--status-error) 7%, transparent);
+  color: var(--status-error);
 }
 
 .lineTabs {
@@ -1888,10 +1887,19 @@
   border: 1px solid var(--status-error);
   border-radius: var(--radius-value-sm);
   background: var(--status-error);
+  box-shadow: var(--control-shadow-rest);
   color: var(--sand-50);
   cursor: pointer;
   font-family: var(--font-family-primary);
   font-weight: 700;
+}
+
+.dangerButton:hover:not(:disabled) {
+  box-shadow: var(--control-shadow-hover);
+}
+
+.dangerButton:disabled {
+  box-shadow: none;
 }
 
 /* Project Editor의 편집·실제 상세 Preview 전환 구조 */

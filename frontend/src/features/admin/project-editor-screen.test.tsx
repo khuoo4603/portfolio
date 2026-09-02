@@ -182,6 +182,23 @@ describe("Preview-first Project Editor", () => {
     expect(getAdminProject).toHaveBeenCalledTimes(1);
   });
 
+  it("미저장 Editor 이탈을 사이트 확인 Dialog로 취소하거나 계속 진행", async () => {
+    await renderEditor();
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Unsaved Project" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "목록" }));
+    let confirm = screen.getByRole("dialog", { name: "변경사항 폐기" });
+    expect(within(confirm).getByText("저장하지 않은 변경사항이 있습니다. 목록으로 이동할까요?")).toBeInTheDocument();
+    expect(navigation.push).not.toHaveBeenCalled();
+    fireEvent.click(within(confirm).getByRole("button", { name: "취소" }));
+    expect(screen.getByLabelText("Name")).toHaveValue("Unsaved Project");
+
+    fireEvent.click(screen.getByRole("button", { name: "목록" }));
+    confirm = screen.getByRole("dialog", { name: "변경사항 폐기" });
+    fireEvent.click(within(confirm).getByRole("button", { name: "계속 이동" }));
+    expect(navigation.push).toHaveBeenCalledWith("/admin/projects");
+  });
+
   it("Architecture Image Local Preview와 Notes 추가·순서 변경·삭제를 Local Draft에서 처리", async () => {
     createObjectUrl.mockReturnValue("blob:architecture-1");
     const sectionNav = await renderEditor();

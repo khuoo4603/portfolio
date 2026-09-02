@@ -3,6 +3,7 @@
 import NextImage from "next/image";
 import { ExternalLink as ExternalLinkIcon, Image as ImageIcon, MoreHorizontal, Plus, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type {
   ToolItem,
@@ -292,11 +293,7 @@ export default function ToolsScreen() {
           </section>
           <section className={styles.operationalSection} aria-labelledby="tool-links-title">
             <div className={styles.sectionHeading}><div><h2 id="tool-links-title" className="type-title">Links 데이터</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => setEditor({})}><Plus aria-hidden="true" />Link 추가</button></div>
-            <div className={styles.linkFilters} role="group" aria-label="Link 분류">
-              {LINK_FILTERS.map((filter) => (
-                <button key={filter.value} className="type-body" type="button" aria-pressed={linkFilter === filter.value} onClick={() => setLinkFilter(filter.value)}>{filter.label}</button>
-              ))}
-            </div>
+            <SegmentedControl className={styles.linkFilters} label="Link 분류" options={LINK_FILTERS} value={linkFilter} onChange={setLinkFilter} />
             {data.links.length === 0 ? <EmptyState title="등록 Link 없음" description="Links Tool에 표시할 링크가 없습니다." /> : (
               <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>Link</th><th>분류</th><th>대표 이미지</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
                 {filteredLinks.map((link) => <tr key={link.id}>
