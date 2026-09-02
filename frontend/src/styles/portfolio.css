@@ -1491,7 +1491,8 @@ a.project-thumbnail {
   }
 
   .activities-group,
-  .awards-group {
+  .awards-group,
+  .certificates-group {
     margin-top: var(--space-64);
   }
 

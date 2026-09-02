@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { ProjectDetailModel } from "@/features/portfolio/project-detail";
-import type { PublicViewModel } from "@/features/portfolio/public-portfolio";
+import { PUBLIC_COPY, type PublicViewModel } from "@/features/portfolio/public-portfolio";
 import { PortfolioFooter, SiteHeader } from "../../portfolio-chrome";
 import EngineeringList from "../kyvc/engineering-list";
 import ProjectArchitecture from "../kyvc/project-architecture";
@@ -15,13 +15,13 @@ type ProjectDetailViewProps = {
   portfolio: PublicViewModel;
 };
 
-function projectNavigation(content: PublicViewModel["content"]) {
+function projectNavigation() {
   return [
-    [content.NAV_ABOUT, "/#about"],
-    [content.NAV_TECH, "/#tech"],
-    [content.NAV_PROJECTS, "/#projects"],
-    [content.NAV_EDUCATION, "/#education"],
-  ].flatMap(([label, href]) => label ? [{ label, href }] : []);
+    { label: PUBLIC_COPY.navigation.about, href: "/#about" },
+    { label: PUBLIC_COPY.navigation.technology, href: "/#tech" },
+    { label: PUBLIC_COPY.navigation.projects, href: "/#projects" },
+    { label: PUBLIC_COPY.navigation.education, href: "/#education" },
+  ];
 }
 
 function technologyIconId(name: string) {
@@ -41,9 +41,9 @@ function ProjectChrome({
     <div className={`portfolio-shell ${styles.detailShell}`}>
       <SiteHeader
         detail
-        mark={content.SITE_MARK ?? ""}
+        mark={PUBLIC_COPY.siteMark}
         markLabel={content.NAME ? `${content.NAME} 포트폴리오 Home` : "포트폴리오 Home"}
-        navigation={projectNavigation(content)}
+        navigation={projectNavigation()}
       />
       {children}
       <PortfolioFooter
@@ -83,7 +83,7 @@ export default function ProjectDetailView({ project, portfolio }: ProjectDetailV
         <section className={styles.projectHero} aria-labelledby="project-title">
           <div className={`content-container ${styles.heroInner}`}>
             <Link className={`${styles.backLink} type-small`} href="/#projects">
-              <span aria-hidden="true">←</span> {portfolio.content.NAV_PROJECTS}
+              <span aria-hidden="true">←</span> {PUBLIC_COPY.navigation.projects}
             </Link>
 
             <div className={styles.heroContent}>

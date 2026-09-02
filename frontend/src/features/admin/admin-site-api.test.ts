@@ -33,7 +33,6 @@ const profile: ProfileEntryInput = {
   role: null,
   description: null,
   achievement: "재학",
-  featured: false,
   displayOrder: 1,
   enabled: true,
 };

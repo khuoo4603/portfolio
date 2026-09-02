@@ -6,11 +6,13 @@ import OtpInput from "@/features/auth/otp-input";
 import { formatCountdown, useCountdown } from "@/features/auth/challenge-time";
 import DialogFrame from "./dialog-frame";
 import { SubmitButton } from "./admin-ui";
+import type { AdminActionPhase } from "./use-admin-action";
 import styles from "./admin.module.css";
 
 type AdminActionDialogProps = {
   open: boolean;
   actionLabel: string;
+  phase: AdminActionPhase;
   challengeId: string | null;
   expiresAt: string | null;
   issuing: boolean;
@@ -33,6 +35,7 @@ export default function AdminActionDialog({
 function AdminActionDialogContent({
   open,
   actionLabel,
+  phase,
   challengeId,
   expiresAt,
   issuing,
@@ -47,6 +50,7 @@ function AdminActionDialogContent({
   const expiresIn = useCountdown(expiresAt);
   const ready = challengeId !== null && expiresAt !== null;
   const busy = issuing || submitting;
+  const inputDisabled = phase === "SENDING" || phase === "VERIFYING" || !ready;
   const validCode = /^\d{6}$/.test(code);
 
   return (
@@ -58,33 +62,37 @@ function AdminActionDialogContent({
       closeOnBackdrop={!busy}
       closeOnEscape={!busy}
       secure
-      footer={ready && !issuing ? (
+      footer={(
         <>
           <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCancel} disabled={busy}>
             취소
           </button>
-          <SubmitButton busy={busy} type="button" onClick={() => void onConfirm(code)} disabled={!validCode || expiresIn === 0}>
+          <SubmitButton busy={phase === "VERIFYING"} type="button" onClick={() => void onConfirm(code)} disabled={inputDisabled || !validCode || expiresIn === 0}>
             변경 실행
           </SubmitButton>
         </>
-      ) : undefined}
+      )}
     >
-      <div className={styles.secureActionSummary}>
+      <div data-admin-action-phase={phase}>
+        <div className={styles.secureActionSummary}>
         <MailCheck aria-hidden="true" />
         <div>
           <span className="type-small">현재 작업</span>
           <strong className="type-body">{actionLabel}</strong>
         </div>
-      </div>
-
-      {issuing ? (
-        <div className={styles.challengeLoading} role="status" aria-live="polite">
-          <LoaderCircle className={styles.spinIcon} aria-hidden="true" />
-          <p className="type-body">{resending ? "인증번호 재전송 중..." : "인증번호 전송 중..."}</p>
         </div>
-      ) : ready ? (
-        <>
-          <OtpInput value={code} onChange={setCode} disabled={submitting} autoFocus label="관리자 인증번호" />
+
+        {phase === "SENDING" && (
+          <div className={styles.challengeLoading} role="status" aria-live="polite">
+            <LoaderCircle className={styles.spinIcon} aria-hidden="true" />
+            <p className="type-body">{resending ? "인증번호 재전송 중..." : "인증번호 전송 중..."}</p>
+          </div>
+        )}
+
+        <OtpInput value={code} onChange={setCode} disabled={inputDisabled} autoFocus={phase === "READY"} label="관리자 인증번호" />
+
+        {ready ? (
+          <>
           <div className={`${styles.challengeMeta} type-small`}>
             <span>남은 시간</span>
             <strong>{formatCountdown(expiresIn)}</strong>
@@ -93,7 +101,7 @@ function AdminActionDialogContent({
             className={`${styles.textButton} type-small`}
             type="button"
             onClick={() => void onResend()}
-            disabled={submitting}
+            disabled={busy}
           >
             인증번호 재전송
           </button>
@@ -103,16 +111,17 @@ function AdminActionDialogContent({
               ? "인증번호가 만료되었습니다. 새 인증번호를 요청해 주세요."
               : error}
           </p>
-        </>
-      ) : (
-        <div className={styles.challengeIssueError}>
-          <strong className="type-body">인증번호 전송에 실패했습니다.</strong>
-          <p className={`${styles.inlineError} type-small`} role="alert" aria-live="polite">{error}</p>
-          <button className={`${styles.textButton} type-small`} type="button" onClick={() => void onResend()}>
-            다시 전송
-          </button>
-        </div>
-      )}
+          </>
+        ) : phase === "ERROR" ? (
+          <div className={styles.challengeIssueError}>
+            <strong className="type-body">인증번호 전송에 실패했습니다.</strong>
+            <p className={`${styles.inlineError} type-small`} role="alert" aria-live="polite">{error}</p>
+            <button className={`${styles.textButton} type-small`} type="button" onClick={() => void onResend()}>
+              다시 전송
+            </button>
+          </div>
+        ) : null}
+      </div>
     </DialogFrame>
   );
 }

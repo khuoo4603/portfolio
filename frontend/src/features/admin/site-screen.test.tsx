@@ -9,6 +9,7 @@ import {
   getAdminSite,
   replacePortfolioTechnologies,
   replaceResume,
+  updateProfileEntry,
   updatePortfolioContents,
 } from "./admin-site-api";
 import SiteScreen from "./site-screen";
@@ -43,10 +44,21 @@ const UPDATED_AT = "2026-09-01T12:00:00+09:00";
 function siteData(name = "김현우"): SiteData {
   return {
     portfolioContents: [
-      { category: "COMMON", contentCode: "SITE_MARK", contentValue: "KIM HYUNWOO", updatedAt: UPDATED_AT },
       { category: "COMMON", contentCode: "NAME", contentValue: name, updatedAt: UPDATED_AT },
+      { category: "COMMON", contentCode: "ENGLISH_NAME", contentValue: "KIM HYUNWOO", updatedAt: UPDATED_AT },
+      { category: "COMMON", contentCode: "POSITION", contentValue: "BACKEND / INFRA DEVELOPER", updatedAt: UPDATED_AT },
+      { category: "COMMON", contentCode: "AFFILIATION", contentValue: "성공회대학교", updatedAt: UPDATED_AT },
       { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "Backend 개발부터 운영까지", updatedAt: UPDATED_AT },
+      { category: "MAIN", contentCode: "HERO_DESCRIPTION", contentValue: "서비스 설계와 운영", updatedAt: UPDATED_AT },
       { category: "PROFILE", contentCode: "ABOUT_STATEMENT", contentValue: "문제에 맞는 기술 선택", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_1", contentValue: "소개 설명 1", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_2", contentValue: "소개 설명 2", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_1_TITLE", contentValue: "문서화의 가치", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_1_DESCRIPTION", contentValue: "설계와 선택의 이유 기록", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_2_TITLE", contentValue: "덜어냄의 미학", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_2_DESCRIPTION", contentValue: "불필요한 복잡성 제거", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_3_TITLE", contentValue: "운영까지", updatedAt: UPDATED_AT },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_3_DESCRIPTION", contentValue: "지속 운영 가능한 상태", updatedAt: UPDATED_AT },
       { category: "CONTACT", contentCode: "EMAIL", contentValue: "contact@example.com", updatedAt: UPDATED_AT },
     ],
     profileEntries: [{
@@ -58,8 +70,59 @@ function siteData(name = "김현우"): SiteData {
       role: null,
       description: null,
       achievement: "재학",
-      featured: false,
       displayOrder: 1,
+      enabled: true,
+      createdAt: UPDATED_AT,
+      updatedAt: UPDATED_AT,
+    }, {
+      id: 16,
+      entryType: "EXPERIENCE",
+      periodText: "2025.01 — 현재",
+      title: "플랫폼 개발",
+      organization: "포트폴리오 팀",
+      role: "Backend",
+      description: null,
+      achievement: null,
+      displayOrder: 2,
+      enabled: true,
+      createdAt: UPDATED_AT,
+      updatedAt: UPDATED_AT,
+    }, {
+      id: 17,
+      entryType: "ACTIVITY",
+      periodText: "2024.03 — 2024.12",
+      title: "개발 커뮤니티 활동",
+      organization: "Community",
+      role: null,
+      description: null,
+      achievement: null,
+      displayOrder: 3,
+      enabled: true,
+      createdAt: UPDATED_AT,
+      updatedAt: UPDATED_AT,
+    }, {
+      id: 18,
+      entryType: "AWARD",
+      periodText: "2024.11",
+      title: "프로젝트 우수상",
+      organization: "성공회대학교",
+      role: null,
+      description: null,
+      achievement: "우수상",
+      displayOrder: 4,
+      enabled: true,
+      createdAt: UPDATED_AT,
+      updatedAt: UPDATED_AT,
+    }, {
+      id: 19,
+      entryType: "CERTIFICATE",
+      periodText: "2025.02",
+      title: "클라우드 교육 수료",
+      organization: "교육 기관",
+      role: null,
+      description: null,
+      achievement: "수료",
+      displayOrder: 5,
       enabled: true,
       createdAt: UPDATED_AT,
       updatedAt: UPDATED_AT,
@@ -69,7 +132,6 @@ function siteData(name = "김현우"): SiteData {
       { id: 8, name: "Next.js", category: "FRONTEND", iconUrl: "/icons/tech/nextjs.svg", enabled: true, createdAt: UPDATED_AT, updatedAt: UPDATED_AT },
     ],
     portfolioTechnologies: [{ technologyId: 7, displayOrder: 1 }],
-    projects: [{ id: 3, slug: "kyvc", name: "KYvC", year: 2026, tagline: "법인 KYC 자동 심사 서비스", cardRole: "백엔드 · 인프라", thumbnailUrl: null, displayOrder: 1, enabled: true, updatedAt: UPDATED_AT }],
     externalLinks: [{ id: 4, name: "GitHub", url: "https://github.com/example", displayOrder: 1, enabled: true, createdAt: UPDATED_AT, updatedAt: UPDATED_AT }],
     resume: { fileName: "resume.pdf", updatedAt: UPDATED_AT },
   };
@@ -88,6 +150,7 @@ describe("Admin Site 실제 API 관리", () => {
     vi.mocked(createAdminChallenge).mockReset().mockResolvedValue({ challengeId: "challenge-site", expiresAt: "2099-09-01T12:00:00+09:00" });
     vi.mocked(updatePortfolioContents).mockReset().mockResolvedValue({ items: [] });
     vi.mocked(createProfileEntry).mockReset().mockResolvedValue(siteData().profileEntries[0]);
+    vi.mocked(updateProfileEntry).mockReset().mockResolvedValue(siteData().profileEntries[0]);
     vi.mocked(createTechnology).mockReset().mockResolvedValue(siteData().technologyMaster[0]);
     vi.mocked(replacePortfolioTechnologies).mockReset().mockResolvedValue({ items: [] });
     vi.mocked(replaceResume).mockReset().mockResolvedValue({ fileName: "resume-new.pdf", updatedAt: UPDATED_AT });
@@ -95,32 +158,35 @@ describe("Admin Site 실제 API 관리", () => {
 
   afterEach(() => cleanup());
 
-  it("GET /admin/site 실제 DTO를 일곱 관리 영역에 매핑", async () => {
+  it("GET /admin/site 실제 DTO를 다섯 관리 영역과 16개 콘텐츠 Slot에 매핑", async () => {
     render(<SiteScreen />);
 
     expect(await screen.findByDisplayValue("김현우")).toBeInTheDocument();
-    expect(screen.getByText("COMMON/SITE_MARK")).toBeInTheDocument();
+    expect(siteData().portfolioContents).toHaveLength(16);
+    expect(screen.getByText("COMMON/NAME")).toBeInTheDocument();
     expect(screen.getByText("MAIN/HERO_STATEMENT")).toBeInTheDocument();
-    expect(screen.queryByText(/HERO_TITLE/)).not.toBeInTheDocument();
-    expect(screen.getAllByRole("tab")).toHaveLength(7);
-
-    fireEvent.click(screen.getByRole("tab", { name: "프로필·연락처" }));
     expect(screen.getByDisplayValue("문제에 맞는 기술 선택")).toBeInTheDocument();
     expect(screen.getByText("CONTACT/EMAIL")).toBeInTheDocument();
+    expect(screen.getAllByRole("textbox")).toHaveLength(16);
+    expect(screen.getAllByRole("tab")).toHaveLength(5);
+    expect(screen.queryByRole("tab", { name: "프로젝트" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "학력·경력·활동·수상·자격" }));
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
     expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
-    expect(screen.getByText("학력")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "학력" })).toBeInTheDocument();
+    const profileTable = screen.getByRole("table");
+    expect(within(profileTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
+      "항목", "기간", "순서", "상태", "작업",
+    ]);
+    expect(within(profileTable).queryByText("유형 / 기간")).not.toBeInTheDocument();
+    expect(within(profileTable).queryByText("대표")).not.toBeInTheDocument();
+    expect(within(profileTable).queryByText("강조")).not.toBeInTheDocument();
+    expect(within(profileTable).queryByText("일반")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "기술" }));
     expect(screen.getByText("DATABASE")).toBeInTheDocument();
     expect(screen.getByText("FRONTEND")).toBeInTheDocument();
     expect(screen.getByText("/icons/tech/postgresql.svg")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: "프로젝트" }));
-    expect(screen.getByText("KYvC")).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "KYvC 프로젝트 비공개 전환" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "상세 편집" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "외부 링크" }));
     expect(screen.getByText("https://github.com/example")).toBeInTheDocument();
@@ -128,6 +194,41 @@ describe("Admin Site 실제 API 관리", () => {
     fireEvent.click(screen.getByRole("tab", { name: "이력서" }));
     expect(screen.getByText("resume.pdf")).toBeInTheDocument();
     expect(screen.queryByText(/파일 크기/)).not.toBeInTheDocument();
+  });
+
+  it("단일 Site 조회 결과를 ALL과 5개 이력 유형으로 필터링하고 필터 상태에서 수정 가능", async () => {
+    render(<SiteScreen />);
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
+
+    const filterGroup = screen.getByRole("group", { name: "이력 유형" });
+    expect(within(filterGroup).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "전체", "학력", "경력", "활동", "수상", "자격·교육",
+    ]);
+    expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
+    expect(screen.getByText("플랫폼 개발")).toBeInTheDocument();
+
+    const cases = [
+      ["학력", "소프트웨어융합전공"],
+      ["경력", "플랫폼 개발"],
+      ["활동", "개발 커뮤니티 활동"],
+      ["수상", "프로젝트 우수상"],
+      ["자격·교육", "클라우드 교육 수료"],
+    ];
+    for (const [label, title] of cases) {
+      fireEvent.click(within(filterGroup).getByRole("button", { name: label }));
+      expect(screen.getByText(title)).toBeInTheDocument();
+      expect(screen.getAllByRole("row")).toHaveLength(2);
+    }
+
+    fireEvent.click(within(filterGroup).getByRole("button", { name: "전체" }));
+    expect(screen.getAllByRole("row")).toHaveLength(6);
+    fireEvent.click(within(filterGroup).getByRole("button", { name: "활동" }));
+    fireEvent.click(screen.getByRole("button", { name: "개발 커뮤니티 활동 작업" }));
+    fireEvent.click(screen.getByRole("button", { name: "수정" }));
+    expect(screen.getByRole("dialog", { name: "프로필 항목 수정" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("개발 커뮤니티 활동")).toBeInTheDocument();
+    expect(getAdminSite).toHaveBeenCalledTimes(1);
   });
 
   it("콘텐츠 변경만 ADMIN_ACTION PATCH로 보내고 성공 후 Site를 재조회", async () => {
@@ -154,16 +255,19 @@ describe("Admin Site 실제 API 관리", () => {
     expect(await screen.findByDisplayValue("김현우 수정")).toBeInTheDocument();
   });
 
-  it("Profile Editor가 EDUCATION을 포함하고 Create Challenge를 발급", async () => {
+  it("Profile Editor가 자격·교육과 enabled만 제공하고 featured 없이 Create Challenge를 실행", async () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");
-    fireEvent.click(screen.getByRole("tab", { name: "학력·경력·활동·수상·자격" }));
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
     fireEvent.click(screen.getByRole("button", { name: "항목 추가" }));
     const dialog = screen.getByRole("dialog");
 
     expect(within(dialog).getByRole("option", { name: "학력" })).toHaveValue("EDUCATION");
-    fireEvent.change(within(dialog).getByLabelText("유형"), { target: { value: "EDUCATION" } });
-    fireEvent.change(within(dialog).getByLabelText("제목"), { target: { value: "새 학력" } });
+    expect(within(dialog).getByRole("option", { name: "자격·교육" })).toHaveValue("CERTIFICATE");
+    expect(within(dialog).getByLabelText("노출 ON")).toBeChecked();
+    expect(within(dialog).queryByLabelText("대표/강조")).not.toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText("유형"), { target: { value: "CERTIFICATE" } });
+    fireEvent.change(within(dialog).getByLabelText("제목"), { target: { value: "새 자격·교육" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "저장" }));
 
     await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
@@ -171,6 +275,43 @@ describe("Admin Site 실제 API 관리", () => {
       targetType: "PROFILE_ENTRY",
       targetId: null,
     })));
+    submitOtp();
+    await waitFor(() => expect(createProfileEntry).toHaveBeenCalledWith({
+      entryType: "CERTIFICATE",
+      periodText: null,
+      title: "새 자격·교육",
+      organization: null,
+      role: null,
+      description: null,
+      achievement: null,
+      displayOrder: 0,
+      enabled: true,
+    }, { challengeId: "challenge-site", verificationCode: "654321" }));
+  });
+
+  it("Profile 노출 ON/OFF를 featured 없이 Update Challenge로 전달", async () => {
+    render(<SiteScreen />);
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
+    fireEvent.click(screen.getByRole("switch", { name: "소프트웨어융합전공 비노출 전환" }));
+
+    await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
+      operation: "PROFILE_ENTRY_UPDATE",
+      targetType: "PROFILE_ENTRY",
+      targetId: "15",
+    })));
+    submitOtp();
+    await waitFor(() => expect(updateProfileEntry).toHaveBeenCalledWith(15, {
+      entryType: "EDUCATION",
+      periodText: "2023.03 — 현재",
+      title: "소프트웨어융합전공",
+      organization: "성공회대학교",
+      role: null,
+      description: null,
+      achievement: "재학",
+      displayOrder: 1,
+      enabled: false,
+    }, { challengeId: "challenge-site", verificationCode: "654321" }));
   });
 
   it("Technology Editor가 6개 Category와 iconUrl만 사용", async () => {

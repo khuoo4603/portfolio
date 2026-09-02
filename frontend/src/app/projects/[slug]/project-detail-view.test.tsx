@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mapProjectDetail } from "@/features/portfolio/project-detail";
-import { mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
+import { PUBLIC_COPY, mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
 import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
 import {
   EMPTY_PROJECT_FIXTURE,
@@ -44,7 +44,7 @@ describe("동적 Project Detail View", () => {
     expect(screen.getByRole("link", { name: "김현우 포트폴리오 Home" })).toHaveTextContent("KIM HYUNWOO");
     expect(within(screen.getByRole("navigation", { name: "포트폴리오 주요 영역" }))
       .getByRole("link", { name: "프로젝트" })).toHaveAttribute("href", "/#projects");
-    expect(screen.getByRole("contentinfo")).toHaveTextContent("© Test Portfolio");
+    expect(screen.getByRole("contentinfo")).toHaveTextContent(PUBLIC_COPY.footer.copyright);
     const media = screen.getByRole("region", { name: "KYvC 프로젝트 미디어" });
     expect(media.querySelectorAll('[data-carousel-demo="true"]')).toHaveLength(5);
     expect(within(media).queryByRole("img")).not.toBeInTheDocument();

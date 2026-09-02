@@ -1,51 +1,22 @@
 -- 포트폴리오 고정 콘텐츠 초기값
 INSERT INTO portfolio_contents (category, content_code, content_value)
 VALUES
-    ('COMMON', 'SITE_MARK', 'KIM HYUNWOO'),
     ('COMMON', 'NAME', '김현우'),
     ('COMMON', 'ENGLISH_NAME', 'KIM HYUNWOO'),
     ('COMMON', 'POSITION', 'BACKEND / INFRA DEVELOPER'),
     ('COMMON', 'AFFILIATION', '성공회대학교 소프트웨어융합전공'),
-    ('COMMON', 'NAV_ABOUT', '소개'),
-    ('COMMON', 'NAV_TECH', '기술스택'),
-    ('COMMON', 'NAV_PROJECTS', '프로젝트'),
-    ('COMMON', 'NAV_EDUCATION', '학력 및 성과'),
-    ('MAIN', 'HERO_POSITION', 'BACKEND / INFRA DEVELOPER'),
     ('MAIN', 'HERO_STATEMENT', E'Backend 개발부터\n배포 / 운영까지 고려'),
     ('MAIN', 'HERO_DESCRIPTION', E'문제에 맞는 기술 선택\n서비스 설계 · 구현 · 실제 운영'),
-    ('MAIN', 'HERO_CUE', '소개로 이동 ↘'),
-    ('MAIN', 'ABOUT_SECTION_LABEL', 'ABOUT'),
-    ('MAIN', 'ABOUT_SECTION_TITLE', '소개'),
-    ('MAIN', 'TECH_SECTION_LABEL', 'TECH STACK'),
-    ('MAIN', 'TECH_SECTION_TITLE', '기술 스택'),
-    ('MAIN', 'PROJECTS_SECTION_LABEL', 'PROJECTS'),
-    ('MAIN', 'PROJECTS_SECTION_TITLE', '프로젝트'),
-    ('MAIN', 'PROJECT_DETAIL_CTA', '자세히 보기'),
-    ('MAIN', 'ACHIEVEMENTS_SECTION_LABEL', 'EDUCATION & ACHIEVEMENTS'),
-    ('MAIN', 'ACHIEVEMENTS_SECTION_TITLE', '학력 및 성과'),
-    ('MAIN', 'EDUCATION_GROUP_TITLE', '학력'),
-    ('MAIN', 'ACTIVITY_GROUP_TITLE', '주요 활동'),
-    ('MAIN', 'AWARD_GROUP_TITLE', '수상'),
     ('PROFILE', 'ABOUT_STATEMENT', E'많은 기술보다\n문제에 맞는\n기술 선택'),
-    ('PROFILE', 'ABOUT_POSITION', 'BACKEND / INFRA DEVELOPER'),
     ('PROFILE', 'ABOUT_DESCRIPTION_1', '성공회대학교에 재학 중인 김현우입니다. 경기경영고등학교 스마트콘텐츠과에서 웹과 게임 개발을 접한 뒤, 대회·동아리·외부 교육을 통해 개발 경험을 넓혀왔습니다.'),
     ('PROFILE', 'ABOUT_DESCRIPTION_2', '현재는 Spring Boot 기반 Backend 개발을 중심으로 Database 설계, Docker·Linux 실행 환경, CI/CD와 배포·운영까지 하나의 서비스 흐름으로 다룹니다. 새로운 기술의 수보다 문제와 서비스 규모에 맞는 구조를 선택하고, 실제로 운영 가능한 상태까지 완성하는 것을 중요하게 생각합니다.'),
-    ('PROFILE', 'DEVELOPMENT_VALUES_TITLE', '개발 철학'),
     ('PROFILE', 'DEVELOPMENT_VALUE_1_TITLE', '문서화의 가치'),
     ('PROFILE', 'DEVELOPMENT_VALUE_1_DESCRIPTION', '구현 결과만 남기지 않습니다. 설계와 선택의 이유를 기록해 시간이 지나도 구조와 의도를 다시 이해할 수 있도록 합니다.'),
     ('PROFILE', 'DEVELOPMENT_VALUE_2_TITLE', '덜어냄의 미학'),
     ('PROFILE', 'DEVELOPMENT_VALUE_2_DESCRIPTION', '기술과 기능을 더하는 것보다 필요한 것만 남기는 것을 중요하게 생각합니다. 불필요한 복잡성을 줄이고 명확하고 유지보수 가능한 구조를 선택합니다.'),
     ('PROFILE', 'DEVELOPMENT_VALUE_3_TITLE', '운영까지'),
     ('PROFILE', 'DEVELOPMENT_VALUE_3_DESCRIPTION', '구현과 배포에서 끝내지 않습니다. 로그, 모니터링, 백업과 장애 대응까지 고려해 실제로 지속 운영할 수 있는 상태를 완성의 기준으로 봅니다.'),
-    ('CONTACT', 'EMAIL', 'khuoo4603@gmail.com'),
-    ('FOOTER', 'FOOTER_NAME', '김현우'),
-    ('FOOTER', 'FOOTER_ROLE', 'BACKEND / INFRA DEVELOPER'),
-    ('FOOTER', 'RESUME_LABEL', 'RESUME'),
-    ('FOOTER', 'RESUME_VIEW_LABEL', '이력서 보기'),
-    ('FOOTER', 'RESUME_DOWNLOAD_LABEL', 'PDF 다운로드'),
-    ('FOOTER', 'CONTACT_LABEL', 'CONTACT'),
-    ('FOOTER', 'PORTFOLIO_LABEL', 'PORTFOLIO / 2026'),
-    ('FOOTER', 'COPYRIGHT', '© 2026 Kim Hyunwoo. All rights reserved.');
+    ('CONTACT', 'EMAIL', 'khuoo4603@gmail.com');
 
 -- 프로필 이력 초기값
 INSERT INTO profile_entries (
@@ -56,21 +27,20 @@ INSERT INTO profile_entries (
     role,
     description,
     achievement,
-    featured,
     display_order,
     enabled
 )
 VALUES
-    ('EDUCATION', '2023.03 — 현재', '소프트웨어융합전공', '성공회대학교', NULL, NULL, '재학', FALSE, 1, TRUE),
-    ('EDUCATION', '2020.03 — 2023.02', '스마트콘텐츠과', '경기경영고등학교', NULL, NULL, '졸업', FALSE, 2, TRUE),
-    ('ACTIVITY', '2026.04 — 현재', 'QED', '성공회대학교', NULL, '성공회대학교 보안동아리', NULL, TRUE, 1, TRUE),
-    ('ACTIVITY', '2023.03 — 2023.12', 'One Think IT''s', NULL, NULL, '특성화고 졸업자 네트워크', NULL, FALSE, 2, TRUE),
-    ('AWARD', '2026', '성공회대학교 소프트웨어경진대회', '성공회대학교', NULL, 'SKHUTRack', '1등', TRUE, 3, TRUE),
-    ('AWARD', '2026', 'KFIP 2026', NULL, NULL, 'KYvC', 'Toss 특별상', TRUE, 4, TRUE),
-    ('AWARD', '2023', '성공회대학교 IT경진대회', '성공회대학교', NULL, 'SKHURoad', '3등', FALSE, 5, TRUE),
-    ('CERTIFICATE', '2021', '현대오토에버 특성화 고교생 화이트해커 양성교육', '현대오토에버', NULL, NULL, '수료/입상', FALSE, 6, TRUE),
-    ('AWARD', '2021', 'SW·AI 교육 수기 공모전', NULL, NULL, NULL, '최우수상 · 과학기술정보통신부 장관상', FALSE, 7, TRUE),
-    ('AWARD', '2021', 'Hello New() World', NULL, NULL, 'NewLife', '대상', FALSE, 8, TRUE);
+    ('EDUCATION', '2023.03 — 현재', '소프트웨어융합전공', '성공회대학교', NULL, NULL, '재학', 1, TRUE),
+    ('EDUCATION', '2020.03 — 2023.02', '스마트콘텐츠과', '경기경영고등학교', NULL, NULL, '졸업', 2, TRUE),
+    ('ACTIVITY', '2026.04 — 현재', 'QED', '성공회대학교', NULL, '성공회대학교 보안동아리', NULL, 1, TRUE),
+    ('ACTIVITY', '2023.03 — 2023.12', 'One Think IT''s', NULL, NULL, '특성화고 졸업자 네트워크', NULL, 2, TRUE),
+    ('AWARD', '2026', '성공회대학교 소프트웨어경진대회', '성공회대학교', NULL, 'SKHUTRack', '1등', 3, TRUE),
+    ('AWARD', '2026', 'KFIP 2026', NULL, NULL, 'KYvC', 'Toss 특별상', 4, TRUE),
+    ('AWARD', '2023', '성공회대학교 IT경진대회', '성공회대학교', NULL, 'SKHURoad', '3등', 5, TRUE),
+    ('CERTIFICATE', '2021', '현대오토에버 특성화 고교생 화이트해커 양성교육', '현대오토에버', NULL, NULL, '수료/입상', 6, TRUE),
+    ('AWARD', '2021', 'SW·AI 교육 수기 공모전', NULL, NULL, NULL, '최우수상 · 과학기술정보통신부 장관상', 7, TRUE),
+    ('AWARD', '2021', 'Hello New() World', NULL, NULL, 'NewLife', '대상', 8, TRUE);
 
 -- 기술 스택 마스터 초기값
 INSERT INTO technology_master (name, category, icon_url, enabled)

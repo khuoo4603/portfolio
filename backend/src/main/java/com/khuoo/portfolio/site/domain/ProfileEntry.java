@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-// 학력·경력·활동·수상·자격 공개 항목
+// 학력·경력·활동·수상·자격·교육 공개 항목
 @Getter
 @Entity
 @Table(name = "profile_entries")
@@ -49,9 +49,6 @@ public class ProfileEntry {
     @Column
     private String achievement;
 
-    @Column(nullable = false)
-    private boolean featured;
-
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
@@ -72,7 +69,6 @@ public class ProfileEntry {
             String role,
             String description,
             String achievement,
-            boolean featured,
             int displayOrder,
             boolean enabled
     ) {
@@ -83,7 +79,6 @@ public class ProfileEntry {
         this.role = role;
         this.description = description;
         this.achievement = achievement;
-        this.featured = featured;
         this.displayOrder = displayOrder;
         this.enabled = enabled;
     }
@@ -97,7 +92,6 @@ public class ProfileEntry {
             String role,
             String description,
             String achievement,
-            boolean featured,
             int displayOrder,
             boolean enabled
     ) {
@@ -109,7 +103,6 @@ public class ProfileEntry {
                 role,
                 description,
                 achievement,
-                featured,
                 displayOrder,
                 enabled
         );
@@ -124,7 +117,6 @@ public class ProfileEntry {
             String newRole,
             String newDescription,
             String newAchievement,
-            boolean newFeatured,
             int newDisplayOrder,
             boolean newEnabled,
             OffsetDateTime changedAt
@@ -136,7 +128,6 @@ public class ProfileEntry {
                 || !Objects.equals(role, newRole)
                 || !Objects.equals(description, newDescription)
                 || !Objects.equals(achievement, newAchievement)
-                || featured != newFeatured
                 || displayOrder != newDisplayOrder
                 || enabled != newEnabled;
         if (!changed) {
@@ -150,7 +141,6 @@ public class ProfileEntry {
         role = newRole;
         description = newDescription;
         achievement = newAchievement;
-        featured = newFeatured;
         displayOrder = newDisplayOrder;
         enabled = newEnabled;
         updatedAt = changedAt;

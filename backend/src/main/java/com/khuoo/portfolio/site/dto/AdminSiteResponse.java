@@ -18,9 +18,6 @@ public record AdminSiteResponse(
         @Schema(description = "현재 메인 기술 구성")
         List<PortfolioTechnologyMappingResponse> portfolioTechnologies,
 
-        @Schema(description = "전체 프로젝트 관리 목록")
-        List<AdminProjectSummaryResponse> projects,
-
         @Schema(description = "비활성 포함 전체 외부 링크")
         List<AdminExternalLinkResponse> externalLinks,
 

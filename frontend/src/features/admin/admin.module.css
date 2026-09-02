@@ -1498,6 +1498,29 @@
   background: color-mix(in srgb, var(--admin-surface) 70%, transparent);
 }
 
+.contentGroup {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-20);
+  min-width: 0;
+}
+
+.contentGroup + .contentGroup {
+  padding-top: var(--space-24);
+  border-top: 1px solid var(--border-default);
+}
+
+.contentGroupHeading {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.contentGroupHeading p {
+  color: var(--text-secondary);
+}
+
 .wideField,
 .formActionRow {
   grid-column: 1 / -1;
@@ -2098,6 +2121,10 @@
     grid-template-columns: 1fr;
     gap: var(--space-20);
     padding: var(--space-16);
+  }
+
+  .contentGroup {
+    grid-template-columns: 1fr;
   }
 
   .editorForm {

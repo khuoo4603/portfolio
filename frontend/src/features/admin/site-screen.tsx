@@ -20,6 +20,7 @@ import type {
   PortfolioTechnology,
   ProfileEntry,
   ProfileEntryInput,
+  ProfileEntryType,
   SiteContent,
   SiteData,
   Technology,
@@ -54,11 +55,11 @@ import {
   formatFileSize,
 } from "./admin-ui";
 import { ExternalLinkEditor, ProfileEditor, TechnologyEditor } from "./site-editors";
-import ProjectManagement from "./project-management";
 import { useAdminAction } from "./use-admin-action";
 import styles from "./admin.module.css";
 
-type SiteTab = "common" | "profile" | "entries" | "technology" | "projects" | "links" | "resume";
+type SiteTab = "content" | "entries" | "technology" | "links" | "resume";
+type ProfileFilter = "ALL" | ProfileEntryType;
 
 type ContentDefinition = {
   category: PortfolioContentCategory;
@@ -67,76 +68,82 @@ type ContentDefinition = {
   multiline?: boolean;
 };
 
+type ContentSection = {
+  id: string;
+  title: string;
+  description?: string;
+  definitions: ContentDefinition[];
+};
+
 const TABS: Array<{ id: SiteTab; label: string }> = [
-  { id: "common", label: "메인·공통 콘텐츠" },
-  { id: "profile", label: "프로필·연락처" },
-  { id: "entries", label: "학력·경력·활동·수상·자격" },
+  { id: "content", label: "기본 콘텐츠" },
+  { id: "entries", label: "이력" },
   { id: "technology", label: "기술" },
-  { id: "projects", label: "프로젝트" },
   { id: "links", label: "외부 링크" },
   { id: "resume", label: "이력서" },
 ];
 
-const COMMON_CONTENTS: ContentDefinition[] = [
-  { category: "COMMON", contentCode: "SITE_MARK", label: "사이트 마크" },
-  { category: "COMMON", contentCode: "NAME", label: "이름" },
-  { category: "COMMON", contentCode: "ENGLISH_NAME", label: "영문 이름" },
-  { category: "COMMON", contentCode: "POSITION", label: "개발자 포지션" },
-  { category: "COMMON", contentCode: "AFFILIATION", label: "현재 소속" },
-  { category: "COMMON", contentCode: "NAV_ABOUT", label: "소개 메뉴" },
-  { category: "COMMON", contentCode: "NAV_TECH", label: "기술 메뉴" },
-  { category: "COMMON", contentCode: "NAV_PROJECTS", label: "프로젝트 메뉴" },
-  { category: "COMMON", contentCode: "NAV_EDUCATION", label: "학력 및 성과 메뉴" },
-  { category: "MAIN", contentCode: "HERO_POSITION", label: "Hero 직무" },
-  { category: "MAIN", contentCode: "HERO_STATEMENT", label: "Hero 핵심 문구", multiline: true },
-  { category: "MAIN", contentCode: "HERO_DESCRIPTION", label: "Hero 설명", multiline: true },
-  { category: "MAIN", contentCode: "HERO_CUE", label: "Hero 이동 Cue" },
-  { category: "MAIN", contentCode: "ABOUT_SECTION_LABEL", label: "소개 Section Label" },
-  { category: "MAIN", contentCode: "ABOUT_SECTION_TITLE", label: "소개 Section 제목" },
-  { category: "MAIN", contentCode: "TECH_SECTION_LABEL", label: "기술 Section Label" },
-  { category: "MAIN", contentCode: "TECH_SECTION_TITLE", label: "기술 Section 제목" },
-  { category: "MAIN", contentCode: "PROJECTS_SECTION_LABEL", label: "프로젝트 Section Label" },
-  { category: "MAIN", contentCode: "PROJECTS_SECTION_TITLE", label: "프로젝트 Section 제목" },
-  { category: "MAIN", contentCode: "PROJECT_DETAIL_CTA", label: "프로젝트 상세 CTA" },
-  { category: "MAIN", contentCode: "ACHIEVEMENTS_SECTION_LABEL", label: "학력·성과 Section Label" },
-  { category: "MAIN", contentCode: "ACHIEVEMENTS_SECTION_TITLE", label: "학력·성과 Section 제목" },
-  { category: "MAIN", contentCode: "EDUCATION_GROUP_TITLE", label: "학력 Group 제목" },
-  { category: "MAIN", contentCode: "ACTIVITY_GROUP_TITLE", label: "활동 Group 제목" },
-  { category: "MAIN", contentCode: "AWARD_GROUP_TITLE", label: "수상 Group 제목" },
-  { category: "FOOTER", contentCode: "FOOTER_NAME", label: "Footer 이름" },
-  { category: "FOOTER", contentCode: "FOOTER_ROLE", label: "Footer 역할" },
-  { category: "FOOTER", contentCode: "RESUME_LABEL", label: "Resume Label" },
-  { category: "FOOTER", contentCode: "RESUME_VIEW_LABEL", label: "Resume 보기 Label" },
-  { category: "FOOTER", contentCode: "RESUME_DOWNLOAD_LABEL", label: "Resume 다운로드 Label" },
-  { category: "FOOTER", contentCode: "CONTACT_LABEL", label: "Contact Label" },
-  { category: "FOOTER", contentCode: "PORTFOLIO_LABEL", label: "Portfolio Label" },
-  { category: "FOOTER", contentCode: "COPYRIGHT", label: "Copyright" },
+const PROFILE_FILTERS: Array<{ value: ProfileFilter; label: string }> = [
+  { value: "ALL", label: "전체" },
+  { value: "EDUCATION", label: "학력" },
+  { value: "EXPERIENCE", label: "경력" },
+  { value: "ACTIVITY", label: "활동" },
+  { value: "AWARD", label: "수상" },
+  { value: "CERTIFICATE", label: "자격·교육" },
 ];
 
-const PROFILE_CONTENTS: ContentDefinition[] = [
-  { category: "PROFILE", contentCode: "ABOUT_STATEMENT", label: "소개 Statement", multiline: true },
-  { category: "PROFILE", contentCode: "ABOUT_POSITION", label: "소개 Position" },
-  { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_1", label: "소개 설명 1", multiline: true },
-  { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_2", label: "소개 설명 2", multiline: true },
-  { category: "PROFILE", contentCode: "DEVELOPMENT_VALUES_TITLE", label: "개발 철학 제목" },
-  { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_1_TITLE", label: "개발 철학 1 제목" },
-  { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_1_DESCRIPTION", label: "개발 철학 1 설명", multiline: true },
-  { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_2_TITLE", label: "개발 철학 2 제목" },
-  { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_2_DESCRIPTION", label: "개발 철학 2 설명", multiline: true },
-  { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_3_TITLE", label: "개발 철학 3 제목" },
-  { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_3_DESCRIPTION", label: "개발 철학 3 설명", multiline: true },
-  { category: "CONTACT", contentCode: "EMAIL", label: "공개 이메일" },
+const CONTENT_SECTIONS: ContentSection[] = [
+  {
+    id: "identity",
+    title: "기본 정보",
+    definitions: [
+      { category: "COMMON", contentCode: "NAME", label: "이름" },
+      { category: "COMMON", contentCode: "ENGLISH_NAME", label: "영문 이름" },
+      { category: "COMMON", contentCode: "POSITION", label: "Position" },
+      { category: "COMMON", contentCode: "AFFILIATION", label: "현재 소속" },
+    ],
+  },
+  {
+    id: "hero",
+    title: "Hero",
+    description: "Position은 기본 정보의 COMMON/POSITION을 함께 사용합니다.",
+    definitions: [
+      { category: "MAIN", contentCode: "HERO_STATEMENT", label: "Statement", multiline: true },
+      { category: "MAIN", contentCode: "HERO_DESCRIPTION", label: "Description", multiline: true },
+    ],
+  },
+  {
+    id: "about",
+    title: "소개",
+    description: "소개 Position은 기본 정보의 COMMON/POSITION을 함께 사용합니다.",
+    definitions: [
+      { category: "PROFILE", contentCode: "ABOUT_STATEMENT", label: "About Statement", multiline: true },
+      { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_1", label: "Description 1", multiline: true },
+      { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_2", label: "Description 2", multiline: true },
+    ],
+  },
+  {
+    id: "values",
+    title: "개발 철학",
+    definitions: [
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_1_TITLE", label: "개발 철학 1 제목" },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_1_DESCRIPTION", label: "개발 철학 1 설명", multiline: true },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_2_TITLE", label: "개발 철학 2 제목" },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_2_DESCRIPTION", label: "개발 철학 2 설명", multiline: true },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_3_TITLE", label: "개발 철학 3 제목" },
+      { category: "PROFILE", contentCode: "DEVELOPMENT_VALUE_3_DESCRIPTION", label: "개발 철학 3 설명", multiline: true },
+    ],
+  },
+  {
+    id: "contact",
+    title: "연락처",
+    definitions: [
+      { category: "CONTACT", contentCode: "EMAIL", label: "Email" },
+    ],
+  },
 ];
 
-function entryTypeLabel(type: ProfileEntry["entryType"]) {
-  return {
-    EDUCATION: "학력",
-    EXPERIENCE: "경력",
-    ACTIVITY: "활동",
-    AWARD: "수상",
-    CERTIFICATE: "자격/교육",
-  }[type];
-}
+const CONTENT_DEFINITIONS = CONTENT_SECTIONS.flatMap((section) => section.definitions);
 
 function profileInput(item: ProfileEntry, override: Partial<ProfileEntryInput> = {}): ProfileEntryInput {
   return {
@@ -147,7 +154,6 @@ function profileInput(item: ProfileEntry, override: Partial<ProfileEntryInput> =
     role: item.role,
     description: item.description,
     achievement: item.achievement,
-    featured: item.featured,
     displayOrder: item.displayOrder,
     enabled: item.enabled,
     ...override,
@@ -175,28 +181,26 @@ function externalLinkInput(item: ExternalLink, override: Partial<ExternalLinkInp
 }
 
 function ContentPanel({
-  definitions,
   contents,
   title,
   description,
   busy,
   onSubmit,
 }: {
-  definitions: ContentDefinition[];
   contents: SiteContent[];
   title: string;
   description?: string;
   busy: boolean;
   onSubmit: (items: PortfolioContentInput[]) => void;
 }) {
-  const initialValues = Object.fromEntries(definitions.map((definition) => {
+  const initialValues = Object.fromEntries(CONTENT_DEFINITIONS.map((definition) => {
     const item = contents.find((content) => content.category === definition.category && content.contentCode === definition.contentCode);
     return [definition.contentCode, item?.contentValue ?? ""];
   }));
   const [values, setValues] = useState<Record<string, string>>(initialValues);
   const [error, setError] = useState("");
 
-  const changedItems = definitions.flatMap((definition) => {
+  const changedItems = CONTENT_DEFINITIONS.flatMap((definition) => {
     const current = contents.find((content) => content.category === definition.category && content.contentCode === definition.contentCode);
     const contentValue = values[definition.contentCode] ?? "";
     return current && current.contentValue !== contentValue
@@ -215,24 +219,32 @@ function ContentPanel({
   };
 
   return (
-    <section className={styles.contentEditor} aria-labelledby={`${definitions[0].contentCode}-title`}>
+    <section className={styles.contentEditor} aria-labelledby="basic-content-title">
       <div className={styles.sectionHeading}>
         <div>
-          <h2 id={`${definitions[0].contentCode}-title`} className="type-title">{title}</h2>
+          <h2 id="basic-content-title" className="type-title">{title}</h2>
           {description && <p className="type-body">{description}</p>}
         </div>
       </div>
       <form className={styles.contentForm} onSubmit={handleSubmit}>
-        {definitions.map((definition) => (
-          <label key={`${definition.category}-${definition.contentCode}`} className={definition.multiline ? `${styles.formField} ${styles.wideField}` : styles.formField}>
-            <span className="type-small">{definition.label}</span>
-            {definition.multiline ? (
-              <textarea className="type-body" rows={4} value={values[definition.contentCode]} onChange={(event) => setValues({ ...values, [definition.contentCode]: event.currentTarget.value })} />
-            ) : (
-              <input className="type-body" type={definition.contentCode === "EMAIL" ? "email" : "text"} value={values[definition.contentCode]} onChange={(event) => setValues({ ...values, [definition.contentCode]: event.currentTarget.value })} />
-            )}
-            <code>{definition.category}/{definition.contentCode}</code>
-          </label>
+        {CONTENT_SECTIONS.map((section) => (
+          <section className={styles.contentGroup} aria-labelledby={`content-${section.id}-title`} key={section.id}>
+            <div className={styles.contentGroupHeading}>
+              <h3 className="type-title" id={`content-${section.id}-title`}>{section.title}</h3>
+              {section.description ? <p className="type-small">{section.description}</p> : null}
+            </div>
+            {section.definitions.map((definition) => (
+              <label key={`${definition.category}-${definition.contentCode}`} className={definition.multiline ? `${styles.formField} ${styles.wideField}` : styles.formField}>
+                <span className="type-small">{definition.label}</span>
+                {definition.multiline ? (
+                  <textarea className="type-body" rows={4} value={values[definition.contentCode]} onChange={(event) => setValues({ ...values, [definition.contentCode]: event.currentTarget.value })} />
+                ) : (
+                  <input className="type-body" type={definition.contentCode === "EMAIL" ? "email" : "text"} value={values[definition.contentCode]} onChange={(event) => setValues({ ...values, [definition.contentCode]: event.currentTarget.value })} />
+                )}
+                <code>{definition.category}/{definition.contentCode}</code>
+              </label>
+            ))}
+          </section>
         ))}
         <div className={styles.formActionRow}>
           <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
@@ -248,7 +260,7 @@ export default function SiteScreen() {
   const [data, setData] = useState<SiteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<SiteTab>("common");
+  const [tab, setTab] = useState<SiteTab>("content");
   const [profileEditor, setProfileEditor] = useState<{ item?: ProfileEntry } | null>(null);
   const [technologyEditor, setTechnologyEditor] = useState<{ item?: Technology } | null>(null);
   const [linkEditor, setLinkEditor] = useState<{ item?: ExternalLink } | null>(null);
@@ -472,11 +484,9 @@ export default function SiteScreen() {
           </div>
 
           <div className={styles.siteTabPanel} role="tabpanel">
-            {tab === "common" && <ContentPanel definitions={COMMON_CONTENTS} contents={data.portfolioContents} title="메인·공통 콘텐츠" busy={adminAction.issuing} onSubmit={saveContents} />}
-            {tab === "profile" && <ContentPanel definitions={PROFILE_CONTENTS} contents={data.portfolioContents} title="프로필·연락처" description="소개, 개발 철학과 공개 이메일에 연결된 고정 Slot" busy={adminAction.issuing} onSubmit={saveContents} />}
+            {tab === "content" && <ContentPanel contents={data.portfolioContents} title="기본 콘텐츠" description="실제 사용자 콘텐츠 16개 Slot을 관리합니다." busy={adminAction.issuing} onSubmit={saveContents} />}
             {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} />}
             {tab === "technology" && <TechnologiesPanel items={data.technologyMaster} portfolioItems={data.portfolioTechnologies} draft={portfolioDraft} setDraft={setPortfolioDraft} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setTechnologyEditor({})} onEdit={(item) => setTechnologyEditor({ item })} onDelete={deleteTechnologyItem} onToggle={toggleTechnology} onSavePortfolio={savePortfolioTechnologies} />}
-            {tab === "projects" && <ProjectManagement projects={data.projects} technologyMaster={data.technologyMaster} onRefresh={() => loadSite(true)} />}
             {tab === "links" && <ExternalLinksPanel items={data.externalLinks} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} />}
             {tab === "resume" && <ResumePanel data={data} file={resumeFile} error={fileError} onSelect={selectResume} onSubmit={saveResume} />}
           </div>
@@ -492,17 +502,24 @@ export default function SiteScreen() {
 }
 
 function ProfileEntriesPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onDelete, onToggle }: { items: ProfileEntry[]; menuKey: string | null; setMenuKey: (key: string | null) => void; onCreate: () => void; onEdit: (item: ProfileEntry) => void; onDelete: (item: ProfileEntry) => void; onToggle: (item: ProfileEntry) => void }) {
+  const [filter, setFilter] = useState<ProfileFilter>("ALL");
+  const filteredItems = filter === "ALL" ? items : items.filter((item) => item.entryType === filter);
+
   return (
     <section className={styles.operationalSection} aria-labelledby="profile-entries-title">
-      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">학력·경력·활동·수상·자격</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</button></div>
+      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">학력·경력·활동·수상·자격·교육</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</button></div>
+      <div className={styles.linkFilters} role="group" aria-label="이력 유형">
+        {PROFILE_FILTERS.map((item) => (
+          <button key={item.value} className="type-body" type="button" aria-pressed={filter === item.value} onClick={() => setFilter(item.value)}>{item.label}</button>
+        ))}
+      </div>
       {items.length === 0 ? <EmptyState title="등록 항목 없음" description="등록된 프로필 반복 항목이 없습니다." /> : (
-        <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>항목</th><th>유형 / 기간</th><th>순서</th><th>대표</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
-          {items.map((item) => { const key = `profile-${item.id}`; return (
+        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>항목</th><th>기간</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
+          {filteredItems.map((item) => { const key = `profile-${item.id}`; return (
             <tr key={item.id}>
               <td data-label="항목"><div className={styles.tableIdentity}><strong>{item.title}</strong><span>{item.organization || item.role || item.description || "보조 정보 없음"}</span></div></td>
-              <td data-label="유형 / 기간"><strong>{entryTypeLabel(item.entryType)}</strong><span>{item.periodText || "-"}</span></td>
+              <td data-label="기간"><span>{item.periodText || "-"}</span></td>
               <td data-label="순서">{item.displayOrder}</td>
-              <td data-label="대표">{item.featured ? "강조" : "일반"}</td>
               <td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.title} ${item.enabled ? "비노출" : "노출"} 전환`} /></td>
               <td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.title} 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td>
             </tr>

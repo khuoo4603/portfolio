@@ -3,12 +3,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { PortfolioFooter } from "./portfolio-chrome";
 
 const content = {
-  FOOTER_NAME: "Fixture Name",
-  FOOTER_ROLE: "Fixture Role",
-  RESUME_LABEL: "RESUME",
-  RESUME_VIEW_LABEL: "이력서 보기",
-  RESUME_DOWNLOAD_LABEL: "PDF 다운로드",
-  CONTACT_LABEL: "CONTACT",
+  NAME: "Fixture Name",
+  POSITION: "Fixture Role",
   EMAIL: "fixture@example.com",
 };
 

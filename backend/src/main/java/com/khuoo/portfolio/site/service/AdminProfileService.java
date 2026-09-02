@@ -54,7 +54,6 @@ public class AdminProfileService {
                 request.role(),
                 request.description(),
                 request.achievement(),
-                request.featured() != null && request.featured(),
                 request.displayOrder() == null ? 0 : request.displayOrder(),
                 request.enabled() == null || request.enabled()
         );
@@ -79,7 +78,6 @@ public class AdminProfileService {
                 request.role(),
                 request.description(),
                 request.achievement(),
-                request.featured(),
                 request.displayOrder(),
                 request.enabled()
         );
@@ -104,9 +102,6 @@ public class AdminProfileService {
         String achievement = PatchValues.present(request.achievement())
                 ? PatchValues.nullableString(request.achievement(), -1)
                 : entry.getAchievement();
-        boolean featured = PatchValues.present(request.featured())
-                ? PatchValues.booleanValue(request.featured())
-                : entry.isFeatured();
         int displayOrder = PatchValues.present(request.displayOrder())
                 ? PatchValues.nonNegativeInt(request.displayOrder())
                 : entry.getDisplayOrder();
@@ -130,7 +125,6 @@ public class AdminProfileService {
                 role,
                 description,
                 achievement,
-                featured,
                 displayOrder,
                 enabled,
                 now()

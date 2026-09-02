@@ -92,44 +92,22 @@ public final class PortfolioEnums {
         COMMON,
         MAIN,
         PROFILE,
-        CONTACT,
-        FOOTER
+        CONTACT
     }
 
     // 포트폴리오 고정 콘텐츠 Slot 코드와 상위 영역
     public enum PortfolioContentCode {
-        SITE_MARK(PortfolioContentCategory.COMMON),
         NAME(PortfolioContentCategory.COMMON),
         ENGLISH_NAME(PortfolioContentCategory.COMMON),
         POSITION(PortfolioContentCategory.COMMON),
         AFFILIATION(PortfolioContentCategory.COMMON),
-        NAV_ABOUT(PortfolioContentCategory.COMMON),
-        NAV_TECH(PortfolioContentCategory.COMMON),
-        NAV_PROJECTS(PortfolioContentCategory.COMMON),
-        NAV_EDUCATION(PortfolioContentCategory.COMMON),
 
-        HERO_POSITION(PortfolioContentCategory.MAIN),
         HERO_STATEMENT(PortfolioContentCategory.MAIN),
         HERO_DESCRIPTION(PortfolioContentCategory.MAIN),
-        HERO_CUE(PortfolioContentCategory.MAIN),
-        ABOUT_SECTION_LABEL(PortfolioContentCategory.MAIN),
-        ABOUT_SECTION_TITLE(PortfolioContentCategory.MAIN),
-        TECH_SECTION_LABEL(PortfolioContentCategory.MAIN),
-        TECH_SECTION_TITLE(PortfolioContentCategory.MAIN),
-        PROJECTS_SECTION_LABEL(PortfolioContentCategory.MAIN),
-        PROJECTS_SECTION_TITLE(PortfolioContentCategory.MAIN),
-        PROJECT_DETAIL_CTA(PortfolioContentCategory.MAIN),
-        ACHIEVEMENTS_SECTION_LABEL(PortfolioContentCategory.MAIN),
-        ACHIEVEMENTS_SECTION_TITLE(PortfolioContentCategory.MAIN),
-        EDUCATION_GROUP_TITLE(PortfolioContentCategory.MAIN),
-        ACTIVITY_GROUP_TITLE(PortfolioContentCategory.MAIN),
-        AWARD_GROUP_TITLE(PortfolioContentCategory.MAIN),
 
         ABOUT_STATEMENT(PortfolioContentCategory.PROFILE),
-        ABOUT_POSITION(PortfolioContentCategory.PROFILE),
         ABOUT_DESCRIPTION_1(PortfolioContentCategory.PROFILE),
         ABOUT_DESCRIPTION_2(PortfolioContentCategory.PROFILE),
-        DEVELOPMENT_VALUES_TITLE(PortfolioContentCategory.PROFILE),
         DEVELOPMENT_VALUE_1_TITLE(PortfolioContentCategory.PROFILE),
         DEVELOPMENT_VALUE_1_DESCRIPTION(PortfolioContentCategory.PROFILE),
         DEVELOPMENT_VALUE_2_TITLE(PortfolioContentCategory.PROFILE),
@@ -137,16 +115,7 @@ public final class PortfolioEnums {
         DEVELOPMENT_VALUE_3_TITLE(PortfolioContentCategory.PROFILE),
         DEVELOPMENT_VALUE_3_DESCRIPTION(PortfolioContentCategory.PROFILE),
 
-        EMAIL(PortfolioContentCategory.CONTACT),
-
-        FOOTER_NAME(PortfolioContentCategory.FOOTER),
-        FOOTER_ROLE(PortfolioContentCategory.FOOTER),
-        RESUME_LABEL(PortfolioContentCategory.FOOTER),
-        RESUME_VIEW_LABEL(PortfolioContentCategory.FOOTER),
-        RESUME_DOWNLOAD_LABEL(PortfolioContentCategory.FOOTER),
-        CONTACT_LABEL(PortfolioContentCategory.FOOTER),
-        PORTFOLIO_LABEL(PortfolioContentCategory.FOOTER),
-        COPYRIGHT(PortfolioContentCategory.FOOTER);
+        EMAIL(PortfolioContentCategory.CONTACT);
 
         private final PortfolioContentCategory category;
 
