@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 import { formatApiError } from "@/lib/api/client";
 import type { ProjectDetail, Technology } from "./admin-types";
 import AdminActionDialog from "./admin-action-dialog";
+import ConfirmDialog from "./confirm-dialog";
 import { getAdminProject, projectActionBindings, saveProject } from "./admin-project-api";
 import { getAdminSite } from "./admin-site-api";
 import {
@@ -48,6 +49,7 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
   const [fileError, setFileError] = useState("");
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const requestSequence = useRef(0);
   const objectUrls = useRef(new Set<string>());
   const clientKeySequence = useRef(0);
@@ -113,7 +115,10 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
 
   // Dirty 상태의 Editor 이탈 최소 확인
   const back = () => {
-    if (dirty && !window.confirm("저장하지 않은 변경사항이 있습니다. 목록으로 이동할까요?")) return;
+    if (dirty) {
+      setLeaveConfirmOpen(true);
+      return;
+    }
     router.push("/admin/projects");
   };
 
@@ -281,6 +286,17 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
           <ProjectPreview draft={draft} technologyMaster={technologyMaster} />
         </div>
       </div>
+      <ConfirmDialog
+        open={leaveConfirmOpen}
+        title="변경사항 폐기"
+        description="저장하지 않은 변경사항이 있습니다. 목록으로 이동할까요?"
+        confirmLabel="계속 이동"
+        onCancel={() => setLeaveConfirmOpen(false)}
+        onConfirm={() => {
+          setLeaveConfirmOpen(false);
+          router.push("/admin/projects");
+        }}
+      />
       {adminAction.dialog && <AdminActionDialog {...adminAction.dialog} />}
     </div>
   );

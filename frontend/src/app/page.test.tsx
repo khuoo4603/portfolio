@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PUBLIC_COPY, mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
 import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
@@ -11,11 +11,17 @@ import {
   EAST_ASIA_GRID_WIDTH,
   EAST_ASIA_MAP_SIZE,
   EAST_ASIA_SOURCE_CROP,
+  EAST_ASIA_VIEWBOX,
   EAST_ASIA_ZOOM_SCALE,
   KOREA_ANCHOR,
+  MOBILE_KOREA_CROP,
+  MOBILE_KOREA_VIEWBOX,
+  TABLET_PORTRAIT_KOREA_VIEWBOX,
   WORLD_MAP_DOT_COUNT,
   WORLD_MAP_GRID_HEIGHT,
   WORLD_MAP_SIZE,
+  calculateEastAsiaFocusRatio,
+  formatMapViewBox,
   projectPoint,
 } from "./hero-world-map";
 import {
@@ -25,7 +31,10 @@ import {
   KOREA_ZOOM_DISTANCE_MULTIPLIER,
   KOREA_ZOOM_SCALE_MULTIPLIER,
   MAP_DOT_SCREEN_WIDTH,
+  MOBILE_KOREA_ZOOM_SCALE,
+  PORTRAIT_WORLD_CAMERA_PAN_START_SCALE,
   PROJECT_GALLERY_MOTIONS,
+  TABLET_PORTRAIT_KOREA_ZOOM_SCALE,
   WORLD_CAMERA_PAN_START_SCALE,
   WORLD_TO_FOCUS_SCALE,
   calculateFocusTransition,
@@ -37,6 +46,7 @@ import {
   calculateHeroSceneState,
   calculateHeroScrollMetrics,
   calculateMapZoomState,
+  calculatePortraitWorldOffsetX,
   calculateVirtualZoomScale,
   dampGalleryValue,
 } from "./hero-system-card";
@@ -101,22 +111,18 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".topology-map-dots")).toBeInTheDocument();
     expect(document.querySelectorAll(".topology-map-zoom")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-svg")).toHaveLength(1);
-    expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(1);
+    expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(0);
     expect(document.querySelectorAll(".topology-narrative-world-map-zoom")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-focus-map-svg")).toHaveLength(1);
-    expect(document.querySelectorAll(".topology-focus-map-dots")).toHaveLength(1);
+    expect(document.querySelectorAll(".topology-focus-map-dots")).toHaveLength(0);
+    expect(document.querySelector(".topology-focus-map-svg")).toHaveAttribute(
+      "viewBox",
+      formatMapViewBox(EAST_ASIA_VIEWBOX),
+    );
     expect(document.querySelectorAll(".topology-focus-map-zoom")).toHaveLength(1);
     expect(document.querySelector(".topology-map-dots")).toHaveAttribute(
       "href",
       "/maps/world-map-dots.svg#world-map-dots",
-    );
-    expect(document.querySelector(".topology-narrative-world-map-dots")).toHaveAttribute(
-      "href",
-      "/maps/world-map-dots.svg#world-map-dots",
-    );
-    expect(document.querySelector(".topology-focus-map-dots")).toHaveAttribute(
-      "href",
-      "/maps/east-asia-map-dots.svg#east-asia-map-dots",
     );
     const koreaAnchor = screen.getByTestId("korea-anchor");
     const koreaMarker = screen.getByTestId("korea-marker");
@@ -133,6 +139,35 @@ describe("포트폴리오 메인", () => {
     expect(within(navigation).getByRole("link", { name: "기술스택" })).toHaveAttribute("href", "#tech");
     expect(within(navigation).getByRole("link", { name: "프로젝트" })).toHaveAttribute("href", "#projects");
     expect(within(navigation).getByRole("link", { name: "학력 및 성과" })).toHaveAttribute("href", "#education");
+  });
+
+  it("Browser Idle 이후 후반 지도 Geometry를 기존 Asset과 Dot 수로 활성화", async () => {
+    const idleCallbacks: IdleRequestCallback[] = [];
+    vi.stubGlobal("requestIdleCallback", vi.fn((callback: IdleRequestCallback) => {
+      idleCallbacks.push(callback);
+      return idleCallbacks.length;
+    }));
+    vi.stubGlobal("cancelIdleCallback", vi.fn());
+    render(<Home />);
+
+    expect(document.querySelector(".topology-narrative-world-map-dots")).not.toBeInTheDocument();
+    expect(document.querySelector(".topology-focus-map-dots")).not.toBeInTheDocument();
+
+    await act(async () => {
+      idleCallbacks.forEach((callback) => callback({
+        didTimeout: false,
+        timeRemaining: () => 50,
+      }));
+    });
+
+    expect(document.querySelector(".topology-narrative-world-map-dots"))
+      .toHaveAttribute("href", "/maps/world-map-dots.svg#world-map-dots");
+    expect(document.querySelector(".topology-narrative-world-map-dots"))
+      .toHaveAttribute("data-dot-count", String(WORLD_MAP_DOT_COUNT));
+    expect(document.querySelector(".topology-focus-map-dots"))
+      .toHaveAttribute("href", "/maps/east-asia-map-dots.svg#east-asia-map-dots");
+    expect(document.querySelector(".topology-focus-map-dots"))
+      .toHaveAttribute("data-dot-count", String(EAST_ASIA_DOT_COUNT));
   });
 
   it("대한민국 Server와 지정된 세 Resource만 표시", () => {
@@ -212,6 +247,10 @@ describe("포트폴리오 메인", () => {
     const galleryPlane = document.querySelector<HTMLElement>(".topology-project-gallery-plane");
     const galleryFrames = galleryPlane?.querySelectorAll<HTMLElement>(".topology-project-gallery-frame");
     const serviceGraph = document.querySelector<HTMLElement>(".service-graph");
+
+    expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(0);
+    expect(document.querySelectorAll(".topology-focus-map-dots")).toHaveLength(0);
+    fireEvent.scroll(window);
 
     expect(WORLD_MAP_GRID_HEIGHT).toBe(280);
     expect(WORLD_MAP_DOT_COUNT).toBeGreaterThan(50000);
@@ -340,6 +379,88 @@ describe("포트폴리오 메인", () => {
     expect(finalState.virtualZoomScale).toBeCloseTo(FINAL_VIRTUAL_ZOOM_SCALE);
     expect(finalState.focusMapScale).toBe(EAST_ASIA_ZOOM_SCALE);
     expect(finalState.focusMapDotWidth).toBeCloseTo(MAP_DOT_SCREEN_WIDTH.focusFinal);
+  });
+
+  it("Mobile Korea Camera를 Portrait Crop과 중앙 Focus 비율로 계산", () => {
+    const focusRatio = calculateEastAsiaFocusRatio(MOBILE_KOREA_VIEWBOX);
+    const fullMapRatio = calculateEastAsiaFocusRatio(EAST_ASIA_VIEWBOX);
+    const mobileState = calculateMapZoomState(1, "mobilePortrait");
+    const earlyZoomProgress = (1.1 - 1) / (FINAL_VIRTUAL_ZOOM_SCALE - 1);
+
+    expect(MOBILE_KOREA_CROP).toEqual({
+      lat: { min: 16, max: 59 },
+      lng: { min: 116, max: 138 },
+    });
+    expect(MOBILE_KOREA_VIEWBOX.height).toBeGreaterThan(MOBILE_KOREA_VIEWBOX.width);
+    expect(MOBILE_KOREA_VIEWBOX.x).toBeGreaterThanOrEqual(0);
+    expect(MOBILE_KOREA_VIEWBOX.y).toBeGreaterThanOrEqual(0);
+    expect(MOBILE_KOREA_VIEWBOX.x + MOBILE_KOREA_VIEWBOX.width).toBeLessThanOrEqual(
+      EAST_ASIA_MAP_SIZE.width,
+    );
+    expect(MOBILE_KOREA_VIEWBOX.y + MOBILE_KOREA_VIEWBOX.height).toBeLessThanOrEqual(
+      EAST_ASIA_MAP_SIZE.height,
+    );
+    expect(focusRatio.x).toBeCloseTo(0.5, 2);
+    expect(focusRatio.y).toBeCloseTo(0.5, 2);
+    expect(fullMapRatio.x).toBeCloseTo(EAST_ASIA_FOCUS_POINT.x / EAST_ASIA_MAP_SIZE.width);
+    expect(fullMapRatio.y).toBeCloseTo(EAST_ASIA_FOCUS_POINT.y / EAST_ASIA_MAP_SIZE.height);
+    expect(MOBILE_KOREA_ZOOM_SCALE).toBeCloseTo(1.08 * 1.5);
+    expect(mobileState.focusMapScale).toBe(MOBILE_KOREA_ZOOM_SCALE);
+    expect(calculateMapZoomState(earlyZoomProgress).cameraPanProgress).toBe(0);
+    expect(
+      calculateMapZoomState(earlyZoomProgress, "mobilePortrait").cameraPanProgress,
+    ).toBeGreaterThan(0);
+    expect(PORTRAIT_WORLD_CAMERA_PAN_START_SCALE).toBe(1.08);
+  });
+
+  it("Portrait World Map의 Korea Anchor를 화면 중앙축으로 이동", () => {
+    const mapWidth = 1600;
+    const koreaRatioX = projectPoint(KOREA_ANCHOR).x / WORLD_MAP_SIZE.width;
+    const offsetX = calculatePortraitWorldOffsetX(mapWidth, koreaRatioX);
+
+    expect(koreaRatioX).toBeCloseTo(0.8527, 3);
+    expect(offsetX).toBeCloseTo(-564.32, 0);
+
+    const portraitStages = [
+      { height: 780, width: 390 },
+      { height: 900, width: 768 },
+    ];
+    const responsiveOffsets = portraitStages.map((stage) => {
+      const responsiveMapWidth = stage.height * 2.1;
+      const responsiveOffsetX = calculatePortraitWorldOffsetX(
+        responsiveMapWidth,
+        koreaRatioX,
+      );
+      const mapLeft = stage.width * 0.5 + responsiveOffsetX - responsiveMapWidth * 0.5;
+      const koreaTargetX = mapLeft + responsiveMapWidth * koreaRatioX;
+
+      expect(koreaTargetX / stage.width).toBeCloseTo(0.5);
+      expect(koreaTargetX / stage.width).toBeGreaterThanOrEqual(0.45);
+      expect(koreaTargetX / stage.width).toBeLessThanOrEqual(0.55);
+
+      return responsiveOffsetX;
+    });
+
+    expect(responsiveOffsets[0]).not.toBe(responsiveOffsets[1]);
+  });
+
+  it("Tablet Portrait Camera의 최종 가시 폭을 기존보다 1.5배 확대", () => {
+    const focusRatio = calculateEastAsiaFocusRatio(TABLET_PORTRAIT_KOREA_VIEWBOX);
+    const currentVisibleWidth = EAST_ASIA_MAP_SIZE.width / EAST_ASIA_ZOOM_SCALE;
+    const portraitVisibleWidth = (
+      TABLET_PORTRAIT_KOREA_VIEWBOX.width / TABLET_PORTRAIT_KOREA_ZOOM_SCALE
+    );
+    const tabletPortraitState = calculateMapZoomState(1, "tabletPortrait");
+
+    expect(TABLET_PORTRAIT_KOREA_VIEWBOX.height).toBe(EAST_ASIA_MAP_SIZE.height);
+    expect(TABLET_PORTRAIT_KOREA_VIEWBOX.width).toBeCloseTo(720);
+    expect(focusRatio.x).toBeCloseTo(0.5);
+    expect(focusRatio.y).toBeGreaterThan(0);
+    expect(focusRatio.y).toBeLessThan(1);
+    expect(currentVisibleWidth / portraitVisibleWidth).toBeCloseTo(1.5);
+    expect(tabletPortraitState.focusMapScale).toBeCloseTo(
+      TABLET_PORTRAIT_KOREA_ZOOM_SCALE,
+    );
   });
 
   it("Project Gallery를 Seoul Origin 기반 이미지별 Side 경로로 계산", () => {
@@ -483,13 +604,15 @@ describe("포트폴리오 메인", () => {
 
     const desktopSpawn = calculateGalleryFrameState(0.295, 1, "desktop");
     const tabletSpawn = calculateGalleryFrameState(0.295, 1, "tablet");
+    const tabletPortraitSpawn = calculateGalleryFrameState(0.295, 1, "tabletPortrait");
     const mobileSpawn = calculateGalleryFrameState(0.295, 1, "mobile");
     const frontProgress = 0.295 + (0.725 - 0.295) * 0.82;
     const desktopFront = calculateGalleryFrameState(frontProgress, 1, "desktop");
     const tabletFront = calculateGalleryFrameState(frontProgress, 1, "tablet");
+    const tabletPortraitFront = calculateGalleryFrameState(frontProgress, 1, "tabletPortrait");
     const mobileFront = calculateGalleryFrameState(frontProgress, 1, "mobile");
     const positionFor = (
-      viewport: "desktop" | "tablet" | "mobile",
+      viewport: "desktop" | "tablet" | "tabletPortrait" | "mobile",
       state: ReturnType<typeof calculateGalleryFrameState>,
     ) => calculateGalleryFramePosition({
       bounds: { height: 1800, width: 3000 },
@@ -501,16 +624,21 @@ describe("포트폴리오 메인", () => {
     });
     const desktopPosition = positionFor("desktop", desktopFront);
     const tabletPosition = positionFor("tablet", tabletFront);
+    const tabletPortraitPosition = positionFor("tabletPortrait", tabletPortraitFront);
     const mobilePosition = positionFor("mobile", mobileFront);
 
     expect(tabletSpawn.z).toBeCloseTo(desktopSpawn.z * 0.88);
+    expect(tabletPortraitSpawn.z).toBeCloseTo(desktopSpawn.z);
     expect(mobileSpawn.z).toBeCloseTo(desktopSpawn.z * 0.72);
     expect(tabletSpawn.blur).toBe(14);
-    expect(mobileSpawn.blur).toBe(9);
+    expect(tabletPortraitSpawn.blur).toBe(14);
+    expect(mobileSpawn.blur).toBe(5);
     expect(tabletPosition.x).toBeCloseTo(desktopPosition.x * 0.72);
     expect(tabletPosition.y).toBeCloseTo(desktopPosition.y * 0.75);
-    expect(mobilePosition.x).toBeCloseTo(desktopPosition.x * 0.42);
-    expect(mobilePosition.y).toBeCloseTo(desktopPosition.y * 0.65);
+    expect(tabletPortraitPosition.x).toBeCloseTo(desktopPosition.x);
+    expect(tabletPortraitPosition.y).toBeCloseTo(desktopPosition.y);
+    expect(mobilePosition.x).toBeCloseTo(desktopPosition.x * 0.45);
+    expect(mobilePosition.y).toBeCloseTo(desktopPosition.y * 0.63);
     expect(mobilePosition.x).not.toBe(0);
     expect(mobilePosition.y).not.toBe(0);
   });
@@ -561,7 +689,8 @@ describe("포트폴리오 메인", () => {
     const responsiveBounds = [
       { perspective: 1400, safeMargin: 24, viewport: "desktop" as const },
       { perspective: 1200, safeMargin: 20, viewport: "tablet" as const },
-      { perspective: 1000, safeMargin: 16, viewport: "mobile" as const },
+      { perspective: 1200, safeMargin: 20, viewport: "tabletPortrait" as const },
+      { perspective: 900, safeMargin: 16, viewport: "mobile" as const },
     ];
 
     responsiveBounds.forEach(({ perspective, safeMargin, viewport }) => {
@@ -712,6 +841,27 @@ describe("포트폴리오 메인", () => {
     expect(metrics.sceneExitStart).toBeLessThan(metrics.sceneExitEnd);
   });
 
+  it("Portrait에서는 Center와 Zoom을 겹치며 초기 대기 구간을 제거", () => {
+    const metrics = calculateHeroScrollMetrics(1000, "portrait");
+
+    expect(metrics.topologyHoldEnd).toBe(15);
+    expect(metrics.topologyExitStart).toBe(0);
+    expect(metrics.topologyExitEnd).toBe(80);
+    expect(metrics.mapCenterStart).toBe(10);
+    expect(metrics.mapCenterEnd).toBe(100);
+    expect(metrics.fullMapHoldStart).toBe(100);
+    expect(metrics.fullMapHoldEnd).toBe(100);
+    expect(metrics.zoomStart).toBe(30);
+    expect(metrics.zoomDistance).toBe(960);
+    expect(metrics.zoomEnd).toBe(990);
+    expect(metrics.sceneExitStart).toBe(1110);
+    expect(metrics.sceneExitEnd).toBe(1230);
+    expect(metrics.totalDistance).toBe(1430);
+    expect(metrics.zoomStart).toBeLessThan(metrics.mapCenterEnd);
+    expect(metrics.zoomStart / 360).toBeLessThan(0.1);
+    expect(calculateHeroSceneState(31, metrics).zoomProgress).toBeGreaterThan(0);
+  });
+
   it("소개 Anchor를 색이 100%가 되는 Cross-fade 종료 시점으로 배치", async () => {
     render(<Home />);
 
@@ -798,9 +948,9 @@ describe("포트폴리오 메인", () => {
     });
   });
 
-  it("Mobile에서도 세 Resource와 분리된 Line, Flow SVG의 전용 경로를 유지", () => {
+  it("Mobile에서도 세 Resource와 Line, Flow를 Landscape 좌표계로 유지", () => {
     vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
-      matches: query.includes("max-width: 767px"),
+      matches: query.includes("max-width: 767px") || query.includes("max-width: 899px"),
       media: query,
       onchange: null,
       addEventListener: vi.fn(),
@@ -816,18 +966,43 @@ describe("포트폴리오 메인", () => {
     const flow = topology.querySelector<SVGSVGElement>(".topology-flow-overlay");
     const paths = topology.querySelectorAll<SVGPathElement>(".topology-connection-line");
     const guides = topology.querySelectorAll<SVGPathElement>(".topology-flow-guide");
+    const focusMap = document.querySelector<SVGSVGElement>(".topology-focus-map-svg");
 
     expect(topology.querySelectorAll(".topology-resource")).toHaveLength(3);
-    expect(connections).toHaveAttribute("viewBox", "0 0 800 1120");
-    expect(flow).toHaveAttribute("viewBox", "0 0 800 1120");
+    expect(connections).toHaveAttribute("viewBox", "0 0 800 500");
+    expect(flow).toHaveAttribute("viewBox", "0 0 800 500");
     expect(paths).toHaveLength(3);
     expect(guides).toHaveLength(3);
-    expect(paths[0]).toHaveAttribute("d", expect.stringContaining("V408H208V470"));
-    expect(paths[1]).toHaveAttribute("d", expect.stringContaining("V694H616"));
-    expect(paths[2]).toHaveAttribute("d", expect.stringContaining("V984H344"));
+    expect(paths[0]).toHaveAttribute("d", expect.stringContaining("H410V110H288"));
+    expect(paths[1]).toHaveAttribute("d", expect.stringContaining("V250H640V310"));
+    expect(paths[2]).toHaveAttribute("d", expect.stringContaining("H360V430H248"));
     expect(guides[0]).toHaveAttribute("d", paths[0].getAttribute("d"));
     expect(guides[1]).toHaveAttribute("d", paths[1].getAttribute("d"));
     expect(guides[2]).toHaveAttribute("d", paths[2].getAttribute("d"));
+    expect(focusMap).toHaveAttribute("viewBox", formatMapViewBox(MOBILE_KOREA_VIEWBOX));
+    expect(focusMap).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
+  });
+
+  it("Tablet Portrait에서 전용 Camera ViewBox와 세로 채움 방식을 사용", () => {
+    vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+      matches: query.includes("max-width: 899px") && query.includes("orientation: portrait"),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })));
+    render(<Home />);
+
+    const focusMap = document.querySelector<SVGSVGElement>(".topology-focus-map-svg");
+
+    expect(focusMap).toHaveAttribute(
+      "viewBox",
+      formatMapViewBox(TABLET_PORTRAIT_KOREA_VIEWBOX),
+    );
+    expect(focusMap).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
   });
 
   it("지정된 Main 흐름과 숫자 없는 Section 구성을 표시", () => {
@@ -906,6 +1081,19 @@ describe("포트폴리오 메인", () => {
     expect(within(techSection).queryByText("서비스 로직 구현과 관계형 데이터 처리의 기본 언어")).not.toBeInTheDocument();
     expect(within(techSection).queryByText(/Source 변경부터 Build, Image 생성과 배포/)).not.toBeInTheDocument();
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it("기술 아이콘 URL 누락 시 중립 아이콘 상태를 표시", () => {
+    const response = {
+      ...PUBLIC_PORTFOLIO_FIXTURE,
+      portfolioTechnologies: PUBLIC_PORTFOLIO_FIXTURE.portfolioTechnologies.map((technology, index) => (
+        index === 0 ? { ...technology, iconUrl: null } : technology
+      )),
+    };
+
+    render(<HomeView model={mapPublicPortfolio(response)} />);
+
+    expect(screen.getByRole("img", { name: "Java 아이콘 없음" })).toHaveClass("technology-icon-fallback");
   });
 
   it("Project Identity와 설명, Metadata, Detail CTA를 역할별로 표시", () => {
@@ -991,8 +1179,8 @@ describe("포트폴리오 메인", () => {
 
     const kyvcImageSrc = within(projectsSection).getByRole("img", { name: "KYvC 프로젝트 대표 화면" }).getAttribute("src") ?? "";
     const shkuTrackImageSrc = within(projectsSection).getByRole("img", { name: "SHKUTrack 프로젝트 대표 화면" }).getAttribute("src") ?? "";
-    expect(decodeURIComponent(kyvcImageSrc)).toContain("/images/profile/project-intro-kyvc.webp");
-    expect(decodeURIComponent(shkuTrackImageSrc)).toContain("/images/profile/project-intro-skhutrack.webp");
+    expect(decodeURIComponent(kyvcImageSrc)).toContain("/api/v1/public/media/projects/1/thumbnail");
+    expect(decodeURIComponent(shkuTrackImageSrc)).toContain("/api/v1/public/media/projects/2/thumbnail");
     const shkuLoadProject = projectsSection.querySelector<HTMLElement>("#project-shkuload")!;
     expect(shkuLoadProject.querySelector("img")).not.toBeInTheDocument();
     expect(shkuLoadProject.querySelector(".project-thumbnail-placeholder")).toBeInTheDocument();
@@ -1004,6 +1192,16 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".project-visual")).not.toBeInTheDocument();
     expect(document.querySelector(".kyvc-structure")).not.toBeInTheDocument();
     expect(document.querySelector(".shkutrack-structure")).not.toBeInTheDocument();
+  });
+
+  it("Project 대표 이미지 로딩 실패 시 기존 Placeholder로 전환", () => {
+    render(<Home />);
+
+    const project = document.querySelector<HTMLElement>("#project-kyvc")!;
+    fireEvent.error(within(project).getByRole("img", { name: "KYvC 프로젝트 대표 화면" }));
+
+    expect(within(project).queryByRole("img", { name: "KYvC 프로젝트 대표 화면" })).not.toBeInTheDocument();
+    expect(project.querySelector(".project-thumbnail-placeholder")).toBeInTheDocument();
   });
 
   it("Viewport 중심에 가까운 Project를 Timeline 현재 항목으로 표시", async () => {
@@ -1085,9 +1283,17 @@ describe("포트폴리오 메인", () => {
     expect(screen.getByText("현대오토에버 특성화 고교생 화이트해커 양성교육")).toBeInTheDocument();
     expect(screen.getByText("수료/입상")).toBeInTheDocument();
     expect(screen.getByText("성공회대학교 소프트웨어경진대회")).toBeInTheDocument();
-    expect(Array.from(document.querySelectorAll(".education-info-group > h3")).map((heading) => heading.textContent)).toEqual([
+    const groupHeadings = Array.from(document.querySelectorAll(".education-info-group > h3"));
+    expect(groupHeadings.map((heading) => heading.textContent)).toEqual([
       "학력", "주요 활동", "수상", "자격·교육",
     ]);
+    groupHeadings.forEach((heading) => expect(heading).toHaveClass("type-title"));
+    const itemTitles = Array.from(document.querySelectorAll(".education-info-title"));
+    expect(itemTitles.length).toBeGreaterThan(0);
+    itemTitles.forEach((title) => {
+      expect(title).toHaveClass("type-body-lg");
+      expect(title).not.toHaveClass("type-title");
+    });
     const awardRegion = screen.getByRole("region", { name: "수상" });
     const awardRows = Array.from(awardRegion.querySelectorAll(".award-row"));
     expect(awardRows[0]).toHaveTextContent("성공회대학교 소프트웨어경진대회SKHUTRack1등");
@@ -1461,7 +1667,7 @@ describe("포트폴리오 메인", () => {
     );
     expect(document.querySelector(".topology-focus-map-zoom")).toHaveAttribute(
       "transform",
-      expect.stringContaining(`scale(${EAST_ASIA_ZOOM_SCALE})`),
+      expect.stringContaining(`scale(${MOBILE_KOREA_ZOOM_SCALE})`),
     );
     expect(document.querySelector<HTMLElement>(".about-section")).toHaveStyle({
       "--about-opacity": "1",

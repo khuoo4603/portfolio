@@ -1,5 +1,6 @@
 "use client";
 
+import { LoaderCircle } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { SiteHeader, type HeaderNavigationItem } from "@/app/portfolio-chrome";
@@ -60,6 +61,16 @@ function ProfileDialog({
       title="Profile"
       description="현재 계정 정보"
       onClose={onClose}
+      footer={(
+        <>
+          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onLogout}>
+            로그아웃
+          </button>
+          <button className={`${styles.primaryButton} type-body`} type="button" onClick={onPasswordChange}>
+            비밀번호 변경
+          </button>
+        </>
+      )}
     >
       <dl className={styles.profileDetails}>
         <div>
@@ -74,14 +85,6 @@ function ProfileDialog({
         </div>
       </dl>
       <p className={`${styles.inlineError} type-small`} role="alert" aria-live="polite">{error}</p>
-      <div className={styles.profileActions}>
-        <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onLogout}>
-          로그아웃
-        </button>
-        <button className={`${styles.primaryButton} type-body`} type="button" onClick={onPasswordChange}>
-          비밀번호 변경
-        </button>
-      </div>
     </DialogFrame>
   );
 }
@@ -108,6 +111,11 @@ export function PasswordChangeDialog({
   const expiresIn = useCountdown(challenge?.expiresAt ?? null);
   const resendIn = useCountdown(resendAvailableAt);
   const formInProgress = Boolean(code || newPassword || confirmPassword || challengeLoading || submitting);
+  const phase = challengeLoading ? "SENDING" : submitting ? "VERIFYING" : error ? "ERROR" : "READY";
+  const inputDisabled = challengeLoading || submitting || !challenge;
+  const challengeError = challenge && expiresIn === 0 && !error
+    ? "인증번호가 만료되었습니다. 새 인증번호를 요청해 주세요."
+    : error;
 
   useEffect(() => {
     let active = true;
@@ -131,7 +139,7 @@ export function PasswordChangeDialog({
 
   // 60초 제한 후 기존 Password Challenge Endpoint 재호출
   const handleResend = async () => {
-    if (resendIn > 0 || challengeLoading) {
+    if (resendIn > 0 || challengeLoading || submitting) {
       return;
     }
 
@@ -152,6 +160,9 @@ export function PasswordChangeDialog({
   // 비밀번호 정책과 PASSWORD_CHANGE 인증번호 기반 실제 변경 요청
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (challengeLoading || submitting) {
+      return;
+    }
     setError("");
 
     if (!challenge) {
@@ -202,21 +213,53 @@ export function PasswordChangeDialog({
       onClose={onClose}
       closeOnBackdrop={!formInProgress}
       closeOnEscape={!formInProgress}
+      footer={(
+        <>
+          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose} disabled={submitting}>
+            취소
+          </button>
+          <button className={`${styles.primaryButton} type-body`} type="submit" form="tools-password-change-form" disabled={inputDisabled}>
+            <span>{submitting ? "변경 중" : "비밀번호 변경"}</span>
+            {submitting && <LoaderCircle className={styles.spinIcon} aria-hidden="true" />}
+          </button>
+        </>
+      )}
     >
-      <form className={styles.passwordForm} onSubmit={(event) => void handleSubmit(event)} noValidate>
+      <form
+        id="tools-password-change-form"
+        className={styles.passwordForm}
+        data-password-phase={phase}
+        aria-busy={challengeLoading || submitting}
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+      >
         <div className={styles.readOnlyEmail}>
           <span className="type-small">인증번호 전송 이메일</span>
           <strong className="type-body">{email}</strong>
         </div>
 
-        <OtpInput value={code} onChange={setCode} autoFocus label="인증번호" />
+        {challengeLoading && (
+          <div className={styles.passwordChallengeState} role="status" aria-live="polite">
+            <LoaderCircle className={styles.spinIcon} aria-hidden="true" />
+            <span className="type-body">인증번호 요청 중</span>
+          </div>
+        )}
+
+        <OtpInput value={code} onChange={setCode} disabled={inputDisabled} autoFocus={phase === "READY"} label="인증번호" />
+
+        {submitting && (
+          <div className={styles.passwordChallengeState} role="status" aria-live="polite">
+            <LoaderCircle className={styles.spinIcon} aria-hidden="true" />
+            <span className="type-body">인증번호 확인 중</span>
+          </div>
+        )}
 
         <div className={`${styles.challengeMeta} type-small`}>
           <span>{challengeLoading ? "인증번호 요청 중" : `남은 시간 ${formatCountdown(expiresIn)}`}</span>
           <button
             type="button"
             onClick={() => void handleResend()}
-            disabled={resendIn > 0 || challengeLoading}
+            disabled={resendIn > 0 || challengeLoading || submitting}
           >
             {resendIn > 0 ? `재전송까지 ${resendIn}초` : "인증번호 재전송"}
           </button>
@@ -229,6 +272,7 @@ export function PasswordChangeDialog({
             type="password"
             autoComplete="new-password"
             value={newPassword}
+            disabled={inputDisabled}
             onChange={(event) => setNewPassword(event.currentTarget.value)}
           />
         </label>
@@ -240,6 +284,7 @@ export function PasswordChangeDialog({
             type="password"
             autoComplete="new-password"
             value={confirmPassword}
+            disabled={inputDisabled}
             onChange={(event) => setConfirmPassword(event.currentTarget.value)}
           />
         </label>
@@ -248,15 +293,12 @@ export function PasswordChangeDialog({
           8~64자 · 앞뒤 공백 불가 · 이메일과 동일한 값 불가
         </p>
 
-        <p className={`${styles.inlineError} type-small`} role="alert" aria-live="polite">
-          {challenge && expiresIn === 0 && !error
-            ? "인증번호가 만료되었습니다. 새 인증번호를 요청해 주세요."
-            : error}
-        </p>
+        {challengeError ? (
+          <div className={styles.passwordChallengeError} role="alert" aria-live="polite">
+            <p className="type-body">{challengeError}</p>
+          </div>
+        ) : null}
 
-        <button className={`${styles.primaryButton} type-body`} type="submit" disabled={submitting || challengeLoading}>
-          {submitting ? "변경 중" : "비밀번호 변경"}
-        </button>
       </form>
     </DialogFrame>
   );
@@ -276,6 +318,7 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [profileError, setProfileError] = useState("");
+  const registryRequest = useRef<ReturnType<typeof getTools> | null>(null);
 
   useEffect(() => {
     if (auth.status === "unauthenticated") {
@@ -284,12 +327,13 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
   }, [auth.status, router]);
 
   useEffect(() => {
-    if (auth.status !== "authenticated") {
+    if (auth.status !== "loading" && auth.status !== "authenticated") {
       return;
     }
 
     let active = true;
-    void getTools()
+    registryRequest.current ??= getTools();
+    void registryRequest.current
       .then((response) => {
         if (active) setTools(response.items.filter(isKnownTool));
       })

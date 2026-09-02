@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { ProjectDetailModel } from "@/features/portfolio/project-detail";
 import { PUBLIC_COPY } from "@/features/portfolio/public-portfolio";
@@ -6,6 +5,7 @@ import EngineeringList from "../kyvc/engineering-list";
 import ProjectArchitecture from "../kyvc/project-architecture";
 import ProjectMediaCarousel from "../kyvc/project-media-carousel";
 import ProjectRail from "../kyvc/project-rail";
+import TechnologyIcon from "../../technology-icon";
 import styles from "../kyvc/kyvc-detail.module.css";
 
 function technologyIconId(name: string) {
@@ -89,7 +89,12 @@ export default function ProjectDetailContent({
                       {project.technologies.map((technology) => (
                         <li className={styles.stackItem} data-icon={technologyIconId(technology.name)} data-mine={technology.highlighted ? "true" : "false"} key={technology.id}>
                           <div className={styles.stackBlock} data-stack-block>
-                            {technology.iconUrl ? <Image alt="" className={styles.stackIcon} src={technology.iconUrl} width={20} height={20} unoptimized /> : null}
+                            <TechnologyIcon
+                              className={styles.stackIcon}
+                              name={technology.name}
+                              size={20}
+                              src={technology.iconUrl}
+                            />
                             <span className={styles.stackName}>{technology.name}</span>
                           </div>
                         </li>

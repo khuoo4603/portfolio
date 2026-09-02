@@ -1,11 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type { DashboardData, TrafficPoint } from "./admin-types";
 import { EmptyState, PageError, PageHeader, PageLoading, StatusLabel, formatDateTime } from "./admin-ui";
 import { getAdminDashboard, type DashboardMonths } from "./admin-read-api";
 import styles from "./admin.module.css";
+
+const PERIOD_FILTERS: ReadonlyArray<{ value: DashboardMonths; label: string }> = [
+  { value: 6, label: "6개월" },
+  { value: 12, label: "12개월" },
+];
 
 const SERVICE_NAMES: Record<string, string> = {
   PORTFOLIO_FRONTEND: "Portfolio Frontend",
@@ -155,19 +161,7 @@ export default function DashboardScreen() {
         title="Dashboard"
         description="방문 현황, 서비스 상태와 사이트 현황을 한눈에 확인합니다."
         action={(
-          <div className={styles.periodTabs} aria-label="방문 추이 기간">
-            {[6, 12].map((value) => (
-              <button
-                key={value}
-                className={months === value ? styles.periodTabActive : ""}
-                type="button"
-                onClick={() => selectMonths(value as DashboardMonths)}
-                aria-pressed={months === value}
-              >
-                {value}개월
-              </button>
-            ))}
-          </div>
+          <SegmentedControl label="방문 추이 기간" options={PERIOD_FILTERS} value={months} onChange={selectMonths} />
         )}
       />
 

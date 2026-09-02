@@ -22,11 +22,15 @@ import org.springframework.session.SessionRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,7 +56,7 @@ class AuthenticationIntegrationTests extends PostgresIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
+    @MockitoSpyBean
     private AccountRepository accountRepository;
 
     @Autowired
@@ -142,6 +146,7 @@ class AuthenticationIntegrationTests extends PostgresIntegrationTest {
                 .containsEntry("operating_system", "Windows")
                 .containsEntry("device", "DESKTOP");
 
+        clearInvocations(accountRepository);
         mockMvc.perform(get("/api/v1/auth/me").cookie(sessionCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(accountId))
@@ -150,6 +155,7 @@ class AuthenticationIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.role").value("USER"))
                 .andExpect(jsonPath("$.passwordHash").doesNotExist())
                 .andExpect(jsonPath("$.enabled").doesNotExist());
+        verify(accountRepository, never()).findById(accountId);
 
         mockMvc.perform(get("/api/v1/admin/test").cookie(sessionCookie))
                 .andExpect(status().isForbidden())

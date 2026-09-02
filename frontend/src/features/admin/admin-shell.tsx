@@ -217,10 +217,22 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     }
   };
 
-  if (auth.status === "loading"
-      || auth.status === "unauthenticated"
-      || (auth.status === "authenticated" && auth.user.role !== "ADMIN")) {
-    return (
+  const adminUser = auth.status === "authenticated" && auth.user.role === "ADMIN"
+    ? auth.user
+    : null;
+  const isAdmin = adminUser !== null;
+  const sessionGate = auth.status === "error" ? (
+    <main className={styles.shellGate}>
+      <span className={styles.gateMark}>KH / ADMIN</span>
+      <div className={styles.gateError} role="alert">
+        <h1 className="type-title">Session을 확인하지 못했습니다</h1>
+        <p className="type-body">{formatApiError(auth.error)}</p>
+        <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => void auth.refresh()}>
+          다시 시도
+        </button>
+      </div>
+    </main>
+  ) : !isAdmin ? (
       <main className={styles.shellGate} aria-busy="true">
         <span className={styles.gateMark}>KH / ADMIN</span>
         <div className={styles.gateLoading} role="status" aria-label="관리자 Session 확인 중">
@@ -228,70 +240,66 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <p className="type-body">Session 확인 중</p>
         </div>
       </main>
-    );
-  }
-
-  if (auth.status === "error") {
-    return (
-      <main className={styles.shellGate}>
-        <span className={styles.gateMark}>KH / ADMIN</span>
-        <div className={styles.gateError} role="alert">
-          <h1 className="type-title">Session을 확인하지 못했습니다</h1>
-          <p className="type-body">{formatApiError(auth.error)}</p>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => void auth.refresh()}>
-            다시 시도
-          </button>
-        </div>
-      </main>
-    );
-  }
-
-  const navigationProps = {
-    account: auth.user,
-    pathname,
-    onLogout: () => void handleLogout(),
-    logoutPending,
-    logoutError,
-  };
+  ) : null;
 
   return (
-    <div className={styles.adminLayout}>
-      <DesktopSidebar {...navigationProps} />
+    <>
+      {sessionGate}
+      <div className={styles.adminLayout} hidden={!isAdmin}>
+        {adminUser ? (
+          <DesktopSidebar
+            account={adminUser}
+            pathname={pathname}
+            onLogout={() => void handleLogout()}
+            logoutPending={logoutPending}
+            logoutError={logoutError}
+          />
+        ) : null}
 
-      <header className={styles.mobileHeader}>
-        <button
-          className={styles.mobileMenuButton}
-          ref={menuButtonRef}
-          type="button"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="관리자 메뉴 열기"
-          aria-expanded={drawerOpen}
-          aria-controls="admin-mobile-drawer"
-        >
-          <Menu aria-hidden="true" />
-        </button>
-        <span>{auth.user.name} / {auth.user.role}</span>
-        <ThemeToggle />
-      </header>
-
-      {drawerOpen && (
-        <div className={styles.drawerBackdrop} role="presentation" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) {
-            setDrawerOpen(false);
-          }
-        }}>
-          <aside ref={drawerRef} id="admin-mobile-drawer" className={styles.mobileDrawer} role="dialog" aria-modal="true" aria-label="모바일 관리자 메뉴">
-            <button className={styles.drawerClose} type="button" onClick={() => setDrawerOpen(false)} aria-label="관리자 메뉴 닫기">
-              <X aria-hidden="true" />
+        {adminUser ? (
+          <header className={styles.mobileHeader}>
+            <button
+              className={styles.mobileMenuButton}
+              ref={menuButtonRef}
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="관리자 메뉴 열기"
+              aria-expanded={drawerOpen}
+              aria-controls="admin-mobile-drawer"
+            >
+              <Menu aria-hidden="true" />
             </button>
-            <Navigation {...navigationProps} onNavigate={() => setDrawerOpen(false)} />
-          </aside>
-        </div>
-      )}
+            <span>{adminUser.name} / {adminUser.role}</span>
+            <ThemeToggle />
+          </header>
+        ) : null}
 
-      <main className={styles.adminMain}>
-        <div className={styles.adminContent}>{children}</div>
-      </main>
-    </div>
+        {drawerOpen && adminUser ? (
+          <div className={styles.drawerBackdrop} role="presentation" onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setDrawerOpen(false);
+            }
+          }}>
+            <aside ref={drawerRef} id="admin-mobile-drawer" className={styles.mobileDrawer} role="dialog" aria-modal="true" aria-label="모바일 관리자 메뉴">
+              <button className={styles.drawerClose} type="button" onClick={() => setDrawerOpen(false)} aria-label="관리자 메뉴 닫기">
+                <X aria-hidden="true" />
+              </button>
+              <Navigation
+                account={adminUser}
+                pathname={pathname}
+                onNavigate={() => setDrawerOpen(false)}
+                onLogout={() => void handleLogout()}
+                logoutPending={logoutPending}
+                logoutError={logoutError}
+              />
+            </aside>
+          </div>
+        ) : null}
+
+        <main className={styles.adminMain}>
+          <div className={styles.adminContent}>{children}</div>
+        </main>
+      </div>
+    </>
   );
 }

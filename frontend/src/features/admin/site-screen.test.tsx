@@ -201,6 +201,7 @@ describe("Admin Site 실제 API 관리", () => {
     await screen.findByDisplayValue("김현우");
     fireEvent.click(screen.getByRole("tab", { name: "이력" }));
 
+    expect(screen.getByRole("heading", { name: "이력" })).toBeInTheDocument();
     const filterGroup = screen.getByRole("group", { name: "이력 유형" });
     expect(within(filterGroup).getAllByRole("button").map((button) => button.textContent)).toEqual([
       "전체", "학력", "경력", "활동", "수상", "자격·교육",

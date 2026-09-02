@@ -292,7 +292,7 @@ function ComingCard({ className, preview }: { className: string; preview: React.
   );
 }
 
-// 고정 Tool 슬롯 2개와 제작 상태 2개의 Bento Launcher
+// 고정 Tool 슬롯 2개와 제작 상태 4개의 Bento Launcher
 export default function ToolsLauncher() {
   const { tools } = useToolsSession();
   const quiz = tools.find((tool) => tool.toolKey === "QUIZ");
@@ -323,8 +323,10 @@ export default function ToolsLauncher() {
                 preview={<LinksBeamPreview />}
                 enabled={Boolean(links)}
               />
+              <ComingCard className={styles.comingTopRightCard} preview={<RipplePreview variant="compact" />} />
               <ComingCard className={styles.comingWideCard} preview={<RipplePreview variant="wide" />} />
               <ComingCard className={styles.comingNarrowCard} preview={<RipplePreview variant="compact" />} />
+              <ComingCard className={styles.comingBottomRightCard} preview={<RipplePreview variant="compact" />} />
             </section>
           </div>
         </div>

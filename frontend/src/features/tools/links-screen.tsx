@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
+import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type { ToolLink, ToolLinkCategory } from "@/types/api";
 import { getToolLinks } from "./tools-api";
@@ -91,7 +92,7 @@ export function LinkCard({
           fill
           unoptimized
           onError={handleImageError}
-          sizes="(min-width: 1440px) 244px, (min-width: 1024px) calc((100vw - 128px) / 5), (min-width: 768px) calc((100vw - 88px) / 3), calc(100vw - 40px)"
+          sizes="(min-width: 1440px) 244px, (min-width: 1200px) calc((100vw - 128px) / 5), (min-width: 1024px) calc((100vw - 112px) / 4), (min-width: 768px) calc((100vw - 88px) / 3), calc(100vw - 40px)"
           src={imageSrc}
         />
       </span>
@@ -180,19 +181,7 @@ export default function LinksScreen() {
           </span>
         </header>
 
-        <div className={styles.linksFilters} role="group" aria-label="Link 분류">
-          {LINK_FILTERS.map((filter) => (
-            <button
-              key={filter.value}
-              className="type-body"
-              type="button"
-              aria-pressed={linkFilter === filter.value}
-              onClick={() => setLinkFilter(filter.value)}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl className={styles.linksFilters} label="Link 분류" options={LINK_FILTERS} value={linkFilter} onChange={setLinkFilter} />
 
         {groups.length === 0 ? (
           <div className={styles.emptyState}>
