@@ -139,7 +139,8 @@ jobs:
           KYVC_BACKEND_HEALTH_URL: ${{ vars.KYVC_BACKEND_HEALTH_URL }}
           KYVC_CORE_HEALTH_URL: ${{ vars.KYVC_CORE_HEALTH_URL }}
           SHKUTRACK_HEALTH_URL: ${{ vars.SHKUTRACK_HEALTH_URL }}
-          SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
+          SMOKE_FRONTEND_BASE_URL: ${{ vars.SMOKE_FRONTEND_BASE_URL }}
+          SMOKE_API_BASE_URL: ${{ vars.SMOKE_API_BASE_URL }}
         run: |
           set -euo pipefail
           if [[ -z "${RUNNER_TEMP:-}" || ! -d "$RUNNER_TEMP" || ! -w "$RUNNER_TEMP" ]]; then
@@ -183,5 +184,7 @@ jobs:
           append_env KYVC_BACKEND_HEALTH_URL "$KYVC_BACKEND_HEALTH_URL"
           append_env KYVC_CORE_HEALTH_URL "$KYVC_CORE_HEALTH_URL"
           append_env SHKUTRACK_HEALTH_URL "$SHKUTRACK_HEALTH_URL"
+          append_env SMOKE_FRONTEND_BASE_URL "$SMOKE_FRONTEND_BASE_URL"
+          append_env SMOKE_API_BASE_URL "$SMOKE_API_BASE_URL"
 
           bash infra/scripts/deploy.sh dev "$IMAGE_TAG" "$temporary_env"
