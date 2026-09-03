@@ -1,0 +1,146 @@
+x-local-logging: &local-logging
+  driver: local
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    group_add:
+      - "2002"
+    environment:
+      BACKEND_BASE_URL: http://backend:8080
+      LOG_PATH: /app/logs
+      NODE_ENV: production
+      TZ: Asia/Seoul
+    networks:
+      - runtime
+    tmpfs:
+      - /app/.next/cache
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3000/healthz')
+          .then(response => process.exit(response.ok ? 0 : 1))
+          .catch(() => process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging: *local-logging
+
+  backend:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    group_add:
+      - "2001"
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      FILE_STORAGE_ROOT: /app/storage
+      LOG_PATH: /app/logs
+      MAIL_APP_PASSWORD: ${MAIL_APP_PASSWORD:?MAIL_APP_PASSWORD is required}
+      MAIL_FROM: ${MAIL_FROM:?MAIL_FROM is required}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+      MAIL_SMTP_STARTTLS_ENABLE: ${MAIL_SMTP_STARTTLS_ENABLE:-true}
+      MAIL_USERNAME: ${MAIL_USERNAME:?MAIL_USERNAME is required}
+      MONITORING_ENABLED: "false"
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-PORTFOLIO_SESSION}
+      SESSION_IDLE_TIMEOUT: ${SESSION_IDLE_TIMEOUT:-8h}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?POSTGRES_USER is required}
+      TZ: Asia/Seoul
+    networks:
+      - runtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          bash -ec 'exec 3<>/dev/tcp/127.0.0.1/8080;
+          printf "GET /actuator/health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3;
+          IFS= read -r status <&3;
+          [[ "$$status" == *" 200 "* ]]'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging: *local-logging
+
+  monitor:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      KYVC_BACKEND_HEALTH_URL: ${KYVC_BACKEND_HEALTH_URL:?KYVC_BACKEND_HEALTH_URL is required}
+      KYVC_CORE_HEALTH_URL: ${KYVC_CORE_HEALTH_URL:?KYVC_CORE_HEALTH_URL is required}
+      KYVC_FRONTEND_HEALTH_URL: ${KYVC_FRONTEND_HEALTH_URL:?KYVC_FRONTEND_HEALTH_URL is required}
+      MONITORING_CONNECT_TIMEOUT: ${MONITORING_CONNECT_TIMEOUT:-2s}
+      MONITORING_ENABLED: "true"
+      MONITORING_REQUEST_TIMEOUT: ${MONITORING_REQUEST_TIMEOUT:-3s}
+      MONITORING_RETRY_DELAY: ${MONITORING_RETRY_DELAY:-500ms}
+      PORTFOLIO_BACKEND_HEALTH_URL: http://backend:8080/actuator/health
+      PORTFOLIO_FRONTEND_HEALTH_URL: http://frontend:3000/healthz
+      SHKUTRACK_HEALTH_URL: ${SHKUTRACK_HEALTH_URL:?SHKUTRACK_HEALTH_URL is required}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?POSTGRES_USER is required}
+      SPRING_MAIN_WEB_APPLICATION_TYPE: none
+      TZ: Asia/Seoul
+    networks:
+      - runtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging: *local-logging
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      TZ: Asia/Seoul
+    command: ["postgres", "-c", "timezone=Asia/Seoul"]
+    networks:
+      - runtime
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    logging: *local-logging
+
+networks:
+  runtime:
