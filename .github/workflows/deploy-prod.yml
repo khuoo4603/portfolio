@@ -1,0 +1,190 @@
+name: Deploy PROD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and push images
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      frontend_image: ${{ steps.images.outputs.frontend_image }}
+      backend_image: ${{ steps.images.outputs.backend_image }}
+      image_tag: ${{ steps.images.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.19.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Verify frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm run test
+          npm run build
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Verify backend
+        working-directory: backend
+        run: bash ./gradlew clean build
+
+      - name: Resolve image names
+        id: images
+        shell: bash
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "frontend_image=ghcr.io/$owner/portfolio-frontend" >> "$GITHUB_OUTPUT"
+          echo "backend_image=ghcr.io/$owner/portfolio-backend" >> "$GITHUB_OUTPUT"
+          echo "image_tag=sha-$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v7
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: true
+          tags: ${{ steps.images.outputs.frontend_image }}:${{ steps.images.outputs.image_tag }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v7
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ steps.images.outputs.backend_image }}:${{ steps.images.outputs.image_tag }}
+
+  deploy:
+    name: Deploy production
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+      - portfolio
+      - deploy
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy PROD
+        shell: bash
+        env:
+          FRONTEND_IMAGE: ${{ needs.build.outputs.frontend_image }}
+          BACKEND_IMAGE: ${{ needs.build.outputs.backend_image }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MAIL_HOST: ${{ vars.MAIL_HOST }}
+          MAIL_PORT: ${{ vars.MAIL_PORT }}
+          MAIL_USERNAME: ${{ vars.MAIL_USERNAME }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
+          MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
+          MAIL_SMTP_AUTH: ${{ vars.MAIL_SMTP_AUTH }}
+          MAIL_SMTP_STARTTLS_ENABLE: ${{ vars.MAIL_SMTP_STARTTLS_ENABLE }}
+          SESSION_COOKIE_NAME: ${{ vars.SESSION_COOKIE_NAME }}
+          SESSION_IDLE_TIMEOUT: ${{ vars.SESSION_IDLE_TIMEOUT }}
+          MONITORING_CONNECT_TIMEOUT: ${{ vars.MONITORING_CONNECT_TIMEOUT }}
+          MONITORING_REQUEST_TIMEOUT: ${{ vars.MONITORING_REQUEST_TIMEOUT }}
+          MONITORING_RETRY_DELAY: ${{ vars.MONITORING_RETRY_DELAY }}
+          KYVC_FRONTEND_HEALTH_URL: ${{ vars.KYVC_FRONTEND_HEALTH_URL }}
+          KYVC_BACKEND_HEALTH_URL: ${{ vars.KYVC_BACKEND_HEALTH_URL }}
+          KYVC_CORE_HEALTH_URL: ${{ vars.KYVC_CORE_HEALTH_URL }}
+          SHKUTRACK_HEALTH_URL: ${{ vars.SHKUTRACK_HEALTH_URL }}
+          SMOKE_FRONTEND_BASE_URL: ${{ vars.SMOKE_FRONTEND_BASE_URL }}
+          SMOKE_API_BASE_URL: ${{ vars.SMOKE_API_BASE_URL }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${RUNNER_TEMP:-}" || ! -d "$RUNNER_TEMP" || ! -w "$RUNNER_TEMP" ]]; then
+            echo "RUNNER_TEMP가 유효하지 않습니다." >&2
+            exit 1
+          fi
+          temporary_env="$(mktemp "${RUNNER_TEMP%/}/portfolio-prod-XXXXXX.env")"
+          chmod 600 "$temporary_env"
+          trap 'rm -f -- "$temporary_env"' EXIT
+
+          append_env() {
+            local key="$1"
+            local value="$2"
+            if [[ -z "$value" || "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
+              echo "필수 배포 환경값이 비어 있거나 허용되지 않은 형식입니다: $key" >&2
+              exit 1
+            fi
+            value="${value//\'/\\\'}"
+            printf "%s='%s'\n" "$key" "$value" >> "$temporary_env"
+          }
+
+          append_env FRONTEND_IMAGE "$FRONTEND_IMAGE"
+          append_env BACKEND_IMAGE "$BACKEND_IMAGE"
+          append_env IMAGE_TAG "$IMAGE_TAG"
+          append_env POSTGRES_DB "$POSTGRES_DB"
+          append_env POSTGRES_USER "$POSTGRES_USER"
+          append_env DB_PASSWORD "$DB_PASSWORD"
+          append_env MAIL_HOST "${MAIL_HOST:-smtp.gmail.com}"
+          append_env MAIL_PORT "${MAIL_PORT:-587}"
+          append_env MAIL_USERNAME "$MAIL_USERNAME"
+          append_env MAIL_FROM "$MAIL_FROM"
+          append_env MAIL_APP_PASSWORD "$MAIL_APP_PASSWORD"
+          append_env MAIL_SMTP_AUTH "${MAIL_SMTP_AUTH:-true}"
+          append_env MAIL_SMTP_STARTTLS_ENABLE "${MAIL_SMTP_STARTTLS_ENABLE:-true}"
+          append_env SESSION_COOKIE_NAME "${SESSION_COOKIE_NAME:-PORTFOLIO_SESSION}"
+          append_env SESSION_IDLE_TIMEOUT "${SESSION_IDLE_TIMEOUT:-8h}"
+          append_env MONITORING_CONNECT_TIMEOUT "${MONITORING_CONNECT_TIMEOUT:-2s}"
+          append_env MONITORING_REQUEST_TIMEOUT "${MONITORING_REQUEST_TIMEOUT:-3s}"
+          append_env MONITORING_RETRY_DELAY "${MONITORING_RETRY_DELAY:-500ms}"
+          append_env KYVC_FRONTEND_HEALTH_URL "$KYVC_FRONTEND_HEALTH_URL"
+          append_env KYVC_BACKEND_HEALTH_URL "$KYVC_BACKEND_HEALTH_URL"
+          append_env KYVC_CORE_HEALTH_URL "$KYVC_CORE_HEALTH_URL"
+          append_env SHKUTRACK_HEALTH_URL "$SHKUTRACK_HEALTH_URL"
+          append_env SMOKE_FRONTEND_BASE_URL "$SMOKE_FRONTEND_BASE_URL"
+          append_env SMOKE_API_BASE_URL "$SMOKE_API_BASE_URL"
+
+          bash infra/scripts/deploy.sh prod "$IMAGE_TAG" "$temporary_env"

@@ -1,0 +1,14 @@
+.dockerignore
+.env
+.env.*
+.git
+.gitattributes
+.gitignore
+.gradle
+.idea
+Dockerfile
+README.md
+backend.iml
+build
+out
+src/test

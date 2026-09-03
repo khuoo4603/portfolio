@@ -1,0 +1,41 @@
+services:
+  frontend:
+    environment:
+      APP_ENVIRONMENT: dev
+    ports:
+      - "192.168.219.102:3001:3000"
+    volumes:
+      - type: bind
+        source: /opt/portfolio/logs/dev/frontend
+        target: /app/logs
+
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    volumes:
+      - type: bind
+        source: /opt/portfolio/storage/dev
+        target: /app/storage
+      - type: bind
+        source: /opt/portfolio/logs/dev/backend
+        target: /app/logs
+    ports:
+      - "192.168.219.102:8081:8080"
+
+  monitor:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,monitor
+
+  postgres:
+    container_name: portfolio-dev-postgres
+    ports:
+      - "192.168.219.102:5433:5432"
+    volumes:
+      - type: bind
+        source: /opt/portfolio/postgres/dev/data
+        target: /var/lib/postgresql/data
+
+networks:
+  runtime:
+    name: portfolio-dev
+    external: true
