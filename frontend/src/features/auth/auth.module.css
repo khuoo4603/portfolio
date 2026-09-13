@@ -383,12 +383,12 @@
 
 .textInput:hover,
 .otpInput:hover {
-  border-color: var(--border-default);
+  border-color: var(--border-strong);
 }
 
 .textInput:focus,
 .otpInput:focus {
-  border-color: var(--focus-ring);
+  border-color: var(--border-accent);
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-ring) 18%, transparent);
 }
@@ -396,7 +396,7 @@
 .textInput:disabled,
 .otpInput:disabled {
   cursor: not-allowed;
-  opacity: 0.62;
+  opacity: 0.48;
 }
 
 .passwordField {
@@ -526,7 +526,7 @@
 .primaryButton:disabled {
   cursor: not-allowed;
   box-shadow: none;
-  opacity: 0.6;
+  opacity: 0.48;
 }
 
 .loginSubmitButton {

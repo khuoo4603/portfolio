@@ -209,7 +209,7 @@
 }
 
 .secondaryButton:hover:not(:disabled) {
-  border-color: var(--border-accent);
+  border-color: var(--border-strong);
   background: var(--bg-elevated);
 }
 
@@ -911,6 +911,21 @@
   border-color: var(--border-accent);
   outline: 0;
   box-shadow: 0 0 0 var(--space-4) color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.formField input:hover,
+.textArea:hover,
+.answerInput:hover,
+.answerTextArea:hover {
+  border-color: var(--border-strong);
+}
+
+.formField input:disabled,
+.textArea:disabled,
+.answerInput:disabled,
+.answerTextArea:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 .passwordPolicy {

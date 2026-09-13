@@ -322,8 +322,8 @@
 }
 
 .secondaryButton:hover:not(:disabled) {
-  border-color: var(--border-accent);
-  background: var(--admin-elevated);
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
 }
 
 .primaryButton:disabled,
@@ -371,7 +371,7 @@
 .iconButton:hover:not(:disabled),
 .iconButton:focus-visible {
   border-color: var(--border-default);
-  background: var(--admin-elevated);
+  background: var(--bg-elevated);
   color: var(--text-primary);
 }
 
@@ -881,9 +881,31 @@
 .formField input:focus,
 .formField select:focus,
 .formField textarea:focus {
-  border-color: var(--focus-ring);
+  border-color: var(--border-accent);
   outline: 2px solid color-mix(in srgb, var(--focus-ring) 22%, transparent);
   outline-offset: 0;
+}
+
+.filterBar select:hover,
+.filterBar input:hover,
+.compactField input:hover,
+.compactField select:hover,
+.formField input:hover,
+.formField select:hover,
+.formField textarea:hover,
+.searchField:hover {
+  border-color: var(--border-strong);
+}
+
+.filterBar select:disabled,
+.filterBar input:disabled,
+.compactField input:disabled,
+.compactField select:disabled,
+.formField input:disabled,
+.formField select:disabled,
+.formField textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 .searchField {
@@ -896,7 +918,7 @@
 }
 
 .searchField:focus-within {
-  border-color: var(--focus-ring);
+  border-color: var(--border-accent);
   outline: 2px solid color-mix(in srgb, var(--focus-ring) 22%, transparent);
 }
 
@@ -1035,7 +1057,7 @@
 
 .rowMenu button:hover,
 .rowMenu button:focus-visible {
-  background: var(--admin-elevated);
+  background: var(--bg-elevated);
 }
 
 .roleBadge {
@@ -1345,7 +1367,7 @@
 
 .linkImageActions [aria-pressed="true"] {
   border-color: var(--border-accent);
-  background: var(--admin-elevated);
+  background: var(--bg-elevated);
 }
 
 .selectedFileName {
@@ -1600,7 +1622,7 @@
 }
 
 .filePicker > label:hover {
-  background: var(--admin-elevated);
+  background: var(--bg-elevated);
 }
 
 .filePicker > label svg {
@@ -1955,7 +1977,7 @@
 }
 
 .projectModeSwitch button[aria-pressed="true"] {
-  background: var(--admin-elevated);
+  background: var(--bg-elevated);
   color: var(--text-primary);
 }
 
@@ -2025,7 +2047,7 @@
 .projectSectionNav button:hover,
 .projectSectionNav button:focus-visible,
 .projectSectionNav button[aria-current="step"] {
-  background: var(--admin-elevated);
+  background: var(--bg-elevated);
   color: var(--text-primary);
 }
 
