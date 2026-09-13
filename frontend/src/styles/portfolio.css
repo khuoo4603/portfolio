@@ -90,21 +90,6 @@
   transform-origin: left;
 }
 
-/* Root Snapshot 기본 Cross Fade 제거와 새 Theme Layer 우선순위 */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-::view-transition-old(root) {
-  z-index: 0;
-}
-
-::view-transition-new(root) {
-  z-index: 1;
-}
-
 .theme-toggle {
   display: grid;
   width: var(--space-40);

@@ -1742,7 +1742,8 @@
   }
 
   .quizPreviewRow,
-  .rippleCircle {
+  .rippleCircle,
+  .spinIcon {
     animation: none;
   }
 

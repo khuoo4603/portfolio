@@ -917,7 +917,7 @@
   .formContent,
   .formLeaving,
   .loaderIcon {
-    animation-duration: var(--motion-duration-100);
+    animation: none;
   }
 
   .flipCharacterEntering,
