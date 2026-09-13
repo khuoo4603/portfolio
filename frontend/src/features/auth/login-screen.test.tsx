@@ -104,6 +104,52 @@ describe("통합 로그인 실제 API 화면", () => {
     }
   });
 
+  it("Reduced Motion에서 고정 FlipWords를 표시하고 반복 타이머를 시작하지 않음", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("matchMedia", vi.fn(() => ({
+      matches: true,
+      media: "(prefers-reduced-motion: reduce)",
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })));
+
+    try {
+      render(<LoginScreen />);
+      const flippingWords = screen.getByTestId("flipping-words");
+
+      expect(flippingWords).toHaveTextContent("Tools.");
+      await act(async () => vi.advanceTimersByTimeAsync(10_000));
+      expect(flippingWords).toHaveTextContent("Tools.");
+    } finally {
+      cleanup();
+      vi.useRealTimers();
+    }
+  });
+
+  it("Reduced Motion에서 ADMIN OTP 단계로 지연 없이 전환", async () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({
+      matches: true,
+      media: "(prefers-reduced-motion: reduce)",
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })));
+    vi.mocked(login).mockResolvedValueOnce(CHALLENGE);
+    render(<LoginScreen />);
+
+    fillCredentials(ADMIN_EMAIL);
+    fireEvent.click(screen.getByRole("button", { name: "로그인" }));
+
+    expect(await screen.findByRole("heading", { name: "관리자 이메일 인증" })).toBeInTheDocument();
+  });
+
   it("USER 로그인 응답을 Tools 경로로 연결", async () => {
     vi.mocked(login).mockResolvedValue({ authenticated: true, role: "USER", redirect: "/tools" });
     render(<LoginScreen />);

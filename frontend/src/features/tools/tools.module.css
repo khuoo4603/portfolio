@@ -190,7 +190,7 @@
 .primaryButton {
   border: 1px solid var(--accent-strong);
   background: var(--accent-strong);
-  color: var(--sand-50);
+  color: var(--control-foreground);
 }
 
 .secondaryButton {
@@ -209,7 +209,7 @@
 }
 
 .secondaryButton:hover:not(:disabled) {
-  border-color: var(--border-accent);
+  border-color: var(--border-strong);
   background: var(--bg-elevated);
 }
 
@@ -894,7 +894,7 @@
   min-width: 0;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-value-sm);
-  background: var(--bg-base);
+  background: var(--bg-input);
   color: var(--text-primary);
   font-family: var(--font-family-primary);
 }
@@ -911,6 +911,21 @@
   border-color: var(--border-accent);
   outline: 0;
   box-shadow: 0 0 0 var(--space-4) color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+
+.formField input:hover,
+.textArea:hover,
+.answerInput:hover,
+.answerTextArea:hover {
+  border-color: var(--border-strong);
+}
+
+.formField input:disabled,
+.textArea:disabled,
+.answerInput:disabled,
+.answerTextArea:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 .passwordPolicy {
@@ -1189,7 +1204,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-value-sm);
-  background: var(--bg-base);
+  background: var(--bg-input);
 }
 
 .savedQuizLoad {
@@ -1415,13 +1430,13 @@
   padding: var(--space-12);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-value-sm);
-  background: var(--bg-base);
+  background: var(--bg-input);
   cursor: pointer;
 }
 
 .choiceItem:has(input:checked) {
   border-color: var(--border-accent);
-  background: color-mix(in srgb, var(--bg-base) 78%, var(--accent-soft));
+  background: color-mix(in srgb, var(--bg-input) 78%, var(--accent-soft));
 }
 
 .choiceItem input {
@@ -1727,7 +1742,8 @@
   }
 
   .quizPreviewRow,
-  .rippleCircle {
+  .rippleCircle,
+  .spinIcon {
     animation: none;
   }
 

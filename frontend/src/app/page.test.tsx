@@ -51,7 +51,6 @@ import {
   dampGalleryValue,
 } from "./hero-system-card";
 import { HomeView } from "./home-view";
-import { calculateThemeReveal } from "./theme-toggle";
 
 const PUBLIC_MODEL = mapPublicPortfolio(PUBLIC_PORTFOLIO_FIXTURE);
 
@@ -62,8 +61,6 @@ function Home() {
 describe("포트폴리오 메인", () => {
   afterEach(() => {
     cleanup();
-    Reflect.deleteProperty(document, "startViewTransition");
-    Reflect.deleteProperty(document.documentElement, "animate");
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -1378,90 +1375,7 @@ describe("포트폴리오 메인", () => {
     expect(window.localStorage.getItem("portfolio-theme")).toBe("dark");
   });
 
-  it("Theme Reveal 중심과 가장 먼 Viewport Corner 반경을 계산", () => {
-    const reveal = calculateThemeReveal(
-      { left: 880, top: 16, width: 40, height: 40 },
-      1024,
-      768,
-    );
-
-    expect(reveal.x).toBe(900);
-    expect(reveal.y).toBe(36);
-    expect(reveal.radius).toBeCloseTo(Math.hypot(900, 732), 10);
-  });
-
-  it("View Transition 지원 시 Theme Button 중심에서 새 Theme Circle을 확장", async () => {
-    let themeBeforeUpdate = "";
-    let themeAfterUpdate = "";
-    const startViewTransition = vi.fn((updateCallback: () => void) => {
-      themeBeforeUpdate = document.documentElement.dataset.theme ?? "";
-      updateCallback();
-      themeAfterUpdate = document.documentElement.dataset.theme ?? "";
-
-      return {
-        finished: Promise.resolve(),
-        ready: Promise.resolve(),
-        updateCallbackDone: Promise.resolve(),
-        skipTransition: vi.fn(),
-      } as unknown as ViewTransition;
-    });
-    const animate = vi.fn<typeof document.documentElement.animate>(
-      () => ({ finished: Promise.resolve() }) as unknown as Animation,
-    );
-    Object.defineProperty(document, "startViewTransition", {
-      configurable: true,
-      value: startViewTransition,
-    });
-    Object.defineProperty(document.documentElement, "animate", {
-      configurable: true,
-      value: animate,
-    });
-    render(<Home />);
-
-    const button = screen.getByRole("button", { name: "색상 테마 전환" });
-    const buttonRect = {
-      bottom: 56,
-      height: 40,
-      left: 880,
-      right: 920,
-      top: 16,
-      width: 40,
-      x: 880,
-      y: 16,
-      toJSON: () => ({}),
-    };
-    vi.spyOn(button, "getBoundingClientRect").mockReturnValue(buttonRect);
-
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(animate).toHaveBeenCalledTimes(1);
-    });
-    expect(startViewTransition).toHaveBeenCalledTimes(1);
-    expect(themeBeforeUpdate).toBe("dark");
-    expect(themeAfterUpdate).toBe("light");
-    expect(document.documentElement.dataset.theme).toBe("light");
-    expect(window.localStorage.getItem("portfolio-theme")).toBe("light");
-
-    const [keyframes, options] = animate.mock.calls[0];
-    const clipPaths = (keyframes as PropertyIndexedKeyframes).clipPath as string[];
-    const reveal = calculateThemeReveal(buttonRect, window.innerWidth, window.innerHeight);
-    const radiusMatch = clipPaths[1].match(/^circle\(([\d.]+)px at /);
-
-    expect(reveal.x).not.toBe(window.innerWidth / 2);
-    expect(clipPaths[0]).toBe(`circle(0px at ${reveal.x}px ${reveal.y}px)`);
-    expect(clipPaths[1]).toContain(`at ${reveal.x}px ${reveal.y}px`);
-    expect(radiusMatch).not.toBeNull();
-    expect(Number.parseFloat(radiusMatch![1])).toBeCloseTo(reveal.radius, 10);
-    expect(options).toMatchObject({
-      duration: 520,
-      easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-      fill: "both",
-      pseudoElement: "::view-transition-new(root)",
-    });
-  });
-
-  it("Reduced Motion에서는 View Transition 없이 Theme을 즉시 변경", () => {
+  it("Reduced Motion에서도 Theme을 즉시 변경하고 선택값을 저장", () => {
     vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
       matches: query === "(prefers-reduced-motion: reduce)",
       media: query,
@@ -1472,65 +1386,23 @@ describe("포트폴리오 메인", () => {
       removeListener: vi.fn(),
       dispatchEvent: vi.fn(),
     })));
-    const startViewTransition = vi.fn();
-    const animate = vi.fn();
-    Object.defineProperty(document, "startViewTransition", {
-      configurable: true,
-      value: startViewTransition,
-    });
-    Object.defineProperty(document.documentElement, "animate", {
-      configurable: true,
-      value: animate,
-    });
     render(<Home />);
 
     fireEvent.click(screen.getByRole("button", { name: "색상 테마 전환" }));
 
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(window.localStorage.getItem("portfolio-theme")).toBe("light");
-    expect(startViewTransition).not.toHaveBeenCalled();
-    expect(animate).not.toHaveBeenCalled();
   });
 
-  it("Theme Transition 완료 전 중복 클릭을 차단", async () => {
-    let finishTransition: () => void = () => undefined;
-    const finished = new Promise<void>((resolve) => {
-      finishTransition = resolve;
-    });
-    const startViewTransition = vi.fn((updateCallback: () => void) => {
-      updateCallback();
-
-      return {
-        finished,
-        ready: Promise.resolve(),
-        updateCallbackDone: Promise.resolve(),
-        skipTransition: vi.fn(),
-      } as unknown as ViewTransition;
-    });
-    const animate = vi.fn<typeof document.documentElement.animate>(
-      () => ({ finished: Promise.resolve() }) as unknown as Animation,
-    );
-    Object.defineProperty(document, "startViewTransition", {
-      configurable: true,
-      value: startViewTransition,
-    });
-    Object.defineProperty(document.documentElement, "animate", {
-      configurable: true,
-      value: animate,
-    });
+  it("빠른 연속 Theme 전환 후 마지막 선택값을 유지", () => {
     render(<Home />);
 
     const button = screen.getByRole("button", { name: "색상 테마 전환" });
     fireEvent.click(button);
     fireEvent.click(button);
 
-    await waitFor(() => {
-      expect(animate).toHaveBeenCalledTimes(1);
-    });
-    expect(startViewTransition).toHaveBeenCalledTimes(1);
-
-    finishTransition();
-    await finished;
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(window.localStorage.getItem("portfolio-theme")).toBe("dark");
   });
 
   it("System Card Pointer 위치에 따라 최대 7도 범위 Tilt를 적용하고 복원", async () => {
