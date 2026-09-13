@@ -60,17 +60,24 @@
   --color-bg-base: var(--bg-base);
   --color-bg-surface: var(--bg-surface);
   --color-bg-elevated: var(--bg-elevated);
+  --color-bg-input: var(--bg-input);
   --color-text-heading: var(--text-heading);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
   --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
   --color-border-accent: var(--border-accent);
   --color-accent-primary: var(--accent-primary);
   --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
   --color-accent-secondary: var(--accent-secondary);
   --color-focus-ring: var(--focus-ring);
+  --color-control-foreground: var(--control-foreground);
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-error: var(--status-error);
+  --color-status-neutral: var(--status-neutral);
 
   --font-sans: var(--font-family-primary);
   --font-display: var(--font-family-display);
