@@ -22,6 +22,29 @@ export default function ProjectDetailContent({
 }) {
   const { content } = project;
   const sectionIds = new Set(project.sections.map((section) => section.id));
+  const heroMetadata = [
+    project.detailRole
+      ? { label: "역할", value: <span className="type-body">{project.detailRole}</span> }
+      : null,
+    project.period
+      ? {
+        label: "개발 기간",
+        value: (
+          <>
+            <span className="type-body">{project.period.text}</span>
+            {project.period.duration ? <span className="type-small">/ {project.period.duration}</span> : null}
+          </>
+        ),
+      }
+      : null,
+    project.teamSize && project.teamSize > 0
+      ? { label: "참여 인원", value: <span className="type-body">{project.teamSize}명</span> }
+      : null,
+  ].flatMap((item) => item ? [item] : []);
+  const hasTechnologies = project.technologies.length > 0;
+  const hasResults = content.results.length > 0;
+  const hasBackground = content.background.length > 0;
+  const hasFeatures = content.features.length > 0;
 
   return (
     <div className={styles.projectDetailCore}>
@@ -34,33 +57,24 @@ export default function ProjectDetailContent({
           ) : null}
 
           <div className={styles.heroContent}>
-            <p className={`${styles.heroLabel} type-small`}>PROJECT / {project.year ?? "-"}</p>
+            <p className={`${styles.heroLabel} type-small`}>
+              {project.year === null ? "PROJECT" : `PROJECT / ${project.year}`}
+            </p>
             <h1 className={`${styles.projectTitle} type-display-lg`} id="project-title">
               {project.name || "-"}
             </h1>
-            <p className={`${styles.projectSummary} type-title`}>{project.summaryText || "-"}</p>
+            {project.summaryText ? <p className={`${styles.projectSummary} type-title`}>{project.summaryText}</p> : null}
 
-            <dl className={styles.heroMetadata}>
-              <div className={styles.heroMetadataItem}>
-                <dt className="type-small">역할</dt>
-                <dd className="type-body">{project.detailRole || <span className={styles.emptyValue}>-</span>}</dd>
-              </div>
-              <div className={styles.heroMetadataItem}>
-                <dt className="type-small">개발 기간</dt>
-                <dd>
-                  <span className="type-body">{project.period?.text || "-"}</span>
-                  {project.period?.duration ? <span className="type-small">/ {project.period.duration}</span> : null}
-                </dd>
-              </div>
-              <div className={styles.heroMetadataItem}>
-                <dt className="type-small">참여 인원</dt>
-                <dd className="type-body">
-                  {project.teamSize && project.teamSize > 0
-                    ? `${project.teamSize}명`
-                    : <span className={styles.emptyValue}>-</span>}
-                </dd>
-              </div>
-            </dl>
+            {heroMetadata.length > 0 ? (
+              <dl className={styles.heroMetadata} data-metadata-count={heroMetadata.length}>
+                {heroMetadata.map((item) => (
+                  <div className={styles.heroMetadataItem} key={item.label}>
+                    <dt className="type-small">{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
           </div>
 
           <ProjectMediaCarousel media={project.media} projectName={project.name || "Project"} />
@@ -76,15 +90,15 @@ export default function ProjectDetailContent({
               <header className={styles.sectionHeader}>
                 <h2 className={`${styles.sectionTitle} type-heading`} id="stack-result-title">기술 스택 · 성과</h2>
               </header>
-              <div className={styles.stackResultGrid}>
-                <section className={styles.stackArea} aria-labelledby="stack-title">
+              <div className={styles.stackResultGrid} data-single={hasTechnologies !== hasResults ? "true" : undefined}>
+                {hasTechnologies ? (
+                  <section className={styles.stackArea} aria-labelledby="stack-title">
                   <div className={styles.stackHeading}>
                     <h3 className="type-title" id="stack-title">기술 스택</h3>
                     {project.technologies.some((technology) => technology.highlighted) ? (
                       <p className={styles.stackLegend}><strong>- 본인 개발 영역</strong></p>
                     ) : null}
                   </div>
-                  {project.technologies.length > 0 ? (
                     <ul className={styles.stackList} aria-label={`${project.name} 전체 기술 스택`}>
                       {project.technologies.map((technology) => (
                         <li className={styles.stackItem} data-icon={technologyIconId(technology.name)} data-mine={technology.highlighted ? "true" : "false"} key={technology.id}>
@@ -100,12 +114,12 @@ export default function ProjectDetailContent({
                         </li>
                       ))}
                     </ul>
-                  ) : <p className={`${styles.emptyValue} type-body`}>-</p>}
-                </section>
+                  </section>
+                ) : null}
 
-                <section className={styles.resultArea} aria-labelledby="result-title">
+                {hasResults ? (
+                  <section className={styles.resultArea} aria-labelledby="result-title">
                   <h3 className="type-title" id="result-title">성과</h3>
-                  {content.results.length > 0 ? (
                     <ol className={styles.resultList}>
                       {content.results.map((result, index) => (
                         <li className={styles.resultItem} key={`${index}-${result.title}`}>
@@ -117,8 +131,8 @@ export default function ProjectDetailContent({
                         </li>
                       ))}
                     </ol>
-                  ) : <p className={`${styles.emptyValue} type-body`}>-</p>}
-                </section>
+                  </section>
+                ) : null}
               </div>
             </section>
           ) : null}
@@ -128,10 +142,10 @@ export default function ProjectDetailContent({
               <header className={styles.sectionHeader}>
                 <h2 className={`${styles.sectionTitle} type-heading`} id="background-features-title">문제 배경 · 주요 기능</h2>
               </header>
-              <div className={styles.backgroundFeaturesGrid}>
-                <article className={styles.backgroundArea} aria-labelledby="background-title">
+              <div className={styles.backgroundFeaturesGrid} data-single={hasBackground !== hasFeatures ? "true" : undefined}>
+                {hasBackground ? (
+                  <article className={styles.backgroundArea} aria-labelledby="background-title">
                   <h3 className="type-title" id="background-title">문제 배경</h3>
-                  {content.background.length > 0 ? (
                     <div className={styles.backgroundCopy}>
                       {content.background.map((item, index) => (
                         <article className={styles.backgroundItem} key={`${index}-${item.body}`}>
@@ -140,12 +154,12 @@ export default function ProjectDetailContent({
                         </article>
                       ))}
                     </div>
-                  ) : <p className={`${styles.emptyValue} type-body`}>-</p>}
-                </article>
+                  </article>
+                ) : null}
 
-                <section className={styles.featuresArea} aria-labelledby="features-title">
+                {hasFeatures ? (
+                  <section className={styles.featuresArea} aria-labelledby="features-title">
                   <h3 className="type-title" id="features-title">주요 기능</h3>
-                  {content.features.length > 0 ? (
                     <ol className={styles.featureList} aria-labelledby="features-title">
                       {content.features.map((feature, index) => (
                         <li className={styles.featureItem} key={`${index}-${feature.title}`}>
@@ -157,8 +171,8 @@ export default function ProjectDetailContent({
                         </li>
                       ))}
                     </ol>
-                  ) : <p className={`${styles.emptyValue} type-body`}>-</p>}
-                </section>
+                  </section>
+                ) : null}
               </div>
             </section>
           ) : null}

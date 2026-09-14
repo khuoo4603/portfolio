@@ -225,11 +225,7 @@ describe("동적 Project Detail View", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Empty Project" })).toBeInTheDocument();
     expect(screen.getByText("실제 Fixture tagline")).toBeInTheDocument();
-    const metadata = screen.getByText("역할").closest("dl")!;
-    expect(metadata.querySelectorAll("div")).toHaveLength(3);
-    expect(metadata).toHaveTextContent("역할-");
-    expect(metadata).toHaveTextContent("개발 기간-");
-    expect(metadata).toHaveTextContent("참여 인원-");
+    expect(document.querySelector("[data-metadata-count]")).not.toBeInTheDocument();
 
     const media = screen.getByRole("region", { name: "Empty Project 프로젝트 미디어" });
     expect(within(media).queryByRole("img")).not.toBeInTheDocument();
@@ -284,5 +280,58 @@ describe("동적 Project Detail View", () => {
     expect(detail).toHaveTextContent("Fixture 문제");
     expect(detail).toHaveTextContent("Fixture 개선 방안");
     expect(detail).toHaveTextContent("Fixture 결과");
+  });
+
+  it("부분 데이터의 Hero Metadata와 Detail Subsection을 빈 값 없이 표시", () => {
+    const metadataCases = [
+      { project: { detailRole: "Role", startedAt: "2026-01-01", endedAt: "2026-01-02", teamSize: 3 }, count: 3 },
+      { project: { detailRole: "Role", startedAt: "2026-01-01", endedAt: "2026-01-02", teamSize: null }, count: 2 },
+      { project: { detailRole: null, startedAt: null, endedAt: null, teamSize: 3 }, count: 1 },
+      { project: { detailRole: null, startedAt: null, endedAt: null, teamSize: null }, count: 0 },
+    ];
+
+    metadataCases.forEach(({ project, count }) => {
+      const view = render(<ProjectDetailView project={mapProjectDetail({ ...EMPTY_PROJECT_FIXTURE, ...project })} portfolio={portfolio} />);
+
+      if (count === 0) {
+        expect(view.container.querySelector("[data-metadata-count]")).not.toBeInTheDocument();
+      } else {
+        expect(view.container.querySelector(`[data-metadata-count="${count}"]`)).toBeInTheDocument();
+      }
+      view.unmount();
+    });
+
+    const partialCases = [
+      {
+        project: { ...EMPTY_PROJECT_FIXTURE, technologies: [{ ...KYVC_PROJECT_FIXTURE.technologies[0], highlighted: false }] },
+        sectionId: "detail-stack-result",
+        area: "stack-title",
+      },
+      {
+        project: { ...EMPTY_PROJECT_FIXTURE, content: { ...EMPTY_PROJECT_FIXTURE.content, results: KYVC_PROJECT_FIXTURE.content.results } },
+        sectionId: "detail-stack-result",
+        area: "result-title",
+      },
+      {
+        project: { ...EMPTY_PROJECT_FIXTURE, content: { ...EMPTY_PROJECT_FIXTURE.content, background: KYVC_PROJECT_FIXTURE.content.background } },
+        sectionId: "detail-background",
+        area: "background-title",
+      },
+      {
+        project: { ...EMPTY_PROJECT_FIXTURE, content: { ...EMPTY_PROJECT_FIXTURE.content, features: KYVC_PROJECT_FIXTURE.content.features } },
+        sectionId: "detail-background",
+        area: "features-title",
+      },
+    ];
+
+    partialCases.forEach(({ project, sectionId, area }) => {
+      const view = render(<ProjectDetailView project={mapProjectDetail(project)} portfolio={portfolio} />);
+      const section = view.container.querySelector<HTMLElement>(`section#${sectionId}`)!;
+
+      expect(section.querySelector('[data-single="true"]')).toBeInTheDocument();
+      expect(section.querySelector(`[aria-labelledby="${area}"]`)).toBeInTheDocument();
+      expect(within(section).queryByText("-", { exact: true })).not.toBeInTheDocument();
+      view.unmount();
+    });
   });
 });

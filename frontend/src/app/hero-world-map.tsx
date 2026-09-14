@@ -14,8 +14,8 @@ export const EAST_ASIA_CROP = {
 } as const;
 
 export const MOBILE_KOREA_CROP = {
-  lat: { min: 16, max: 59 },
-  lng: { min: 116, max: 138 },
+  lat: { min: 20, max: 55 },
+  lng: { min: 118, max: 136 },
 } as const;
 
 export const EAST_ASIA_ZOOM_SCALE = 1.75;

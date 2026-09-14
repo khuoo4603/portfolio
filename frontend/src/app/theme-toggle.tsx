@@ -14,7 +14,7 @@ function applyTheme(theme: PortfolioTheme) {
 }
 
 // Root Snapshot 없이 Theme 선택값 즉시 전환
-export default function ThemeToggle() {
+export default function ThemeToggle({ ariaLabel = "색상 테마 전환" }: { ariaLabel?: string }) {
   // 현재 Theme 반전과 Browser 저장
   const handleThemeToggle = () => {
     const root = document.documentElement;
@@ -27,7 +27,7 @@ export default function ThemeToggle() {
       className="theme-toggle"
       type="button"
       onClick={handleThemeToggle}
-      aria-label="색상 테마 전환"
+      aria-label={ariaLabel}
     >
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <circle className="theme-toggle-orbit" cx="12" cy="12" r="7.5" />

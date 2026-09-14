@@ -14,7 +14,6 @@ import { PortfolioFooter, SiteHeader } from "./portfolio-chrome";
 import ProjectsSection from "./projects-section";
 import TechnologyIcon from "./technology-icon";
 
-
 function lines(value: string, accentIndex?: number) {
   return value.split(/\r?\n/).map((line, index, items) => (
     <Fragment key={`${index}-${line}`}>
@@ -52,10 +51,7 @@ function Hero({ content }: { content: ContentMap }) {
 
           <div className="hero-copy">
             {content.HERO_STATEMENT ? (
-              <p className="hero-statement type-title">{lines(content.HERO_STATEMENT)}</p>
-            ) : null}
-            {content.HERO_DESCRIPTION ? (
-              <p className="hero-description type-title">{lines(content.HERO_DESCRIPTION)}</p>
+              <p className="hero-message type-title">{lines(content.HERO_STATEMENT)}</p>
             ) : null}
           </div>
 
