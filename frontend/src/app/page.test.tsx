@@ -86,6 +86,10 @@ describe("포트폴리오 메인", () => {
     expect(screen.getByRole("heading", { level: 1, name: "김현우" })).toBeInTheDocument();
     expect(document.querySelector(".hero-intro")).toHaveTextContent("BACKEND / INFRA DEVELOPER");
     expect(document.querySelector(".hero-intro")).toHaveClass("type-title");
+    const heroMessage = document.querySelector(".hero-message");
+    expect(heroMessage).toHaveTextContent("Backend 개발부터");
+    expect(heroMessage).toHaveTextContent("배포 / 운영까지 고려");
+    expect(heroMessage).not.toHaveTextContent("문제에 맞는 기술 선택");
     const header = within(document.querySelector<HTMLElement>(".site-header")!);
     const siteMark = header.getByRole("link", { name: "김현우 포트폴리오 Home" });
     expect(siteMark).toHaveTextContent("KIM HYUNWOO");
@@ -117,6 +121,12 @@ describe("포트폴리오 메인", () => {
       formatMapViewBox(EAST_ASIA_VIEWBOX),
     );
     expect(document.querySelectorAll(".topology-focus-map-zoom")).toHaveLength(1);
+    const galleryFrames = document.querySelectorAll(".topology-project-gallery-frame");
+    expect(galleryFrames).toHaveLength(3);
+    expect(document.querySelectorAll(".topology-project-gallery-caption")).toHaveLength(3);
+    expect(document.querySelector(".topology-project-gallery-caption")).toHaveTextContent("특성화고 진로 특강");
+    expect(document.querySelectorAll(".topology-project-gallery-caption")[1]).toHaveTextContent("KFIP Toss특별상 수상");
+    expect(document.querySelectorAll(".topology-project-gallery-caption")[2]).toHaveTextContent("Hello New() World 해커톤 대상 수상");
     expect(document.querySelector(".topology-map-dots")).toHaveAttribute(
       "href",
       "/maps/world-map-dots.svg#world-map-dots",
@@ -136,6 +146,23 @@ describe("포트폴리오 메인", () => {
     expect(within(navigation).getByRole("link", { name: "기술스택" })).toHaveAttribute("href", "#tech");
     expect(within(navigation).getByRole("link", { name: "프로젝트" })).toHaveAttribute("href", "#projects");
     expect(within(navigation).getByRole("link", { name: "학력 및 성과" })).toHaveAttribute("href", "#education");
+  });
+
+  it("Mobile Sidebar의 열림·닫힘과 Escape 종료를 지원", () => {
+    render(<Home />);
+
+    const menuButton = screen.getByRole("button", { name: "모바일 메뉴 열기" });
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
+    expect(menuButton).toHaveAttribute("aria-controls", "mobile-navigation");
+
+    fireEvent.click(menuButton);
+    expect(menuButton).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("navigation", { name: "모바일 포트폴리오 메뉴" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "모바일 메뉴 닫기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "모바일 색상 테마 전환" })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
   });
 
   it("Browser Idle 이후 후반 지도 Geometry를 기존 Asset과 Dot 수로 활성화", async () => {
@@ -385,8 +412,8 @@ describe("포트폴리오 메인", () => {
     const earlyZoomProgress = (1.1 - 1) / (FINAL_VIRTUAL_ZOOM_SCALE - 1);
 
     expect(MOBILE_KOREA_CROP).toEqual({
-      lat: { min: 16, max: 59 },
-      lng: { min: 116, max: 138 },
+      lat: { min: 20, max: 55 },
+      lng: { min: 118, max: 136 },
     });
     expect(MOBILE_KOREA_VIEWBOX.height).toBeGreaterThan(MOBILE_KOREA_VIEWBOX.width);
     expect(MOBILE_KOREA_VIEWBOX.x).toBeGreaterThanOrEqual(0);
@@ -630,12 +657,12 @@ describe("포트폴리오 메인", () => {
     expect(tabletSpawn.blur).toBe(14);
     expect(tabletPortraitSpawn.blur).toBe(14);
     expect(mobileSpawn.blur).toBe(5);
-    expect(tabletPosition.x).toBeCloseTo(desktopPosition.x * 0.72);
-    expect(tabletPosition.y).toBeCloseTo(desktopPosition.y * 0.75);
-    expect(tabletPortraitPosition.x).toBeCloseTo(desktopPosition.x);
-    expect(tabletPortraitPosition.y).toBeCloseTo(desktopPosition.y);
-    expect(mobilePosition.x).toBeCloseTo(desktopPosition.x * 0.45);
-    expect(mobilePosition.y).toBeCloseTo(desktopPosition.y * 0.63);
+    expect(tabletPosition.x).toBeCloseTo(desktopPosition.x * 0.78);
+    expect(tabletPosition.y).toBeCloseTo(desktopPosition.y * 0.68);
+    expect(tabletPortraitPosition.x).toBeCloseTo(desktopPosition.x * 0.82);
+    expect(tabletPortraitPosition.y).toBeCloseTo(desktopPosition.y * 0.72);
+    expect(mobilePosition.x).toBeCloseTo(desktopPosition.x * 0.66);
+    expect(mobilePosition.y).toBeCloseTo(desktopPosition.y * 0.54);
     expect(mobilePosition.x).not.toBe(0);
     expect(mobilePosition.y).not.toBe(0);
   });
@@ -849,11 +876,11 @@ describe("포트폴리오 메인", () => {
     expect(metrics.fullMapHoldStart).toBe(100);
     expect(metrics.fullMapHoldEnd).toBe(100);
     expect(metrics.zoomStart).toBe(30);
-    expect(metrics.zoomDistance).toBe(960);
-    expect(metrics.zoomEnd).toBe(990);
-    expect(metrics.sceneExitStart).toBe(1110);
-    expect(metrics.sceneExitEnd).toBe(1230);
-    expect(metrics.totalDistance).toBe(1430);
+    expect(metrics.zoomDistance).toBe(736);
+    expect(metrics.zoomEnd).toBe(766);
+    expect(metrics.sceneExitStart).toBe(866);
+    expect(metrics.sceneExitEnd).toBe(966);
+    expect(metrics.totalDistance).toBe(1126);
     expect(metrics.zoomStart).toBeLessThan(metrics.mapCenterEnd);
     expect(metrics.zoomStart / 360).toBeLessThan(0.1);
     expect(calculateHeroSceneState(31, metrics).zoomProgress).toBeGreaterThan(0);
@@ -947,7 +974,8 @@ describe("포트폴리오 메인", () => {
 
   it("Mobile에서도 세 Resource와 Line, Flow를 Landscape 좌표계로 유지", () => {
     vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
-      matches: query.includes("max-width: 767px") || query.includes("max-width: 899px"),
+      matches: query === "(max-width: 767px) and (orientation: portrait)"
+        || query === "(max-width: 1199px) and (orientation: portrait)",
       media: query,
       onchange: null,
       addEventListener: vi.fn(),
@@ -980,9 +1008,11 @@ describe("포트폴리오 메인", () => {
     expect(focusMap).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
   });
 
-  it("Tablet Portrait에서 전용 Camera ViewBox와 세로 채움 방식을 사용", () => {
+  it("1032×1376 Tablet Portrait를 Desktop 폭에서도 전용 Camera와 비Pinned Profile로 처리", () => {
     vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
-      matches: query.includes("max-width: 899px") && query.includes("orientation: portrait"),
+      matches: query === "(min-width: 1024px)"
+        || query === "(min-width: 768px) and (max-width: 1199px) and (orientation: portrait)"
+        || query === "(max-width: 1199px) and (orientation: portrait)",
       media: query,
       onchange: null,
       addEventListener: vi.fn(),
@@ -1000,6 +1030,12 @@ describe("포트폴리오 메인", () => {
       formatMapViewBox(TABLET_PORTRAIT_KOREA_VIEWBOX),
     );
     expect(focusMap).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
+    expect(document.querySelector<HTMLElement>(".hero-visual-stage")?.style.getPropertyValue("--gallery-perspective"))
+      .toBe("1200px");
+    expect(document.querySelector<HTMLElement>(".hero")?.style.getPropertyValue("--hero-stage-height"))
+      .toBe("");
+    expect(document.querySelector<HTMLElement>(".hero-system")?.style.getPropertyValue("--hero-stage-height"))
+      .not.toBe("");
   });
 
   it("지정된 Main 흐름과 숫자 없는 Section 구성을 표시", () => {

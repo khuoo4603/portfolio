@@ -1,4 +1,7 @@
+"use client";
+
 import { Github, Instagram, Linkedin, Mail } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { PUBLIC_COPY, type ContentMap } from "@/features/portfolio/public-portfolio";
 import type { ExternalLink, ResumeMetadata } from "@/types/api";
@@ -52,6 +55,28 @@ export function SiteHeader({
   navigationActions,
   utilityActions,
 }: SiteHeaderProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Mobile Sidebar 열림 상태의 배경 Scroll과 Escape 종료 처리
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMenuOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  const closeMenu = () => setIsMenuOpen(false);
+
   return (
     <header className="site-header">
       <div className="content-container header-inner">
@@ -80,6 +105,53 @@ export function SiteHeader({
         <div className="header-utilities" role="group" aria-label="Header 유틸리티">
           <ThemeToggle />
           {utilityActions}
+          <button
+            aria-controls="mobile-navigation"
+            aria-expanded={isMenuOpen}
+            aria-label="모바일 메뉴 열기"
+            className="mobile-menu-trigger"
+            type="button"
+            onClick={() => setIsMenuOpen((open) => !open)}
+          >
+            <span aria-hidden="true" className="mobile-menu-trigger-line" />
+            <span aria-hidden="true" className="mobile-menu-trigger-line" />
+          </button>
+        </div>
+
+        <div className={`mobile-sidebar${isMenuOpen ? " is-open" : ""}`}>
+          <div aria-hidden="true" className="mobile-sidebar-backdrop" onClick={closeMenu} />
+          <aside aria-label="모바일 메뉴" className="mobile-sidebar-panel" id="mobile-navigation">
+            <div className="mobile-sidebar-heading">
+              <span className="type-small">MENU</span>
+              <button
+                aria-label="모바일 메뉴 닫기"
+                className="mobile-sidebar-close"
+                type="button"
+                onClick={closeMenu}
+              >
+                <span aria-hidden="true" />
+                <span aria-hidden="true" />
+              </button>
+            </div>
+
+            <nav aria-label="모바일 포트폴리오 메뉴" className="mobile-sidebar-navigation">
+              {navigation.map((item) => (
+                <a
+                  className="mobile-sidebar-link type-title"
+                  href={item.href}
+                  key={item.href}
+                  onClick={closeMenu}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+
+            <div className="mobile-sidebar-theme">
+              <span className="type-small">Theme</span>
+              <ThemeToggle ariaLabel="모바일 색상 테마 전환" />
+            </div>
+          </aside>
         </div>
       </div>
     </header>

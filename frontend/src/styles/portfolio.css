@@ -11,6 +11,8 @@
 }
 
 .portfolio-shell {
+  --portfolio-header-height: var(--space-64);
+
   min-height: 100%;
   overflow: clip;
   background: var(--bg-base);
@@ -28,7 +30,7 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  min-height: var(--space-64);
+  min-height: var(--portfolio-header-height);
   column-gap: var(--space-24);
 }
 
@@ -55,6 +57,26 @@
   justify-self: end;
   min-width: 0;
   gap: var(--space-12);
+}
+
+.mobile-menu-trigger {
+  display: none;
+}
+
+.mobile-sidebar,
+.mobile-sidebar-panel {
+  display: contents;
+}
+
+.mobile-sidebar-backdrop,
+.mobile-sidebar-heading,
+.mobile-sidebar-navigation,
+.mobile-sidebar-close {
+  display: none;
+}
+
+.mobile-sidebar-theme {
+  display: none;
 }
 
 .navigation-link {
@@ -133,7 +155,7 @@
 }
 
 .hero {
-  --hero-header-offset: var(--space-64);
+  --hero-header-offset: var(--portfolio-header-height);
 
   position: relative;
   isolation: isolate;
@@ -237,10 +259,10 @@
   letter-spacing: var(--letter-spacing-heading);
 }
 
-.hero-description {
+.hero-message {
   margin: 0;
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .section-cue {
@@ -1093,73 +1115,6 @@ a.project-thumbnail {
 }
 
 @media (max-width: 1023px) {
-  .header-inner {
-    grid-template-columns: 1fr auto;
-  }
-
-  .primary-navigation {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    left: 0;
-    justify-content: center;
-    gap: var(--space-20);
-    min-height: var(--space-48);
-    max-width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    border-bottom: 1px solid var(--border-default);
-    background: var(--bg-base);
-    scrollbar-width: none;
-  }
-
-  .primary-navigation::-webkit-scrollbar {
-    display: none;
-  }
-
-  .primary-navigation .navigation-link {
-    flex: none;
-    white-space: nowrap;
-  }
-
-  .hero {
-    --hero-header-offset: var(--space-112);
-  }
-
-  .hero-inner {
-    width: calc(100% - var(--page-padding) - var(--page-padding));
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    grid-template-rows: auto minmax(460px, 1fr);
-    min-height: max(calc(100svh - var(--hero-header-offset)), 880px);
-    padding-top: var(--space-48);
-    padding-bottom: var(--space-32);
-    row-gap: var(--space-48);
-  }
-
-  .hero-identity {
-    grid-column: 1 / 9;
-    grid-row: 1;
-    padding-block: 0;
-  }
-
-  .hero-name-block {
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-  }
-
-  .hero-name {
-    grid-column: 1 / 9;
-    font-size: calc(var(--font-size-display-xl) + var(--font-size-title));
-  }
-
-  .hero-copy {
-    grid-template-columns: minmax(0, 1fr);
-    margin-top: var(--space-32);
-  }
-
-  .section-cue {
-    margin-top: var(--space-32);
-  }
-
   .main-section {
     scroll-margin-top: var(--space-112);
   }
@@ -1298,67 +1253,152 @@ a.project-thumbnail {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px) and (orientation: portrait) {
+  .header-inner {
+    grid-template-columns: 1fr auto;
+  }
+
   .primary-navigation {
-    justify-content: flex-start;
-    gap: var(--space-16);
-    padding-inline: var(--page-padding);
-  }
-
-  .hero-grid {
-    background-size: var(--space-40) var(--space-40);
-  }
-
-  .hero-inner {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows: auto minmax(430px, 1fr);
-    min-height: max(calc(100svh - var(--hero-header-offset)), 960px);
-    padding-top: var(--space-40);
-    padding-bottom: 0;
-    row-gap: var(--space-16);
-  }
-
-  .hero-identity {
-    grid-column: 1 / 5;
-  }
-
-  .hero-name-block {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin-top: var(--space-24);
-  }
-
-  .hero-name {
-    grid-column: 1 / 5;
-    font-size: calc(var(--font-size-display-xl) - var(--font-size-small));
-  }
-
-  .hero-name-second {
-    margin-left: 0;
-  }
-
-  .hero-copy {
-    grid-template-columns: minmax(0, 1fr);
-    margin-top: var(--space-24);
-    row-gap: var(--space-16);
-  }
-
-  .hero-statement {
-    font-size: var(--font-size-title);
-    line-height: var(--line-height-title);
-    letter-spacing: var(--letter-spacing-title);
-  }
-
-  .hero-description {
-    font-size: var(--font-size-body);
-    line-height: var(--line-height-body);
-  }
-
-  .hero-description {
-    margin-bottom: 0;
-  }
-
-  .hero .section-cue {
     display: none;
+  }
+
+  .header-utilities > .theme-toggle {
+    display: none;
+  }
+
+  .mobile-menu-trigger {
+    display: grid;
+    width: var(--space-40);
+    height: var(--space-40);
+    padding: var(--space-8);
+    place-items: center;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-value-xs);
+    background: transparent;
+    color: var(--text-primary);
+  }
+
+  .mobile-menu-trigger-line {
+    display: block;
+    width: var(--space-20);
+    height: 1px;
+    background: currentColor;
+  }
+
+  .mobile-sidebar {
+    position: fixed;
+    z-index: 30;
+    inset: 0;
+    display: block;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .mobile-sidebar.is-open {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .mobile-sidebar-backdrop {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--bg-base) 64%, transparent);
+    opacity: 0;
+    transition: opacity var(--motion-duration-240) var(--motion-easing-default);
+  }
+
+  .mobile-sidebar.is-open .mobile-sidebar-backdrop {
+    opacity: 1;
+  }
+
+  .mobile-sidebar-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    width: min(84vw, 380px);
+    padding: var(--space-24);
+    flex-direction: column;
+    border-left: 1px solid var(--border-default);
+    background: var(--bg-base);
+    transform: translateX(100%);
+    transition: transform var(--motion-duration-240) var(--motion-easing-default);
+  }
+
+  .mobile-sidebar.is-open .mobile-sidebar-panel {
+    transform: translateX(0);
+  }
+
+  .mobile-sidebar-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--space-24);
+    border-bottom: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+  }
+
+  .mobile-sidebar-close {
+    display: block;
+    position: relative;
+    width: var(--space-40);
+    height: var(--space-40);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-value-xs);
+    background: transparent;
+    color: var(--text-primary);
+  }
+
+  .mobile-sidebar-close span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--space-20);
+    height: 1px;
+    background: currentColor;
+  }
+
+  .mobile-sidebar-close span:first-child {
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  .mobile-sidebar-close span:last-child {
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+
+  .mobile-sidebar-navigation {
+    display: flex;
+    padding-block: var(--space-24);
+    flex-direction: column;
+    gap: var(--space-20);
+  }
+
+  .mobile-sidebar-link {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .mobile-sidebar-link:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: var(--space-4);
+  }
+
+  .mobile-sidebar-theme {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    position: static;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: var(--space-20);
+    border-top: 1px solid var(--border-default);
+    transform: none;
+  }
+
+  .mobile-sidebar-theme .theme-toggle {
+    justify-self: auto;
   }
 
   .footer-inner {
@@ -1367,10 +1407,16 @@ a.project-thumbnail {
   }
 
   .about-inner {
-    display: block;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(var(--space-112), 38%);
+    column-gap: var(--space-16);
+    align-items: start;
   }
 
   .about-heading {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
     padding-top: var(--space-16);
   }
 
@@ -1380,15 +1426,24 @@ a.project-thumbnail {
   }
 
   .profile-portrait {
-    width: 64%;
-    margin: var(--space-48) 0 0 auto;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    justify-self: end;
+    width: 100%;
+    max-width: var(--space-160);
+    margin: 0;
   }
 
   .about-introduction {
-    margin-top: var(--space-48);
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: var(--space-32);
   }
 
   .about-values {
+    grid-column: 1 / -1;
+    grid-row: 3;
     display: block;
     margin-top: var(--space-48);
   }
@@ -1523,23 +1578,28 @@ a.project-thumbnail {
   }
 
   .education-info-row {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     row-gap: var(--space-8);
+    column-gap: var(--space-16);
   }
 
   .education-info-period,
-  .education-info-title,
-  .education-info-detail,
-  .education-info-outcome {
+  .education-info-title {
+    grid-column: 1 / -1;
+  }
+
+  .education-info-detail {
     grid-column: 1;
   }
 
   .education-info-outcome {
-    justify-self: start;
+    grid-column: 2;
+    justify-self: end;
+    text-align: right;
   }
 
   .footer-inner {
-    padding-top: var(--space-80);
+    padding-top: var(--space-48);
     padding-bottom: var(--space-24);
   }
 
@@ -1554,15 +1614,41 @@ a.project-thumbnail {
   }
 
   .footer-information {
-    grid-template-columns: 1fr;
-    margin-top: var(--space-48);
-    row-gap: var(--space-40);
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    margin-top: var(--space-32);
+    column-gap: var(--space-16);
+    row-gap: 0;
+  }
+
+  .footer-info-group {
+    padding-top: var(--space-16);
+  }
+
+  .footer-info-group > .type-small {
+    margin-bottom: var(--space-16);
+  }
+
+  .footer-contact {
+    justify-self: end;
+    min-width: 0;
+  }
+
+  .footer-contact-links {
+    justify-content: flex-end;
+    gap: var(--space-8);
+  }
+
+  .footer-contact-links a {
+    width: var(--space-40);
+    height: var(--space-40);
+    flex-basis: var(--space-40);
   }
 
   .footer-bottom {
     flex-direction: column;
     gap: var(--space-8);
-    margin-top: var(--space-64);
+    margin-top: var(--space-40);
   }
 }
 
@@ -1585,7 +1671,9 @@ a.project-thumbnail {
   .navigation-link,
   .navigation-link::after,
   .theme-toggle,
-  .footer-contact-links a {
+  .footer-contact-links a,
+  .mobile-sidebar-backdrop,
+  .mobile-sidebar-panel {
     transition: none;
   }
 
@@ -1622,7 +1710,7 @@ a.project-thumbnail {
 
 /* Hero 대한민국 Server Map의 단일 Layer Scroll Stage */
 .hero-about-flow {
-  --hero-header-offset: var(--space-64);
+  --hero-header-offset: var(--portfolio-header-height);
 
   position: relative;
   isolation: isolate;
@@ -1759,7 +1847,7 @@ a.project-thumbnail {
   position: absolute;
   top: var(--gallery-origin-y);
   left: var(--gallery-origin-x);
-  width: clamp(320px, 31vw, 560px);
+  width: clamp(288px, 28vw, 500px);
   filter: blur(var(--gallery-blur));
   opacity: var(--gallery-opacity);
   backface-visibility: hidden;
@@ -1779,6 +1867,16 @@ a.project-thumbnail {
   border: 1px solid color-mix(in srgb, var(--border-default) 72%, transparent);
   border-radius: var(--radius-value-sm);
   box-shadow: 0 var(--space-8) var(--space-24) color-mix(in srgb, var(--bg-base) 24%, transparent);
+}
+
+/* Gallery 이미지의 맥락을 보조하는 최소 Caption */
+.topology-project-gallery-caption {
+  display: block;
+  margin-top: var(--space-8);
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--bg-base) 72%, transparent);
 }
 
 .topology-narrative-world-map-viewport,
@@ -2297,6 +2395,34 @@ a.project-thumbnail {
   }
 }
 
+/* Laptop Short Viewport의 Identity·Topology 수직 경쟁 완화 */
+@media (min-width: 1180px) and (max-width: 1439px) and (max-height: 800px) {
+  .hero-identity {
+    padding-block: var(--space-32);
+  }
+
+  .hero-name-block {
+    margin-top: var(--space-16);
+  }
+
+  .hero-name {
+    font-size: clamp(76px, 5.8vw, 82px);
+  }
+
+  .hero-copy {
+    margin-top: var(--space-24);
+    row-gap: var(--space-12);
+  }
+
+  .section-cue {
+    margin-top: var(--space-24);
+  }
+
+  .topology-project-gallery-frame {
+    width: clamp(272px, 25vw, 360px);
+  }
+}
+
 /* Small Desktop의 낮은 화면을 위한 Compact 2열 Hero */
 @media (min-width: 1024px) and (max-width: 1179px) {
   .hero-inner {
@@ -2405,114 +2531,11 @@ a.project-thumbnail {
   }
 }
 
-@media (max-width: 1023px) {
-  .hero {
-    min-height: 0;
-  }
-
-  .hero-inner {
-    position: relative;
-    top: auto;
-    width: min(calc(100% - var(--page-padding) - var(--page-padding)), 960px);
-    height: auto;
-    min-height: 0;
-    margin-inline: auto;
-    grid-template-rows: auto auto;
-  }
-
-  .hero-system {
-    position: relative;
-    inset: auto;
-    grid-column: 1 / 9;
-    grid-row: 2;
-    height: var(--hero-stage-height, 228svh);
-    min-height: 1520px;
-  }
-
-  .hero-visual-stage {
-    position: sticky;
-    top: var(--hero-header-offset);
-    height: calc(100svh - var(--hero-header-offset));
-    min-height: 620px;
-  }
-
-  .topology-narrative-world-map-plane,
-  .topology-focus-map-plane {
-    inset: 0;
-    width: auto;
-  }
-
+@media (max-width: 1023px) and (orientation: portrait) {
   .topology-project-gallery-frame {
-    width: clamp(320px, 50vw, 560px);
+    width: clamp(272px, 44vw, 440px);
   }
 
-  .service-graph,
-  .topology-marker-plane {
-    top: 50%;
-    right: 50%;
-    width: min(92%, 720px);
-    transform: translate(50%, -50%);
-  }
-
-}
-
-/* 900px 이상 Stacked Tablet의 정보 밀도 */
-@media (min-width: 900px) and (max-width: 1023px) {
-  .hero-inner {
-    grid-template-rows: auto auto;
-    min-height: 0;
-    padding-top: var(--space-16);
-    padding-bottom: 0;
-    row-gap: var(--space-8);
-  }
-
-  .hero-identity {
-    align-self: start;
-    justify-content: flex-start;
-  }
-
-  .hero-name-block {
-    margin-top: var(--space-8);
-  }
-
-  .hero-name {
-    font-size: 52px;
-  }
-
-  .hero-name-second {
-    margin-left: 6%;
-  }
-
-  .hero-copy {
-    max-width: calc(var(--space-160) * 4 + var(--space-80));
-    margin-top: var(--space-12);
-    row-gap: var(--space-8);
-  }
-
-  .hero-statement {
-    font-size: var(--font-size-title);
-    line-height: var(--line-height-title);
-  }
-
-  .hero-description {
-    font-size: var(--font-size-body);
-    line-height: var(--line-height-body);
-  }
-
-  .hero .section-cue {
-    display: none;
-  }
-
-  .hero-visual-stage {
-    min-height: 0;
-  }
-
-  .service-graph,
-  .topology-marker-plane {
-    top: 0;
-    width: min(58vw, calc(var(--space-160) * 3 + var(--space-64)));
-    transform: translateX(50%);
-  }
 }
 
 /* Tablet Landscape의 첫 Viewport 좌우 2열 Pinned Hero */
@@ -2603,8 +2626,217 @@ a.project-thumbnail {
   }
 }
 
+/* Mobile Landscape의 짧은 높이용 Compact Header·Hero·Topology */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 600px) {
+  .portfolio-shell {
+    --portfolio-header-height: calc(var(--space-48) + var(--space-8));
+  }
+
+  .header-inner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: var(--portfolio-header-height);
+    column-gap: var(--space-8);
+  }
+
+  .primary-navigation {
+    display: flex;
+    justify-self: center;
+    min-width: 0;
+    gap: var(--space-8);
+  }
+
+  .navigation-link {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .header-utilities > .theme-toggle {
+    display: grid;
+  }
+
+  .mobile-menu-trigger,
+  .mobile-sidebar {
+    display: none;
+  }
+
+  .hero {
+    min-height: var(--hero-stage-height, 226.5svh);
+  }
+
+  .hero-inner {
+    position: sticky;
+    top: var(--hero-header-offset);
+    width: min(calc(100% - var(--page-padding) - var(--page-padding)), 960px);
+    height: calc(100svh - var(--hero-header-offset));
+    min-height: calc(100svh - var(--hero-header-offset));
+    padding-block: 0;
+    margin-inline: auto;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: 1fr;
+    column-gap: var(--grid-gutter);
+    row-gap: 0;
+  }
+
+  .hero-identity {
+    z-index: 5;
+    grid-column: 1 / 5;
+    grid-row: 1;
+    align-self: stretch;
+    justify-content: center;
+    padding-block: 0;
+    text-align: left;
+  }
+
+  .hero-name-block {
+    margin-top: var(--space-8);
+  }
+
+  .hero-name {
+    font-size: clamp(40px, 5vw, 48px);
+  }
+
+  .hero-name-second {
+    margin-left: 4%;
+  }
+
+  .hero-copy {
+    max-width: calc(var(--space-160) * 2);
+    margin-top: var(--space-12);
+    row-gap: var(--space-8);
+  }
+
+  .hero-message {
+    font-size: var(--font-size-small);
+    line-height: var(--line-height-small);
+  }
+
+  .hero .section-cue {
+    display: none;
+  }
+
+  .hero-system {
+    position: absolute;
+    inset: 0;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    height: auto;
+    min-height: 0;
+  }
+
+  .hero-visual-stage {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    min-height: 0;
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    top: 50%;
+    right: 0;
+    left: auto;
+    width: min(44%, calc(var(--space-160) * 2 + var(--space-48)));
+    transform: translateY(-50%);
+  }
+
+  .topology-tilt-layer {
+    transform: rotateX(var(--card-rotate-x)) rotateY(var(--card-rotate-y)) scale(0.76);
+  }
+
+  .topology-resource-group {
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .topology-resource-standalone {
+    min-height: var(--space-32);
+    padding: var(--space-4);
+  }
+
+  .topology-resource-heading,
+  .topology-resource-status,
+  .topology-stack-item,
+  .topology-server-label {
+    font-size: 11px;
+  }
+
+  .topology-resource-header,
+  .topology-stack {
+    gap: var(--space-4);
+  }
+
+  .topology-stack-item {
+    min-height: var(--space-24);
+    gap: var(--space-4);
+    padding-inline: var(--space-4);
+  }
+
+  .topology-active-dot {
+    width: var(--space-4);
+    height: var(--space-4);
+  }
+
+  .topology-stack-dot {
+    width: var(--space-4);
+    height: var(--space-4);
+  }
+
+  .topology-server-label {
+    left: 28px;
+  }
+
+  .topology-korea-marker,
+  .topology-korea-marker-ring {
+    width: var(--space-16);
+    height: var(--space-16);
+  }
+
+  .topology-korea-marker-diamond {
+    width: var(--space-12);
+    height: var(--space-12);
+  }
+
+  .topology-korea-marker-core {
+    width: var(--space-4);
+    height: var(--space-4);
+  }
+
+  .about-heading {
+    grid-column: 1 / 6;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .profile-portrait {
+    grid-column: 6 / 9;
+    grid-row: 1;
+    align-self: end;
+    justify-self: end;
+    width: min(20vw, var(--space-160));
+    max-width: var(--space-160);
+    margin: 0;
+  }
+
+  .about-introduction {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: var(--space-32);
+  }
+
+  .about-values {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+}
+
 /* Portrait World와 Focus Stage의 동일 화면 점유율 */
-@media (max-width: 899px) and (orientation: portrait) {
+@media (max-width: 1199px) and (orientation: portrait) {
+  .topology-narrative-world-map-plane,
+  .topology-focus-map-plane {
+    inset: 0;
+    width: auto;
+  }
+
   .topology-narrative-world-map-viewport {
     left: calc(50% + var(--portrait-world-map-offset-x, 0px));
     width: var(--portrait-world-map-width, 210svh);
@@ -2617,8 +2849,9 @@ a.project-thumbnail {
   }
 
   .topology-focus-map-viewport {
-    width: 100%;
-    height: 100%;
+    top: 54%;
+    width: min(100%, 720px);
+    height: 76%;
     max-width: none;
     aspect-ratio: auto;
     -webkit-mask-image:
@@ -2630,36 +2863,58 @@ a.project-thumbnail {
   }
 }
 
-/* Tablet Portrait의 짧은 Text 흐름과 즉시 이어지는 Topology */
-@media (min-width: 768px) and (max-width: 899px) and (orientation: portrait) {
-  .hero-inner {
-    grid-template-rows: auto auto;
+/* Mobile Portrait의 First Frame Grid와 이후 Scroll Stage 분리 */
+@media (max-width: 767px) and (orientation: portrait) {
+  .hero {
     min-height: 0;
-    padding-top: var(--space-24);
-    padding-bottom: 0;
-    row-gap: var(--space-16);
+  }
+
+  .hero-grid {
+    background-size: var(--space-40) var(--space-40);
+  }
+
+  .hero-inner {
+    --hero-usable-height: calc(100svh - var(--hero-header-offset));
+
+    position: relative;
+    top: auto;
+    width: calc(100% - var(--page-padding) - var(--page-padding));
+    height: auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: minmax(var(--hero-usable-height), auto) minmax(0, 1fr);
+    min-height: 0;
+    margin-inline: auto;
+    padding-block: 0;
+    row-gap: 0;
   }
 
   .hero-identity {
-    align-items: center;
+    z-index: 5;
+    grid-column: 1 / 5;
+    grid-row: 1;
     align-self: start;
-    justify-content: flex-start;
-    text-align: center;
+    width: 100%;
+    height: 50%;
+    min-height: 0;
+    justify-content: center;
+    padding-block: 0;
+    text-align: left;
   }
 
   .hero-intro {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .hero-name-block {
-    width: 100%;
-    margin-top: var(--space-12);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: var(--space-24);
   }
 
   .hero-name {
-    align-items: center;
-    font-size: 64px;
-    text-align: center;
+    align-items: flex-start;
+    grid-column: 1 / 5;
+    font-size: calc(var(--font-size-display-xl) - var(--font-size-small));
+    text-align: left;
   }
 
   .hero-name-second {
@@ -2667,95 +2922,100 @@ a.project-thumbnail {
   }
 
   .hero-copy {
-    max-width: calc(var(--space-160) * 4);
-    margin-top: var(--space-16);
-    margin-inline: auto;
-    row-gap: var(--space-8);
-    justify-items: center;
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: var(--space-24);
+    row-gap: var(--space-16);
+    justify-items: start;
+    text-align: left;
   }
 
-  .hero-statement {
-    font-size: 26px;
-    line-height: 1.25;
-    text-align: center;
-  }
-
-  .hero-description {
-    font-size: var(--font-size-body-lg);
-    line-height: var(--line-height-body-lg);
-    text-align: center;
+  .hero-message {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    text-align: left;
   }
 
   .hero .section-cue {
     display: none;
   }
 
-  .service-graph,
-  .topology-marker-plane {
-    top: var(--space-8);
-    width: min(86vw, calc(var(--space-160) * 4));
-    transform: translateX(50%);
-  }
-}
-
-/* 낮은 Portrait 계열 화면의 첫 장면 수직 안전 영역 */
-@media (min-width: 768px) and (max-width: 899px) and (orientation: portrait) and (max-height: 820px) {
-  .hero-inner {
-    padding-top: var(--space-16);
-    row-gap: var(--space-8);
-  }
-
-  .hero-name-block {
-    margin-top: var(--space-8);
-  }
-
-  .hero-name {
-    font-size: 52px;
-  }
-
-  .hero-copy {
-    margin-top: var(--space-12);
-  }
-
-  .service-graph,
-  .topology-marker-plane {
-    top: 0;
-    width: min(58vw, calc(var(--space-160) * 3 + var(--space-64)));
-  }
-}
-
-@media (max-width: 767px) {
   .hero-system {
+    position: relative;
+    inset: auto;
     grid-column: 1 / 5;
+    grid-row: 1 / span 2;
     height: var(--hero-stage-height, 176svh);
-    min-height: calc(var(--space-160) * 6 + var(--space-112));
+    min-height: 0;
+    align-self: start;
   }
 
   .hero-visual-stage {
+    position: sticky;
     top: var(--hero-header-offset);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
     height: calc(100svh - var(--hero-header-offset));
-    min-height: calc(var(--space-160) * 3);
+    min-height: 0;
   }
 
   .service-graph,
   .topology-marker-plane {
-    top: var(--space-16);
-    right: 50%;
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    justify-self: center;
     width: min(
       calc(100vw - var(--space-32)),
       calc(var(--space-160) * 2 + var(--space-48))
     );
     max-width: 100%;
     aspect-ratio: 8 / 5;
-    transform: translateX(50%);
+    transform: none;
+  }
+
+  .topology-tilt-layer {
+    transform: rotateX(var(--card-rotate-x)) rotateY(var(--card-rotate-y)) scale(0.78);
+  }
+
+  .topology-resource-heading,
+  .topology-resource-status,
+  .topology-stack-item,
+  .topology-server-label {
+    font-size: 11px;
+  }
+
+  .topology-active-dot,
+  .topology-stack-dot {
+    width: var(--space-4);
+    height: var(--space-4);
+  }
+
+  .topology-korea-marker,
+  .topology-korea-marker-ring {
+    width: var(--space-16);
+    height: var(--space-16);
+  }
+
+  .topology-korea-marker-diamond {
+    width: var(--space-12);
+    height: var(--space-12);
   }
 
   .topology-project-gallery-frame {
     width: clamp(
-      calc(var(--space-160) + var(--space-16)),
-      52vw,
-      calc(var(--space-160) + var(--space-64) + var(--space-8))
+      calc(var(--space-160) - var(--space-8)),
+      44vw,
+      calc(var(--space-160) + var(--space-32))
     );
+  }
+
+  .topology-project-gallery-caption {
+    margin-top: var(--space-4);
   }
 
   .topology-resource-group {
@@ -2801,6 +3061,186 @@ a.project-thumbnail {
     left: auto;
   }
 
+}
+
+/* Tablet Portrait의 First Frame Stack과 이후 Scroll Stage 분리 */
+@media (min-width: 768px) and (max-width: 1199px) and (orientation: portrait) {
+  .hero {
+    min-height: 0;
+  }
+
+  .hero-inner {
+    --hero-usable-height: calc(100svh - var(--hero-header-offset));
+
+    position: relative;
+    top: auto;
+    width: min(calc(100% - var(--page-padding) - var(--page-padding)), 960px);
+    height: auto;
+    min-height: 0;
+    margin-inline: auto;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: minmax(var(--hero-usable-height), auto) minmax(0, 1fr);
+    padding-block: 0;
+    row-gap: 0;
+  }
+
+  .hero-identity {
+    grid-column: 1 / 9;
+    grid-row: 1;
+    align-items: flex-start;
+    align-self: start;
+    justify-self: center;
+    justify-content: center;
+    width: min(100%, 720px);
+    height: 50%;
+    min-height: 0;
+    margin-inline: auto;
+    padding-block: 0;
+    text-align: left;
+  }
+
+  .hero-intro {
+    justify-content: flex-start;
+  }
+
+  .hero-name-block {
+    width: 100%;
+    margin-top: var(--space-16);
+  }
+
+  .hero-name {
+    align-items: flex-start;
+    font-size: clamp(56px, 7.2vw, 76px);
+    text-align: left;
+  }
+
+  .hero-name-second {
+    margin-left: 0;
+  }
+
+  .hero-copy {
+    max-width: min(100%, 560px);
+    margin-top: var(--space-24);
+    margin-inline: 0;
+    row-gap: var(--space-12);
+    justify-items: start;
+    text-align: left;
+  }
+
+  .hero-message {
+    font-size: var(--font-size-body-lg);
+    line-height: var(--line-height-body-lg);
+    text-align: left;
+  }
+
+  .hero .section-cue {
+    display: none;
+  }
+
+  .hero-system {
+    position: relative;
+    inset: auto;
+    grid-column: 1 / 9;
+    grid-row: 1 / span 2;
+    height: var(--hero-stage-height, 228svh);
+    min-height: 0;
+    align-self: start;
+  }
+
+  .hero-visual-stage {
+    position: sticky;
+    top: var(--hero-header-offset);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 45% 55%;
+    height: calc(100svh - var(--hero-header-offset));
+    min-height: 0;
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    justify-self: center;
+    width: min(86vw, 760px);
+    transform: none;
+  }
+
+  .topology-focus-map-viewport {
+    top: 47%;
+    width: 100%;
+  }
+
+  .topology-tilt-layer {
+    transform: rotateX(var(--card-rotate-x)) rotateY(var(--card-rotate-y)) scale(0.86);
+  }
+
+  .topology-resource-group {
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .topology-resource-standalone {
+    min-height: var(--space-40);
+    padding: var(--space-8);
+  }
+
+  .topology-resource-heading,
+  .topology-resource-status,
+  .topology-stack-item,
+  .topology-server-label {
+    font-size: 12px;
+  }
+
+  .topology-stack {
+    gap: var(--space-4);
+  }
+
+  .topology-stack-item {
+    min-height: var(--space-24);
+    gap: var(--space-4);
+    padding-inline: var(--space-4);
+  }
+
+  .topology-server-label {
+    left: 32px;
+  }
+
+  .topology-korea-marker,
+  .topology-korea-marker-ring {
+    width: var(--space-20);
+    height: var(--space-20);
+  }
+
+  .topology-korea-marker-diamond {
+    width: var(--space-16);
+    height: var(--space-16);
+  }
+}
+
+/* 낮은 Tablet Portrait의 First Frame 안전 크기 */
+@media (min-width: 768px) and (max-width: 1199px) and (orientation: portrait) and (max-height: 820px) {
+  .hero-name-block {
+    margin-top: var(--space-8);
+  }
+
+  .hero-name {
+    font-size: 52px;
+  }
+
+  .hero-copy {
+    margin-top: var(--space-12);
+  }
+
+  .service-graph,
+  .topology-marker-plane {
+    width: min(58vw, calc(var(--space-160) * 3 + var(--space-64)));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2952,7 +3392,7 @@ a.project-thumbnail {
 
 }
 
-@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+@media (max-width: 767px) and (orientation: portrait) and (prefers-reduced-motion: reduce) {
   .hero-visual-stage {
     gap: var(--space-48);
   }

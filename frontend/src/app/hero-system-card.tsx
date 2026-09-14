@@ -53,10 +53,10 @@ export const PORTRAIT_HERO_SCROLL_TIMING = {
   mapCenterEnd: 0.1,
   zoomStart: 0.03,
   fullMapHoldDuration: 0,
-  baseZoomDuration: 0.3,
-  postZoomHoldDuration: 0.12,
-  sceneExitDuration: 0.12,
-  tailDuration: 0.2,
+  baseZoomDuration: 0.23,
+  postZoomHoldDuration: 0.1,
+  sceneExitDuration: 0.1,
+  tailDuration: 0.16,
 } as const;
 
 export const KOREA_ZOOM_DISTANCE_MULTIPLIER = 3.2;
@@ -87,16 +87,19 @@ export const PROJECT_GALLERY_MOTIONS = [
 
 const projectGalleryFrames = [
   {
+    caption: "특성화고 진로 특강",
     height: 525,
     src: "/images/profile/map-zoom-gallery-01.webp",
     width: 700,
   },
   {
+    caption: "KFIP Toss특별상 수상",
     height: 854,
     src: "/images/profile/map-zoom-gallery-02.webp",
     width: 1280,
   },
   {
+    caption: "Hello New() World 해커톤 대상 수상",
     height: 520,
     src: "/images/profile/map-zoom-gallery-03.webp",
     width: 960,
@@ -196,8 +199,8 @@ const galleryViewportMotion = {
     offscreenMargin: 24,
     perspective: 1200,
     safeMargin: 20,
-    x: 0.72,
-    y: 0.75,
+    x: 0.78,
+    y: 0.68,
   },
   tabletPortrait: {
     blur: 14,
@@ -205,8 +208,8 @@ const galleryViewportMotion = {
     offscreenMargin: 24,
     perspective: 1200,
     safeMargin: 20,
-    x: 1,
-    y: 1,
+    x: 0.82,
+    y: 0.72,
   },
   mobile: {
     blur: 5,
@@ -214,8 +217,8 @@ const galleryViewportMotion = {
     offscreenMargin: 16,
     perspective: 900,
     safeMargin: 16,
-    x: 0.45,
-    y: 0.63,
+    x: 0.66,
+    y: 0.54,
   },
 } as const;
 
@@ -849,10 +852,17 @@ export default function HeroSystemCard() {
       galleryPlane.querySelectorAll<HTMLImageElement>(".topology-project-gallery-image"),
     );
     const desktopQuery = window.matchMedia("(min-width: 1024px)");
-    const mobileQuery = window.matchMedia("(max-width: 767px)");
-    const portraitMapQuery = window.matchMedia("(max-width: 899px) and (orientation: portrait)");
+    const mobilePortraitQuery = window.matchMedia("(max-width: 767px) and (orientation: portrait)");
+    const tabletPortraitQuery = window.matchMedia(
+      "(min-width: 768px) and (max-width: 1199px) and (orientation: portrait)",
+    );
+    // CSS Tablet Portrait 범위와 Map·Scroll Runtime Profile 동기화
+    const portraitQuery = window.matchMedia("(max-width: 1199px) and (orientation: portrait)");
     const tabletLandscapeQuery = window.matchMedia(
       "(min-width: 768px) and (max-width: 1023px) and (orientation: landscape)",
+    );
+    const mobileLandscapeQuery = window.matchMedia(
+      "(max-width: 1023px) and (orientation: landscape) and (max-height: 600px)",
     );
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
@@ -878,9 +888,9 @@ export default function HeroSystemCard() {
     let sceneGeometry: SceneGeometry | null = null;
 
     const getMapCameraProfile = (): MapCameraProfile => {
-      if (!portraitMapQuery.matches) return "default";
+      if (!portraitQuery.matches) return "default";
 
-      return mobileQuery.matches ? "mobilePortrait" : "tabletPortrait";
+      return mobilePortraitQuery.matches ? "mobilePortrait" : "tabletPortrait";
     };
 
     const getFocusViewBox = (cameraProfile: MapCameraProfile) => {
@@ -990,7 +1000,7 @@ export default function HeroSystemCard() {
         !bounds
         || event.pointerType !== "mouse"
         || progressRef.current > HERO_SCROLL_TIMING.topologyExitEnd
-        || mobileQuery.matches
+        || mobilePortraitQuery.matches
         || !finePointerQuery.matches
         || reducedMotionQuery.matches
       ) {
@@ -1092,9 +1102,9 @@ export default function HeroSystemCard() {
     };
 
     const getGalleryViewport = (isDesktop: boolean): GalleryViewport => (
-      mobileQuery.matches
+      mobilePortraitQuery.matches
         ? "mobile"
-        : portraitMapQuery.matches
+        : tabletPortraitQuery.matches
           ? "tabletPortrait"
           : isDesktop
             ? "desktop"
@@ -1132,10 +1142,11 @@ export default function HeroSystemCard() {
     // Resize·Breakpoint·Image Layout 변경 시 Hero Scene Geometry 일괄 측정
     const measureSceneGeometry = () => {
       const isDesktop = desktopQuery.matches;
-      const isPinnedHeroLayout = isDesktop || tabletLandscapeQuery.matches;
+      const isPinnedHeroLayout = !portraitQuery.matches
+        && (isDesktop || tabletLandscapeQuery.matches || mobileLandscapeQuery.matches);
       const isReducedMotion = reducedMotionQuery.matches;
       const mapCameraProfile = getMapCameraProfile();
-      const scrollProfile: HeroScrollProfile = portraitMapQuery.matches ? "portrait" : "default";
+      const scrollProfile: HeroScrollProfile = portraitQuery.matches ? "portrait" : "default";
       const galleryViewport = getGalleryViewport(isDesktop);
       const stickyTop = Number.parseFloat(window.getComputedStyle(stage).top) || 0;
 
@@ -1151,7 +1162,7 @@ export default function HeroSystemCard() {
         : updateScrollLayout(isPinnedHeroLayout, stickyTop, scrollProfile);
       const stageRect = stage.getBoundingClientRect();
 
-      if (portraitMapQuery.matches) {
+      if (portraitQuery.matches) {
         const portraitWorldMapWidth = stageRect.height * 2.1;
         const worldKoreaRatioX = serverPoint.x / WORLD_MAP_SIZE.width;
         const portraitWorldOffsetX = calculatePortraitWorldOffsetX(
@@ -1530,9 +1541,11 @@ export default function HeroSystemCard() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleLayoutChange);
     desktopQuery.addEventListener("change", handleLayoutChange);
-    mobileQuery.addEventListener("change", handleLayoutChange);
-    portraitMapQuery.addEventListener("change", handleLayoutChange);
+    mobilePortraitQuery.addEventListener("change", handleLayoutChange);
+    tabletPortraitQuery.addEventListener("change", handleLayoutChange);
+    portraitQuery.addEventListener("change", handleLayoutChange);
     tabletLandscapeQuery.addEventListener("change", handleLayoutChange);
+    mobileLandscapeQuery.addEventListener("change", handleLayoutChange);
     reducedMotionQuery.addEventListener("change", handleInteractionPreferenceChange);
     finePointerQuery.addEventListener("change", handleInteractionPreferenceChange);
 
@@ -1554,9 +1567,11 @@ export default function HeroSystemCard() {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleLayoutChange);
       desktopQuery.removeEventListener("change", handleLayoutChange);
-      mobileQuery.removeEventListener("change", handleLayoutChange);
-      portraitMapQuery.removeEventListener("change", handleLayoutChange);
+      mobilePortraitQuery.removeEventListener("change", handleLayoutChange);
+      tabletPortraitQuery.removeEventListener("change", handleLayoutChange);
+      portraitQuery.removeEventListener("change", handleLayoutChange);
       tabletLandscapeQuery.removeEventListener("change", handleLayoutChange);
+      mobileLandscapeQuery.removeEventListener("change", handleLayoutChange);
       reducedMotionQuery.removeEventListener("change", handleInteractionPreferenceChange);
       finePointerQuery.removeEventListener("change", handleInteractionPreferenceChange);
       hero.style.removeProperty("--identity-opacity");
@@ -1624,6 +1639,9 @@ export default function HeroSystemCard() {
                   width={frame.width}
                 />
               ) : null}
+              <span className="topology-project-gallery-caption type-small">
+                {frame.caption}
+              </span>
             </div>
           );
         })}
