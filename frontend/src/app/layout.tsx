@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { getDefaultOgImageUrl, getPublicSiteOrigin } from "@/lib/metadata/public-metadata";
 import "pretendard/dist/web/variable/pretendardvariable.css";
 import "../styles/globals.css";
 
@@ -42,10 +43,22 @@ const themeInitScript = `
 })();
 `;
 
-export const metadata: Metadata = {
-  title: "김현우 | Backend / Infrastructure",
-  description: "Backend / Infrastructure 개발자 김현우 포트폴리오",
-};
+// Main Public Metadata 구성
+export function generateMetadata(): Metadata {
+  const image = getDefaultOgImageUrl(getPublicSiteOrigin());
+
+  return {
+    title: "김현우 | Backend / Infrastructure",
+    description: "Backend / Infrastructure 개발자 김현우 포트폴리오",
+    openGraph: {
+      images: image ? [{ url: image }] : undefined,
+    },
+    twitter: image ? {
+      card: "summary_large_image",
+      images: [image],
+    } : undefined,
+  };
+}
 
 // 전체 페이지 Theme과 Font Foundation 적용
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -13,6 +13,7 @@ services:
       BACKEND_BASE_URL: http://backend:8080
       LOG_PATH: /app/logs
       NODE_ENV: production
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-}
       TZ: Asia/Seoul
     networks:
       - runtime
