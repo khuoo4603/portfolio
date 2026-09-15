@@ -120,6 +120,7 @@ jobs:
           FRONTEND_IMAGE: ${{ needs.build.outputs.frontend_image }}
           BACKEND_IMAGE: ${{ needs.build.outputs.backend_image }}
           IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
           POSTGRES_DB: ${{ vars.POSTGRES_DB }}
           POSTGRES_USER: ${{ vars.POSTGRES_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -165,6 +166,7 @@ jobs:
           append_env FRONTEND_IMAGE "$FRONTEND_IMAGE"
           append_env BACKEND_IMAGE "$BACKEND_IMAGE"
           append_env IMAGE_TAG "$IMAGE_TAG"
+          append_env PUBLIC_SITE_URL "$PUBLIC_SITE_URL"
           append_env POSTGRES_DB "$POSTGRES_DB"
           append_env POSTGRES_USER "$POSTGRES_USER"
           append_env DB_PASSWORD "$DB_PASSWORD"
