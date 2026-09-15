@@ -130,10 +130,23 @@
     transform var(--motion-duration-240) var(--motion-easing-default);
 }
 
-.theme-toggle:hover {
+@media (hover: hover) and (pointer: fine) {
+  .theme-toggle:hover {
+    border-color: var(--border-accent);
+    color: var(--text-primary);
+    transform: rotate(8deg);
+  }
+}
+
+.theme-toggle:active {
   border-color: var(--border-accent);
   color: var(--text-primary);
-  transform: rotate(8deg);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .theme-toggle:active {
+    transform: rotate(8deg);
+  }
 }
 
 .theme-toggle svg {
@@ -1293,11 +1306,13 @@ a.project-thumbnail {
     display: block;
     visibility: hidden;
     pointer-events: none;
+    transition: visibility 0s linear var(--motion-duration-240);
   }
 
   .mobile-sidebar.is-open {
     visibility: visible;
     pointer-events: auto;
+    transition-delay: 0s;
   }
 
   .mobile-sidebar-backdrop {
@@ -1318,7 +1333,7 @@ a.project-thumbnail {
     right: 0;
     bottom: 0;
     display: flex;
-    width: min(84vw, 380px);
+    width: min(76vw, 320px);
     padding: var(--space-24);
     flex-direction: column;
     border-left: 1px solid var(--border-default);
@@ -1678,11 +1693,13 @@ a.project-thumbnail {
   .theme-toggle,
   .footer-contact-links a,
   .mobile-sidebar-backdrop,
-  .mobile-sidebar-panel {
+  .mobile-sidebar-panel,
+  .mobile-sidebar {
     transition: none;
   }
 
-  .theme-toggle:hover {
+  .theme-toggle:hover,
+  .theme-toggle:active {
     transform: none;
   }
 
@@ -1826,11 +1843,13 @@ a.project-thumbnail {
 .topology-narrative-world-map-plane {
   z-index: 2;
   opacity: var(--narrative-world-map-opacity);
+  visibility: var(--narrative-world-map-visibility, hidden);
 }
 
 .topology-focus-map-plane {
   z-index: 3;
   opacity: var(--focus-map-opacity);
+  visibility: var(--focus-map-visibility, hidden);
 }
 
 /* Hero Zoom 전경 Project Screenshot 통과 Layer */
@@ -1918,6 +1937,18 @@ a.project-thumbnail {
   height: 100%;
   overflow: visible;
   opacity: 1;
+}
+
+.topology-narrative-world-map-camera,
+.topology-focus-map-camera {
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+}
+
+.topology-narrative-world-map-presentation {
+  width: 100%;
+  height: 100%;
 }
 
 .topology-narrative-world-map-dots,
@@ -2556,6 +2587,24 @@ a.project-thumbnail {
 
 /* Tablet Landscape의 첫 Viewport 좌우 2열 Pinned Hero */
 @media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+  .topology-narrative-world-map-plane,
+  .topology-focus-map-plane {
+    inset: 0;
+    width: auto;
+  }
+
+  .topology-narrative-world-map-viewport,
+  .topology-focus-map-viewport {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    aspect-ratio: auto;
+    transform: none;
+    -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  }
+
   .hero {
     min-height: var(--hero-stage-height, 226.5svh);
   }
@@ -2643,6 +2692,26 @@ a.project-thumbnail {
 }
 
 /* Mobile Landscape의 짧은 높이용 Compact Header·Hero·Topology */
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  .topology-narrative-world-map-plane,
+  .topology-focus-map-plane {
+    inset: 0;
+    width: auto;
+  }
+
+  .topology-narrative-world-map-viewport,
+  .topology-focus-map-viewport {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    aspect-ratio: auto;
+    transform: none;
+    -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  }
+}
+
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 600px) {
   .portfolio-shell {
     --portfolio-header-height: calc(var(--space-48) + var(--space-8));
@@ -2854,28 +2923,51 @@ a.project-thumbnail {
   }
 
   .topology-narrative-world-map-viewport {
-    left: calc(50% + var(--portrait-world-map-offset-x, 0px));
-    width: var(--portrait-world-map-width, 210svh);
-    height: auto;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     max-width: none;
-    overflow: visible;
-    -webkit-mask-image: none;
-    mask-image: none;
-    transform: translate(-50%, -50%);
+    transform: none;
+  }
+
+  .topology-narrative-world-map-presentation {
+    position: absolute;
+    top: var(--portrait-world-presentation-y);
+    left: var(--portrait-world-presentation-x);
+    width: var(--portrait-world-presentation-width);
+    height: var(--portrait-world-presentation-height);
   }
 
   .topology-focus-map-viewport {
-    top: 54%;
-    width: min(100%, 720px);
-    height: 76%;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     max-width: none;
     aspect-ratio: auto;
-    -webkit-mask-image:
-      linear-gradient(to bottom, transparent, black 4%, black 96%, transparent),
-      linear-gradient(to right, transparent, black 6%, black 94%, transparent);
-    mask-image:
-      linear-gradient(to bottom, transparent, black 4%, black 96%, transparent),
-      linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+    transform: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) and (orientation: portrait) {
+  .topology-narrative-world-map-viewport {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+@media (max-width: 767px), (max-width: 1023px) and (orientation: landscape) and (max-height: 600px) {
+  .topology-map-clip {
+    clip-path: inset(0);
+    will-change: auto;
+  }
+
+  .topology-project-gallery-frame {
+    filter: none;
+    transform:
+      translate(-50%, -50%)
+      translate(var(--gallery-x), var(--gallery-y))
+      scale(var(--gallery-scale));
+    will-change: opacity, transform;
   }
 }
 
@@ -3185,11 +3277,6 @@ a.project-thumbnail {
     justify-self: center;
     width: min(86vw, 760px);
     transform: none;
-  }
-
-  .topology-focus-map-viewport {
-    top: 47%;
-    width: 100%;
   }
 
   .topology-tilt-layer {
