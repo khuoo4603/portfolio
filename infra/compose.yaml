@@ -6,7 +6,7 @@ x-local-logging: &local-logging
 
 services:
   frontend:
-    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE is required}:${FRONTEND_IMAGE_TAG:?FRONTEND_IMAGE_TAG is required}
     group_add:
       - "2002"
     environment:
@@ -41,7 +41,7 @@ services:
     logging: *local-logging
 
   backend:
-    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${BACKEND_IMAGE_TAG:?BACKEND_IMAGE_TAG is required}
     group_add:
       - "2001"
     environment:
@@ -84,7 +84,7 @@ services:
     logging: *local-logging
 
   monitor:
-    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${BACKEND_IMAGE_TAG:?BACKEND_IMAGE_TAG is required}
     environment:
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       KYVC_BACKEND_HEALTH_URL: ${KYVC_BACKEND_HEALTH_URL:?KYVC_BACKEND_HEALTH_URL is required}
@@ -107,8 +107,6 @@ services:
       postgres:
         condition: service_healthy
       backend:
-        condition: service_healthy
-      frontend:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1"]
