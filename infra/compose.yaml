@@ -6,7 +6,7 @@ x-local-logging: &local-logging
 
 services:
   frontend:
-    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE is required}:${FRONTEND_IMAGE_TAG:?FRONTEND_IMAGE_TAG is required}
     group_add:
       - "2002"
     environment:
@@ -31,7 +31,7 @@ services:
           fetch('http://127.0.0.1:3000/healthz')
           .then(response => process.exit(response.ok ? 0 : 1))
           .catch(() => process.exit(1))
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 6
       start_period: 20s
@@ -41,7 +41,7 @@ services:
     logging: *local-logging
 
   backend:
-    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${BACKEND_IMAGE_TAG:?BACKEND_IMAGE_TAG is required}
     group_add:
       - "2001"
     environment:
@@ -74,7 +74,7 @@ services:
           printf "GET /actuator/health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3;
           IFS= read -r status <&3;
           [[ "$$status" == *" 200 "* ]]'
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 12
       start_period: 30s
@@ -84,7 +84,7 @@ services:
     logging: *local-logging
 
   monitor:
-    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${IMAGE_TAG:?IMAGE_TAG is required}
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${BACKEND_IMAGE_TAG:?BACKEND_IMAGE_TAG is required}
     environment:
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       KYVC_BACKEND_HEALTH_URL: ${KYVC_BACKEND_HEALTH_URL:?KYVC_BACKEND_HEALTH_URL is required}
@@ -108,11 +108,9 @@ services:
         condition: service_healthy
       backend:
         condition: service_healthy
-      frontend:
-        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1"]
-      interval: 30s
+      interval: 5s
       timeout: 5s
       retries: 3
       start_period: 30s

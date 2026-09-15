@@ -1,19 +1,49 @@
-name: Deploy PROD
+name: Backend CD
 
 on:
   push:
     branches:
+      - develop
       - main
+    paths:
+      - backend/**
+      - infra/**
+      - .github/workflows/cd-backend.yml
   workflow_dispatch:
 
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false
+permissions:
+  contents: read
 
 jobs:
+  target:
+    name: Resolve deployment target
+    runs-on: ubuntu-latest
+    outputs:
+      target_env: ${{ steps.target.outputs.target_env }}
+      github_environment: ${{ steps.target.outputs.github_environment }}
+    steps:
+      - id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$GITHUB_REF" in
+            refs/heads/develop)
+              echo "target_env=dev" >> "$GITHUB_OUTPUT"
+              echo "github_environment=development" >> "$GITHUB_OUTPUT"
+              ;;
+            refs/heads/main)
+              echo "target_env=prod" >> "$GITHUB_OUTPUT"
+              echo "github_environment=production" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported deployment branch: $GITHUB_REF" >&2
+              exit 1
+              ;;
+          esac
+
   build:
-    name: Build and push images
-    if: github.ref == 'refs/heads/main'
+    name: Backend CD · Build
+    needs: target
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,33 +55,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24.19.0
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Verify frontend
-        working-directory: frontend
-        run: |
-          npm ci
-          npm run lint
-          npm run typecheck
-          npm run test
-          npm run build
-
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
-
-      - name: Verify backend
-        working-directory: backend
-        run: bash ./gradlew clean build
 
       - name: Resolve image names
         id: images
@@ -73,14 +76,6 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build and push frontend
-        uses: docker/build-push-action@v7
-        with:
-          context: frontend
-          file: frontend/Dockerfile
-          push: true
-          tags: ${{ steps.images.outputs.frontend_image }}:${{ steps.images.outputs.image_tag }}
-
       - name: Build and push backend
         uses: docker/build-push-action@v7
         with:
@@ -88,18 +83,25 @@ jobs:
           file: backend/Dockerfile
           push: true
           tags: ${{ steps.images.outputs.backend_image }}:${{ steps.images.outputs.image_tag }}
+          cache-from: type=gha,scope=portfolio-backend
+          cache-to: type=gha,mode=max,scope=portfolio-backend
 
   deploy:
-    name: Deploy production
-    needs: build
-    if: github.ref == 'refs/heads/main'
+    name: Backend CD · ${{ needs.target.outputs.target_env }}
+    needs:
+      - target
+      - build
     runs-on:
       - self-hosted
       - Linux
       - X64
       - portfolio
       - deploy
-    environment: production
+    environment: ${{ needs.target.outputs.github_environment }}
+    concurrency:
+      group: portfolio-deploy-${{ needs.target.outputs.target_env }}
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       packages: read
@@ -114,9 +116,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deploy PROD
+      - name: Deploy backend
         shell: bash
         env:
+          TARGET_ENV: ${{ needs.target.outputs.target_env }}
           FRONTEND_IMAGE: ${{ needs.build.outputs.frontend_image }}
           BACKEND_IMAGE: ${{ needs.build.outputs.backend_image }}
           IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
@@ -145,10 +148,10 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${RUNNER_TEMP:-}" || ! -d "$RUNNER_TEMP" || ! -w "$RUNNER_TEMP" ]]; then
-            echo "RUNNER_TEMP가 유효하지 않습니다." >&2
+            echo "RUNNER_TEMP is unavailable." >&2
             exit 1
           fi
-          temporary_env="$(mktemp "${RUNNER_TEMP%/}/portfolio-prod-XXXXXX.env")"
+          temporary_env="$(mktemp "${RUNNER_TEMP%/}/portfolio-${TARGET_ENV}-XXXXXX.env")"
           chmod 600 "$temporary_env"
           trap 'rm -f -- "$temporary_env"' EXIT
 
@@ -156,7 +159,7 @@ jobs:
             local key="$1"
             local value="$2"
             if [[ -z "$value" || "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
-              echo "필수 배포 환경값이 비어 있거나 허용되지 않은 형식입니다: $key" >&2
+              echo "Required deployment environment value is invalid: $key" >&2
               exit 1
             fi
             value="${value//\'/\\\'}"
@@ -165,7 +168,6 @@ jobs:
 
           append_env FRONTEND_IMAGE "$FRONTEND_IMAGE"
           append_env BACKEND_IMAGE "$BACKEND_IMAGE"
-          append_env IMAGE_TAG "$IMAGE_TAG"
           append_env PUBLIC_SITE_URL "$PUBLIC_SITE_URL"
           append_env POSTGRES_DB "$POSTGRES_DB"
           append_env POSTGRES_USER "$POSTGRES_USER"
@@ -189,4 +191,4 @@ jobs:
           append_env SMOKE_FRONTEND_BASE_URL "$SMOKE_FRONTEND_BASE_URL"
           append_env SMOKE_API_BASE_URL "$SMOKE_API_BASE_URL"
 
-          bash infra/scripts/deploy.sh prod "$IMAGE_TAG" "$temporary_env"
+          bash infra/scripts/deploy.sh "$TARGET_ENV" backend "$IMAGE_TAG" "$temporary_env"
