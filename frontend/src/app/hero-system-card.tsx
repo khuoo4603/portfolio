@@ -657,6 +657,25 @@ export function calculateHeroScrollMetrics(
   } as const;
 }
 
+export function calculateAboutLayout(
+  metrics: ReturnType<typeof calculateHeroScrollMetrics>,
+  stickyTop: number,
+  anchorScrollMargin: number,
+  isShortDesktop: boolean,
+) {
+  const aboutRevealPoint = isShortDesktop
+    ? metrics.sceneExitEnd
+    : metrics.sceneExitStart;
+  const aboutAnchorOffset = isShortDesktop
+    ? Math.max(anchorScrollMargin - stickyTop, 0)
+    : Math.max(
+      metrics.sceneExitEnd - metrics.sceneExitStart - stickyTop + anchorScrollMargin,
+      0,
+    );
+
+  return { aboutAnchorOffset, aboutRevealPoint };
+}
+
 // Scroll 픽셀 위치 기반 Hero Narrative 시각 상태 계산
 export function calculateHeroSceneState(
   scrollPixels: number,
@@ -1110,6 +1129,7 @@ export default function HeroSystemCard() {
       isPinnedHeroLayout: boolean,
       stickyTop: number,
       scrollProfile: HeroScrollProfile,
+      isShortDesktop: boolean,
     ) => {
       const baseDistance = getBaseScrollDistance(isPinnedHeroLayout);
       const metrics = calculateHeroScrollMetrics(baseDistance, scrollProfile);
@@ -1128,14 +1148,15 @@ export default function HeroSystemCard() {
       const sceneStart = isPinnedHeroLayout
         ? heroTop
         : window.scrollY + systemRect.top - stickyTop;
-      const aboutTop = sceneStart + metrics.sceneExitStart + stickyTop;
-      const overlap = Math.max(heroTop + hero.offsetHeight - aboutTop, 0);
       const anchorScrollMargin = Number.parseFloat(window.getComputedStyle(aboutAnchor).scrollMarginTop) || 0;
-      // Fixed Header 보정 포함 Cross-fade 종료 시점 Anchor 위치
-      const aboutAnchorOffset = Math.max(
-        metrics.sceneExitEnd - metrics.sceneExitStart - stickyTop + anchorScrollMargin,
-        0,
+      const { aboutAnchorOffset, aboutRevealPoint } = calculateAboutLayout(
+        metrics,
+        stickyTop,
+        anchorScrollMargin,
+        isShortDesktop,
       );
+      const aboutTop = sceneStart + aboutRevealPoint + stickyTop;
+      const overlap = Math.max(heroTop + hero.offsetHeight - aboutTop, 0);
 
       aboutSection.style.setProperty("--about-transition-height", `${overlap}px`);
       aboutSection.style.setProperty("--about-anchor-offset", `${aboutAnchorOffset}px`);
@@ -1187,6 +1208,9 @@ export default function HeroSystemCard() {
       const isMobilePerformanceProfile = mobilePerformanceQuery.matches;
       const isPinnedHeroLayout = !portraitQuery.matches
         && (isDesktop || tabletLandscapeQuery.matches || mobileLandscapeQuery.matches);
+      const isShortDesktop = isPinnedHeroLayout
+        && window.innerWidth >= 1180
+        && window.innerHeight <= 950;
       const isReducedMotion = reducedMotionQuery.matches;
       const mapCameraProfile = getMapCameraProfile();
       const scrollProfile: HeroScrollProfile = portraitQuery.matches ? "portrait" : "default";
@@ -1202,7 +1226,7 @@ export default function HeroSystemCard() {
 
       const scrollLayout = isReducedMotion
         ? null
-        : updateScrollLayout(isPinnedHeroLayout, stickyTop, scrollProfile);
+        : updateScrollLayout(isPinnedHeroLayout, stickyTop, scrollProfile, isShortDesktop);
       const stageRect = stage.getBoundingClientRect();
 
       if (portraitQuery.matches) {

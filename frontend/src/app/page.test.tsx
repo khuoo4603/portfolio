@@ -38,6 +38,7 @@ import {
   TABLET_PORTRAIT_KOREA_ZOOM_SCALE,
   WORLD_CAMERA_PAN_START_SCALE,
   WORLD_TO_FOCUS_SCALE,
+  calculateAboutLayout,
   calculateFocusTransition,
   calculateGalleryFrameAnchors,
   calculateGalleryFramePosition,
@@ -902,6 +903,21 @@ describe("포트폴리오 메인", () => {
     expect(metrics.zoomStart).toBeLessThan(metrics.mapCenterEnd);
     expect(metrics.zoomStart / 360).toBeLessThan(0.1);
     expect(calculateHeroSceneState(31, metrics).zoomProgress).toBeGreaterThan(0);
+  });
+
+  it("uses the fade end as the short desktop About reveal point", () => {
+    const metrics = calculateHeroScrollMetrics(1000);
+    const normalLayout = calculateAboutLayout(metrics, 64, 64, false);
+    const shortDesktopLayout = calculateAboutLayout(metrics, 64, 64, true);
+
+    expect(normalLayout).toEqual({
+      aboutRevealPoint: metrics.sceneExitStart,
+      aboutAnchorOffset: metrics.sceneExitEnd - metrics.sceneExitStart,
+    });
+    expect(shortDesktopLayout).toEqual({
+      aboutRevealPoint: metrics.sceneExitEnd,
+      aboutAnchorOffset: 0,
+    });
   });
 
   it("소개 Anchor를 색이 100%가 되는 Cross-fade 종료 시점으로 배치", async () => {
