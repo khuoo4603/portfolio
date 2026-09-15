@@ -31,12 +31,14 @@ import {
   KOREA_ZOOM_DISTANCE_MULTIPLIER,
   KOREA_ZOOM_SCALE_MULTIPLIER,
   MAP_DOT_SCREEN_WIDTH,
+  MAP_LAYER_VISIBILITY_EPSILON,
   MOBILE_KOREA_ZOOM_SCALE,
   PORTRAIT_WORLD_CAMERA_PAN_START_SCALE,
   PROJECT_GALLERY_MOTIONS,
   TABLET_PORTRAIT_KOREA_ZOOM_SCALE,
   WORLD_CAMERA_PAN_START_SCALE,
   WORLD_TO_FOCUS_SCALE,
+  calculateAboutLayout,
   calculateFocusTransition,
   calculateGalleryFrameAnchors,
   calculateGalleryFramePosition,
@@ -49,6 +51,8 @@ import {
   calculatePortraitWorldOffsetX,
   calculateVirtualZoomScale,
   dampGalleryValue,
+  getMapDotWidths,
+  shouldUpdateMapTransform,
 } from "./hero-system-card";
 import { HomeView } from "./home-view";
 
@@ -437,6 +441,21 @@ describe("포트폴리오 메인", () => {
     expect(PORTRAIT_WORLD_CAMERA_PAN_START_SCALE).toBe(1.08);
   });
 
+  it("uses mobile map rendering guards", () => {
+    const zoomState = calculateMapZoomState(0.5);
+
+    expect(getMapDotWidths(zoomState, true)).toEqual({
+      worldMapDotWidth: MAP_DOT_SCREEN_WIDTH.worldHandoff,
+      focusMapDotWidth: MAP_DOT_SCREEN_WIDTH.focusFinal,
+    });
+    expect(getMapDotWidths(zoomState, false)).toEqual({
+      worldMapDotWidth: zoomState.worldMapDotWidth,
+      focusMapDotWidth: zoomState.focusMapDotWidth,
+    });
+    expect(shouldUpdateMapTransform(MAP_LAYER_VISIBILITY_EPSILON)).toBe(false);
+    expect(shouldUpdateMapTransform(MAP_LAYER_VISIBILITY_EPSILON + Number.EPSILON)).toBe(true);
+  });
+
   it("Portrait World Map의 Korea Anchor를 화면 중앙축으로 이동", () => {
     const mapWidth = 1600;
     const koreaRatioX = projectPoint(KOREA_ANCHOR).x / WORLD_MAP_SIZE.width;
@@ -656,7 +675,7 @@ describe("포트폴리오 메인", () => {
     expect(mobileSpawn.z).toBeCloseTo(desktopSpawn.z * 0.72);
     expect(tabletSpawn.blur).toBe(14);
     expect(tabletPortraitSpawn.blur).toBe(14);
-    expect(mobileSpawn.blur).toBe(5);
+    expect(mobileSpawn.blur).toBe(0);
     expect(tabletPosition.x).toBeCloseTo(desktopPosition.x * 0.78);
     expect(tabletPosition.y).toBeCloseTo(desktopPosition.y * 0.68);
     expect(tabletPortraitPosition.x).toBeCloseTo(desktopPosition.x * 0.82);
@@ -884,6 +903,21 @@ describe("포트폴리오 메인", () => {
     expect(metrics.zoomStart).toBeLessThan(metrics.mapCenterEnd);
     expect(metrics.zoomStart / 360).toBeLessThan(0.1);
     expect(calculateHeroSceneState(31, metrics).zoomProgress).toBeGreaterThan(0);
+  });
+
+  it("uses the fade end as the short desktop About reveal point", () => {
+    const metrics = calculateHeroScrollMetrics(1000);
+    const normalLayout = calculateAboutLayout(metrics, 64, 64, false);
+    const shortDesktopLayout = calculateAboutLayout(metrics, 64, 64, true);
+
+    expect(normalLayout).toEqual({
+      aboutRevealPoint: metrics.sceneExitStart,
+      aboutAnchorOffset: metrics.sceneExitEnd - metrics.sceneExitStart,
+    });
+    expect(shortDesktopLayout).toEqual({
+      aboutRevealPoint: metrics.sceneExitEnd,
+      aboutAnchorOffset: 0,
+    });
   });
 
   it("소개 Anchor를 색이 100%가 되는 Cross-fade 종료 시점으로 배치", async () => {
