@@ -31,7 +31,7 @@ services:
           fetch('http://127.0.0.1:3000/healthz')
           .then(response => process.exit(response.ok ? 0 : 1))
           .catch(() => process.exit(1))
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 6
       start_period: 20s
@@ -74,7 +74,7 @@ services:
           printf "GET /actuator/health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3;
           IFS= read -r status <&3;
           [[ "$$status" == *" 200 "* ]]'
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 12
       start_period: 30s
@@ -110,7 +110,7 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1"]
-      interval: 30s
+      interval: 5s
       timeout: 5s
       retries: 3
       start_period: 30s
