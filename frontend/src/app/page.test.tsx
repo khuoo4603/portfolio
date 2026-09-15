@@ -21,6 +21,8 @@ import {
   WORLD_MAP_GRID_HEIGHT,
   WORLD_MAP_SIZE,
   calculateEastAsiaFocusRatio,
+  calculatePortraitKoreaViewBox,
+  expandViewBoxAroundFocus,
   formatMapViewBox,
   projectPoint,
 } from "./hero-world-map";
@@ -32,10 +34,12 @@ import {
   KOREA_ZOOM_SCALE_MULTIPLIER,
   MAP_DOT_SCREEN_WIDTH,
   MAP_LAYER_VISIBILITY_EPSILON,
+  MOBILE_FOCUS_START_OVERVIEW_RATIO,
   MOBILE_KOREA_ZOOM_SCALE,
   PORTRAIT_WORLD_CAMERA_PAN_START_SCALE,
   PROJECT_GALLERY_MOTIONS,
   TABLET_PORTRAIT_KOREA_ZOOM_SCALE,
+  TABLET_PORTRAIT_FOCUS_EXTRA_ZOOM,
   WORLD_CAMERA_PAN_START_SCALE,
   WORLD_TO_FOCUS_SCALE,
   calculateAboutLayout,
@@ -48,10 +52,16 @@ import {
   calculateHeroSceneState,
   calculateHeroScrollMetrics,
   calculateMapZoomState,
+  calculateMapNarrativeTarget,
+  calculateMobileFocusFinalScale,
+  calculateTabletPortraitWorldPresentation,
+  calculatePortraitWorldPresentationSurface,
   calculatePortraitWorldOffsetX,
   calculateVirtualZoomScale,
   dampGalleryValue,
+  getMapNarrativeMode,
   getMapDotWidths,
+  isTabletLandscapeProfile,
   shouldUpdateMapTransform,
 } from "./hero-system-card";
 import { HomeView } from "./home-view";
@@ -161,10 +171,31 @@ describe("포트폴리오 메인", () => {
 
     fireEvent.click(menuButton);
     expect(menuButton).toHaveAttribute("aria-expanded", "true");
+    expect(document.querySelector(".mobile-sidebar")).toHaveClass("is-open");
     expect(screen.getByRole("navigation", { name: "모바일 포트폴리오 메뉴" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "모바일 메뉴 닫기" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "모바일 색상 테마 전환" })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "모바일 메뉴 닫기" }));
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
+    expect(document.querySelector(".mobile-sidebar")).not.toHaveClass("is-open");
+    expect(screen.getByRole("navigation", { name: "모바일 포트폴리오 메뉴" })).toBeInTheDocument();
+
+    fireEvent.click(menuButton);
+    fireEvent.click(document.querySelector<HTMLElement>(".mobile-sidebar-backdrop")!);
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(menuButton);
+    fireEvent.click(within(screen.getByRole("navigation", {
+      name: "모바일 포트폴리오 메뉴",
+    })).getByRole("link", { name: "소개" }));
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(menuButton);
+    fireEvent.click(menuButton);
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(menuButton);
     fireEvent.keyDown(document, { key: "Escape" });
     expect(menuButton).toHaveAttribute("aria-expanded", "false");
   });
@@ -293,10 +324,10 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelectorAll(".topology-map-dots")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-svg")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-zoom")).toHaveLength(1);
-    expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(1);
+    expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(0);
     expect(document.querySelectorAll(".topology-focus-map-svg")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-focus-map-zoom")).toHaveLength(1);
-    expect(document.querySelectorAll(".topology-focus-map-dots")).toHaveLength(1);
+    expect(document.querySelectorAll(".topology-focus-map-dots")).toHaveLength(0);
     expect(narrativeMapPlane?.parentElement).toBe(stage);
     expect(focusMapPlane?.parentElement).toBe(stage);
     expect(galleryPlane?.parentElement).toBe(stage);
@@ -330,7 +361,7 @@ describe("포트폴리오 메인", () => {
       expect.stringContaining("map-zoom-gallery-03.webp"),
     ]);
     galleryImages?.forEach((image) => {
-      expect(image).toHaveAttribute("loading", "lazy");
+      expect(image).toHaveAttribute("loading", "eager");
       expect(image).toHaveAttribute("fetchpriority", "low");
       expect(image).toHaveAttribute("decoding", "async");
     });
@@ -441,6 +472,73 @@ describe("포트폴리오 메인", () => {
     expect(PORTRAIT_WORLD_CAMERA_PAN_START_SCALE).toBe(1.08);
   });
 
+  it("Portrait Stage별 Korea Camera 비율과 Focus 범위 유지", () => {
+    [
+      [390, 844, MOBILE_KOREA_VIEWBOX],
+      [430, 932, MOBILE_KOREA_VIEWBOX],
+      [768, 1024, TABLET_PORTRAIT_KOREA_VIEWBOX],
+      [820, 1180, TABLET_PORTRAIT_KOREA_VIEWBOX],
+      [1024, 1366, TABLET_PORTRAIT_KOREA_VIEWBOX],
+    ].forEach(([width, height, bounds]) => {
+      const viewBox = calculatePortraitKoreaViewBox(
+        width as number,
+        height as number,
+        bounds as typeof MOBILE_KOREA_VIEWBOX,
+      );
+      const focus = calculateEastAsiaFocusRatio(viewBox);
+
+      expect(viewBox.width / viewBox.height).toBeCloseTo((width as number) / (height as number), 10);
+      expect(focus.x).toBeGreaterThanOrEqual(0);
+      expect(focus.x).toBeLessThanOrEqual(1);
+      expect(focus.y).toBeGreaterThanOrEqual(0);
+      expect(focus.y).toBeLessThanOrEqual(1);
+      expect(viewBox.x).toBeGreaterThanOrEqual((bounds as typeof MOBILE_KOREA_VIEWBOX).x);
+      expect(viewBox.y).toBeGreaterThanOrEqual((bounds as typeof MOBILE_KOREA_VIEWBOX).y);
+      expect(viewBox.x + viewBox.width).toBeLessThanOrEqual(
+        (bounds as typeof MOBILE_KOREA_VIEWBOX).x + (bounds as typeof MOBILE_KOREA_VIEWBOX).width,
+      );
+      expect(viewBox.y + viewBox.height).toBeLessThanOrEqual(
+        (bounds as typeof MOBILE_KOREA_VIEWBOX).y + (bounds as typeof MOBILE_KOREA_VIEWBOX).height,
+      );
+    });
+  });
+
+  it("expands the Mobile Portrait start ViewBox and preserves final coverage", () => {
+    const currentMobileViewBox = calculatePortraitKoreaViewBox(390, 844);
+    const mobileStartViewBox = expandViewBoxAroundFocus(
+      currentMobileViewBox,
+      EAST_ASIA_FOCUS_POINT,
+      MOBILE_FOCUS_START_OVERVIEW_RATIO,
+      EAST_ASIA_VIEWBOX,
+    );
+    const focusRatio = calculateEastAsiaFocusRatio(mobileStartViewBox);
+    const mobileFinalScale = calculateMobileFocusFinalScale(
+      currentMobileViewBox,
+      mobileStartViewBox,
+    );
+
+    expect(mobileStartViewBox.width).toBeGreaterThan(currentMobileViewBox.width);
+    expect(mobileStartViewBox.height).toBeGreaterThan(currentMobileViewBox.height);
+    expect(mobileStartViewBox.width / mobileStartViewBox.height).toBeCloseTo(
+      currentMobileViewBox.width / currentMobileViewBox.height,
+    );
+    expect(focusRatio.x).toBeGreaterThanOrEqual(0);
+    expect(focusRatio.x).toBeLessThanOrEqual(1);
+    expect(focusRatio.y).toBeGreaterThanOrEqual(0);
+    expect(focusRatio.y).toBeLessThanOrEqual(1);
+    expect(mobileStartViewBox.x).toBeGreaterThanOrEqual(EAST_ASIA_VIEWBOX.x);
+    expect(mobileStartViewBox.y).toBeGreaterThanOrEqual(EAST_ASIA_VIEWBOX.y);
+    expect(mobileStartViewBox.x + mobileStartViewBox.width).toBeLessThanOrEqual(
+      EAST_ASIA_VIEWBOX.x + EAST_ASIA_VIEWBOX.width,
+    );
+    expect(mobileStartViewBox.y + mobileStartViewBox.height).toBeLessThanOrEqual(
+      EAST_ASIA_VIEWBOX.y + EAST_ASIA_VIEWBOX.height,
+    );
+    expect(mobileStartViewBox.width / mobileFinalScale).toBeCloseTo(
+      currentMobileViewBox.width / MOBILE_KOREA_ZOOM_SCALE,
+    );
+  });
+
   it("uses mobile map rendering guards", () => {
     const zoomState = calculateMapZoomState(0.5);
 
@@ -502,7 +600,7 @@ describe("포트폴리오 메인", () => {
     expect(focusRatio.y).toBeLessThan(1);
     expect(currentVisibleWidth / portraitVisibleWidth).toBeCloseTo(1.5);
     expect(tabletPortraitState.focusMapScale).toBeCloseTo(
-      TABLET_PORTRAIT_KOREA_ZOOM_SCALE,
+      TABLET_PORTRAIT_KOREA_ZOOM_SCALE * TABLET_PORTRAIT_FOCUS_EXTRA_ZOOM,
     );
   });
 
@@ -1038,8 +1136,16 @@ describe("포트폴리오 메인", () => {
     expect(guides[0]).toHaveAttribute("d", paths[0].getAttribute("d"));
     expect(guides[1]).toHaveAttribute("d", paths[1].getAttribute("d"));
     expect(guides[2]).toHaveAttribute("d", paths[2].getAttribute("d"));
-    expect(focusMap).toHaveAttribute("viewBox", formatMapViewBox(MOBILE_KOREA_VIEWBOX));
-    expect(focusMap).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
+    expect(focusMap).toHaveAttribute(
+      "viewBox",
+      formatMapViewBox(expandViewBoxAroundFocus(
+        calculatePortraitKoreaViewBox(0, 0),
+        EAST_ASIA_FOCUS_POINT,
+        MOBILE_FOCUS_START_OVERVIEW_RATIO,
+        EAST_ASIA_VIEWBOX,
+      )),
+    );
+    expect(focusMap).toHaveAttribute("preserveAspectRatio", "xMidYMid meet");
   });
 
   it("1032×1376 Tablet Portrait를 Desktop 폭에서도 전용 Camera와 비Pinned Profile로 처리", () => {
@@ -1061,9 +1167,13 @@ describe("포트폴리오 메인", () => {
 
     expect(focusMap).toHaveAttribute(
       "viewBox",
-      formatMapViewBox(TABLET_PORTRAIT_KOREA_VIEWBOX),
+      formatMapViewBox(calculatePortraitKoreaViewBox(
+        0,
+        0,
+  TABLET_PORTRAIT_KOREA_VIEWBOX,
+      )),
     );
-    expect(focusMap).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
+    expect(focusMap).toHaveAttribute("preserveAspectRatio", "xMidYMid meet");
     expect(document.querySelector<HTMLElement>(".hero-visual-stage")?.style.getPropertyValue("--gallery-perspective"))
       .toBe("1200px");
     expect(document.querySelector<HTMLElement>(".hero")?.style.getPropertyValue("--hero-stage-height"))
@@ -1607,13 +1717,106 @@ describe("포트폴리오 메인", () => {
       "transform",
       expect.stringContaining(`scale(${FOCUS_HANDOFF_END_SCALE})`),
     );
+    const currentMobileViewBox = calculatePortraitKoreaViewBox(0, 0);
+    const mobileStartViewBox = expandViewBoxAroundFocus(
+      currentMobileViewBox,
+      EAST_ASIA_FOCUS_POINT,
+      MOBILE_FOCUS_START_OVERVIEW_RATIO,
+      EAST_ASIA_VIEWBOX,
+    );
     expect(document.querySelector(".topology-focus-map-zoom")).toHaveAttribute(
       "transform",
-      expect.stringContaining(`scale(${MOBILE_KOREA_ZOOM_SCALE})`),
+      expect.stringContaining(`scale(${calculateMobileFocusFinalScale(currentMobileViewBox, mobileStartViewBox)})`),
     );
     expect(document.querySelector<HTMLElement>(".about-section")).toHaveStyle({
       "--about-opacity": "1",
       "--about-anchor-offset": "0px",
     });
+  });
+
+  it("Portrait World Presentation Surface의 크기와 Korea 정렬 유지", () => {
+    const koreaRatioX = projectPoint(KOREA_ANCHOR).x / WORLD_MAP_SIZE.width;
+
+    [
+      { height: 800, width: 360 },
+      { height: 844, width: 390 },
+      { height: 915, width: 412 },
+      { height: 932, width: 430 },
+    ].forEach((stage) => {
+      const surface = calculatePortraitWorldPresentationSurface(
+        stage.width,
+        stage.height,
+        koreaRatioX,
+      );
+      const koreaX = surface.x + surface.width * koreaRatioX;
+
+      expect(surface.width).toBeCloseTo(stage.height * 2.1);
+      expect(surface.width).toBeGreaterThan(stage.width);
+      expect(surface.width / surface.height).toBeCloseTo(2);
+      expect(koreaX / stage.width).toBeCloseTo(0.5);
+    });
+  });
+
+  it("Mobile Portrait Focus-only 내러티브와 Marker target 유지", () => {
+    const metrics = calculateHeroScrollMetrics(1000, "portrait");
+    const entered = calculateHeroSceneState(
+      metrics.mapCenterEnd,
+      metrics,
+      "mobile",
+      "mobilePortrait",
+      "focusOnly",
+    );
+    const final = calculateHeroSceneState(
+      metrics.zoomEnd,
+      metrics,
+      "mobile",
+      "mobilePortrait",
+      "focusOnly",
+    );
+
+    expect(getMapNarrativeMode("mobilePortrait")).toBe("focusOnly");
+    expect(calculateMapNarrativeTarget(
+      "focusOnly",
+      { x: 100, y: 120 },
+      { x: 200, y: 240 },
+    )).toEqual({ x: 200, y: 240 });
+    expect(entered.narrativeWorldMapOpacity).toBe(0);
+    expect(entered.focusMapOpacity).toBeGreaterThan(0);
+    expect(final.focusMapScale).toBe(MOBILE_KOREA_ZOOM_SCALE);
+    expect(final.focusMapScale).toBeGreaterThanOrEqual(entered.focusMapScale);
+  });
+
+  it("Tablet Portrait World Presentation과 Dot profile 유지", () => {
+    const koreaRatioX = projectPoint(KOREA_ANCHOR).x / WORLD_MAP_SIZE.width;
+
+    [
+      { height: 1024, width: 768 },
+      { height: 1180, width: 820 },
+      { height: 1366, width: 1024 },
+    ].forEach((stage) => {
+      const surface = calculateTabletPortraitWorldPresentation(
+        stage.width,
+        stage.height,
+        koreaRatioX,
+      );
+      const koreaX = surface.x + surface.width * koreaRatioX;
+
+      expect(surface.height).toBeCloseTo(stage.height * 1.15);
+      expect(surface.width / surface.height).toBeCloseTo(2);
+      expect(koreaX / stage.width).toBeCloseTo(0.5);
+    });
+
+    expect(getMapDotWidths(calculateMapZoomState(0.5), false, true).worldMapDotWidth)
+      .toBe(MAP_DOT_SCREEN_WIDTH.tabletPortraitWorld);
+    expect(getMapDotWidths(calculateMapZoomState(0.5), true, false).worldMapDotWidth)
+      .toBe(MAP_DOT_SCREEN_WIDTH.worldHandoff);
+  });
+
+  it("Touch Tablet Landscape와 Fine Pointer Desktop profile 분리", () => {
+    [1024, 1180, 1280, 1366].forEach(() => {
+      expect(isTabletLandscapeProfile(false, true)).toBe(true);
+    });
+    expect(isTabletLandscapeProfile(true, false)).toBe(true);
+    expect(isTabletLandscapeProfile(false, false)).toBe(false);
   });
 });

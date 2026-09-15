@@ -131,6 +131,79 @@ function calculateEastAsiaViewBox(region: GeoRegion): MapViewBox {
 
 export const MOBILE_KOREA_VIEWBOX = calculateEastAsiaViewBox(MOBILE_KOREA_CROP);
 
+// Portrait Stage 비율을 유지하면서 Korea Focus를 포함하는 카메라 범위 계산
+export function calculatePortraitKoreaViewBox(
+  viewportWidth: number,
+  viewportHeight: number,
+  bounds: MapViewBox = MOBILE_KOREA_VIEWBOX,
+): MapViewBox {
+  const aspectRatio = Math.max(viewportWidth, 1) / Math.max(viewportHeight, 1);
+  const boundsAspectRatio = bounds.width / bounds.height;
+  const width = aspectRatio <= boundsAspectRatio
+    ? bounds.height * aspectRatio
+    : bounds.width;
+  const height = aspectRatio <= boundsAspectRatio
+    ? bounds.height
+    : bounds.width / aspectRatio;
+  const x = Math.min(
+    Math.max(EAST_ASIA_FOCUS_POINT.x - width / 2, bounds.x),
+    bounds.x + bounds.width - width,
+  );
+  const y = Math.min(
+    Math.max(EAST_ASIA_FOCUS_POINT.y - height / 2, bounds.y),
+    bounds.y + bounds.height - height,
+  );
+
+  return { x, y, width, height };
+}
+
+// Focus 기준 확장 ViewBox의 Source Bounds 내 안전 배치
+export function expandViewBoxAroundFocus(
+  viewBox: MapViewBox,
+  focusPoint: { x: number; y: number },
+  ratio: number,
+  sourceBounds: MapViewBox,
+): MapViewBox {
+  const scale = Math.min(
+    Math.max(ratio, 1),
+    sourceBounds.width / viewBox.width,
+    sourceBounds.height / viewBox.height,
+  );
+  const width = viewBox.width * scale;
+  const height = viewBox.height * scale;
+  const x = Math.min(
+    Math.max(focusPoint.x - width / 2, sourceBounds.x),
+    sourceBounds.x + sourceBounds.width - width,
+  );
+  const y = Math.min(
+    Math.max(focusPoint.y - height / 2, sourceBounds.y),
+    sourceBounds.y + sourceBounds.height - height,
+  );
+
+  return { x, y, width, height };
+}
+
+// SVG viewBox와 렌더 영역의 meet 배치 결과 계산
+export function calculateMapSurface(
+  viewportWidth: number,
+  viewportHeight: number,
+  viewBox: MapViewBox,
+): MapViewBox {
+  const scale = Math.min(
+    Math.max(viewportWidth, 0) / viewBox.width,
+    Math.max(viewportHeight, 0) / viewBox.height,
+  );
+  const width = viewBox.width * scale;
+  const height = viewBox.height * scale;
+
+  return {
+    x: (viewportWidth - width) / 2,
+    y: (viewportHeight - height) / 2,
+    width,
+    height,
+  };
+}
+
 // 현재 Camera ViewBox 내부의 대한민국 상대 좌표 계산
 export function calculateEastAsiaFocusRatio(viewBox: MapViewBox) {
   return {

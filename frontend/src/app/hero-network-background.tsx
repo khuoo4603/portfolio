@@ -68,6 +68,7 @@ export default function HeroNetworkBackground() {
     let lastTime = performance.now();
     let isVisible = !document.hidden;
     let isIntersecting = true;
+    let isMapNarrativePaused = false;
     let isReducedMotion = motionQuery.matches;
     let isDark = root.dataset.theme !== "light";
     let continuousAnimationReady = false;
@@ -388,7 +389,11 @@ export default function HeroNetworkBackground() {
     };
 
     const canAnimate = () => (
-      continuousAnimationReady && isVisible && isIntersecting && !isReducedMotion
+      continuousAnimationReady
+      && isVisible
+      && isIntersecting
+      && !isReducedMotion
+      && !isMapNarrativePaused
     );
 
     const render = (time: number) => {
@@ -453,6 +458,11 @@ export default function HeroNetworkBackground() {
       isReducedMotion = event.matches;
       refreshAnimation();
     };
+    // Mobile 지도 내러티브 구간의 Canvas 정지
+    const handleMapNarrative = (event: Event) => {
+      isMapNarrativePaused = Boolean((event as CustomEvent<boolean>).detail);
+      refreshAnimation();
+    };
 
     readColors();
     resizeCanvas();
@@ -462,6 +472,7 @@ export default function HeroNetworkBackground() {
     themeObserver.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
     document.addEventListener("visibilitychange", handleVisibility);
     motionQuery.addEventListener("change", handleMotion);
+    document.addEventListener("hero-map-narrative", handleMapNarrative);
     scheduleContinuousAnimation();
 
     return () => {
@@ -473,6 +484,7 @@ export default function HeroNetworkBackground() {
       themeObserver.disconnect();
       document.removeEventListener("visibilitychange", handleVisibility);
       motionQuery.removeEventListener("change", handleMotion);
+      document.removeEventListener("hero-map-narrative", handleMapNarrative);
     };
   }, []);
 
