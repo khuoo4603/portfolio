@@ -79,6 +79,8 @@ export const MAP_DOT_SCREEN_WIDTH = {
   focusFinal: 3.6,
 } as const;
 
+export const MAP_LAYER_VISIBILITY_EPSILON = 0.001;
+
 export const PROJECT_GALLERY_MOTIONS = [
   { exitX: -0.48, exitY: -0.16, from: 0.08, sideX: -0.32, sideY: -0.11, to: 0.51 },
   { exitX: 0.4, exitY: 0.15, from: 0.295, sideX: 0.25, sideY: 0.09, to: 0.725 },
@@ -212,7 +214,7 @@ const galleryViewportMotion = {
     y: 0.72,
   },
   mobile: {
-    blur: 5,
+    blur: 0,
     depth: 0.72,
     offscreenMargin: 16,
     perspective: 900,
@@ -339,6 +341,28 @@ export function calculateMapZoomState(
   };
 }
 
+// Mobile에서는 변화량이 작은 Dot Stroke Animation을 고정해 SVG Paint 비용을 줄인다.
+export function getMapDotWidths(
+  zoomState: Pick<ReturnType<typeof calculateMapZoomState>, "focusMapDotWidth" | "worldMapDotWidth">,
+  isMobilePerformanceProfile: boolean,
+) {
+  if (isMobilePerformanceProfile) {
+    return {
+      focusMapDotWidth: MAP_DOT_SCREEN_WIDTH.focusFinal,
+      worldMapDotWidth: MAP_DOT_SCREEN_WIDTH.worldHandoff,
+    };
+  }
+
+  return {
+    focusMapDotWidth: zoomState.focusMapDotWidth,
+    worldMapDotWidth: zoomState.worldMapDotWidth,
+  };
+}
+
+export function shouldUpdateMapTransform(opacity: number) {
+  return opacity > MAP_LAYER_VISIBILITY_EPSILON;
+}
+
 const calculateGallerySpatialState = (
   localProgress: number,
   viewport: GalleryViewport,
@@ -402,6 +426,7 @@ type SceneGeometry = {
   galleryViewport: GalleryViewport;
   graph: SceneRect;
   isDesktop: boolean;
+  isMobilePerformanceProfile: boolean;
   isReducedMotion: boolean;
   mapCameraProfile: MapCameraProfile;
   narrativeTargetX: number;
@@ -864,6 +889,9 @@ export default function HeroSystemCard() {
     const mobileLandscapeQuery = window.matchMedia(
       "(max-width: 1023px) and (orientation: landscape) and (max-height: 600px)",
     );
+    const mobilePerformanceQuery = window.matchMedia(
+      "(max-width: 767px), (max-width: 1023px) and (orientation: landscape) and (max-height: 600px)",
+    );
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
     let animationFrame = 0;
@@ -886,6 +914,20 @@ export default function HeroSystemCard() {
     } | null = null;
     let flowActive: boolean | null = null;
     let sceneGeometry: SceneGeometry | null = null;
+    const styleValueCache = new WeakMap<HTMLElement, Map<string, string>>();
+
+    const setStyleProperty = (target: HTMLElement, property: string, value: string) => {
+      let properties = styleValueCache.get(target);
+
+      if (!properties) {
+        properties = new Map();
+        styleValueCache.set(target, properties);
+      }
+      if (properties.get(property) === value) return;
+
+      properties.set(property, value);
+      target.style.setProperty(property, value);
+    };
 
     const getMapCameraProfile = (): MapCameraProfile => {
       if (!portraitQuery.matches) return "default";
@@ -1142,6 +1184,7 @@ export default function HeroSystemCard() {
     // Resize·Breakpoint·Image Layout 변경 시 Hero Scene Geometry 일괄 측정
     const measureSceneGeometry = () => {
       const isDesktop = desktopQuery.matches;
+      const isMobilePerformanceProfile = mobilePerformanceQuery.matches;
       const isPinnedHeroLayout = !portraitQuery.matches
         && (isDesktop || tabletLandscapeQuery.matches || mobileLandscapeQuery.matches);
       const isReducedMotion = reducedMotionQuery.matches;
@@ -1215,6 +1258,7 @@ export default function HeroSystemCard() {
           height: graphRect.height,
         },
         isDesktop,
+        isMobilePerformanceProfile,
         isReducedMotion,
         mapCameraProfile,
         narrativeTargetX,
@@ -1262,7 +1306,10 @@ export default function HeroSystemCard() {
         });
 
         frame.style.setProperty("--gallery-opacity", String(galleryState.opacity));
-        frame.style.setProperty("--gallery-blur", `${galleryState.blur}px`);
+        frame.style.setProperty(
+          "--gallery-blur",
+          `${sceneGeometry?.isMobilePerformanceProfile ? 0 : galleryState.blur}px`,
+        );
         frame.style.setProperty("--gallery-scale", String(galleryState.scale));
         frame.style.setProperty("--gallery-x", `${position.x}px`);
         frame.style.setProperty("--gallery-y", `${position.y}px`);
@@ -1360,7 +1407,12 @@ export default function HeroSystemCard() {
 
       if (!geometry) return;
 
-      const { galleryViewport, isReducedMotion, mapCameraProfile } = geometry;
+      const {
+        galleryViewport,
+        isMobilePerformanceProfile,
+        isReducedMotion,
+        mapCameraProfile,
+      } = geometry;
 
       if (isReducedMotion) {
         const finalFocusScale = calculateMapZoomState(1, mapCameraProfile).focusMapScale;
@@ -1386,8 +1438,8 @@ export default function HeroSystemCard() {
           `translate(${EAST_ASIA_FOCUS_POINT.x} ${EAST_ASIA_FOCUS_POINT.y}) scale(${finalFocusScale}) translate(${-EAST_ASIA_FOCUS_POINT.x} ${-EAST_ASIA_FOCUS_POINT.y})`,
         );
         stage.style.setProperty("--card-map-opacity", "0");
-        stage.style.setProperty("--focus-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.focusFinal));
-        stage.style.setProperty("--world-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.worldHandoff));
+        setStyleProperty(stage, "--focus-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.focusFinal));
+        setStyleProperty(stage, "--world-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.worldHandoff));
         stage.style.setProperty("--focus-map-opacity", "1");
         stage.style.setProperty("--map-filter", "none");
         stage.style.setProperty("--map-translate-x", `${geometry.focusTranslateX}px`);
@@ -1427,6 +1479,7 @@ export default function HeroSystemCard() {
         galleryViewport,
         mapCameraProfile,
       );
+      const mapDotWidths = getMapDotWidths(state, isMobilePerformanceProfile);
 
       // World Camera와 Marker의 동일 Pan 좌표 적용
       const worldCameraShiftX = (
@@ -1457,36 +1510,44 @@ export default function HeroSystemCard() {
         geometry.stage.top,
       );
 
-      narrativeMapZoom.setAttribute(
-        "transform",
-        `translate(${worldShiftSvgX} ${worldShiftSvgY}) translate(${serverPoint.x} ${serverPoint.y}) scale(${state.narrativeWorldMapScale}) translate(${-serverPoint.x} ${-serverPoint.y})`,
+      if (shouldUpdateMapTransform(state.narrativeWorldMapOpacity)) {
+        narrativeMapZoom.setAttribute(
+          "transform",
+          `translate(${worldShiftSvgX} ${worldShiftSvgY}) translate(${serverPoint.x} ${serverPoint.y}) scale(${state.narrativeWorldMapScale}) translate(${-serverPoint.x} ${-serverPoint.y})`,
+        );
+      }
+      if (shouldUpdateMapTransform(state.focusMapOpacity)) {
+        focusMapZoom.setAttribute(
+          "transform",
+          `translate(${EAST_ASIA_FOCUS_POINT.x} ${EAST_ASIA_FOCUS_POINT.y}) scale(${state.focusMapScale}) translate(${-EAST_ASIA_FOCUS_POINT.x} ${-EAST_ASIA_FOCUS_POINT.y})`,
+        );
+      }
+      setStyleProperty(stage, "--card-map-opacity", String(state.cardMapOpacity));
+      setStyleProperty(stage, "--connection-depth", `${16 * state.depth}px`);
+      setStyleProperty(stage, "--flow-depth", `${28 * state.depth}px`);
+      setStyleProperty(stage, "--flow-opacity", String(state.flowOpacity));
+      setStyleProperty(stage, "--frame-opacity", String(state.frameOpacity));
+      setStyleProperty(stage, "--focus-map-dot-width", String(mapDotWidths.focusMapDotWidth));
+      setStyleProperty(stage, "--inner-depth", `${52 * state.depth}px`);
+      setStyleProperty(stage, "--focus-map-opacity", String(state.focusMapOpacity));
+      setStyleProperty(stage, "--map-clip-inset", `${clipInset}px`);
+      setStyleProperty(
+        stage,
+        "--map-filter",
+        isMobilePerformanceProfile || state.mapExit === 0 ? "none" : `blur(${state.blurStrength}px)`,
       );
-      focusMapZoom.setAttribute(
-        "transform",
-        `translate(${EAST_ASIA_FOCUS_POINT.x} ${EAST_ASIA_FOCUS_POINT.y}) scale(${state.focusMapScale}) translate(${-EAST_ASIA_FOCUS_POINT.x} ${-EAST_ASIA_FOCUS_POINT.y})`,
-      );
-      stage.style.setProperty("--card-map-opacity", String(state.cardMapOpacity));
-      stage.style.setProperty("--connection-depth", `${16 * state.depth}px`);
-      stage.style.setProperty("--flow-depth", `${28 * state.depth}px`);
-      stage.style.setProperty("--flow-opacity", String(state.flowOpacity));
-      stage.style.setProperty("--frame-opacity", String(state.frameOpacity));
-      stage.style.setProperty("--focus-map-dot-width", String(state.focusMapDotWidth));
-      stage.style.setProperty("--inner-depth", `${52 * state.depth}px`);
-      stage.style.setProperty("--focus-map-opacity", String(state.focusMapOpacity));
-      stage.style.setProperty("--map-clip-inset", `${clipInset}px`);
-      stage.style.setProperty("--map-filter", state.mapExit > 0 ? `blur(${state.blurStrength}px)` : "none");
-      stage.style.setProperty("--map-translate-x", `${translateX}px`);
-      stage.style.setProperty("--map-translate-y", `${translateY}px`);
-      stage.style.setProperty("--marker-opacity", String(state.markerOpacity));
-      stage.style.setProperty("--narrative-world-map-opacity", String(state.narrativeWorldMapOpacity));
-      stage.style.setProperty("--resource-depth", `${44 * state.depth}px`);
-      stage.style.setProperty("--server-opacity", String(state.serverOpacity));
-      stage.style.setProperty("--topology-opacity", String(state.topologyOpacity));
-      stage.style.setProperty("--world-map-dot-width", String(state.worldMapDotWidth));
-      aboutSection.style.setProperty("--about-opacity", String(state.aboutOpacity));
+      setStyleProperty(stage, "--map-translate-x", `${translateX}px`);
+      setStyleProperty(stage, "--map-translate-y", `${translateY}px`);
+      setStyleProperty(stage, "--marker-opacity", String(state.markerOpacity));
+      setStyleProperty(stage, "--narrative-world-map-opacity", String(state.narrativeWorldMapOpacity));
+      setStyleProperty(stage, "--resource-depth", `${44 * state.depth}px`);
+      setStyleProperty(stage, "--server-opacity", String(state.serverOpacity));
+      setStyleProperty(stage, "--topology-opacity", String(state.topologyOpacity));
+      setStyleProperty(stage, "--world-map-dot-width", String(mapDotWidths.worldMapDotWidth));
+      setStyleProperty(aboutSection, "--about-opacity", String(state.aboutOpacity));
       updateGalleryTarget(state.zoomProgress, galleryOrigin);
 
-      hero.style.setProperty("--identity-opacity", String(state.identityOpacity));
+      setStyleProperty(hero, "--identity-opacity", String(state.identityOpacity));
       updateFlowState(scrollPixels < metrics.topologyExitEnd);
 
       if (scrollPixels > metrics.topologyHoldEnd) {
@@ -1546,6 +1607,7 @@ export default function HeroSystemCard() {
     portraitQuery.addEventListener("change", handleLayoutChange);
     tabletLandscapeQuery.addEventListener("change", handleLayoutChange);
     mobileLandscapeQuery.addEventListener("change", handleLayoutChange);
+    mobilePerformanceQuery.addEventListener("change", handleLayoutChange);
     reducedMotionQuery.addEventListener("change", handleInteractionPreferenceChange);
     finePointerQuery.addEventListener("change", handleInteractionPreferenceChange);
 
@@ -1572,6 +1634,7 @@ export default function HeroSystemCard() {
       portraitQuery.removeEventListener("change", handleLayoutChange);
       tabletLandscapeQuery.removeEventListener("change", handleLayoutChange);
       mobileLandscapeQuery.removeEventListener("change", handleLayoutChange);
+      mobilePerformanceQuery.removeEventListener("change", handleLayoutChange);
       reducedMotionQuery.removeEventListener("change", handleInteractionPreferenceChange);
       finePointerQuery.removeEventListener("change", handleInteractionPreferenceChange);
       hero.style.removeProperty("--identity-opacity");

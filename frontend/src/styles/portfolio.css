@@ -2401,7 +2401,7 @@ a.project-thumbnail {
 }
 
 /* Laptop Short Viewport의 Identity·Topology 수직 경쟁 완화 */
-@media (min-width: 1180px) and (max-width: 1439px) and (max-height: 800px) {
+@media (min-width: 1180px) and (max-height: 950px) {
   .hero-identity {
     padding-block: var(--space-32);
   }
@@ -2411,7 +2411,7 @@ a.project-thumbnail {
   }
 
   .hero-name {
-    font-size: clamp(76px, 5.8vw, 82px);
+    font-size: clamp(76px, 5.2vw, 96px);
   }
 
   .hero-copy {
@@ -2421,6 +2421,17 @@ a.project-thumbnail {
 
   .section-cue {
     margin-top: var(--space-24);
+  }
+
+  .about-primary {
+    align-content: start;
+  }
+
+  .profile-portrait {
+    width: min(
+      calc(100% - var(--space-32)),
+      calc((100svh - var(--hero-header-offset) - var(--space-160) - var(--space-96)) * 0.75)
+    );
   }
 
   .topology-project-gallery-frame {

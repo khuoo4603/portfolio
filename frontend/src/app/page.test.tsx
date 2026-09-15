@@ -31,6 +31,7 @@ import {
   KOREA_ZOOM_DISTANCE_MULTIPLIER,
   KOREA_ZOOM_SCALE_MULTIPLIER,
   MAP_DOT_SCREEN_WIDTH,
+  MAP_LAYER_VISIBILITY_EPSILON,
   MOBILE_KOREA_ZOOM_SCALE,
   PORTRAIT_WORLD_CAMERA_PAN_START_SCALE,
   PROJECT_GALLERY_MOTIONS,
@@ -49,6 +50,8 @@ import {
   calculatePortraitWorldOffsetX,
   calculateVirtualZoomScale,
   dampGalleryValue,
+  getMapDotWidths,
+  shouldUpdateMapTransform,
 } from "./hero-system-card";
 import { HomeView } from "./home-view";
 
@@ -437,6 +440,21 @@ describe("포트폴리오 메인", () => {
     expect(PORTRAIT_WORLD_CAMERA_PAN_START_SCALE).toBe(1.08);
   });
 
+  it("uses mobile map rendering guards", () => {
+    const zoomState = calculateMapZoomState(0.5);
+
+    expect(getMapDotWidths(zoomState, true)).toEqual({
+      worldMapDotWidth: MAP_DOT_SCREEN_WIDTH.worldHandoff,
+      focusMapDotWidth: MAP_DOT_SCREEN_WIDTH.focusFinal,
+    });
+    expect(getMapDotWidths(zoomState, false)).toEqual({
+      worldMapDotWidth: zoomState.worldMapDotWidth,
+      focusMapDotWidth: zoomState.focusMapDotWidth,
+    });
+    expect(shouldUpdateMapTransform(MAP_LAYER_VISIBILITY_EPSILON)).toBe(false);
+    expect(shouldUpdateMapTransform(MAP_LAYER_VISIBILITY_EPSILON + Number.EPSILON)).toBe(true);
+  });
+
   it("Portrait World Map의 Korea Anchor를 화면 중앙축으로 이동", () => {
     const mapWidth = 1600;
     const koreaRatioX = projectPoint(KOREA_ANCHOR).x / WORLD_MAP_SIZE.width;
@@ -656,7 +674,7 @@ describe("포트폴리오 메인", () => {
     expect(mobileSpawn.z).toBeCloseTo(desktopSpawn.z * 0.72);
     expect(tabletSpawn.blur).toBe(14);
     expect(tabletPortraitSpawn.blur).toBe(14);
-    expect(mobileSpawn.blur).toBe(5);
+    expect(mobileSpawn.blur).toBe(0);
     expect(tabletPosition.x).toBeCloseTo(desktopPosition.x * 0.78);
     expect(tabletPosition.y).toBeCloseTo(desktopPosition.y * 0.68);
     expect(tabletPortraitPosition.x).toBeCloseTo(desktopPosition.x * 0.82);
