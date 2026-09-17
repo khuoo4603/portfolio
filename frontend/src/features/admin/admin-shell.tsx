@@ -56,10 +56,9 @@ function Navigation({
   return (
     <div className={styles.navigationInner}>
       <div className={styles.adminIdentity}>
-        <span className={styles.identityMark}>{account.name.trim().charAt(0).toUpperCase() || "A"}</span>
+        <span className={styles.identityMark}>KH</span>
         <span className={styles.identityCopy}>
-          <strong>{account.name}</strong>
-          <small>{account.role}</small>
+          <strong>PORTFOLIO ADMIN</strong>
         </span>
       </div>
 
@@ -93,7 +92,7 @@ function Navigation({
           </span>
           <span className={styles.accountCopy}>
             <strong>{account.name}</strong>
-            <small>{account.email}</small>
+            <small>{account.role} · {account.email}</small>
           </span>
         </div>
         <button
@@ -269,7 +268,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             >
               <Menu aria-hidden="true" />
             </button>
-            <span>{adminUser.name} / {adminUser.role}</span>
+            <span>KH / ADMIN</span>
             <ThemeToggle />
           </header>
         ) : null}

@@ -79,7 +79,7 @@ describe("Admin Session Gate와 Sidebar", () => {
     expect(screen.getByText("관리 본문")).not.toBeVisible();
   });
 
-  it("ADMIN Session만 본문과 실제 계정 정보를 렌더링", () => {
+  it("ADMIN Session은 서비스 정체성과 사용자 정체성을 분리해 렌더링", () => {
     authState({ status: "authenticated", user: admin, error: null, refresh: vi.fn(), clear: vi.fn() });
 
     render(<AdminShell><div>관리 본문</div></AdminShell>);
@@ -89,14 +89,14 @@ describe("Admin Session Gate와 Sidebar", () => {
     for (const label of ["Dashboard", "Site", "Projects", "Accounts", "Tools", "Logs"]) {
       expect(within(navigationMenu).getByText(label)).toBeInTheDocument();
     }
-    expect(within(sidebar).getAllByText(admin.name).length).toBeGreaterThan(0);
-    expect(within(sidebar).getByText(admin.email)).toBeInTheDocument();
-    expect(within(sidebar).getByText(admin.role)).toBeInTheDocument();
+    expect(within(sidebar).getByText("PORTFOLIO ADMIN")).toBeInTheDocument();
+    expect(within(sidebar).getAllByText(admin.name)).toHaveLength(1);
+    expect(within(sidebar).getByText(`${admin.role} · ${admin.email}`)).toBeInTheDocument();
     expect(screen.getByText("관리 본문")).toBeInTheDocument();
     expect(screen.queryByText("admin@portfolio.local")).not.toBeInTheDocument();
   });
 
-  it("Mobile Drawer에도 동일한 6개 관리자 메뉴를 제공", () => {
+  it("Mobile Drawer에도 동일한 6개 관리자 메뉴와 분리된 정체성을 제공", () => {
     authState({ status: "authenticated", user: admin, error: null, refresh: vi.fn(), clear: vi.fn() });
     render(<AdminShell><div>관리 본문</div></AdminShell>);
 
@@ -106,6 +106,35 @@ describe("Admin Session Gate와 Sidebar", () => {
     for (const label of ["Dashboard", "Site", "Projects", "Accounts", "Tools", "Logs"]) {
       expect(within(navigationMenu).getByRole("link", { name: label })).toBeInTheDocument();
     }
+    expect(within(drawer).getByText("PORTFOLIO ADMIN")).toBeInTheDocument();
+    expect(within(drawer).getAllByText(admin.name)).toHaveLength(1);
+    expect(screen.getByText("KH / ADMIN")).toBeInTheDocument();
+  });
+
+  it("Mobile Drawer는 Escape, Backdrop, Navigation 이동 후 닫히며 focus와 scroll을 복구", async () => {
+    authState({ status: "authenticated", user: admin, error: null, refresh: vi.fn(), clear: vi.fn() });
+    render(<AdminShell><div>관리 본문</div></AdminShell>);
+
+    const menu = screen.getByRole("button", { name: "관리자 메뉴 열기" });
+    menu.focus();
+    fireEvent.click(menu);
+    await waitFor(() => expect(document.body.style.overflow).toBe("hidden"));
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "모바일 관리자 메뉴" })).not.toBeInTheDocument());
+    expect(document.body.style.overflow).toBe("");
+    expect(menu).toHaveFocus();
+
+    fireEvent.click(menu);
+    const drawer = screen.getByRole("dialog", { name: "모바일 관리자 메뉴" });
+    fireEvent.mouseDown(drawer.parentElement!);
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "모바일 관리자 메뉴" })).not.toBeInTheDocument());
+
+    fireEvent.click(menu);
+    const siteLink = within(screen.getByRole("dialog", { name: "모바일 관리자 메뉴" })).getByRole("link", { name: "Site" });
+    siteLink.addEventListener("click", (event) => event.preventDefault(), { once: true });
+    fireEvent.click(siteLink);
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "모바일 관리자 메뉴" })).not.toBeInTheDocument());
   });
 
   it("Logout 성공 시 실제 요청·Session 초기화 후 /login으로 이동하고 중복 요청을 차단", async () => {
