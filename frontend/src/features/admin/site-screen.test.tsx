@@ -162,6 +162,9 @@ describe("Admin Site 실제 API 관리", () => {
     render(<SiteScreen />);
 
     expect(await screen.findByDisplayValue("김현우")).toBeInTheDocument();
+    const surface = screen.getByRole("region", { name: "사이트 관리" });
+    expect(within(surface).getByRole("tablist", { name: "사이트 관리 영역" })).toBeInTheDocument();
+    expect(within(surface).getByRole("tabpanel")).toContainElement(screen.getByDisplayValue("김현우"));
     expect(siteData().portfolioContents).toHaveLength(16);
     expect(screen.getByText("COMMON/NAME")).toBeInTheDocument();
     expect(screen.getByText("MAIN/HERO_STATEMENT")).toBeInTheDocument();
@@ -342,6 +345,10 @@ describe("Admin Site 실제 API 관리", () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");
     fireEvent.click(screen.getByRole("tab", { name: "기술" }));
+    const section = screen.getByRole("region", { name: "메인 기술 구성" });
+    expect(within(section).getByRole("group", { name: "기술 추가" })).toContainElement(screen.getByLabelText("메인 노출 기술"));
+    const list = within(section).getByRole("list", { name: "선택된 메인 기술" });
+    expect(within(list).getByRole("listitem")).toHaveTextContent("표시 순서 1");
     fireEvent.change(screen.getByLabelText("메인 노출 기술"), { target: { value: "8" } });
     fireEvent.click(screen.getByRole("button", { name: "추가" }));
     fireEvent.click(screen.getByRole("button", { name: "메인 구성 저장" }));

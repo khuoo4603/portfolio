@@ -475,7 +475,7 @@ export default function SiteScreen() {
       ) : error ? (
         <PageError message={error} onRetry={() => void loadSite()} />
       ) : data ? (
-        <>
+        <section className={`${styles.managementSurface} ${styles.siteManagementSurface}`} aria-label="사이트 관리">
           <div className={`${styles.lineTabs} ${styles.siteTabs}`} role="tablist" aria-label="사이트 관리 영역">
             {TABS.map((item) => (
               <button key={item.id} className={tab === item.id ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === item.id} onClick={() => { setTab(item.id); setMenuKey(null); }}>
@@ -491,7 +491,7 @@ export default function SiteScreen() {
             {tab === "links" && <ExternalLinksPanel items={data.externalLinks} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} />}
             {tab === "resume" && <ResumePanel data={data} file={resumeFile} error={fileError} onSelect={selectResume} onSubmit={saveResume} />}
           </div>
-        </>
+        </section>
       ) : null}
 
       {profileEditor && <ProfileEditor key={profileEditor.item?.id ?? "new"} state={profileEditor} onClose={() => setProfileEditor(null)} onSubmit={saveProfile} />}
@@ -554,7 +554,7 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, se
   };
 
   return (
-    <div className={styles.dashboardFlow}>
+    <div className={styles.siteSectionFlow}>
       <section className={styles.operationalSection} aria-labelledby="technologies-title">
         <div className={styles.sectionHeading}><div><h2 id="technologies-title" className="type-title">기술 사전</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />기술 추가</button></div>
         {items.length === 0 ? <EmptyState title="등록 기술 없음" description="기술 사전 항목이 없습니다." /> : (
@@ -566,22 +566,22 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, se
         )}
       </section>
 
-      <section className={styles.operationalSection} aria-labelledby="portfolio-technologies-title">
+      <section className={`${styles.operationalSection} ${styles.portfolioTechnologySection}`} aria-labelledby="portfolio-technologies-title">
         <div className={styles.sectionHeading}><div><h2 id="portfolio-technologies-title" className="type-title">메인 기술 구성</h2><p className="type-body">기술 사전과 별도로 메인 노출 항목과 순서를 저장합니다.</p></div></div>
-        <div className={styles.formActionRow}>
-          <select className="type-body" aria-label="메인 노출 기술" value={selectedTechnologyId} onChange={(event) => setSelectedTechnologyId(event.currentTarget.value)}>
+        <div className={styles.portfolioTechnologyToolbar} role="group" aria-label="기술 추가">
+          <select className={`${styles.portfolioTechnologySelect} type-body`} aria-label="메인 노출 기술" value={selectedTechnologyId} onChange={(event) => setSelectedTechnologyId(event.currentTarget.value)}>
             <option value="">기술 선택</option>
             {available.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
           <button className={`${styles.secondaryButton} type-body`} type="button" disabled={!selectedTechnologyId} onClick={add}><Plus aria-hidden="true" />추가</button>
         </div>
         {draft.length === 0 ? <EmptyState title="메인 기술 없음" description="메인에 노출할 기술을 추가해 주세요." /> : (
-          <div className={styles.registryRows}>{draft.map((mapping, index) => {
+          <ol className={styles.portfolioTechnologyList} aria-label="선택된 메인 기술">{draft.map((mapping, index) => {
             const technology = items.find((item) => item.id === mapping.technologyId);
-            return <div key={mapping.technologyId} className={styles.registryRow}><div><strong className="type-body">{technology?.name ?? `기술 #${mapping.technologyId}`}</strong><span className="type-small">표시 순서 {mapping.displayOrder}</span></div><div><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 위로`} disabled={index === 0} onClick={() => move(index, -1)}><ChevronUp aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 아래로`} disabled={index === draft.length - 1} onClick={() => move(index, 1)}><ChevronDown aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 메인에서 제거`} onClick={() => setDraft((current) => normalizeOrder(current.filter((item) => item.technologyId !== mapping.technologyId)))}><X aria-hidden="true" /></button></div></div>;
-          })}</div>
+            return <li key={mapping.technologyId} className={styles.portfolioTechnologyRow}><div className={styles.portfolioTechnologyIdentity}><strong className="type-body">{technology?.name ?? `기술 #${mapping.technologyId}`}</strong><span className="type-small">표시 순서 {mapping.displayOrder}</span></div><div className={styles.portfolioTechnologyActions}><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 위로`} disabled={index === 0} onClick={() => move(index, -1)}><ChevronUp aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 아래로`} disabled={index === draft.length - 1} onClick={() => move(index, 1)}><ChevronDown aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 메인에서 제거`} onClick={() => setDraft((current) => normalizeOrder(current.filter((item) => item.technologyId !== mapping.technologyId)))}><X aria-hidden="true" /></button></div></li>;
+          })}</ol>
         )}
-        <div className={styles.formActionRow}><p className="type-small">변경된 전체 구성을 한 번에 저장합니다.</p><SubmitButton busy={false} type="button" disabled={!portfolioChanged} onClick={() => onSavePortfolio(draft)}>메인 구성 저장</SubmitButton></div>
+        <div className={styles.portfolioTechnologyFooter}><p className="type-small">변경된 전체 구성을 한 번에 저장합니다.</p><SubmitButton busy={false} type="button" disabled={!portfolioChanged} onClick={() => onSavePortfolio(draft)}>메인 구성 저장</SubmitButton></div>
       </section>
     </div>
   );

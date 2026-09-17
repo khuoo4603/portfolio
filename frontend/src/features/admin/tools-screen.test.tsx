@@ -82,6 +82,8 @@ describe("Admin Tools 실제 API 관리", () => {
 
   it("실제 Registry와 Preview 선택 UI·허용 Category만 표시", async () => {
     render(<ToolsScreen />);
+    expect(await screen.findByRole("region", { name: "Tool 상태 관리" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Links 데이터 관리" })).toBeInTheDocument();
     expect(await screen.findByText("QUIZ")).toBeInTheDocument();
     expect(screen.getByText("LINKS")).toBeInTheDocument();
     expect(screen.getByText("/api/v1/tools/media/links/17")).toBeInTheDocument();

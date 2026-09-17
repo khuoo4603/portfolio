@@ -59,11 +59,12 @@ describe("Project 목록 관리", () => {
 
   afterEach(cleanup);
 
-  it("Thumbnail·Name·Slug·Year·Order·Status·Updated At·Actions를 표로 표시", async () => {
+  it("Project Identity와 운영 Metadata를 우선순위 순서로 표시", async () => {
     render(<ProjectManagement />);
 
     const table = await screen.findByRole("table");
-    for (const heading of ["Thumbnail", "Name / Slug", "Year", "Order", "Status", "Updated At", "Actions"]) {
+    expect(screen.getByRole("region", { name: "프로젝트 관리" })).toBeInTheDocument();
+    for (const heading of ["Project", "Year", "Order", "Status", "Updated At", "Actions"]) {
       expect(within(table).getByRole("columnheader", { name: heading })).toBeInTheDocument();
     }
     expect(within(table).getByText("Project One")).toBeInTheDocument();
@@ -97,6 +98,16 @@ describe("Project 목록 관리", () => {
       { challengeId: "challenge-project", verificationCode: "654321" },
     ));
     expect(navigation.push).toHaveBeenCalledWith("/admin/projects/31/edit");
+  });
+
+  it("빈 목록에서도 관리 Surface 안에서 새 프로젝트를 시작할 수 있다", async () => {
+    vi.mocked(getAdminProjects).mockResolvedValueOnce({ items: [] });
+    render(<ProjectManagement />);
+
+    expect(await screen.findByText("프로젝트 없음")).toBeInTheDocument();
+    const surface = screen.getByRole("region", { name: "프로젝트 관리" });
+    fireEvent.click(within(surface).getByRole("button", { name: "새 프로젝트" }));
+    expect(screen.getByRole("dialog", { name: "새 프로젝트" })).toBeInTheDocument();
   });
 
   it("목록 Switch를 PROJECT_STATUS_UPDATE 한 번으로 변경하고 재조회", async () => {

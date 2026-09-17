@@ -118,9 +118,10 @@ describe("Admin Page Header와 주요 화면", () => {
     ).toBeInTheDocument();
   });
 
-  it("Logs 제목·설명과 로그인·오류 탭을 유지", () => {
+  it("Logs 제목·설명과 통합 관리 Surface의 로그인·오류 탭을 유지", () => {
     render(<LogsScreen />);
 
+    expect(screen.getByRole("region", { name: "로그 관리" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 1, name: "Logs" }),
     ).toBeInTheDocument();
