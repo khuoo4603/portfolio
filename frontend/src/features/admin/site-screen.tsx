@@ -61,6 +61,7 @@ import styles from "./admin.module.css";
 
 type SiteTab = "content" | "entries" | "technology" | "links" | "resume";
 type ProfileFilter = "ALL" | ProfileEntryType;
+type TechnologyView = "all" | "owned";
 
 type ContentDefinition = {
   category: PortfolioContentCategory;
@@ -79,7 +80,7 @@ type ContentSection = {
 const TABS: Array<{ id: SiteTab; label: string }> = [
   { id: "content", label: "기본 콘텐츠" },
   { id: "entries", label: "이력" },
-  { id: "technology", label: "기술" },
+  { id: "technology", label: "기술스택" },
   { id: "links", label: "외부 링크" },
   { id: "resume", label: "이력서" },
 ];
@@ -91,6 +92,11 @@ const PROFILE_FILTERS: Array<{ value: ProfileFilter; label: string }> = [
   { value: "ACTIVITY", label: "활동" },
   { value: "AWARD", label: "수상" },
   { value: "CERTIFICATE", label: "자격·교육" },
+];
+
+const TECHNOLOGY_VIEWS: Array<{ value: TechnologyView; label: string }> = [
+  { value: "all", label: "전체 기술 스택" },
+  { value: "owned", label: "보유 기술 스택" },
 ];
 
 const CONTENT_SECTIONS: ContentSection[] = [
@@ -109,8 +115,7 @@ const CONTENT_SECTIONS: ContentSection[] = [
     title: "Hero",
     description: "Position은 기본 정보의 COMMON/POSITION을 함께 사용합니다.",
     definitions: [
-      { category: "MAIN", contentCode: "HERO_STATEMENT", label: "Statement", multiline: true },
-      { category: "MAIN", contentCode: "HERO_DESCRIPTION", label: "Description", multiline: true },
+      { category: "MAIN", contentCode: "HERO_STATEMENT", label: "소개 문구", multiline: true },
     ],
   },
   {
@@ -184,13 +189,11 @@ function externalLinkInput(item: ExternalLink, override: Partial<ExternalLinkInp
 function ContentPanel({
   contents,
   title,
-  description,
   busy,
   onSubmit,
 }: {
   contents: SiteContent[];
   title: string;
-  description?: string;
   busy: boolean;
   onSubmit: (items: PortfolioContentInput[]) => void;
 }) {
@@ -224,7 +227,6 @@ function ContentPanel({
       <div className={styles.sectionHeading}>
         <div>
           <h2 id="basic-content-title" className="type-title">{title}</h2>
-          {description && <p className="type-body">{description}</p>}
         </div>
       </div>
       <form className={styles.contentForm} onSubmit={handleSubmit}>
@@ -238,7 +240,7 @@ function ContentPanel({
               <label key={`${definition.category}-${definition.contentCode}`} className={definition.multiline ? `${styles.formField} ${styles.wideField}` : styles.formField}>
                 <span className="type-small">{definition.label}</span>
                 {definition.multiline ? (
-                  <textarea className="type-body" rows={4} value={values[definition.contentCode]} onChange={(event) => setValues({ ...values, [definition.contentCode]: event.currentTarget.value })} />
+                  <textarea aria-label={definition.label} className="type-body" rows={4} value={values[definition.contentCode]} onChange={(event) => setValues({ ...values, [definition.contentCode]: event.currentTarget.value })} />
                 ) : (
                   <input className="type-body" type={definition.contentCode === "EMAIL" ? "email" : "text"} value={values[definition.contentCode]} onChange={(event) => setValues({ ...values, [definition.contentCode]: event.currentTarget.value })} />
                 )}
@@ -392,9 +394,9 @@ export default function SiteScreen() {
   const savePortfolioTechnologies = (items: PortfolioTechnology[]) => {
     void adminAction.start({
       ...siteActionBindings.portfolioTechnologyUpdate(),
-      actionLabel: "포트폴리오 메인 기술 구성 저장",
+      actionLabel: "포트폴리오 보유 기술 구성 저장",
       mutation: (verification) => replacePortfolioTechnologies(items, verification),
-      onSuccess: () => completeMutation("메인 기술 구성을 저장했습니다."),
+      onSuccess: () => completeMutation("보유 기술 구성을 저장했습니다."),
     });
   };
 
@@ -475,7 +477,7 @@ export default function SiteScreen() {
       ) : error ? (
         <PageError message={error} onRetry={() => void loadSite()} />
       ) : data ? (
-        <>
+        <section className={`${styles.managementSurface} ${styles.siteManagementSurface}`} aria-label="사이트 관리">
           <div className={`${styles.lineTabs} ${styles.siteTabs}`} role="tablist" aria-label="사이트 관리 영역">
             {TABS.map((item) => (
               <button key={item.id} className={tab === item.id ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === item.id} onClick={() => { setTab(item.id); setMenuKey(null); }}>
@@ -485,13 +487,13 @@ export default function SiteScreen() {
           </div>
 
           <div className={styles.siteTabPanel} role="tabpanel">
-            {tab === "content" && <ContentPanel contents={data.portfolioContents} title="기본 콘텐츠" description="실제 사용자 콘텐츠 16개 Slot을 관리합니다." busy={adminAction.issuing} onSubmit={saveContents} />}
+            {tab === "content" && <ContentPanel contents={data.portfolioContents} title="기본 콘텐츠" busy={adminAction.issuing} onSubmit={saveContents} />}
             {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} />}
             {tab === "technology" && <TechnologiesPanel items={data.technologyMaster} portfolioItems={data.portfolioTechnologies} draft={portfolioDraft} setDraft={setPortfolioDraft} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setTechnologyEditor({})} onEdit={(item) => setTechnologyEditor({ item })} onDelete={deleteTechnologyItem} onToggle={toggleTechnology} onSavePortfolio={savePortfolioTechnologies} />}
             {tab === "links" && <ExternalLinksPanel items={data.externalLinks} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} />}
             {tab === "resume" && <ResumePanel data={data} file={resumeFile} error={fileError} onSelect={selectResume} onSubmit={saveResume} />}
           </div>
-        </>
+        </section>
       ) : null}
 
       {profileEditor && <ProfileEditor key={profileEditor.item?.id ?? "new"} state={profileEditor} onClose={() => setProfileEditor(null)} onSubmit={saveProfile} />}
@@ -511,13 +513,14 @@ function ProfileEntriesPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onD
       <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">이력</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</button></div>
       <SegmentedControl className={`${styles.linkFilters} ${styles.profileFilters}`} label="이력 유형" options={PROFILE_FILTERS} value={filter} onChange={setFilter} />
       {items.length === 0 ? <EmptyState title="등록 항목 없음" description="등록된 프로필 반복 항목이 없습니다." /> : (
-        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>항목</th><th>기간</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
+        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기간</th><th>제목</th><th>기관 또는 역할</th><th>유형 / 상태</th><th>순서</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
           {filteredItems.map((item) => { const key = `profile-${item.id}`; return (
             <tr key={item.id}>
-              <td data-label="항목"><div className={styles.tableIdentity}><strong>{item.title}</strong><span>{item.organization || item.role || item.description || "보조 정보 없음"}</span></div></td>
-              <td data-label="기간"><span>{item.periodText || "-"}</span></td>
+              <td data-label="기간"><span>{item.periodText || ""}</span></td>
+              <td data-label="제목"><strong>{item.title}</strong></td>
+              <td data-label="기관 또는 역할"><span>{item.organization || item.role || ""}</span></td>
+              <td data-label="유형 / 상태"><div className={styles.profileRowStatus}><span className="type-small">{PROFILE_FILTERS.find((filterOption) => filterOption.value === item.entryType)?.label}</span><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.title} ${item.enabled ? "비노출" : "노출"} 전환`} /></div></td>
               <td data-label="순서">{item.displayOrder}</td>
-              <td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.title} ${item.enabled ? "비노출" : "노출"} 전환`} /></td>
               <td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.title} 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td>
             </tr>
           ); })}
@@ -528,6 +531,7 @@ function ProfileEntriesPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onD
 }
 
 function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, setMenuKey, onCreate, onEdit, onDelete, onToggle, onSavePortfolio }: { items: Technology[]; portfolioItems: PortfolioTechnology[]; draft: PortfolioTechnology[]; setDraft: React.Dispatch<React.SetStateAction<PortfolioTechnology[]>>; menuKey: string | null; setMenuKey: (key: string | null) => void; onCreate: () => void; onEdit: (item: Technology) => void; onDelete: (item: Technology) => void; onToggle: (item: Technology) => void; onSavePortfolio: (items: PortfolioTechnology[]) => void }) {
+  const [view, setView] = useState<TechnologyView>("all");
   const [selectedTechnologyId, setSelectedTechnologyId] = useState("");
   const available = items.filter((item) => item.enabled && !draft.some((mapping) => mapping.technologyId === item.id));
   const normalizedCurrent = [...portfolioItems].sort((left, right) => left.displayOrder - right.displayOrder);
@@ -554,36 +558,39 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, se
   };
 
   return (
-    <div className={styles.dashboardFlow}>
-      <section className={styles.operationalSection} aria-labelledby="technologies-title">
-        <div className={styles.sectionHeading}><div><h2 id="technologies-title" className="type-title">기술 사전</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />기술 추가</button></div>
-        {items.length === 0 ? <EmptyState title="등록 기술 없음" description="기술 사전 항목이 없습니다." /> : (
+    <section className={`${styles.operationalSection} ${view === "owned" ? styles.portfolioTechnologySection : ""}`} aria-labelledby={view === "all" ? "technologies-title" : "portfolio-technologies-title"}>
+      <div className={styles.sectionHeading}>
+        <div>
+          {view === "all" ? <h2 id="technologies-title" className="type-title">전체 기술 스택</h2> : <h2 id="portfolio-technologies-title" className="type-title">보유 기술 스택</h2>}
+        </div>
+        {view === "all" && <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />기술 추가</button>}
+      </div>
+      <SegmentedControl className={styles.technologyViewControl} label="기술 보기" options={TECHNOLOGY_VIEWS} value={view} onChange={setView} />
+      {view === "all" ? (
+        items.length === 0 ? <EmptyState title="등록 기술 없음" description="기술 사전 항목이 없습니다." /> : (
           <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기술명</th><th>분류</th><th>Icon URL</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
             {items.map((item) => { const key = `technology-${item.id}`; return (
               <tr key={item.id}><td data-label="기술명"><strong>{item.name}</strong></td><td data-label="분류"><code>{item.category}</code></td><td data-label="Icon URL"><code>{item.iconUrl || "-"}</code></td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 기술 ${item.enabled ? "비활성" : "활성"} 전환`} /></td><td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.name} 기술 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td></tr>
             ); })}
           </tbody></table></div>
-        )}
-      </section>
-
-      <section className={styles.operationalSection} aria-labelledby="portfolio-technologies-title">
-        <div className={styles.sectionHeading}><div><h2 id="portfolio-technologies-title" className="type-title">메인 기술 구성</h2><p className="type-body">기술 사전과 별도로 메인 노출 항목과 순서를 저장합니다.</p></div></div>
-        <div className={styles.formActionRow}>
-          <select className="type-body" aria-label="메인 노출 기술" value={selectedTechnologyId} onChange={(event) => setSelectedTechnologyId(event.currentTarget.value)}>
+        )
+      ) : <>
+        <div className={styles.portfolioTechnologyToolbar} role="group" aria-label="기술 추가">
+          <select className={`${styles.portfolioTechnologySelect} type-body`} aria-label="보유 기술 선택" value={selectedTechnologyId} onChange={(event) => setSelectedTechnologyId(event.currentTarget.value)}>
             <option value="">기술 선택</option>
             {available.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
           <button className={`${styles.secondaryButton} type-body`} type="button" disabled={!selectedTechnologyId} onClick={add}><Plus aria-hidden="true" />추가</button>
         </div>
-        {draft.length === 0 ? <EmptyState title="메인 기술 없음" description="메인에 노출할 기술을 추가해 주세요." /> : (
-          <div className={styles.registryRows}>{draft.map((mapping, index) => {
+        {draft.length === 0 ? <EmptyState title="보유 기술 없음" description="포트폴리오에 노출할 기술을 추가해 주세요." /> : (
+          <ol className={styles.portfolioTechnologyList} aria-label="선택된 보유 기술">{draft.map((mapping, index) => {
             const technology = items.find((item) => item.id === mapping.technologyId);
-            return <div key={mapping.technologyId} className={styles.registryRow}><div><strong className="type-body">{technology?.name ?? `기술 #${mapping.technologyId}`}</strong><span className="type-small">표시 순서 {mapping.displayOrder}</span></div><div><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 위로`} disabled={index === 0} onClick={() => move(index, -1)}><ChevronUp aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 아래로`} disabled={index === draft.length - 1} onClick={() => move(index, 1)}><ChevronDown aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 메인에서 제거`} onClick={() => setDraft((current) => normalizeOrder(current.filter((item) => item.technologyId !== mapping.technologyId)))}><X aria-hidden="true" /></button></div></div>;
-          })}</div>
+            return <li key={mapping.technologyId} className={styles.portfolioTechnologyRow}><div className={styles.portfolioTechnologyIdentity}><strong className="type-body">{technology?.name ?? `기술 #${mapping.technologyId}`}</strong><span className="type-small">표시 순서 {mapping.displayOrder}</span></div><div className={styles.portfolioTechnologyActions}><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 위로`} disabled={index === 0} onClick={() => move(index, -1)}><ChevronUp aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 아래로`} disabled={index === draft.length - 1} onClick={() => move(index, 1)}><ChevronDown aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 보유 기술에서 제거`} onClick={() => setDraft((current) => normalizeOrder(current.filter((item) => item.technologyId !== mapping.technologyId)))}><X aria-hidden="true" /></button></div></li>;
+          })}</ol>
         )}
-        <div className={styles.formActionRow}><p className="type-small">변경된 전체 구성을 한 번에 저장합니다.</p><SubmitButton busy={false} type="button" disabled={!portfolioChanged} onClick={() => onSavePortfolio(draft)}>메인 구성 저장</SubmitButton></div>
-      </section>
-    </div>
+        <div className={styles.portfolioTechnologyFooter}><p className="type-small">변경된 전체 구성을 한 번에 저장합니다.</p><SubmitButton busy={false} type="button" disabled={!portfolioChanged} onClick={() => onSavePortfolio(draft)}>보유 기술 저장</SubmitButton></div>
+      </>}
+    </section>
   );
 }
 
@@ -605,7 +612,7 @@ function ExternalLinksPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onDe
 function ResumePanel({ data, file, error, onSelect, onSubmit }: { data: SiteData; file: File | null; error: string; onSelect: (file?: File) => void; onSubmit: () => void }) {
   return (
     <section className={styles.resumeSection} aria-labelledby="resume-title">
-      <div className={styles.sectionHeading}><div><h2 id="resume-title" className="type-title">이력서</h2><p className="type-body">현재 파일 1개만 유지하며 등록 또는 교체합니다.</p></div></div>
+      <div className={styles.sectionHeading}><div><h2 id="resume-title" className="type-title">이력서</h2></div></div>
       <div className={styles.resumeCurrent}>
         <FileText aria-hidden="true" />
         {data.resume ? <div><span className="type-small">현재 등록 파일</span><strong className="type-body">{data.resume.fileName}</strong><p className="type-small">마지막 변경 {formatDateTime(data.resume.updatedAt)}</p></div> : <div><span className="type-small">현재 등록 파일</span><strong className="type-body">미등록</strong><p className="type-small">공개 화면에는 Resume Action이 표시되지 않습니다.</p></div>}

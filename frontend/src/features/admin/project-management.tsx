@@ -14,7 +14,7 @@ import {
   projectActionBindings,
   updateProjectStatus,
 } from "./admin-project-api";
-import { EmptyState, PageError, PageHeader, PageLoading, StateSwitch, formatDateTime } from "./admin-ui";
+import { EmptyState, PageError, PageHeader, PageLoading, StateSwitch, StatusLabel, formatDateTime } from "./admin-ui";
 import DialogFrame from "./dialog-frame";
 import { useAdminAction } from "./use-admin-action";
 import styles from "./admin.module.css";
@@ -185,52 +185,43 @@ export default function ProjectManagement() {
       <PageHeader
         title="Projects"
         description="프로젝트 Draft, 공개 상태와 표시 순서를 관리합니다."
-        action={(
-          <button className={`${styles.primaryButton} type-body`} type="button" onClick={() => setCreateOpen(true)}>
-            <Plus aria-hidden="true" />새 프로젝트
-          </button>
-        )}
+        action={<button className={`${styles.primaryButton} type-body`} type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />새 프로젝트</button>}
       />
       {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
 
-      {loading ? <PageLoading rows={5} /> : error ? (
-        <PageError message={error} onRetry={() => void loadProjects()} />
-      ) : projects.length === 0 ? (
-        <EmptyState title="프로젝트 없음" description="Name과 Slug로 첫 Draft를 생성할 수 있습니다." />
-      ) : (
-        <section className={styles.projectTableSection} aria-label="Project 목록">
+      <section className={`${styles.managementSurface} ${styles.projectTableSection}`} aria-label="프로젝트 관리">
+        {loading ? <PageLoading rows={5} /> : error ? (
+          <PageError message={error} onRetry={() => void loadProjects()} />
+        ) : projects.length === 0 ? (
+          <EmptyState title="프로젝트 없음" description="Name과 Slug로 첫 Draft를 생성할 수 있습니다." />
+        ) : (
           <div className={styles.dataTableWrap}>
             <table className={`${styles.dataTable} ${styles.projectTable}`}>
               <thead>
                 <tr>
-                  <th>Thumbnail</th><th>Name / Slug</th><th>Year</th><th>Order</th><th>Status</th><th>Updated At</th><th>Actions</th>
+                  <th>Project</th><th>Year</th><th>Order</th><th>Status</th><th>Updated At</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {projects.map((project) => (
                   <tr key={project.id}>
-                    <td data-label="Thumbnail">
-                      <div className={styles.projectThumbnail}>
-                        <AdminImagePreview
-                          alt=""
-                          fallback={<ImageIcon aria-label="Thumbnail 없음" />}
-                          sizes="72px"
-                          src={project.thumbnailUrl}
-                        />
-                      </div>
-                    </td>
-                    <td data-label="Name / Slug">
+                    <td data-label="Project">
+                      <div className={styles.projectIdentityCell}>
+                        <div className={styles.projectThumbnail}>
+                          <AdminImagePreview alt="" fallback={<ImageIcon aria-label="Thumbnail 없음" />} sizes="72px" src={project.thumbnailUrl} />
+                        </div>
                       <div className={styles.projectIdentity}>
                         <strong>{project.name}</strong>
                         <code>/projects/{project.slug}</code>
+                      </div>
                       </div>
                     </td>
                     <td data-label="Year">{project.year ?? "—"}</td>
                     <td data-label="Order">{project.displayOrder}</td>
                     <td data-label="Status">
                       <div className={styles.projectStatusCell}>
-                        <span>{project.enabled ? "공개" : "비공개"}</span>
+                        <StatusLabel tone={project.enabled ? "success" : "neutral"}>{project.enabled ? "공개" : "비공개"}</StatusLabel>
                         <StateSwitch
                           enabled={project.enabled}
                           disabled={adminAction.issuing}
@@ -251,8 +242,8 @@ export default function ProjectManagement() {
               </tbody>
             </table>
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <CreateProjectDialog open={createOpen} input={createInput} onChange={setCreateInput} onClose={() => setCreateOpen(false)} onSubmit={create} />
       <DeleteProjectDialog project={deleteCandidate} onClose={() => setDeleteCandidate(null)} onConfirm={remove} />

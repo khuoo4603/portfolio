@@ -8,6 +8,7 @@ import {
   Menu,
   PanelTop,
   PanelsTopLeft,
+  ArrowRightLeft,
   ScrollText,
   UserRound,
   Users,
@@ -56,10 +57,9 @@ function Navigation({
   return (
     <div className={styles.navigationInner}>
       <div className={styles.adminIdentity}>
-        <span className={styles.identityMark}>{account.name.trim().charAt(0).toUpperCase() || "A"}</span>
+        <span className={styles.identityMark}>KH</span>
         <span className={styles.identityCopy}>
-          <strong>{account.name}</strong>
-          <small>{account.role}</small>
+          <strong>PORTFOLIO ADMIN</strong>
         </span>
       </div>
 
@@ -83,17 +83,25 @@ function Navigation({
       </nav>
 
       <div className={styles.navigationBottom}>
-        <div className={styles.themeControl}>
-          <ThemeToggle />
+        <Link
+          className={styles.workspaceSwitchLink}
+          href="/tools"
+          aria-label="Tools로 이동"
+          onClick={onNavigate}
+        >
+          <ArrowRightLeft aria-hidden="true" />
+          <span>Tools로 이동</span>
+        </Link>
+        <ThemeToggle className={styles.themeControl}>
           <span>Theme</span>
-        </div>
+        </ThemeToggle>
         <div className={styles.accountSummary}>
           <span className={styles.accountAvatar} aria-hidden="true">
             {account.name.trim().charAt(0) || <UserRound />}
           </span>
           <span className={styles.accountCopy}>
             <strong>{account.name}</strong>
-            <small>{account.email}</small>
+            <small>{account.role} · {account.email}</small>
           </span>
         </div>
         <button
@@ -269,7 +277,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             >
               <Menu aria-hidden="true" />
             </button>
-            <span>{adminUser.name} / {adminUser.role}</span>
+            <span>KH / ADMIN</span>
             <ThemeToggle />
           </header>
         ) : null}

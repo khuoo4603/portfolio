@@ -198,6 +198,7 @@ export default function LogsScreen() {
         description="로그인 결과와 5xx 오류를 Trace ID 중심으로 조회합니다."
       />
 
+      <section className={`${styles.managementSurface} ${styles.logManagementSurface}`} aria-label="로그 관리">
       <div className={styles.lineTabs} role="tablist" aria-label="로그 유형">
         <button className={tab === "login" ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === "login"} onClick={() => changeTab("login")}>Login Logs</button>
         <button className={tab === "error" ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === "error"} onClick={() => changeTab("error")}>Error Logs</button>
@@ -300,6 +301,7 @@ export default function LogsScreen() {
           </div>
         </nav>
       )}
+      </section>
     </>
   );
 }

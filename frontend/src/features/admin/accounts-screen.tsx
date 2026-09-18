@@ -303,15 +303,9 @@ export default function AccountsScreen() {
       <PageHeader
         title="Accounts"
         description="관리자와 Tools 사용 계정의 권한, 활성 상태와 최근 로그인을 관리합니다."
-        action={(
-          <button className={`${styles.primaryButton} type-body`} type="button" onClick={() => setCreateOpen(true)}>
-            <Plus aria-hidden="true" />
-            계정 생성
-          </button>
-        )}
       />
-
-      <form className={styles.filterBar} onSubmit={handleFilter}>
+      <section className={`${styles.managementSurface} ${styles.accountsSurface}`} aria-label="계정 관리">
+        <form className={`${styles.filterBar} ${styles.accountsFilterBar}`} onSubmit={handleFilter}>
         <label>
           <span className="type-small">계정 검색</span>
           <div className={styles.searchField}>
@@ -335,8 +329,9 @@ export default function AccountsScreen() {
             <option value="false">비활성</option>
           </select>
         </label>
-        <button className={`${styles.secondaryButton} type-body`} type="submit">조회</button>
-      </form>
+          <button className={`${styles.secondaryButton} type-body`} type="submit">조회</button>
+          <button className={`${styles.primaryButton} type-body`} type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />계정 생성</button>
+        </form>
 
       {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
@@ -350,12 +345,11 @@ export default function AccountsScreen() {
       ) : accounts ? (
         <div className={styles.dataTableWrap}>
           <table className={styles.dataTable}>
-            <thead><tr><th>계정</th><th>이름</th><th>권한</th><th>상태</th><th>최근 로그인</th><th><span className={styles.srOnly}>작업</span></th></tr></thead>
+            <thead><tr><th>계정</th><th>권한</th><th>상태</th><th>최근 로그인</th><th><span className={styles.srOnly}>작업</span></th></tr></thead>
             <tbody>
               {accounts.map((account) => (
                 <tr key={account.id}>
-                  <td data-label="계정"><strong>{account.email}</strong></td>
-                  <td data-label="이름">{account.name}</td>
+                  <td data-label="계정"><div className={styles.accountIdentity}><strong>{account.name}</strong><span>{account.email}</span></div></td>
                   <td data-label="권한"><span className={styles.roleBadge}>{account.role}</span></td>
                   <td data-label="상태"><StatusLabel tone={account.enabled ? "success" : "neutral"}>{account.enabled ? "활성" : "비활성"}</StatusLabel></td>
                   <td data-label="최근 로그인"><time>{formatDateTime(account.recentLoginAt)}</time></td>
@@ -369,6 +363,7 @@ export default function AccountsScreen() {
           </table>
         </div>
       ) : null}
+      </section>
 
       {createOpen && <AccountCreateDialog onClose={() => setCreateOpen(false)} onSubmit={queueCreate} />}
       {passwordAccount && <PasswordDialog account={passwordAccount} onClose={() => setPasswordAccount(null)} onSubmit={queuePassword} />}

@@ -279,8 +279,8 @@ export default function ToolsScreen() {
       {mutationError && <p className={`${styles.inlineError} type-small`} role="alert">{mutationError}</p>}
       {loading ? <PageLoading rows={6} /> : error ? <PageError message={error} onRetry={() => void loadTools()} /> : data ? (
         <div className={styles.pageSections}>
-          <section className={styles.operationalSection} aria-labelledby="tool-status-title">
-            <div className={styles.sectionHeading}><div><h2 id="tool-status-title" className="type-title">Tool 상태</h2></div></div>
+          <section className={`${styles.managementSurface} ${styles.operationalSection}`} aria-label="Tool 상태 관리">
+            <div className={styles.managementSurfaceHeader}><div><h2 id="tool-status-title" className="type-title">Tool 상태</h2></div></div>
             {data.tools.length === 0 ? <EmptyState title="등록 Tool 없음" description="Backend Tool Registry 항목이 없습니다." /> : (
               <div className={styles.toolRows}>{data.tools.map((tool) => (
                 <div key={tool.toolKey} className={styles.toolRow}>
@@ -291,9 +291,9 @@ export default function ToolsScreen() {
               ))}</div>
             )}
           </section>
-          <section className={styles.operationalSection} aria-labelledby="tool-links-title">
-            <div className={styles.sectionHeading}><div><h2 id="tool-links-title" className="type-title">Links 데이터</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => setEditor({})}><Plus aria-hidden="true" />Link 추가</button></div>
-            <SegmentedControl className={styles.linkFilters} label="Link 분류" options={LINK_FILTERS} value={linkFilter} onChange={setLinkFilter} />
+          <section className={`${styles.managementSurface} ${styles.operationalSection}`} aria-label="Links 데이터 관리">
+            <div className={styles.managementSurfaceHeader}><div><h2 id="tool-links-title" className="type-title">Links 데이터</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => setEditor({})}><Plus aria-hidden="true" />Link 추가</button></div>
+            <SegmentedControl className={`${styles.linkFilters} ${styles.toolLinksFilter}`} label="Link 분류" options={LINK_FILTERS} value={linkFilter} onChange={setLinkFilter} />
             {data.links.length === 0 ? <EmptyState title="등록 Link 없음" description="Links Tool에 표시할 링크가 없습니다." /> : (
               <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>Link</th><th>분류</th><th>대표 이미지</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
                 {filteredLinks.map((link) => <tr key={link.id}>

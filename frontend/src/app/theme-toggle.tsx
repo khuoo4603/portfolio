@@ -1,6 +1,28 @@
 "use client";
 
+import { useRef, type ReactNode } from "react";
+
 type PortfolioTheme = "light" | "dark";
+
+const THEME_TRANSITION_DURATION = 520;
+const THEME_TRANSITION_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+export function calculateThemeReveal(
+  rect: Pick<DOMRect, "left" | "top" | "width" | "height">,
+  viewportWidth: number,
+  viewportHeight: number,
+) {
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+  const horizontalDistance = Math.max(x, viewportWidth - x);
+  const verticalDistance = Math.max(y, viewportHeight - y);
+
+  return {
+    x,
+    y,
+    radius: Math.hypot(horizontalDistance, verticalDistance),
+  };
+}
 
 // Theme DOM 반영과 사용자 선택값 저장
 function applyTheme(theme: PortfolioTheme) {
@@ -13,18 +35,86 @@ function applyTheme(theme: PortfolioTheme) {
   }
 }
 
-// Root Snapshot 없이 Theme 선택값 즉시 전환
-export default function ThemeToggle({ ariaLabel = "색상 테마 전환" }: { ariaLabel?: string }) {
-  // 현재 Theme 반전과 Browser 저장
-  const handleThemeToggle = () => {
+// Root Snapshot 기반 Theme 원형 전환
+export default function ThemeToggle({
+  ariaLabel = "색상 테마 전환",
+  className,
+  children,
+}: {
+  ariaLabel?: string;
+  className?: string;
+  children?: ReactNode;
+}) {
+  // Theme 전환과 Browser 저장
+  const themeToggleRef = useRef<HTMLButtonElement>(null);
+  const themeTransitionRunningRef = useRef(false);
+
+  const handleThemeToggle = async () => {
+    if (themeTransitionRunningRef.current) {
+      return;
+    }
+
     const root = document.documentElement;
     const nextTheme: PortfolioTheme = root.dataset.theme === "dark" ? "light" : "dark";
-    applyTheme(nextTheme);
+    const button = themeToggleRef.current;
+    const isReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    if (
+      typeof document.startViewTransition !== "function" ||
+      isReducedMotion ||
+      !button ||
+      typeof root.animate !== "function"
+    ) {
+      applyTheme(nextTheme);
+      return;
+    }
+
+    const { x, y, radius } = calculateThemeReveal(
+      button.getBoundingClientRect(),
+      window.innerWidth,
+      window.innerHeight,
+    );
+    let themeApplied = false;
+    themeTransitionRunningRef.current = true;
+
+    try {
+      const transition = document.startViewTransition(() => {
+        applyTheme(nextTheme);
+        themeApplied = true;
+      });
+      const transitionFinished = transition.finished.catch(() => undefined);
+
+      await transition.ready;
+
+      const animation = root.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${radius}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: THEME_TRANSITION_DURATION,
+          easing: THEME_TRANSITION_EASING,
+          fill: "both",
+          pseudoElement: "::view-transition-new(root)",
+        },
+      );
+
+      await Promise.all([transitionFinished, animation.finished]);
+    } catch {
+      if (!themeApplied) {
+        applyTheme(nextTheme);
+      }
+    } finally {
+      themeTransitionRunningRef.current = false;
+    }
   };
 
   return (
     <button
-      className="theme-toggle"
+      ref={themeToggleRef}
+      className={className ? `theme-toggle ${className}` : "theme-toggle"}
       type="button"
       onClick={handleThemeToggle}
       aria-label={ariaLabel}
@@ -34,6 +124,7 @@ export default function ThemeToggle({ ariaLabel = "색상 테마 전환" }: { ar
         <path className="theme-toggle-half" d="M12 4.5a7.5 7.5 0 0 1 0 15Z" />
         <path className="theme-toggle-axis" d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" />
       </svg>
+      {children}
     </button>
   );
 }

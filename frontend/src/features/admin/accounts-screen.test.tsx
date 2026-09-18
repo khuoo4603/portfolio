@@ -68,6 +68,7 @@ describe("Admin Accounts 실제 API 관리", () => {
   it("초기 목록과 role·enabled·keyword Filter를 Backend Query로 조회", async () => {
     render(<AccountsScreen />);
 
+    expect(screen.getByRole("region", { name: "계정 관리" })).toBeInTheDocument();
     expect(await screen.findByText("admin@example.com")).toBeInTheDocument();
     expect(getAdminAccounts).toHaveBeenCalledWith({ keyword: undefined, role: undefined, enabled: undefined });
 

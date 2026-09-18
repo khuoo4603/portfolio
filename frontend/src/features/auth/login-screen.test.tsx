@@ -95,7 +95,7 @@ describe("통합 로그인 실제 API 화면", () => {
       expect(loginSurface.querySelector("[data-pattern='line-grid']")).toBeInTheDocument();
       expect(loginSurface.querySelector("[data-decoration='grid-cells']")).toBeInTheDocument();
       expect(screen.getByRole("heading", { level: 2, name: "Sign in" })).toBeInTheDocument();
-      expect(screen.getByText("로그인 후 계정 권한에 맞는 영역으로 이동합니다.")).toBeInTheDocument();
+      expect(screen.queryByText("로그인 후 계정 권한에 맞는 영역으로 이동합니다.")).not.toBeInTheDocument();
       expect(screen.getByLabelText("이메일")).toBeInTheDocument();
       expect(screen.getByLabelText("비밀번호")).toBeInTheDocument();
     } finally {

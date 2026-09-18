@@ -71,6 +71,7 @@
 .mobile-sidebar-backdrop,
 .mobile-sidebar-heading,
 .mobile-sidebar-navigation,
+.mobile-sidebar-utilities,
 .mobile-sidebar-close {
   display: none;
 }
@@ -110,6 +111,20 @@
 .navigation-link[aria-current="page"]::after {
   transform: scaleX(1);
   transform-origin: left;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 0;
+}
+
+::view-transition-new(root) {
+  z-index: 1;
 }
 
 .theme-toggle {
@@ -1387,6 +1402,13 @@ a.project-thumbnail {
   .mobile-sidebar-navigation {
     display: flex;
     padding-block: var(--space-24);
+    flex-direction: column;
+    gap: var(--space-20);
+  }
+
+  .mobile-sidebar-utilities {
+    display: flex;
+    padding-bottom: var(--space-20);
     flex-direction: column;
     gap: var(--space-20);
   }

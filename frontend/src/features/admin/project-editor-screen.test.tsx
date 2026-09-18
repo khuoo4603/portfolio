@@ -119,6 +119,7 @@ describe("Preview-first Project Editor", () => {
     expect(screen.getByLabelText("Tagline")).toHaveValue("");
     expect(screen.getByLabelText("Year")).toHaveValue(null);
     expect(screen.getByRole("button", { name: /편집 모드/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("status")).toHaveTextContent("저장됨");
     expect(screen.queryByRole("article", { name: "Project Detail Preview" })).not.toBeInTheDocument();
 
     const contentSections = [
@@ -168,6 +169,7 @@ describe("Preview-first Project Editor", () => {
   it("편집·미리보기 모드 전환 시 API 재조회 없이 Local Draft를 유지", async () => {
     await renderEditor();
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Local Draft Project" } });
+    expect(screen.getByRole("status")).toHaveTextContent("변경사항 있음");
 
     fireEvent.click(screen.getByRole("button", { name: /미리보기 모드/ }));
     const preview = screen.getByRole("article", { name: "Project Detail Preview" });

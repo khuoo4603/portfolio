@@ -58,14 +58,18 @@ describe("Admin Dashboard 실제 API 상태", () => {
     expect(screen.queryByText("3,842")).not.toBeInTheDocument();
   });
 
-  it("Backend 응답의 단일 trend·서비스 목록·사이트 집계만 표시", async () => {
+  it("Backend 응답을 Dashboard 운영 Surface에 표시", async () => {
     vi.mocked(getAdminDashboard).mockResolvedValue(dashboardData("2026-09", 4_321));
     render(<DashboardScreen />);
 
+    expect(await screen.findByRole("region", { name: "Dashboard 운영 현황" })).toBeInTheDocument();
     expect(await screen.findByText("4,321")).toBeInTheDocument();
     expect(screen.getByLabelText("2026-09, 방문자 4321, 페이지 조회 9716")).toBeInTheDocument();
     expect(screen.getByText("Portfolio Backend")).toBeInTheDocument();
     expect(screen.queryByText("Portfolio Frontend")).not.toBeInTheDocument();
+    expect(screen.queryByText("기간별 방문자와 페이지 조회를 비교합니다.")).not.toBeInTheDocument();
+    expect(screen.queryByText("현재 연결 상태와 최근 점검 결과입니다.")).not.toBeInTheDocument();
+    expect(screen.queryByText("공개 콘텐츠와 운영 리소스를 요약합니다.")).not.toBeInTheDocument();
     expect(screen.getByText("활성 기술").nextElementSibling).toHaveTextContent("10");
   });
 
