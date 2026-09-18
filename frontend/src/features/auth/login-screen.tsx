@@ -312,7 +312,6 @@ export default function LoginScreen() {
                 <form className={styles.credentialsForm} onSubmit={handleLogin} noValidate>
                   <div className={styles.formHeading}>
                     <h2 className="type-title">Sign in</h2>
-                    <p className="type-body">로그인 후 계정 권한에 맞는 영역으로 이동합니다.</p>
                   </div>
 
                   <div className={styles.fieldGroup}>

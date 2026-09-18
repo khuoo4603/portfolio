@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import type { SavedQuiz } from "@/types/api";
@@ -51,6 +51,21 @@ function fillAllAnswers() {
   fireEvent.change(screen.getByLabelText("서술형 답안"), { target: { value: "서술 답안" } });
 }
 
+function setQuizViewport(viewport: "desktop" | "tablet" | "mobile") {
+  vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+    matches: query === "(min-width: 1024px)"
+      ? viewport === "desktop"
+      : query === "(max-width: 767px)" && viewport === "mobile",
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })));
+}
+
 describe("Quiz 저장 Workspace", () => {
   beforeEach(() => {
     mocks.createQuiz.mockReset().mockResolvedValue({ ...savedQuiz, title: "자바 기초" });
@@ -62,7 +77,173 @@ describe("Quiz 저장 Workspace", () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("Desktop Sidebar를 Header 우측 Toggle로 접고 다시 열어도 저장 목록을 유지한다", async () => {
+    setQuizViewport("desktop");
+    render(<QuizScreen />);
+
+    const history = await screen.findByRole("complementary", { name: "저장된 문제" });
+    const closeToggle = screen.getByRole("button", { name: "저장된 문제 사이드바 닫기" });
+    expect(mocks.getQuizzes).toHaveBeenCalledOnce();
+    expect(closeToggle).toHaveAttribute("aria-controls", "quiz-history");
+    expect(closeToggle).toHaveAttribute("aria-expanded", "true");
+    expect(within(history).getByRole("heading", { name: "저장된 문제" })).toBeInTheDocument();
+    expect(within(history).queryByText("최근 수정한 순서")).not.toBeInTheDocument();
+    expect(within(history).getByRole("button", { name: "저장된 자바" })).toBeInTheDocument();
+
+    fireEvent.click(closeToggle);
+    expect(history).toHaveAttribute("aria-hidden", "true");
+    expect(history).toHaveAttribute("inert");
+    expect(history.className).toContain("quizHistoryCollapsed");
+    expect(document.querySelector('[class*="quizLayout"]')?.className).toContain("quizLayoutCollapsed");
+    expect(screen.queryByRole("complementary", { name: "저장된 문제" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "저장된 문제 사이드바 열기" })).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(screen.getByRole("button", { name: "저장된 문제 사이드바 열기" }));
+    expect(screen.getByRole("complementary", { name: "저장된 문제" })).toHaveTextContent("저장된 자바");
+    expect(mocks.getQuizzes).toHaveBeenCalledOnce();
+  });
+
+  it("Tablet은 Header Toggle 없이 좌하단 Compact Toggle로 Drawer를 열고 닫는다", async () => {
+    setQuizViewport("tablet");
+    render(<QuizScreen />);
+
+    const toggle = screen.getByRole("button", { name: "저장된 문제 사이드바 열기" });
+    expect(toggle.className).toContain("compactHistoryToggle");
+    expect(toggle).toHaveAttribute("aria-controls", "quiz-history");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(document.querySelector('[class*="historyHeaderToggle"]')).not.toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "저장된 문제" })).not.toBeInTheDocument();
+    expect(document.getElementById("quiz-history")).toHaveAttribute("aria-hidden", "true");
+
+    fireEvent.click(toggle);
+    const history = await screen.findByRole("complementary", { name: "저장된 문제" });
+    expect(screen.queryByRole("button", { name: "저장된 문제 사이드바 열기" })).not.toBeInTheDocument();
+    expect(document.querySelector('[class*="quizHistoryBackdropOpen"]')).toBeInTheDocument();
+    fireEvent.click(within(history).getByRole("button", { name: "저장된 문제 닫기" }));
+    expect(screen.queryByRole("complementary", { name: "저장된 문제" })).not.toBeInTheDocument();
+    expect(document.getElementById("quiz-history")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByRole("button", { name: "저장된 문제 사이드바 열기" })).toBeInTheDocument();
+  });
+
+  it("Mobile은 Header Toggle 대신 좌측 하단 버튼으로 Drawer를 연다", async () => {
+    setQuizViewport("mobile");
+    render(<QuizScreen />);
+
+    const toggle = screen.getByRole("button", { name: "저장된 문제 사이드바 열기" });
+    expect(toggle.className).toContain("compactHistoryToggle");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    const history = await screen.findByRole("complementary", { name: "저장된 문제" });
+    expect(screen.queryByRole("button", { name: "저장된 문제 사이드바 열기" })).not.toBeInTheDocument();
+    fireEvent.click(within(history).getByRole("button", { name: "저장된 문제 닫기" }));
+    expect(screen.getByRole("button", { name: "저장된 문제 사이드바 열기" })).toBeInTheDocument();
+  });
+
+  it("Mobile Drawer를 닫으면 고정 열기 버튼으로 포커스를 복원한다", async () => {
+    setQuizViewport("mobile");
+    render(<QuizScreen />);
+
+    const toggle = screen.getByRole("button", { name: "저장된 문제 사이드바 열기" });
+    toggle.focus();
+    fireEvent.click(toggle);
+    const history = await screen.findByRole("complementary", { name: "저장된 문제" });
+    fireEvent.click(within(history).getByRole("button", { name: "저장된 문제 닫기" }));
+    expect(screen.getByRole("button", { name: "저장된 문제 사이드바 열기" })).toHaveFocus();
+  });
+
+  it("문제를 불러온 뒤에도 JSON 입력을 유지하고 JSON 토글을 노출하지 않는다", () => {
+    render(<QuizScreen />);
+    loadJson();
+
+    expect(screen.getByLabelText("문제 JSON")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /문제 JSON (열기|접기)/ })).not.toBeInTheDocument();
+  });
+
+  it("질문 헤더에 번호·질문·유형을 한 번만 표시하고 fenced code를 본문에 유지한다", () => {
+    render(<QuizScreen />);
+    loadJson(JSON.stringify({
+      title: "C 언어",
+      questions: [{
+        id: 1,
+        type: "single",
+        question: "다음 코드를 실행한 결과는?\n```c\nprintf(\"%d\", 1);\n```\n결과를 고르세요.",
+        choices: ["1", "2"],
+      }],
+    }));
+
+    const question = screen.getByRole("region", { name: "다음 코드를 실행한 결과는?" });
+    expect(within(question).getByText("01.")).toBeInTheDocument();
+    expect(within(question).getByText("객관식 단일답안")).toBeInTheDocument();
+    expect(within(question).getAllByText("다음 코드를 실행한 결과는?")).toHaveLength(1);
+    expect(within(question).getByText('printf("%d", 1);')).toBeInTheDocument();
+    expect(within(question).getByText("결과를 고르세요.")).toBeInTheDocument();
+  });
+
+  it("성공 알림은 10초 후 퇴장한다", () => {
+    vi.useFakeTimers();
+    render(<QuizScreen />);
+    loadJson();
+
+    expect(screen.getByRole("status")).toHaveTextContent("문제 불러오기 완료");
+    act(() => vi.advanceTimersByTime(9_999));
+    expect(screen.getByRole("status")).toHaveTextContent("문제를 정상적으로 불러왔습니다.");
+    act(() => vi.advanceTimersByTime(1));
+    act(() => vi.advanceTimersByTime(181));
+    expect(screen.queryByText("문제 불러오기 완료")).not.toBeInTheDocument();
+  });
+
+  it("알림 닫기 버튼은 대기 Timer 없이 해당 알림을 제거한다", () => {
+    vi.useFakeTimers();
+    render(<QuizScreen />);
+    loadJson();
+
+    fireEvent.click(screen.getByRole("button", { name: "문제 불러오기 완료 알림 닫기" }));
+    act(() => vi.advanceTimersByTime(181));
+    expect(screen.queryByText("문제 불러오기 완료")).not.toBeInTheDocument();
+  });
+
+  it("오류 알림은 30초 동안 유지한다", () => {
+    vi.useFakeTimers();
+    render(<QuizScreen />);
+    fireEvent.change(screen.getByLabelText("문제 JSON"), { target: { value: "{" } });
+    fireEvent.click(screen.getByRole("button", { name: "문제 불러오기" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("문제 불러오기 실패");
+    act(() => vi.advanceTimersByTime(29_999));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(181));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("저장 제목을 JSON 입력 아래에 직접 표시하고 별도 저장 정보 영역을 만들지 않는다", () => {
+    render(<QuizScreen />);
+    loadJson();
+
+    const inputSection = screen.getByRole("region", { name: "JSON Input" });
+    const actionBar = screen.getByRole("group", { name: "Quiz 작업" });
+    expect(screen.queryByLabelText("Quiz 저장 Toolbar")).not.toBeInTheDocument();
+    expect(within(inputSection).getByLabelText("저장 제목")).toBeInTheDocument();
+    expect(within(inputSection).queryByRole("region", { name: "저장 정보" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "저장 정보" })).not.toBeInTheDocument();
+    expect(within(actionBar).getByRole("button", { name: "저장" })).toBeInTheDocument();
+    expect(within(actionBar).queryByRole("button", { name: /문제 JSON (열기|접기)/ })).not.toBeInTheDocument();
+    expect(within(actionBar).queryByRole("button", { name: "저장된 문제" })).not.toBeInTheDocument();
+  });
+
+  it("알림은 상태 아이콘·내용·닫기 버튼을 함께 제공한다", () => {
+    render(<QuizScreen />);
+    loadJson();
+
+    const notification = screen.getByRole("status");
+    expect(notification).toHaveTextContent("문제 불러오기 완료");
+    expect(notification).toHaveTextContent("문제를 정상적으로 불러왔습니다.");
+    expect(notification.querySelector('div[aria-hidden="true"]')).not.toBeNull();
+    expect(within(notification).getByRole("button", { name: "문제 불러오기 완료 알림 닫기" })).toBeInTheDocument();
   });
 
   it("기존 네 유형·Code Block·Preview·Copy·Reset 동작을 유지", async () => {
@@ -76,6 +257,7 @@ describe("Quiz 저장 Workspace", () => {
     expect(screen.getByText("System.out.println(5);")).toBeInTheDocument();
     fillAllAnswers();
     const preview = screen.getByLabelText("현재 답안 미리보기") as HTMLTextAreaElement;
+    expect(preview.closest("details")).toHaveAttribute("open");
     expect(preview.value).toContain("답: 2");
     expect(preview.value).toContain("답: 1, 3");
     expect(preview.value).toContain("코드: Main.java\nSystem.out.println(5);");
@@ -95,7 +277,6 @@ describe("Quiz 저장 Workspace", () => {
     render(<QuizScreen />);
     loadJson();
     expect(screen.getByLabelText("저장 제목")).toHaveValue("자바 기초");
-    expect(screen.getByText("저장되지 않음")).toBeInTheDocument();
     fillAllAnswers();
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
@@ -104,13 +285,12 @@ describe("Quiz 저장 Workspace", () => {
       quizJson: examData,
       responseJson: { 0: ["2"], 1: ["1", "3"], 2: "5", 3: "서술 답안" },
     }));
-    expect(screen.getByText("저장됨")).toBeInTheDocument();
+    expect(screen.getByText("저장 완료")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("저장 제목"), { target: { value: "수정 제목" } });
-    expect(screen.getByText("변경사항 있음")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
     await waitFor(() => expect(mocks.updateQuiz).toHaveBeenCalledWith(11, expect.objectContaining({ title: "수정 제목" })));
-    expect(screen.getByText("저장됨")).toBeInTheDocument();
+    expect(screen.getAllByText("저장 완료")).not.toHaveLength(0);
   });
 
   it("제목 없는 JSON에 가짜 제목을 만들지 않고 사용자 입력을 요구", () => {
@@ -118,15 +298,14 @@ describe("Quiz 저장 Workspace", () => {
     loadJson(JSON.stringify({ questions: [{ type: "short", question: "답은?" }] }));
     expect(screen.getByLabelText("저장 제목")).toHaveValue("");
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("저장 제목을 입력해 주세요.");
+    expect(screen.getByRole("alert")).toHaveTextContent("저장할 수 없음");
     expect(mocks.createQuiz).not.toHaveBeenCalled();
   });
 
   it("최근 수정순 목록에서 상세과 네 유형 답안을 안전하게 복원", async () => {
     mocks.getQuizzes.mockResolvedValue({ items: [summary, olderSummary] });
     render(<QuizScreen />);
-    fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
-    const dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
+    const dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
     expect(mocks.getQuizzes).toHaveBeenCalledOnce();
     expect(within(dialog).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
       expect.stringContaining("저장된 자바"),
@@ -135,21 +314,19 @@ describe("Quiz 저장 Workspace", () => {
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
 
     await waitFor(() => expect(mocks.getQuiz).toHaveBeenCalledWith(11));
-    expect(screen.queryByRole("dialog", { name: "저장된 문제" })).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "2. int" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "1. int" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "3. boolean" })).toBeChecked();
     expect(screen.getByLabelText("단답형 답안")).toHaveValue("5");
     expect(screen.getByLabelText("서술형 답안")).toHaveValue("서술 복원");
     expect(screen.getByLabelText("저장 제목")).toHaveValue("저장된 자바");
-    expect(screen.getByText("저장됨")).toBeInTheDocument();
+    expect(screen.getByText("불러오기 완료")).toBeInTheDocument();
   });
 
   it("잘못된 저장 JSON과 Dirty 교체 취소가 현재 화면을 덮어쓰지 않음", async () => {
     render(<QuizScreen />);
     loadJson();
-    fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
-    let dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
+    let dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
     let confirm = screen.getByRole("dialog", { name: "문제 교체" });
     fireEvent.click(within(confirm).getByRole("button", { name: "취소" }));
@@ -157,12 +334,12 @@ describe("Quiz 저장 Workspace", () => {
     expect(screen.getByRole("heading", { name: "자바 기초" })).toBeInTheDocument();
 
     mocks.getQuiz.mockResolvedValueOnce({ ...savedQuiz, quizJson: { questions: [] } });
-    dialog = screen.getByRole("dialog", { name: "저장된 문제" });
+    dialog = screen.getByRole("complementary", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
     confirm = screen.getByRole("dialog", { name: "문제 교체" });
     fireEvent.click(within(confirm).getByRole("button", { name: "교체" }));
-    dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
-    await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("questions 배열이 필요합니다."));
+    dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("questions 배열이 필요합니다."));
     expect(screen.getByRole("heading", { name: "자바 기초" })).toBeInTheDocument();
 
     mocks.getQuiz.mockRejectedValueOnce(new ApiError(503, {
@@ -171,8 +348,8 @@ describe("Quiz 저장 Workspace", () => {
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
     confirm = screen.getByRole("dialog", { name: "문제 교체" });
     fireEvent.click(within(confirm).getByRole("button", { name: "교체" }));
-    dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
-    await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("상세 조회 실패 (추적 ID: detail-trace)"));
+    dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
+    await waitFor(() => expect(screen.getAllByRole("alert").at(-1)).toHaveTextContent("상세 조회 실패 (추적 ID: detail-trace)"));
     expect(screen.getByRole("heading", { name: "자바 기초" })).toBeInTheDocument();
   });
 
@@ -192,63 +369,61 @@ describe("Quiz 저장 Workspace", () => {
     expect(screen.getByRole("heading", { name: "교체 문제" })).toBeInTheDocument();
   });
 
-  it("저장 목록 Empty와 조회 오류를 Dialog 안에서 분리", async () => {
+  it("저장 목록 Empty를 Sidebar 안에서 표시", async () => {
     mocks.getQuizzes.mockResolvedValueOnce({ items: [] });
     render(<QuizScreen />);
-    fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
-    let dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
+    const dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
     expect(await within(dialog).findByText("저장된 문제가 없습니다.")).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole("button", { name: "대화상자 닫기" }));
+  });
 
+  it("저장 목록 오류에도 Desktop Sidebar Toggle은 동작", async () => {
     mocks.getQuizzes.mockRejectedValueOnce(new ApiError(503, {
       code: "COMMON_SERVICE_UNAVAILABLE", message: "목록 조회 실패", traceId: "list-trace", fieldErrors: [],
     }));
-    fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
-    dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
-    await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("목록 조회 실패 (추적 ID: list-trace)"));
+    render(<QuizScreen />);
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("저장 목록 불러오기 실패"));
+    fireEvent.click(screen.getByRole("button", { name: "저장된 문제 사이드바 닫기" }));
+    expect(screen.queryByRole("complementary", { name: "저장된 문제" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "저장된 문제 사이드바 열기" }));
+    expect(screen.getByRole("complementary", { name: "저장된 문제" })).toBeInTheDocument();
   });
 
   it("열린 저장본 삭제 후 문제·답안은 유지하고 미저장 상태로 전환", async () => {
     render(<QuizScreen />);
-    fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
-    let dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
+    let dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
-    await waitFor(() => expect(screen.getByText("저장됨")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("불러오기 완료")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
-    dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
+    dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByRole("button", { name: "저장된 자바 삭제" }));
     fireEvent.click(within(screen.getByRole("dialog", { name: "저장된 문제 삭제" })).getByRole("button", { name: "삭제" }));
     await waitFor(() => expect(mocks.deleteQuiz).toHaveBeenCalledWith(11));
     expect(screen.getByRole("heading", { name: "자바 기초" })).toBeInTheDocument();
     expect(screen.getByLabelText("단답형 답안")).toHaveValue("5");
-    expect(screen.getByText("저장되지 않음")).toBeInTheDocument();
+    expect(screen.getByText("삭제 완료")).toBeInTheDocument();
   });
 
   it("열리지 않은 저장본 삭제 취소·성공이 현재 저장 ID와 답안을 변경하지 않음", async () => {
     mocks.getQuizzes.mockResolvedValue({ items: [summary, olderSummary] });
     render(<QuizScreen />);
-    fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
-    let dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
+    let dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
-    await waitFor(() => expect(screen.getByText("저장됨")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("불러오기 완료")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
-    dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
+    dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByRole("button", { name: "이전 문제 삭제" }));
     let confirm = screen.getByRole("dialog", { name: "저장된 문제 삭제" });
     expect(within(confirm).getByText("이전 문제")).toBeInTheDocument();
     fireEvent.click(within(confirm).getByRole("button", { name: "취소" }));
     expect(mocks.deleteQuiz).not.toHaveBeenCalled();
 
-    dialog = screen.getByRole("dialog", { name: "저장된 문제" });
+    dialog = screen.getByRole("complementary", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByRole("button", { name: "이전 문제 삭제" }));
     confirm = screen.getByRole("dialog", { name: "저장된 문제 삭제" });
     fireEvent.click(within(confirm).getByRole("button", { name: "삭제" }));
-    dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
+    dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
     await waitFor(() => expect(mocks.deleteQuiz).toHaveBeenCalledWith(12));
     expect(within(dialog).queryByText("이전 문제")).not.toBeInTheDocument();
-    expect(screen.getByText("저장됨")).toBeInTheDocument();
     expect(screen.getByLabelText("단답형 답안")).toHaveValue("5");
   });
 
@@ -257,14 +432,12 @@ describe("Quiz 저장 Workspace", () => {
       code: "COMMON_SERVICE_UNAVAILABLE", message: "수정 저장 실패", traceId: "update-trace", fieldErrors: [],
     }));
     render(<QuizScreen />);
-    fireEvent.click(screen.getByRole("button", { name: "저장된 문제" }));
-    const dialog = await screen.findByRole("dialog", { name: "저장된 문제" });
+    const dialog = await screen.findByRole("complementary", { name: "저장된 문제" });
     fireEvent.click(within(dialog).getByText("저장된 자바").closest("button")!);
-    await waitFor(() => expect(screen.getByText("저장됨")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("불러오기 완료")).toBeInTheDocument());
     fireEvent.change(screen.getByLabelText("단답형 답안"), { target: { value: "수정 답" } });
-    expect(screen.getByText("변경사항 있음")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
-    await waitFor(() => expect(screen.getByText("저장 실패")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("저장 실패"));
     expect(mocks.updateQuiz).toHaveBeenCalledWith(11, expect.objectContaining({
       responseJson: expect.objectContaining({ 2: "수정 답" }),
     }));

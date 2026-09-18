@@ -760,8 +760,8 @@
 
 @media (min-width: 1024px) and (max-width: 1279px) {
   .authContent {
-    grid-template-columns: minmax(0, 1fr) minmax(450px, 480px);
-    gap: var(--space-112);
+    grid-template-columns: minmax(0, 1fr) minmax(420px, 480px);
+    gap: var(--space-64);
   }
 
   .identityHeading {
@@ -777,8 +777,11 @@
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .authContent {
-    grid-template-columns: minmax(0, 0.8fr) minmax(390px, 1.2fr);
-    gap: var(--space-32);
+    max-width: 760px;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    gap: var(--space-48);
+    padding-block: var(--space-128) var(--space-80);
   }
 
   .identityHeading {
@@ -793,7 +796,9 @@
   }
 
   .loginSurface {
+    width: min(100%, 560px);
     min-height: clamp(560px, 68dvh, 620px);
+    justify-self: start;
   }
 
   .gridCells {
