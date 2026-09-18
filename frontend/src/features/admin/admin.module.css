@@ -896,7 +896,6 @@
 .toolLinksFilter {
   margin: 0;
   padding: var(--space-16) var(--space-20);
-  border-bottom: 1px solid var(--border-default);
 }
 
 .serviceRow {
@@ -1168,20 +1167,23 @@
   min-width: 0;
   height: 64px;
   padding: var(--space-12);
-  border-bottom: 1px solid var(--border-default);
   vertical-align: middle;
 }
 
 .dataTable tbody tr {
+  background-image: linear-gradient(var(--border-default), var(--border-default));
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-size: calc(100% - var(--space-40)) 1px;
   transition: background-color var(--motion-duration-100) var(--motion-easing-default);
 }
 
 .dataTable tbody tr:hover {
-  background: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
+  background-color: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
 }
 
-.dataTable tbody tr:last-child td {
-  border-bottom: 0;
+.dataTable tbody tr:last-child {
+  background-image: none;
 }
 
 .dataTable strong {
@@ -1478,6 +1480,33 @@
   gap: var(--space-24);
 }
 
+.editorFormSection {
+  display: grid;
+  gap: var(--space-16);
+  padding-top: var(--space-20);
+  border-top: 1px solid var(--border-default);
+}
+
+.editorFormSection:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.editorFormSection h3 {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.editorFormFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+.editorFormFields .wideField {
+  grid-column: 1 / -1;
+}
+
 .formColumns,
 .checkRow {
   display: grid;
@@ -1563,6 +1592,17 @@
   width: 17px;
   height: 17px;
   accent-color: var(--accent-strong);
+}
+
+.profileRowStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.profileRowStatus > span {
+  min-width: 0;
+  color: var(--text-secondary);
 }
 
 .fieldHint {
@@ -1712,6 +1752,11 @@
 
 .siteManagementSurface .profileFilters,
 .siteManagementSurface .linkFilters {
+  margin: 0;
+  padding: 0 var(--space-20) var(--space-16);
+}
+
+.siteManagementSurface .technologyViewControl {
   margin: 0;
   padding: 0 var(--space-20) var(--space-16);
 }
@@ -2291,6 +2336,19 @@
   min-width: 0;
 }
 
+.projectEditorIdentity {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+}
+
+.projectEditorActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-12);
+}
+
 .projectEditorHeader span,
 .projectEditorHeader h1 {
   display: block;
@@ -2305,11 +2363,19 @@
   font-family: var(--font-family-primary);
 }
 
+.projectEditorHeader .projectSaveState {
+  overflow: visible;
+  color: var(--text-secondary);
+  white-space: normal;
+}
+
+.projectEditorHeader .projectSaveState:not(:empty) {
+  font-family: var(--font-family-mono);
+}
+
 .projectModeSwitch {
   display: flex;
-  width: min(100%, 440px);
   gap: var(--space-4);
-  margin-bottom: var(--space-16);
   padding: var(--space-4);
   border: 1px solid var(--border-default);
   background: var(--bg-surface);
@@ -2342,9 +2408,9 @@
 .projectEditorLayout {
   min-width: 0;
   display: grid;
-  grid-template-columns: 168px minmax(0, 1fr);
+  grid-template-columns: 232px minmax(0, 1fr);
   align-items: start;
-  gap: var(--space-16);
+  gap: var(--space-20);
 }
 
 .projectEditorLayout[data-view-mode="preview"] {
@@ -2420,7 +2486,7 @@
 }
 
 .projectEditorPanel {
-  min-height: 560px;
+  min-height: 0;
   display: grid;
   align-content: start;
   gap: var(--space-24);
@@ -2463,21 +2529,28 @@
 .projectItemList,
 .nestedStringList {
   display: grid;
-  gap: var(--space-12);
+  gap: 0;
 }
 
 .projectItemEditor,
 .mediaGroup {
   display: grid;
   gap: var(--space-16);
-  padding: var(--space-16);
-  border: 1px solid var(--border-default);
-  background: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
+  padding: var(--space-20) 0;
+  border: 0;
+  border-top: 1px solid var(--border-default);
+  background: transparent;
 }
 
 .projectItemEditor {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
+}
+
+.projectItemList > :first-child,
+.projectEditorPanel > .mediaGroup:first-of-type {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .projectItemActions {
@@ -2584,6 +2657,12 @@
   overflow: hidden;
   border: 1px solid var(--border-default);
   background: var(--bg-input);
+}
+
+.architectureDraftPreview,
+.thumbnailDraftPreview,
+.mediaDraftPreview {
+  max-width: 100%;
 }
 
 .architectureDraftPreview img {
@@ -2881,7 +2960,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-12) var(--space-16);
     padding: var(--space-16) var(--space-20);
-    border-bottom: 1px solid var(--border-default);
   }
 
   .dataTable td {
@@ -2916,10 +2994,6 @@
   .dataTable tr > td:first-child {
     grid-column: 1 / -1;
     padding-right: var(--space-48);
-  }
-
-  .dataTable tbody tr:last-child {
-    border-bottom: 0;
   }
 
   .rowMenu {
@@ -3345,6 +3419,113 @@
 
   .technologyPicker .secondaryButton {
     justify-self: start;
+  }
+}
+
+/* Tablet Project Editor 내부 가로 Section Navigation 전환 */
+@media (max-width: 1023px) {
+  .projectEditorLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-16);
+  }
+
+  .projectSectionNav {
+    position: static;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .projectSectionNav nav {
+    width: max-content;
+    min-width: 100%;
+    display: flex;
+    border: 1px solid var(--border-default);
+  }
+
+  .projectSectionNav button {
+    min-width: 148px;
+    grid-template-columns: auto minmax(0, 1fr);
+    border-right: 1px solid var(--border-default);
+    border-bottom: 0;
+    white-space: nowrap;
+  }
+
+  .projectSectionNav button:last-child {
+    border-right: 0;
+  }
+
+  .projectSectionNav button[aria-current="step"] {
+    box-shadow: inset 0 -2px var(--accent-primary);
+  }
+
+  .projectEditorWorkspace,
+  .projectPreviewWorkspace {
+    grid-column: 1;
+  }
+}
+
+/* Mobile Project Editor Header·Dialog 여백 재구성 */
+@media (max-width: 767px) {
+  .projectEditorHeader {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-12);
+  }
+
+  .projectEditorActions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .projectEditorActions .projectModeSwitch {
+    min-width: 0;
+  }
+
+  .projectEditorActions .primaryButton {
+    padding-inline: var(--space-12);
+  }
+
+  .projectSectionNav button {
+    min-width: 136px;
+  }
+
+  .projectItemEditor,
+  .mediaGroup {
+    padding-block: var(--space-16);
+  }
+
+  .editorFormFields {
+    grid-template-columns: 1fr;
+  }
+
+  .profileRowStatus {
+    justify-content: space-between;
+  }
+
+  .dialogBackdrop {
+    place-items: center;
+    padding: var(--space-16);
+  }
+
+  .dialogFrame {
+    width: 100%;
+    max-height: calc(100dvh - var(--space-32));
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-value-md);
+  }
+
+  .dialogFooter {
+    flex-wrap: wrap;
+  }
+
+  .compactBackdrop {
+    padding: var(--space-16);
+  }
+
+  .compactBackdrop .compactDialog {
+    max-height: calc(100dvh - var(--space-32));
   }
 }
 

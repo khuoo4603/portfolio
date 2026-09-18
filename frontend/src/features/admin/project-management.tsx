@@ -185,15 +185,12 @@ export default function ProjectManagement() {
       <PageHeader
         title="Projects"
         description="프로젝트 Draft, 공개 상태와 표시 순서를 관리합니다."
+        action={<button className={`${styles.primaryButton} type-body`} type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />새 프로젝트</button>}
       />
       {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
 
       <section className={`${styles.managementSurface} ${styles.projectTableSection}`} aria-label="프로젝트 관리">
-        <div className={styles.managementSurfaceHeader}>
-          <div><h2 className="type-title">프로젝트 목록</h2><p className="type-small">{projects.length.toLocaleString("ko-KR")}개 프로젝트의 노출 상태와 순서를 관리합니다.</p></div>
-          <button className={`${styles.primaryButton} type-body`} type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />새 프로젝트</button>
-        </div>
         {loading ? <PageLoading rows={5} /> : error ? (
           <PageError message={error} onRetry={() => void loadProjects()} />
         ) : projects.length === 0 ? (

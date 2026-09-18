@@ -101,8 +101,8 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".hero-intro")).toHaveTextContent("BACKEND / INFRA DEVELOPER");
     expect(document.querySelector(".hero-intro")).toHaveClass("type-title");
     const heroMessage = document.querySelector(".hero-message");
-    expect(heroMessage).toHaveTextContent("Backend 개발부터");
-    expect(heroMessage).toHaveTextContent("배포 / 운영까지 고려");
+    expect(heroMessage).toHaveTextContent("문제에 맞는 기술과 설계를 선택하고,");
+    expect(heroMessage).toHaveTextContent("선택과 집중으로 서비스를 완성하는 개발자");
     expect(heroMessage).not.toHaveTextContent("문제에 맞는 기술 선택");
     const header = within(document.querySelector<HTMLElement>(".site-header")!);
     const siteMark = header.getByRole("link", { name: "김현우 포트폴리오 Home" });

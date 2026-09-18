@@ -305,9 +305,6 @@ export default function AccountsScreen() {
         description="관리자와 Tools 사용 계정의 권한, 활성 상태와 최근 로그인을 관리합니다."
       />
       <section className={`${styles.managementSurface} ${styles.accountsSurface}`} aria-label="계정 관리">
-        <div className={styles.managementSurfaceHeader}>
-          <div><h2 className="type-title">계정 목록</h2><p className="type-small">권한과 활성 상태, 최근 로그인을 확인합니다.</p></div>
-        </div>
         <form className={`${styles.filterBar} ${styles.accountsFilterBar}`} onSubmit={handleFilter}>
         <label>
           <span className="type-small">계정 검색</span>

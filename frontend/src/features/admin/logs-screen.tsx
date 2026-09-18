@@ -199,10 +199,6 @@ export default function LogsScreen() {
       />
 
       <section className={`${styles.managementSurface} ${styles.logManagementSurface}`} aria-label="로그 관리">
-        <div className={styles.managementSurfaceHeader}>
-          <div><h2 className="type-title">운영 로그</h2><p className="type-small">계정 접근과 서비스 오류를 기간 및 결과별로 조회합니다.</p></div>
-        </div>
-
       <div className={styles.lineTabs} role="tablist" aria-label="로그 유형">
         <button className={tab === "login" ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === "login"} onClick={() => changeTab("login")}>Login Logs</button>
         <button className={tab === "error" ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === "error"} onClick={() => changeTab("error")}>Error Logs</button>

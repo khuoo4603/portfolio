@@ -96,6 +96,8 @@ describe("Admin Page Header와 주요 화면", () => {
     expect(
       screen.getByRole("button", { name: "계정 생성" }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "계정 목록" })).not.toBeInTheDocument();
+    expect(screen.queryByText("권한과 활성 상태, 최근 로그인을 확인합니다.")).not.toBeInTheDocument();
     expect(await screen.findByRole("table")).toBeInTheDocument();
   });
 
@@ -116,6 +118,8 @@ describe("Admin Page Header와 주요 화면", () => {
     expect(
       screen.getByRole("heading", { name: "Links 데이터" }),
     ).toBeInTheDocument();
+    expect(screen.queryByText("등록된 Tool의 공개 상태를 빠르게 확인하고 전환합니다.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Links Tool에 노출할 공통 링크 데이터를 관리합니다.")).not.toBeInTheDocument();
   });
 
   it("Logs 제목·설명과 통합 관리 Surface의 로그인·오류 탭을 유지", () => {
@@ -125,6 +129,7 @@ describe("Admin Page Header와 주요 화면", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Logs" }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "운영 로그" })).not.toBeInTheDocument();
     expect(
       screen.getByText(
         "로그인 결과와 5xx 오류를 Trace ID 중심으로 조회합니다.",

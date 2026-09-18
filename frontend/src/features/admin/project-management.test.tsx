@@ -63,7 +63,12 @@ describe("Project 목록 관리", () => {
     render(<ProjectManagement />);
 
     const table = await screen.findByRole("table");
-    expect(screen.getByRole("region", { name: "프로젝트 관리" })).toBeInTheDocument();
+    const surface = screen.getByRole("region", { name: "프로젝트 관리" });
+    expect(surface).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Projects" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "새 프로젝트" })).toBeInTheDocument();
+    expect(within(surface).queryByRole("button", { name: "새 프로젝트" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "프로젝트 목록" })).not.toBeInTheDocument();
     for (const heading of ["Project", "Year", "Order", "Status", "Updated At", "Actions"]) {
       expect(within(table).getByRole("columnheader", { name: heading })).toBeInTheDocument();
     }
@@ -105,8 +110,7 @@ describe("Project 목록 관리", () => {
     render(<ProjectManagement />);
 
     expect(await screen.findByText("프로젝트 없음")).toBeInTheDocument();
-    const surface = screen.getByRole("region", { name: "프로젝트 관리" });
-    fireEvent.click(within(surface).getByRole("button", { name: "새 프로젝트" }));
+    fireEvent.click(screen.getByRole("button", { name: "새 프로젝트" }));
     expect(screen.getByRole("dialog", { name: "새 프로젝트" })).toBeInTheDocument();
   });
 

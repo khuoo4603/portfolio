@@ -250,16 +250,17 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
     <div className={styles.projectEditorPage}>
       <header className={styles.projectEditorHeader}>
         <button className={`${styles.secondaryButton} type-body`} type="button" onClick={back}><ArrowLeft aria-hidden="true" />목록</button>
-        <div><span className="type-small">Project #{detail.project.id}</span><h1 className="type-title">{draft.project.name || "Untitled Project"}</h1></div>
-        <button className={`${styles.primaryButton} type-body`} type="button" disabled={!dirty || adminAction.issuing} onClick={save}><Save aria-hidden="true" />저장</button>
+        <div className={styles.projectEditorIdentity}><span className="type-small">Project #{detail.project.id}</span><h1 className="type-title">{draft.project.name || "Untitled Project"}</h1><span className={styles.projectSaveState} role="status">{dirty ? "변경사항 있음" : "저장됨"}</span></div>
+        <div className={styles.projectEditorActions}>
+          <div className={styles.projectModeSwitch} role="group" aria-label="Project Editor 모드">
+            <button type="button" aria-pressed={viewMode === "editor"} onClick={() => setViewMode("editor")}><SlidersHorizontal aria-hidden="true" />편집 모드</button>
+            <button type="button" aria-pressed={viewMode === "preview"} onClick={() => setViewMode("preview")}><Eye aria-hidden="true" />미리보기 모드</button>
+          </div>
+          <button className={`${styles.primaryButton} type-body`} type="button" disabled={!dirty || adminAction.issuing} onClick={save}><Save aria-hidden="true" />저장</button>
+        </div>
       </header>
       {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
-
-      <div className={styles.projectModeSwitch} role="group" aria-label="Project Editor 모드">
-        <button type="button" aria-pressed={viewMode === "editor"} onClick={() => setViewMode("editor")}><SlidersHorizontal aria-hidden="true" />편집 모드</button>
-        <button type="button" aria-pressed={viewMode === "preview"} onClick={() => setViewMode("preview")}><Eye aria-hidden="true" />미리보기 모드</button>
-      </div>
 
       <div className={styles.projectEditorLayout} data-view-mode={viewMode}>
         <aside className={styles.projectSectionNav} data-mode-visible={viewMode === "editor" ? "true" : "false"} hidden={viewMode !== "editor"}>

@@ -11,14 +11,14 @@ import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
 import type { PortfolioContent, ProfileEntry, PublicTechnology } from "@/types/api";
 
 describe("Public Portfolio Mapping", () => {
-  it("16개 관리 Slot만 매핑하고 빈 콘텐츠와 계약 밖 코드를 제외", () => {
+  it("Legacy Hero 설명이 non-empty여도 활성 Public ContentMap에서 제외", () => {
     const content = mapContents([
-      { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "첫 줄\n둘째 줄" },
-      { category: "MAIN", contentCode: "HERO_DESCRIPTION", contentValue: "  " },
+      { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "문제에 맞는 기술과 설계를 선택하고,\n선택과 집중으로 서비스를 완성하는 개발자" },
+      { category: "MAIN", contentCode: "HERO_DESCRIPTION", contentValue: "legacy description" },
       { category: "MAIN", contentCode: "UNKNOWN", contentValue: "제외" } as unknown as PortfolioContent,
     ]);
 
-    expect(content).toEqual({ HERO_STATEMENT: "첫 줄\n둘째 줄" });
+    expect(content).toEqual({ HERO_STATEMENT: "문제에 맞는 기술과 설계를 선택하고,\n선택과 집중으로 서비스를 완성하는 개발자" });
     expect(content.HERO_DESCRIPTION).toBeUndefined();
     expect((content as Record<string, string>).UNKNOWN).toBeUndefined();
   });

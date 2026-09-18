@@ -166,7 +166,7 @@ export default function DashboardScreen() {
         <section className={styles.dashboardOperations} aria-label="Dashboard 운영 현황">
           <section className={`${styles.managementSurface} ${styles.trafficPanel}`} aria-label="방문 추이">
             <div className={styles.managementSurfaceHeader}>
-              <div><h2 className="type-title">방문 추이</h2><p className="type-small">기간별 방문자와 페이지 조회를 비교합니다.</p></div>
+              <div><h2 className="type-title">방문 추이</h2></div>
               <SegmentedControl label="방문 추이 기간" options={PERIOD_FILTERS} value={months} onChange={selectMonths} />
             </div>
             <PageLoading rows={4} />
@@ -181,7 +181,6 @@ export default function DashboardScreen() {
               <div className={styles.managementSurfaceHeader}>
                 <div>
                   <h2 id="trend-title" className="type-title">방문 추이</h2>
-                  <p className="type-small">기간별 방문자와 페이지 조회를 비교합니다.</p>
                 </div>
                 <SegmentedControl label="방문 추이 기간" options={PERIOD_FILTERS} value={months} onChange={selectMonths} />
               </div>
@@ -196,7 +195,7 @@ export default function DashboardScreen() {
           </div>
           <div className={styles.dashboardSecondaryGrid}>
             <section className={`${styles.managementSurface} ${styles.servicePanel}`} aria-labelledby="service-title">
-              <div className={styles.managementSurfaceHeader}><div><h2 id="service-title" className="type-title">서비스 상태</h2><p className="type-small">현재 연결 상태와 최근 점검 결과입니다.</p></div></div>
+              <div className={styles.managementSurfaceHeader}><div><h2 id="service-title" className="type-title">서비스 상태</h2></div></div>
               <div className={styles.serviceRows}>
                 {data.serviceStatus.length === 0 ? (
                   <EmptyState title="서비스 상태 없음" description="수신된 서비스 상태가 없습니다." />
@@ -210,7 +209,7 @@ export default function DashboardScreen() {
               </div>
             </section>
             <section className={`${styles.managementSurface} ${styles.siteSummaryPanel}`} aria-labelledby="site-summary-title">
-              <div className={styles.managementSurfaceHeader}><div><h2 id="site-summary-title" className="type-title">사이트 현황</h2><p className="type-small">공개 콘텐츠와 운영 리소스를 요약합니다.</p></div></div>
+              <div className={styles.managementSurfaceHeader}><div><h2 id="site-summary-title" className="type-title">사이트 현황</h2></div></div>
               <dl className={styles.compactSummary}>
                 <div><dt className="type-small">공개 프로젝트</dt><dd>{data.siteSummary.publicProjects}</dd></div>
                 <div><dt className="type-small">활성 기술</dt><dd>{data.siteSummary.portfolioTechnologies}</dd></div>
