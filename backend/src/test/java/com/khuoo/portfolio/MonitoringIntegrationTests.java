@@ -6,9 +6,10 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.khuoo.portfolio.common.logging.LogEventLogger;
 import com.khuoo.portfolio.common.util.PortfolioEnums.ServiceStatus;
-import com.khuoo.portfolio.monitoring.config.MonitorTarget;
+import com.khuoo.portfolio.monitoring.domain.MonitoringTarget;
 import com.khuoo.portfolio.monitoring.repository.ServiceStatusRepository;
 import com.khuoo.portfolio.monitoring.service.HealthCheckClient;
+import com.khuoo.portfolio.monitoring.service.MonitoringRuntimeSettings;
 import com.khuoo.portfolio.monitoring.service.ServiceMonitor;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
@@ -23,7 +24,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
@@ -86,10 +86,10 @@ class MonitoringIntegrationTests extends PostgresIntegrationTest {
             exchange.close();
         });
         uri = URI.create(uri + "?ready=true#probe");
-        ServiceMonitor monitor = monitor(uri, Duration.ofSeconds(1), Duration.ZERO);
+        ServiceMonitor monitor = monitor();
 
-        HealthCheckClient.HealthCheckResult first = monitor.check(target(uri));
-        HealthCheckClient.HealthCheckResult second = monitor.check(target(uri));
+        HealthCheckClient.HealthCheckResult first = monitor.check(target(uri), settings(Duration.ofSeconds(1), Duration.ZERO, 1));
+        HealthCheckClient.HealthCheckResult second = monitor.check(target(uri), settings(Duration.ofSeconds(1), Duration.ZERO, 1));
 
         assertThat(first.status()).isEqualTo(ServiceStatus.UP);
         assertThat(first.httpStatus()).isEqualTo(204);
@@ -119,8 +119,8 @@ class MonitoringIntegrationTests extends PostgresIntegrationTest {
             exchange.close();
         });
 
-        HealthCheckClient.HealthCheckResult result = monitor(uri, Duration.ofSeconds(1), Duration.ZERO)
-                .check(target(uri));
+        HealthCheckClient.HealthCheckResult result = monitor()
+                .check(target(uri), settings(Duration.ofSeconds(1), Duration.ZERO, 1));
 
         assertThat(result.status()).isEqualTo(ServiceStatus.UP);
         assertThat(result.httpStatus()).isEqualTo(200);
@@ -141,8 +141,8 @@ class MonitoringIntegrationTests extends PostgresIntegrationTest {
             exchange.close();
         });
 
-        HealthCheckClient.HealthCheckResult result = monitor(uri, Duration.ofSeconds(1), Duration.ZERO)
-                .check(target(uri));
+        HealthCheckClient.HealthCheckResult result = monitor()
+                .check(target(uri), settings(Duration.ofSeconds(1), Duration.ZERO, 1));
 
         assertThat(result.status()).isEqualTo(ServiceStatus.DOWN);
         assertThat(result.httpStatus()).isEqualTo(302);
@@ -169,11 +169,8 @@ class MonitoringIntegrationTests extends PostgresIntegrationTest {
                 exchange.close();
             }
         });
-        HealthCheckClient.HealthCheckResult timeout = monitor(
-                timeoutUri,
-                Duration.ofMillis(30),
-                Duration.ZERO
-        ).check(target(timeoutUri));
+        HealthCheckClient.HealthCheckResult timeout = monitor().check(
+                target(timeoutUri), settings(Duration.ofMillis(30), Duration.ZERO, 1));
 
         assertThat(timeout.status()).isEqualTo(ServiceStatus.DOWN);
         assertThat(timeout.httpStatus()).isNull();
@@ -189,11 +186,8 @@ class MonitoringIntegrationTests extends PostgresIntegrationTest {
             closedPort = socket.getLocalPort();
         }
         URI connectionUri = URI.create("http://127.0.0.1:" + closedPort + "/health");
-        HealthCheckClient.HealthCheckResult connection = monitor(
-                connectionUri,
-                Duration.ofMillis(100),
-                Duration.ZERO
-        ).check(target(connectionUri));
+        HealthCheckClient.HealthCheckResult connection = monitor().check(
+                target(connectionUri), settings(Duration.ofMillis(100), Duration.ZERO, 1));
 
         assertThat(connection.status()).isEqualTo(ServiceStatus.DOWN);
         assertThat(connection.httpStatus()).isNull();
@@ -208,13 +202,13 @@ class MonitoringIntegrationTests extends PostgresIntegrationTest {
             exchange.sendResponseHeaders(status.get(), -1);
             exchange.close();
         });
-        ServiceMonitor monitor = monitor(uri, Duration.ofSeconds(1), Duration.ZERO);
+        ServiceMonitor monitor = monitor();
 
-        monitor.check(target(uri));
+        monitor.check(target(uri), settings(Duration.ofSeconds(1), Duration.ZERO, 1));
         assertThat(transitionMessages()).isEmpty();
 
         status.set(503);
-        monitor.check(target(uri));
+        monitor.check(target(uri), settings(Duration.ofSeconds(1), Duration.ZERO, 1));
         assertThat(transitionMessages())
                 .singleElement()
                 .satisfies(message -> assertThat(message)
@@ -224,11 +218,11 @@ class MonitoringIntegrationTests extends PostgresIntegrationTest {
         assertThat(transitionEvents()).singleElement()
                 .satisfies(event -> assertThat(event.getLevel()).isEqualTo(Level.WARN));
 
-        monitor.check(target(uri));
+        monitor.check(target(uri), settings(Duration.ofSeconds(1), Duration.ZERO, 1));
         assertThat(transitionMessages()).hasSize(1);
 
         status.set(200);
-        monitor.check(target(uri));
+        monitor.check(target(uri), settings(Duration.ofSeconds(1), Duration.ZERO, 1));
         assertThat(transitionMessages())
                 .hasSize(2)
                 .last()
@@ -239,21 +233,30 @@ class MonitoringIntegrationTests extends PostgresIntegrationTest {
         assertThat(transitionEvents().getLast().getLevel()).isEqualTo(Level.INFO);
     }
 
-    private ServiceMonitor monitor(URI uri, Duration requestTimeout, Duration retryDelay) {
-        HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(100))
-                .build();
+    private ServiceMonitor monitor() {
         return new ServiceMonitor(
-                List.of(target(uri)),
-                new HealthCheckClient(httpClient, requestTimeout, retryDelay),
+                null,
+                null,
+                new HealthCheckClient(),
                 serviceStatusRepository,
                 logEventLogger,
                 clock
         );
     }
 
-    private MonitorTarget target(URI uri) {
-        return new MonitorTarget("PORTFOLIO_BACKEND", uri);
+    private MonitoringTarget target(URI uri) {
+        return MonitoringTarget.create("PORTFOLIO_BACKEND", "Portfolio Backend", uri.toString(), true, 1);
+    }
+
+    private MonitoringRuntimeSettings settings(Duration requestTimeout, Duration retryDelay, int maxRetries) {
+        return new MonitoringRuntimeSettings(
+                true,
+                Duration.ofMinutes(5),
+                Duration.ofMillis(100),
+                requestTimeout,
+                retryDelay,
+                maxRetries
+        );
     }
 
     private URI startServer(com.sun.net.httpserver.HttpHandler handler) throws IOException {

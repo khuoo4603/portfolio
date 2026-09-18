@@ -2,68 +2,98 @@ package com.khuoo.portfolio.monitoring.service;
 
 import com.khuoo.portfolio.common.logging.LogEventLogger;
 import com.khuoo.portfolio.common.util.PortfolioEnums.ServiceStatus;
-import com.khuoo.portfolio.monitoring.config.MonitorTarget;
+import com.khuoo.portfolio.monitoring.domain.MonitoringTarget;
+import com.khuoo.portfolio.monitoring.repository.MonitoringSettingsQueryRepository;
+import com.khuoo.portfolio.monitoring.repository.MonitoringTargetQueryRepository;
 import com.khuoo.portfolio.monitoring.repository.ServiceStatusRepository;
 
+import java.net.URI;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// 고정 대상 Health 검사와 현재 상태 갱신 처리
+// DB Runtime 대상 Health 검사와 현재 상태 갱신 처리
 public class ServiceMonitor {
 
-    private final List<MonitorTarget> targets;
+    private final MonitoringSettingsQueryRepository monitoringSettingsQueryRepository;
+    private final MonitoringTargetQueryRepository monitoringTargetQueryRepository;
     private final HealthCheckClient healthCheckClient;
     private final ServiceStatusRepository serviceStatusRepository;
     private final LogEventLogger logEventLogger;
     private final Clock clock;
 
     public ServiceMonitor(
-            List<MonitorTarget> targets,
+            MonitoringSettingsQueryRepository monitoringSettingsQueryRepository,
+            MonitoringTargetQueryRepository monitoringTargetQueryRepository,
             HealthCheckClient healthCheckClient,
             ServiceStatusRepository serviceStatusRepository,
             LogEventLogger logEventLogger,
             Clock clock
     ) {
-        this.targets = targets;
+        this.monitoringSettingsQueryRepository = monitoringSettingsQueryRepository;
+        this.monitoringTargetQueryRepository = monitoringTargetQueryRepository;
         this.healthCheckClient = healthCheckClient;
         this.serviceStatusRepository = serviceStatusRepository;
         this.logEventLogger = logEventLogger;
         this.clock = clock;
     }
 
-    // 여섯 서비스 상태 순차 확인 및 대상별 실패 격리
+    // DB 설정 Snapshot 기반 활성 대상 상태 순차 확인
     public void checkAll() {
-        for (MonitorTarget target : targets) {
+        MonitoringRuntimeSettings settings;
+        try {
+            settings = monitoringSettingsQueryRepository.findCurrent()
+                    .map(MonitoringRuntimeSettings::from)
+                    .orElseThrow(() -> new IllegalStateException("Monitoring Runtime 설정 없음"));
+        } catch (RuntimeException exception) {
+            logEventLogger.error("monitoring.settings.failure", "Monitoring Runtime 설정 조회 실패", exception);
+            return;
+        }
+        if (!settings.enabled()) {
+            return;
+        }
+
+        for (MonitoringTarget target : monitoringTargetQueryRepository.findEnabled()) {
             try {
-                check(target);
+                check(target, settings);
             } catch (RuntimeException exception) {
                 logEventLogger.error(
                         "monitoring.check.failure",
                         "서비스 상태 확인 처리 실패",
-                        Map.of("serviceKey", target.serviceKey()),
+                        Map.of("serviceKey", target.getServiceKey()),
                         exception
                 );
             }
         }
     }
 
-    // 단일 서비스 검사 결과 Upsert 및 실제 상태 변화 기록
-    public HealthCheckClient.HealthCheckResult check(MonitorTarget target) {
-        HealthCheckClient.HealthCheckResult result = healthCheckClient.check(target.uri());
+    // 단일 DB 대상 검사 결과 Upsert 및 실제 상태 변화 기록
+    public HealthCheckClient.HealthCheckResult check(MonitoringTarget target, MonitoringRuntimeSettings settings) {
+        HealthCheckClient.HealthCheckResult result;
+        try {
+            result = healthCheckClient.check(URI.create(target.getHealthUrl()), settings);
+        } catch (RuntimeException exception) {
+            logEventLogger.error(
+                    "monitoring.check.failure",
+                    "서비스 Health URL 처리 실패",
+                    Map.of("serviceKey", target.getServiceKey()),
+                    exception
+            );
+            result = HealthCheckClient.HealthCheckResult.unreachable();
+        }
+        HealthCheckClient.HealthCheckResult finalResult = result;
         Optional<ServiceStatus> previousStatus = serviceStatusRepository.upsert(
-                target.serviceKey(),
-                result.status(),
-                result.responseTimeMs(),
-                result.httpStatus(),
+                target.getServiceKey(),
+                finalResult.status(),
+                finalResult.responseTimeMs(),
+                finalResult.httpStatus(),
                 OffsetDateTime.now(clock).withOffsetSameInstant(ZoneOffset.UTC)
         );
-        previousStatus.filter(previous -> previous != result.status())
-                .ifPresent(previous -> logStatusChange(target.serviceKey(), previous, result.status()));
-        return result;
+        previousStatus.filter(previous -> previous != finalResult.status())
+                .ifPresent(previous -> logStatusChange(target.getServiceKey(), previous, finalResult.status()));
+        return finalResult;
     }
 
     private void logStatusChange(String serviceKey, ServiceStatus previous, ServiceStatus status) {
