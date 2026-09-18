@@ -15,7 +15,9 @@ type SiteHeaderProps = {
   navigation: readonly HeaderNavigationItem[];
   navigationLabel?: string;
   navigationActions?: ReactNode;
+  leadingUtilityActions?: ReactNode;
   utilityActions?: ReactNode;
+  mobileUtilityActions?: ReactNode;
 };
 
 export type HeaderNavigationItem = {
@@ -53,7 +55,9 @@ export function SiteHeader({
   navigation,
   navigationLabel = "포트폴리오 주요 영역",
   navigationActions,
+  leadingUtilityActions,
   utilityActions,
+  mobileUtilityActions,
 }: SiteHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -103,6 +107,7 @@ export function SiteHeader({
         </nav>
 
         <div className="header-utilities" role="group" aria-label="Header 유틸리티">
+          {leadingUtilityActions}
           <ThemeToggle />
           {utilityActions}
           <button
@@ -146,6 +151,12 @@ export function SiteHeader({
                 </a>
               ))}
             </nav>
+
+            {mobileUtilityActions ? (
+              <div className="mobile-sidebar-utilities">
+                {mobileUtilityActions}
+              </div>
+            ) : null}
 
             <div className="mobile-sidebar-theme">
               <span className="type-small">Theme</span>

@@ -92,6 +92,24 @@ describe("Admin Session Gate와 Sidebar", () => {
     expect(within(sidebar).getByText("PORTFOLIO ADMIN")).toBeInTheDocument();
     expect(within(sidebar).getAllByText(admin.name)).toHaveLength(1);
     expect(within(sidebar).getByText(`${admin.role} · ${admin.email}`)).toBeInTheDocument();
+    const workspaceLink = within(sidebar).getByRole("link", { name: "Tools로 이동" });
+    const navigationBottom = workspaceLink.parentElement;
+    expect(workspaceLink).toHaveAttribute("href", "/tools");
+    expect(navigationBottom?.children[0]).toBe(workspaceLink);
+    const themeButton = within(sidebar).getByRole("button", { name: "색상 테마 전환" });
+    expect(themeButton).toHaveTextContent("Theme");
+    const previousTheme = document.documentElement.dataset.theme;
+    try {
+      document.documentElement.dataset.theme = "light";
+      fireEvent.click(within(themeButton).getByText("Theme"));
+      expect(document.documentElement.dataset.theme).toBe("dark");
+    } finally {
+      if (previousTheme === undefined) {
+        delete document.documentElement.dataset.theme;
+      } else {
+        document.documentElement.dataset.theme = previousTheme;
+      }
+    }
     expect(screen.getByText("관리 본문")).toBeInTheDocument();
     expect(screen.queryByText("admin@portfolio.local")).not.toBeInTheDocument();
   });
@@ -108,6 +126,7 @@ describe("Admin Session Gate와 Sidebar", () => {
     }
     expect(within(drawer).getByText("PORTFOLIO ADMIN")).toBeInTheDocument();
     expect(within(drawer).getAllByText(admin.name)).toHaveLength(1);
+    expect(within(drawer).getByRole("link", { name: "Tools로 이동" })).toHaveAttribute("href", "/tools");
     expect(screen.getByText("KH / ADMIN")).toBeInTheDocument();
   });
 

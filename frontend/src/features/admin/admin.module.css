@@ -107,6 +107,7 @@
 }
 
 .navLink,
+.workspaceSwitchLink,
 .logoutButton,
 .themeControl {
   width: 224px;
@@ -129,6 +130,7 @@
 }
 
 .navLink svg,
+.workspaceSwitchLink svg,
 .logoutButton svg {
   width: 20px;
   height: 20px;
@@ -143,6 +145,10 @@
 
 .navLink:hover,
 .navLink:focus-visible,
+.workspaceSwitchLink:hover,
+.workspaceSwitchLink:focus-visible,
+.themeControl:hover,
+.themeControl:focus-visible,
 .logoutButton:hover,
 .logoutButton:focus-visible {
   background: var(--bg-elevated);
@@ -171,6 +177,10 @@
   position: relative;
 }
 
+.workspaceSwitchLink {
+  text-decoration: none;
+}
+
 .navigationBottom {
   display: grid;
   gap: var(--space-8);
@@ -179,18 +189,29 @@
   border-top: 1px solid var(--border-default);
 }
 
-.themeControl :global(.theme-toggle) {
+.themeControl {
+  cursor: pointer;
+  text-align: left;
+}
+
+.themeControl:global(.theme-toggle) {
+  transform: none;
+  transition:
+    border-color var(--motion-duration-160) var(--motion-easing-default),
+    background-color var(--motion-duration-160) var(--motion-easing-default),
+    color var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.themeControl:global(.theme-toggle):hover,
+.themeControl:global(.theme-toggle):active,
+.themeControl:global(.theme-toggle):focus-visible {
+  transform: none;
+}
+
+.themeControl svg {
   width: 20px;
   height: 20px;
   flex: 0 0 20px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-.themeControl :global(.theme-toggle svg) {
-  width: 20px;
-  height: 20px;
 }
 
 .accountSummary {
@@ -2836,6 +2857,7 @@
   }
 
   .mobileDrawer .navLink,
+  .mobileDrawer .workspaceSwitchLink,
   .mobileDrawer .logoutButton,
   .mobileDrawer .themeControl,
   .mobileDrawer .accountSummary {

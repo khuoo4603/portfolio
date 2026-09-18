@@ -43,6 +43,77 @@
   font-weight: 700;
 }
 
+.toolsAdminHeaderLink {
+  display: inline-flex;
+  width: var(--space-40);
+  height: var(--space-40);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-xs);
+  background: transparent;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition:
+    border-color var(--motion-duration-160) var(--motion-easing-default),
+    background-color var(--motion-duration-160) var(--motion-easing-default),
+    color var(--motion-duration-160) var(--motion-easing-default),
+    transform var(--motion-duration-240) var(--motion-easing-default);
+}
+
+.toolsAdminHeaderLink svg,
+.toolsAdminMobileLink svg {
+  width: var(--space-20);
+  height: var(--space-20);
+  flex: 0 0 var(--space-20);
+}
+
+.toolsAdminHeaderLink:focus-visible {
+  border-color: var(--border-accent);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .toolsAdminHeaderLink:hover {
+    border-color: var(--border-accent);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    transform: rotate(8deg);
+  }
+}
+
+.toolsAdminHeaderLink:active {
+  border-color: var(--border-accent);
+  color: var(--text-primary);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .toolsAdminHeaderLink:active {
+    transform: rotate(8deg);
+  }
+}
+
+.toolsAdminMobileLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.toolsAdminMobileLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--space-4);
+}
+
+@media (max-width: 899px) and (orientation: portrait) {
+  .toolsAdminHeaderLink {
+    display: none;
+  }
+}
+
 .toolsPage {
   padding-top: calc(var(--portfolio-header-height) + var(--space-64));
   padding-bottom: var(--space-80);

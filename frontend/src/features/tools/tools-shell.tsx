@@ -1,6 +1,7 @@
 "use client";
 
-import { LoaderCircle } from "lucide-react";
+import { ArrowRightLeft, LoaderCircle } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { SiteHeader, type HeaderNavigationItem } from "@/app/portfolio-chrome";
@@ -400,6 +401,15 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
         markLabel="Tools 홈"
         navigation={navigation}
         navigationLabel="Tools 주요 메뉴"
+        leadingUtilityActions={session.user.role === "ADMIN" ? (
+          <Link
+            className={styles.toolsAdminHeaderLink}
+            href="/admin"
+            aria-label="Admin으로 이동"
+          >
+            <ArrowRightLeft aria-hidden="true" />
+          </Link>
+        ) : null}
         utilityActions={(
           <button className={styles.profileBadge} type="button" onClick={() => setProfileOpen(true)}>
             <span className={styles.profileBadgeAvatar} aria-hidden="true">
@@ -408,6 +418,12 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
             <span className="type-small">{session.user.name}</span>
           </button>
         )}
+        mobileUtilityActions={session.user.role === "ADMIN" ? (
+          <Link className={styles.toolsAdminMobileLink} href="/admin" aria-label="Admin으로 이동">
+            <ArrowRightLeft aria-hidden="true" />
+            <span>Admin으로 이동</span>
+          </Link>
+        ) : null}
       />
 
       <ToolsSessionContext.Provider value={session}>{children}</ToolsSessionContext.Provider>
