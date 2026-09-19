@@ -1,5 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/lib/api/client";
+import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import {
   createToolLink,
   deleteToolLink,
@@ -202,5 +204,36 @@ describe("Admin Tools 실제 API 관리", () => {
     expect(screen.getByText("Spring Docs")).toBeInTheDocument();
     expect(screen.getByText("My Service")).toBeInTheDocument();
     expect(getAdminTools).toHaveBeenCalledOnce();
+  });
+
+  it("초기 조회 실패는 PageError로 표시", async () => {
+    vi.mocked(getAdminTools).mockRejectedValue(new ApiError(500, {
+      code: "COMMON_INTERNAL_ERROR",
+      message: "Tools 정보를 불러오지 못했습니다.",
+      traceId: "trace-tools-load",
+      fieldErrors: [],
+    }));
+    render(<ToolsScreen />);
+
+    expect(await screen.findByText("Tools 정보를 불러오지 못했습니다. (추적 ID: trace-tools-load)")).toBeInTheDocument();
+  });
+
+  it("Mutation 뒤 재조회 실패는 Tools 화면을 유지하고 Notification으로 표시", async () => {
+    vi.mocked(getAdminTools)
+      .mockResolvedValueOnce(toolsData)
+      .mockRejectedValueOnce(new ApiError(500, {
+        code: "COMMON_INTERNAL_ERROR",
+        message: "Tools 정보를 불러오지 못했습니다.",
+        traceId: "trace-tools-refresh",
+        fieldErrors: [],
+      }));
+    render(<NotificationProvider><ToolsScreen /></NotificationProvider>);
+
+    await screen.findByText("QUIZ");
+    fireEvent.click(screen.getByRole("switch", { name: "Quiz Tool 비활성화" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Tools 변경 완료");
+    expect(await screen.findByRole("alert")).toHaveTextContent("변경은 완료되었지만 최신 Tools 데이터를 불러오지 못했습니다.");
+    expect(screen.getByText("QUIZ")).toBeInTheDocument();
   });
 });

@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Button from "@/components/ui/button";
 import { formatApiError } from "@/lib/api/client";
 import type { ErrorLog, ErrorLogPage, LoginLog, LoginLogPage } from "./admin-types";
 import {
@@ -244,10 +245,10 @@ export default function LogsScreen() {
             </label>
           </>
         )}
-        <button className={`${styles.secondaryButton} ${styles.filterSubmit} type-body`} type="submit">
+        <Button className={styles.filterSubmit} variant="secondary" type="submit">
           <Search aria-hidden="true" />
           조회
-        </button>
+        </Button>
       </form>
 
       <p className={`${styles.inlineError} type-small`} role="alert" aria-live="polite">{filterError}</p>

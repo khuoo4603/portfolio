@@ -3,6 +3,8 @@
 import NextImage from "next/image";
 import { ExternalLink as ExternalLinkIcon, Image as ImageIcon, MoreHorizontal, Plus, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Button, { buttonClassName } from "@/components/ui/button";
+import { useNotification } from "@/components/ui/notification/notification-provider";
 import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type {
@@ -23,7 +25,7 @@ import {
   updateToolLinkEnabled,
   updateToolStatus,
 } from "./admin-tool-api";
-import DialogFrame from "./dialog-frame";
+import DialogFrame from "@/components/ui/dialog-frame";
 import {
   EmptyState,
   PageError,
@@ -31,7 +33,6 @@ import {
   PageLoading,
   StateSwitch,
   StatusLabel,
-  SubmitButton,
 } from "./admin-ui";
 import styles from "./admin.module.css";
 
@@ -138,8 +139,8 @@ function LinkEditor({ state, onClose, onSubmit }: {
       onClose={closeEditor}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={closeEditor}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("tool-link-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
+          <Button variant="secondary" type="button" onClick={closeEditor}>취소</Button>
+          <Button type="button" onClick={() => (document.getElementById("tool-link-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >
@@ -161,9 +162,9 @@ function LinkEditor({ state, onClose, onSubmit }: {
           <div className={styles.linkImageControls}>
             <span className="type-small">대표 이미지</span>
             <div className={styles.linkImageActions}>
-              <button className={`${styles.secondaryButton} type-body`} type="button" aria-pressed={imageMode === "DEFAULT"} onClick={selectDefault}><ImageIcon aria-hidden="true" />기본 Preview</button>
+              <Button variant="secondary" type="button" aria-pressed={imageMode === "DEFAULT"} onClick={selectDefault}><ImageIcon aria-hidden="true" />기본 Preview</Button>
               <input id="tool-link-image" className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => selectImage(event.currentTarget.files?.[0])} />
-              <label className={`${styles.secondaryButton} type-body`} htmlFor="tool-link-image"><Upload aria-hidden="true" />이미지 첨부</label>
+              <label className={buttonClassName({ variant: "secondary", size: "medium", className: "type-body" })} htmlFor="tool-link-image"><Upload aria-hidden="true" />이미지 첨부</label>
             </div>
             <span className={`${styles.selectedFileName} type-small`}>{image ? image.name : imageMode === "KEEP" ? "기존 이미지 유지" : "기본 Preview 사용"}</span>
           </div>
@@ -180,6 +181,7 @@ function LinkEditor({ state, onClose, onSubmit }: {
 }
 
 export default function ToolsScreen() {
+  const { notify } = useNotification();
   const [data, setData] = useState<ToolsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -187,26 +189,34 @@ export default function ToolsScreen() {
   const [menuId, setMenuId] = useState<number | null>(null);
   const [linkFilter, setLinkFilter] = useState<LinkFilter>("ALL");
   const [mutating, setMutating] = useState(false);
-  const [mutationError, setMutationError] = useState("");
-  const [feedback, setFeedback] = useState("");
   const requestSequence = useRef(0);
 
-  const loadTools = useCallback(async () => {
+  const loadTools = useCallback(async (silent = false) => {
     const requestId = ++requestSequence.current;
-    setLoading(true);
-    setError("");
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const response = await getAdminTools();
       if (requestSequence.current === requestId) setData(response);
     } catch (caught) {
       if (requestSequence.current === requestId) {
-        setData(null);
-        setError(formatApiError(caught));
+        if (silent) {
+          notify({
+            type: "error",
+            title: "최신 데이터 조회 실패",
+            message: "변경은 완료되었지만 최신 Tools 데이터를 불러오지 못했습니다.",
+          });
+        } else {
+          setData(null);
+          setError(formatApiError(caught));
+        }
       }
     } finally {
-      if (requestSequence.current === requestId) setLoading(false);
+      if (!silent && requestSequence.current === requestId) setLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     let active = true;
@@ -218,20 +228,19 @@ export default function ToolsScreen() {
   }, [loadTools]);
 
   const complete = (message: string) => {
-    setFeedback(message);
+    notify({ type: "success", title: "Tools 변경 완료", message });
     setMenuId(null);
-    void loadTools();
+    void loadTools(true);
   };
 
   const runMutation = async (mutation: () => Promise<unknown>, successMessage: string) => {
     if (mutating) return;
     setMutating(true);
-    setMutationError("");
     try {
       await mutation();
       complete(successMessage);
     } catch (caught) {
-      setMutationError(formatApiError(caught));
+      notify({ type: "error", title: "Tools 변경 실패", message: formatApiError(caught) });
     } finally {
       setMutating(false);
     }
@@ -275,8 +284,6 @@ export default function ToolsScreen() {
   return (
     <>
       <PageHeader title="Tools" description="코드에 등록된 Tool의 공개 상태와 Links 공통 데이터를 관리합니다." />
-      {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
-      {mutationError && <p className={`${styles.inlineError} type-small`} role="alert">{mutationError}</p>}
       {loading ? <PageLoading rows={6} /> : error ? <PageError message={error} onRetry={() => void loadTools()} /> : data ? (
         <div className={styles.pageSections}>
           <section className={`${styles.managementSurface} ${styles.operationalSection}`} aria-label="Tool 상태 관리">
@@ -292,7 +299,7 @@ export default function ToolsScreen() {
             )}
           </section>
           <section className={`${styles.managementSurface} ${styles.operationalSection}`} aria-label="Links 데이터 관리">
-            <div className={styles.managementSurfaceHeader}><div><h2 id="tool-links-title" className="type-title">Links 데이터</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => setEditor({})}><Plus aria-hidden="true" />Link 추가</button></div>
+            <div className={styles.managementSurfaceHeader}><div><h2 id="tool-links-title" className="type-title">Links 데이터</h2></div><Button variant="secondary" type="button" onClick={() => setEditor({})}><Plus aria-hidden="true" />Link 추가</Button></div>
             <SegmentedControl className={`${styles.linkFilters} ${styles.toolLinksFilter}`} label="Link 분류" options={LINK_FILTERS} value={linkFilter} onChange={setLinkFilter} />
             {data.links.length === 0 ? <EmptyState title="등록 Link 없음" description="Links Tool에 표시할 링크가 없습니다." /> : (
               <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>Link</th><th>분류</th><th>대표 이미지</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>

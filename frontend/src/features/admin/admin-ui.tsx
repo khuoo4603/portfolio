@@ -1,4 +1,5 @@
-import { AlertTriangle, LoaderCircle, RotateCcw } from "lucide-react";
+import { AlertTriangle, RotateCcw } from "lucide-react";
+import Button from "@/components/ui/button";
 import styles from "./admin.module.css";
 
 type PageHeaderProps = {
@@ -41,10 +42,10 @@ export function PageError({ message, onRetry }: { message: string; onRetry: () =
         <h2 className="type-title">정보를 불러오지 못했습니다</h2>
         <p className="type-body">{message}</p>
       </div>
-      <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onRetry}>
+      <Button variant="secondary" type="button" onClick={onRetry}>
         <RotateCcw aria-hidden="true" />
         다시 시도
-      </button>
+      </Button>
     </div>
   );
 }
@@ -100,33 +101,6 @@ export function StateSwitch({
     >
       <span className={styles.stateSwitchText} aria-hidden="true">{enabled ? "ON" : "OFF"}</span>
       <span className={styles.stateSwitchThumb} aria-hidden="true" />
-    </button>
-  );
-}
-
-// 변경 요청의 진행 상태를 유지하는 공통 주요 Button
-export function SubmitButton({
-  busy,
-  children,
-  disabled = false,
-  type = "submit",
-  onClick,
-}: {
-  busy: boolean;
-  children: React.ReactNode;
-  disabled?: boolean;
-  type?: "submit" | "button";
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      className={`${styles.primaryButton} type-body`}
-      type={type}
-      disabled={disabled || busy}
-      onClick={onClick}
-    >
-      <span>{children}</span>
-      {busy && <LoaderCircle className={styles.spinIcon} aria-hidden="true" />}
     </button>
   );
 }

@@ -2,6 +2,7 @@
 
 import { ArrowDown, ArrowUp, ImagePlus, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
+import Button, { buttonClassName } from "@/components/ui/button";
 import AdminImagePreview from "./admin-image-preview";
 import type { Technology } from "./admin-types";
 import { StateSwitch } from "./admin-ui";
@@ -47,7 +48,7 @@ function PanelHeading({ title, description, onAdd }: { title: string; descriptio
   return (
     <div className={styles.projectPanelHeading}>
       <div><h2 className="type-title">{title}</h2><p className="type-small">{description}</p></div>
-      {onAdd && <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onAdd}><Plus aria-hidden="true" />항목 추가</button>}
+      {onAdd && <Button variant="secondary" type="button" onClick={onAdd}><Plus aria-hidden="true" />항목 추가</Button>}
     </div>
   );
 }
@@ -187,8 +188,8 @@ function ArchitecturePanel({
         <div className={styles.mediaGroupHeading}>
           <div><h3 className="type-body">Architecture Image</h3><p className="type-small">현재 상태: {draft.architectureImage.mode}</p></div>
           <div className={styles.mediaGroupActions}>
-            <label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onArchitectureImageFile(file); event.currentTarget.value = ""; }} /></label>
-            <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onArchitectureImageRemove}>Remove</button>
+            <label className={buttonClassName({ variant: "secondary", className: "type-body" })}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onArchitectureImageFile(file); event.currentTarget.value = ""; }} /></label>
+            <Button variant="secondary" type="button" onClick={onArchitectureImageRemove}>Remove</Button>
           </div>
         </div>
         <div className={styles.architectureDraftPreview}>
@@ -245,7 +246,7 @@ function TechnologyPanel({ draft, setDraft, technologyMaster }: Pick<PanelProps,
       <PanelHeading title="기술" description="technology_master에서 선택하고 강조·순서를 관리합니다." />
       <div className={styles.technologyPicker}>
         <label className={styles.formField}><span className="type-small">프로젝트 기술 선택</span><select className="type-body" value={selectedId} onChange={(event) => setSelectedId(event.currentTarget.value)}><option value="">기술 선택</option>{technologyMaster.filter((item) => !selected.has(item.id)).map((item) => <option key={item.id} value={item.id} disabled={!item.enabled}>{item.name}{item.enabled ? "" : " · 비활성"}</option>)}</select></label>
-        <button className={`${styles.secondaryButton} type-body`} type="button" disabled={!selectedId} onClick={() => { const id = Number(selectedId); setItems([...draft.technologies, { technologyId: id, showOnCard: false, highlighted: false, displayOrder: draft.technologies.length }]); setSelectedId(""); }}>추가</button>
+        <Button variant="secondary" type="button" disabled={!selectedId} onClick={() => { const id = Number(selectedId); setItems([...draft.technologies, { technologyId: id, showOnCard: false, highlighted: false, displayOrder: draft.technologies.length }]); setSelectedId(""); }}>추가</Button>
       </div>
       <div className={styles.projectItemList}>{draft.technologies.map((item, index) => {
         const technology = technologyMaster.find((value) => value.id === item.technologyId);
@@ -296,7 +297,7 @@ function MediaRow({ item, index, length, onDelete, onRestore, onChange, onMove }
         <TextField label="Alt Text" value={item.altText} onChange={(altText) => onChange({ altText: altText || null })} />
         <NumberField label="Display Order" value={item.displayOrder} min={0} onChange={(displayOrder) => onChange({ displayOrder: displayOrder ?? 0 })} />
       </div>
-      {item.deleted ? <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onRestore}><RotateCcw aria-hidden="true" />삭제 취소</button> : <ItemActions index={index} length={length} label={`Carousel ${index + 1}`} onMove={onMove} onDelete={onDelete} />}
+      {item.deleted ? <Button variant="secondary" type="button" onClick={onRestore}><RotateCcw aria-hidden="true" />삭제 취소</Button> : <ItemActions index={index} length={length} label={`Carousel ${index + 1}`} onMove={onMove} onDelete={onDelete} />}
     </article>
   );
 }
@@ -308,8 +309,8 @@ function MediaPanel(props: Pick<PanelProps, "draft" | "onThumbnailFile" | "onThu
   return (
     <section className={styles.projectEditorPanel} aria-label="미디어 편집">
       <PanelHeading title="미디어" description="Thumbnail과 Carousel을 Local Draft에서 함께 관리합니다." />
-      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Thumbnail</h3><p className="type-small">현재 상태: {draft.thumbnail.mode}</p></div><div className={styles.mediaGroupActions}><label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onThumbnailFile(file); event.currentTarget.value = ""; }} /></label><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onThumbnailRemove}>Remove</button></div></div><div className={styles.thumbnailDraftPreview}><AdminImagePreview alt="Thumbnail Preview" fallback={<span className="type-small">Thumbnail 없음</span>} sizes="420px" src={thumbnailSource} /></div></section>
-      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Carousel</h3><p className="type-small">{draft.media.filter((item) => !item.deleted).length}개 사용</p></div><label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />이미지 추가<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onAddMedia(file); event.currentTarget.value = ""; }} /></label></div><div className={styles.projectItemList}>{draft.media.map((item, index) => <MediaRow key={item.key} item={item} index={index} length={draft.media.length} onDelete={() => onDeleteMedia(item.key)} onRestore={() => onChangeMedia(item.key, { deleted: false })} onChange={(patch) => onChangeMedia(item.key, patch)} onMove={(direction) => onMoveMedia(item.key, direction)} />)}</div></section>
+      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Thumbnail</h3><p className="type-small">현재 상태: {draft.thumbnail.mode}</p></div><div className={styles.mediaGroupActions}><label className={buttonClassName({ variant: "secondary", className: "type-body" })}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onThumbnailFile(file); event.currentTarget.value = ""; }} /></label><Button variant="secondary" type="button" onClick={onThumbnailRemove}>Remove</Button></div></div><div className={styles.thumbnailDraftPreview}><AdminImagePreview alt="Thumbnail Preview" fallback={<span className="type-small">Thumbnail 없음</span>} sizes="420px" src={thumbnailSource} /></div></section>
+      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Carousel</h3><p className="type-small">{draft.media.filter((item) => !item.deleted).length}개 사용</p></div><label className={buttonClassName({ variant: "secondary", className: "type-body" })}><ImagePlus aria-hidden="true" />이미지 추가<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onAddMedia(file); event.currentTarget.value = ""; }} /></label></div><div className={styles.projectItemList}>{draft.media.map((item, index) => <MediaRow key={item.key} item={item} index={index} length={draft.media.length} onDelete={() => onDeleteMedia(item.key)} onRestore={() => onChangeMedia(item.key, { deleted: false })} onChange={(patch) => onChangeMedia(item.key, patch)} onMove={(direction) => onMoveMedia(item.key, direction)} />)}</div></section>
       {fileError ? <p className={`${styles.inlineError} type-small`} role="alert">{fileError}</p> : null}
     </section>
   );

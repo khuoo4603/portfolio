@@ -1,13 +1,11 @@
 .adminLayout,
-.shellGate,
-.dialogBackdrop {
+.shellGate {
   --admin-sidebar: var(--bg-surface);
 }
 
 /* Admin Sidebar 전용 Dark Surface */
 :global([data-theme="dark"]) .adminLayout,
-:global([data-theme="dark"]) .shellGate,
-:global([data-theme="dark"]) .dialogBackdrop {
+:global([data-theme="dark"]) .shellGate {
   --admin-sidebar: color-mix(in srgb, var(--ink-900) 56%, var(--ink-800));
 }
 
@@ -294,8 +292,6 @@
   flex: 0 0 auto;
 }
 
-.primaryButton,
-.secondaryButton,
 .textButton,
 .iconButton,
 .lineTabs button,
@@ -305,69 +301,10 @@
   font-family: var(--font-family-primary);
 }
 
-.primaryButton,
-.secondaryButton {
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-8);
-  padding: var(--space-8) var(--space-16);
-  border-radius: var(--radius-value-sm);
-  box-shadow: var(--control-shadow-rest);
-  cursor: pointer;
-  font-weight: 700;
-  white-space: nowrap;
-  transition:
-    background-color var(--motion-duration-160) var(--motion-easing-default),
-    border-color var(--motion-duration-160) var(--motion-easing-default),
-    box-shadow var(--motion-duration-160) var(--motion-easing-default),
-    color var(--motion-duration-160) var(--motion-easing-default);
-}
-
-.primaryButton {
-  border: 1px solid var(--accent-strong);
-  background: var(--accent-strong);
-  color: var(--control-foreground);
-}
-
-.secondaryButton {
-  border: 1px solid var(--border-default);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-}
-
-.primaryButton:hover:not(:disabled),
-.secondaryButton:hover:not(:disabled) {
-  box-shadow: var(--control-shadow-hover);
-}
-
-.primaryButton:hover:not(:disabled) {
-  background: var(--accent-primary);
-}
-
-.secondaryButton:hover:not(:disabled) {
-  border-color: var(--border-strong);
-  background: var(--bg-elevated);
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled,
 .textButton:disabled,
 .iconButton:disabled {
   cursor: not-allowed;
   opacity: 0.48;
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled {
-  box-shadow: none;
-}
-
-.primaryButton svg,
-.secondaryButton svg {
-  width: 17px;
-  height: 17px;
 }
 
 .textButton {
@@ -1035,7 +972,6 @@
   padding-right: var(--space-20);
 }
 
-.accountsSurface .feedbackBanner,
 .accountsSurface .inlineError,
 .logManagementSurface > .inlineError {
   margin: var(--space-12) var(--space-20);
@@ -1054,8 +990,7 @@
   grid-template-columns: minmax(260px, 1fr) minmax(130px, 0.35fr) minmax(130px, 0.35fr) auto auto;
 }
 
-.accountsFilterBar > .secondaryButton,
-.accountsFilterBar > .primaryButton {
+.accountsFilterBar > [data-button-variant] {
   width: max-content;
   justify-self: start;
 }
@@ -1169,14 +1104,6 @@
   border: 0;
   background: transparent;
   outline: 0;
-}
-
-.feedbackBanner {
-  margin: 0 0 var(--space-20);
-  padding: var(--space-12) var(--space-16);
-  border-left: 2px solid var(--status-success);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
 }
 
 .linkFilters {
@@ -1390,7 +1317,7 @@
   gap: var(--space-12);
 }
 
-.projectRegistryControls .secondaryButton {
+.projectRegistryControls [data-button-variant="secondary"] {
   width: 100%;
 }
 
@@ -1439,102 +1366,6 @@
   font-size: var(--font-size-small);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.dialogBackdrop {
-  position: fixed;
-  z-index: 100;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--space-24);
-  background: color-mix(in srgb, var(--ink-950) 78%, transparent);
-  font-family: var(--font-family-primary);
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
-  animation: backdrop-enter var(--motion-duration-160) var(--motion-easing-default) both;
-}
-
-.dialogFrame {
-  width: min(620px, 100%);
-  max-height: calc(100dvh - var(--space-48));
-  overflow: hidden;
-  position: relative;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-value-md);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--ink-950) 20%, transparent);
-  animation: dialog-enter var(--motion-duration-240) var(--motion-easing-default) both;
-}
-
-.compactDialog {
-  width: min(calc(var(--space-160) * 3), 100%);
-}
-
-.secureDialog {
-  border-color: var(--border-accent);
-}
-
-.dialogHeader,
-.dialogBody,
-.dialogFooter {
-  position: relative;
-  z-index: 1;
-}
-
-.dialogHeader {
-  grid-row: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-20);
-  padding: var(--space-24);
-  border-bottom: 1px solid var(--border-default);
-}
-
-.dialogHeader > div {
-  min-width: 0;
-}
-
-.dialogHeader h2,
-.dialogHeader p {
-  margin: 0;
-}
-
-.dialogHeader h2 {
-  color: var(--text-heading);
-  font-weight: 700;
-}
-
-.dialogHeader p {
-  margin-top: var(--space-4);
-  color: var(--text-secondary);
-}
-
-.dialogBody {
-  grid-row: 2;
-  overflow-y: auto;
-  padding: var(--space-24);
-}
-
-.dialogFooter {
-  grid-row: 3;
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-8);
-  padding: var(--space-16) var(--space-24);
-  border-top: 1px solid var(--border-default);
-  background: var(--bg-elevated);
-}
-
-.confirmMessage {
-  margin: 0;
-  color: var(--text-primary);
 }
 
 .editorForm,
@@ -2468,30 +2299,6 @@
   color: var(--text-primary);
 }
 
-.dangerButton {
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-8) var(--space-16);
-  border: 1px solid var(--status-error);
-  border-radius: var(--radius-value-sm);
-  background: var(--status-error);
-  box-shadow: var(--control-shadow-rest);
-  color: var(--sand-50);
-  cursor: pointer;
-  font-family: var(--font-family-primary);
-  font-weight: 700;
-}
-
-.dangerButton:hover:not(:disabled) {
-  box-shadow: var(--control-shadow-hover);
-}
-
-.dangerButton:disabled {
-  box-shadow: none;
-}
-
 /* Project Editor의 편집·실제 상세 Preview 전환 구조 */
 .projectEditorPage {
   min-width: 0;
@@ -2887,16 +2694,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes backdrop-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes dialog-enter {
-  from { opacity: 0; transform: translateY(var(--space-8)); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 /* 고정 Sidebar가 유지되는 좁은 Desktop 운영 화면 재배치 */
 @media (min-width: 1024px) and (max-width: 1279px) {
   .summaryRow,
@@ -3054,7 +2851,7 @@
     grid-column: 1 / -1;
   }
 
-  .filterBar .secondaryButton {
+  .filterBar [data-button-variant="secondary"] {
     justify-self: start;
   }
 
@@ -3283,8 +3080,7 @@
     padding: var(--space-16);
   }
 
-  .managementSurfaceHeader .primaryButton,
-  .managementSurfaceHeader .secondaryButton {
+  .managementSurfaceHeader [data-button-variant] {
     flex: 0 0 auto;
   }
 
@@ -3339,7 +3135,7 @@
     width: 100%;
   }
 
-  .portfolioTechnologyToolbar .secondaryButton {
+  .portfolioTechnologyToolbar [data-button-variant="secondary"] {
     justify-self: start;
   }
 
@@ -3375,12 +3171,12 @@
     grid-column: auto;
   }
 
-  .filterBar .secondaryButton,
+  .filterBar [data-button-variant="secondary"],
   .filterSubmit {
     justify-self: stretch;
   }
 
-  .filterBar .primaryButton {
+  .filterBar [data-button-variant="primary"] {
     justify-self: stretch;
   }
 
@@ -3470,7 +3266,7 @@
     display: grid;
   }
 
-  .formActionRow .primaryButton {
+  .formActionRow [data-button-variant="primary"] {
     width: 100%;
   }
 
@@ -3484,39 +3280,6 @@
     grid-column: auto;
   }
 
-  .dialogBackdrop {
-    place-items: end center;
-    padding: 0;
-  }
-
-  .dialogFrame {
-    width: 100%;
-    max-height: calc(100dvh - var(--space-24));
-    border-radius: var(--radius-value-md) var(--radius-value-md) 0 0;
-    border-bottom: 0;
-  }
-
-  .dialogHeader,
-  .dialogBody {
-    padding: var(--space-20);
-  }
-
-  .dialogFooter {
-    padding: var(--space-12) var(--space-20) max(var(--space-16), env(safe-area-inset-bottom));
-  }
-
-  .compactBackdrop {
-    place-items: center;
-    padding: var(--space-20);
-  }
-
-  .compactBackdrop .compactDialog {
-    width: min(calc(var(--space-160) * 3), 100%);
-    max-height: calc(100dvh - var(--space-40));
-    border: 1px solid var(--border-accent);
-    border-radius: var(--radius-value-md);
-  }
-
   .formColumns,
   .checkRow {
     grid-template-columns: 1fr;
@@ -3527,7 +3290,7 @@
     padding: var(--space-20);
   }
 
-  .errorState .secondaryButton {
+  .errorState [data-button-variant="secondary"] {
     grid-column: 1 / -1;
   }
 
@@ -3536,8 +3299,7 @@
     gap: var(--space-8);
   }
 
-  .projectEditorHeader .secondaryButton,
-  .projectEditorHeader .primaryButton {
+  .projectEditorHeader [data-button-variant] {
     padding-inline: var(--space-12);
   }
 
@@ -3606,7 +3368,7 @@
     grid-template-columns: 1fr;
   }
 
-  .technologyPicker .secondaryButton {
+  .technologyPicker [data-button-variant="secondary"] {
     justify-self: start;
   }
 }
@@ -3672,7 +3434,7 @@
     min-width: 0;
   }
 
-  .projectEditorActions .primaryButton {
+  .projectEditorActions [data-button-variant="primary"] {
     padding-inline: var(--space-12);
   }
 
@@ -3693,29 +3455,6 @@
     justify-content: space-between;
   }
 
-  .dialogBackdrop {
-    place-items: center;
-    padding: var(--space-16);
-  }
-
-  .dialogFrame {
-    width: 100%;
-    max-height: calc(100dvh - var(--space-32));
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-value-md);
-  }
-
-  .dialogFooter {
-    flex-wrap: wrap;
-  }
-
-  .compactBackdrop {
-    padding: var(--space-16);
-  }
-
-  .compactBackdrop .compactDialog {
-    max-height: calc(100dvh - var(--space-32));
-  }
 }
 
 /* Monitoring Page Tablet·Mobile Target 행 재배치 */
@@ -3776,17 +3515,11 @@
     padding: var(--space-16);
   }
 
-  .dialogFooter {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .navLink,
   .logoutButton,
-  .primaryButton,
-  .secondaryButton,
   .stateSwitch,
   .stateSwitchThumb,
   .siteTabPanel,
@@ -3799,8 +3532,4 @@
     transition: none;
   }
 
-  .dialogBackdrop,
-  .dialogFrame {
-    animation: none;
-  }
 }

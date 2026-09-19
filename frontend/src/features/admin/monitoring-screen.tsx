@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Button from "@/components/ui/button";
+import { useNotification } from "@/components/ui/notification/notification-provider";
 import { ApiError, formatApiError } from "@/lib/api/client";
 import type { AdminMonitoringData, MonitoringSettings, MonitoringSettingsInput, MonitoringTarget, MonitoringTargetUpdateInput } from "./admin-types";
 import { getAdminMonitoring, updateMonitoringSettings, updateMonitoringTarget } from "./admin-read-api";
-import { PageError, PageHeader, PageLoading, StateSwitch, SubmitButton } from "./admin-ui";
+import { PageError, PageHeader, PageLoading, StateSwitch } from "./admin-ui";
 import MonitoringTargetDialog from "./monitoring-target-dialog";
 import styles from "./admin.module.css";
 
@@ -47,15 +49,14 @@ function validateInteger(value: string, minimum: number) {
 
 // Monitoring 설정과 Target을 관리하는 독립 Admin 화면
 export default function MonitoringScreen() {
+  const { notify } = useNotification();
   const [data, setData] = useState<AdminMonitoringData | null>(null);
   const [settingsDraft, setSettingsDraft] = useState<SettingsDraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [settingsErrors, setSettingsErrors] = useState<Record<string, string>>({});
-  const [settingsError, setSettingsError] = useState("");
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [targetBusyId, setTargetBusyId] = useState<number | null>(null);
-  const [targetError, setTargetError] = useState<Record<number, string>>({});
   const [targetDialog, setTargetDialog] = useState<TargetDialogState | null>(null);
   const requestSequence = useRef(0);
 
@@ -131,18 +132,22 @@ export default function MonitoringScreen() {
 
     setSettingsSaving(true);
     setSettingsErrors({});
-    setSettingsError("");
     try {
       await updateMonitoringSettings(input);
-      await loadMonitoring();
+      if (await loadMonitoring()) {
+        notify({ type: "success", title: "Monitoring 설정 저장 완료", message: "변경한 점검 설정을 반영했습니다." });
+      } else {
+        notify({ type: "error", title: "Monitoring 설정 저장 완료", message: "저장은 완료됐지만 최신 상태를 불러오지 못했습니다." });
+      }
     } catch (caught) {
-      if (caught instanceof ApiError) {
+      if (caught instanceof ApiError && caught.response.fieldErrors.length > 0) {
         setSettingsErrors(caught.response.fieldErrors.reduce<Record<string, string>>((errors, item) => {
           errors[item.field] = item.message;
           return errors;
         }, {}));
+        return;
       }
-      setSettingsError(formatApiError(caught));
+      notify({ type: "error", title: "Monitoring 설정 저장 실패", message: formatApiError(caught) });
     } finally {
       setSettingsSaving(false);
     }
@@ -163,12 +168,15 @@ export default function MonitoringScreen() {
       displayOrder: target.displayOrder,
     };
     setTargetBusyId(target.id);
-    setTargetError((current) => ({ ...current, [target.id]: "" }));
     try {
       await updateMonitoringTarget(target.id, input);
-      await loadMonitoring();
+      if (await loadMonitoring()) {
+        notify({ type: "success", title: "Target 상태 변경 완료", message: `${target.displayName} 상태를 변경했습니다.` });
+      } else {
+        notify({ type: "error", title: "Target 상태 변경 완료", message: "상태 변경 후 최신 목록을 불러오지 못했습니다." });
+      }
     } catch (caught) {
-      setTargetError((current) => ({ ...current, [target.id]: formatApiError(caught) }));
+      notify({ type: "error", title: "Target 상태 변경 실패", message: formatApiError(caught) });
     } finally {
       setTargetBusyId(null);
     }
@@ -187,7 +195,7 @@ export default function MonitoringScreen() {
                 <div>
                   <h2 id="monitoring-settings-title" className="type-title">Monitoring 설정</h2>
                 </div>
-                <SubmitButton busy={settingsSaving}>설정 저장</SubmitButton>
+                <Button busy={settingsSaving}>설정 저장</Button>
               </div>
               <div className={styles.monitoringSettingsBody}>
                 <div className={styles.monitoringSettingsGrid}>
@@ -212,7 +220,6 @@ export default function MonitoringScreen() {
                   </label>
                 ))}
                 </div>
-                {settingsError && <p className={`${styles.inlineError} type-small`} role="alert">{settingsError}</p>}
               </div>
             </form>
           </section>
@@ -222,7 +229,7 @@ export default function MonitoringScreen() {
               <div>
                 <h2 id="monitoring-targets-title" className="type-title">Target</h2>
               </div>
-              <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => setTargetDialog({ target: null })}>Target 추가</button>
+              <Button variant="secondary" type="button" onClick={() => setTargetDialog({ target: null })}>Target 추가</Button>
             </div>
             <div className={styles.monitoringTargetList}>
               {data.targets.map((target) => {
@@ -241,8 +248,7 @@ export default function MonitoringScreen() {
                       label={`${target.displayName} ${target.enabled ? "비활성화" : "활성화"}`}
                       onClick={() => void toggleTarget(target)}
                     />
-                    <button className={`${styles.secondaryButton} type-small`} type="button" disabled={busy} onClick={() => setTargetDialog({ target })}>수정</button>
-                    {targetError[target.id] && <p className={`${styles.inlineError} type-small ${styles.monitoringTargetError}`} role="alert">{targetError[target.id]}</p>}
+                    <Button variant="secondary" size="small" type="button" disabled={busy} onClick={() => setTargetDialog({ target })}>수정</Button>
                   </article>
                 );
               })}

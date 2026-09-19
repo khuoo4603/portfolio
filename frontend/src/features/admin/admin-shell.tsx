@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "@/app/theme-toggle";
+import Button from "@/components/ui/button";
+import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import { ApiError, formatApiError } from "@/lib/api/client";
 import { logout as logoutRequest } from "@/lib/auth/auth-api";
 import { useAuthSession } from "@/lib/auth/use-auth-session";
@@ -237,9 +239,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <div className={styles.gateError} role="alert">
         <h1 className="type-title">Session을 확인하지 못했습니다</h1>
         <p className="type-body">{formatApiError(auth.error)}</p>
-        <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => void auth.refresh()}>
+        <Button variant="secondary" type="button" onClick={() => void auth.refresh()}>
           다시 시도
-        </button>
+        </Button>
       </div>
     </main>
   ) : !isAdmin ? (
@@ -253,7 +255,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   ) : null;
 
   return (
-    <>
+    <NotificationProvider>
       {sessionGate}
       <div className={styles.adminLayout} hidden={!isAdmin}>
         {adminUser ? (
@@ -310,6 +312,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <div className={styles.adminContent}>{children}</div>
         </main>
       </div>
-    </>
+    </NotificationProvider>
   );
 }

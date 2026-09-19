@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Button from "@/components/ui/button";
+import DialogFrame from "@/components/ui/dialog-frame";
+import { useNotification } from "@/components/ui/notification/notification-provider";
 import { ApiError, formatApiError } from "@/lib/api/client";
 import type { MonitoringTarget, MonitoringTargetCreateInput, MonitoringTargetUpdateInput } from "./admin-types";
 import { createMonitoringTarget, updateMonitoringTarget } from "./admin-read-api";
-import { StateSwitch, SubmitButton } from "./admin-ui";
-import DialogFrame from "./dialog-frame";
+import { StateSwitch } from "./admin-ui";
 import styles from "./admin.module.css";
 
 type MonitoringTargetDialogProps = {
@@ -51,7 +53,7 @@ export default function MonitoringTargetDialog({
 }: MonitoringTargetDialogProps) {
   const [draft, setDraft] = useState(() => toDraft(target, targetCount, initialEnabled));
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [mutationError, setMutationError] = useState("");
+  const { notify } = useNotification();
   const [saving, setSaving] = useState(false);
 
   // Target Form의 생성·수정 요청
@@ -93,7 +95,6 @@ export default function MonitoringTargetDialog({
 
     setSaving(true);
     setErrors({});
-    setMutationError("");
     try {
       if (target) {
         await updateMonitoringTarget(target.id, input);
@@ -101,16 +102,21 @@ export default function MonitoringTargetDialog({
         const createInput: MonitoringTargetCreateInput = { ...input, serviceKey };
         await createMonitoringTarget(createInput);
       }
-      await onSaved();
+      if (await onSaved()) {
+        notify({ type: "success", title: `${actionLabel} 완료`, message: "Target 정보를 반영했습니다." });
+      } else {
+        notify({ type: "error", title: `${actionLabel} 완료`, message: "저장은 완료됐지만 최신 목록을 불러오지 못했습니다." });
+      }
       onClose();
     } catch (caught) {
-      if (caught instanceof ApiError) {
+      if (caught instanceof ApiError && caught.response.fieldErrors.length > 0) {
         setErrors(caught.response.fieldErrors.reduce<Record<string, string>>((fieldErrors, item) => {
           fieldErrors[item.field] = item.message;
           return fieldErrors;
         }, {}));
+        return;
       }
-      setMutationError(formatApiError(caught));
+      notify({ type: "error", title: `${actionLabel} 실패`, message: formatApiError(caught) });
     } finally {
       setSaving(false);
     }
@@ -127,8 +133,8 @@ export default function MonitoringTargetDialog({
       onClose={onClose}
       footer={
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" disabled={saving} onClick={onClose}>취소</button>
-          <SubmitButton busy={saving} onClick={() => (document.getElementById("monitoring-target-form") as HTMLFormElement | null)?.requestSubmit()}>{actionLabel}</SubmitButton>
+          <Button variant="secondary" type="button" disabled={saving} onClick={onClose}>취소</Button>
+          <Button busy={saving} onClick={() => (document.getElementById("monitoring-target-form") as HTMLFormElement | null)?.requestSubmit()}>{actionLabel}</Button>
         </>
       }
     >
@@ -200,7 +206,6 @@ export default function MonitoringTargetDialog({
             />
           </div>
         </div>
-        {mutationError && <p className={`${styles.inlineError} type-small`} role="alert">{mutationError}</p>}
       </form>
     </DialogFrame>
   );

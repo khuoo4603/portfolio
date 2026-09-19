@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { buttonClassName } from "@/components/ui/button";
 import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type { DashboardData, TrafficPoint } from "./admin-types";
@@ -189,7 +190,7 @@ export default function DashboardScreen() {
             <section className={`${styles.managementSurface} ${styles.servicePanel}`} aria-labelledby="service-title">
               <div className={styles.managementSurfaceHeader}>
                 <div><h2 id="service-title" className="type-title">서비스 상태</h2></div>
-                <Link className={`${styles.secondaryButton} type-body`} href="/admin/monitoring">Monitoring 관리</Link>
+                <Link className={buttonClassName({ variant: "secondary", size: "medium", className: "type-body" })} href="/admin/monitoring">Monitoring 관리</Link>
               </div>
               <div className={styles.serviceRows}>
                 {data.serviceStatus.length === 0 ? (

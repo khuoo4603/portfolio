@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { Edit3, ImageIcon, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Button from "@/components/ui/button";
+import { useNotification } from "@/components/ui/notification/notification-provider";
 import { formatApiError } from "@/lib/api/client";
 import type { ProjectCreateInput, ProjectSummary } from "./admin-types";
 import AdminImagePreview from "./admin-image-preview";
@@ -15,7 +17,7 @@ import {
   updateProjectStatus,
 } from "./admin-project-api";
 import { EmptyState, PageError, PageHeader, PageLoading, StateSwitch, StatusLabel, formatDateTime } from "./admin-ui";
-import DialogFrame from "./dialog-frame";
+import DialogFrame from "@/components/ui/dialog-frame";
 import { useAdminAction } from "./use-admin-action";
 import styles from "./admin.module.css";
 
@@ -44,8 +46,8 @@ function CreateProjectDialog({
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <button className={`${styles.primaryButton} type-body`} type="button" disabled={!valid} onClick={onSubmit}>프로젝트 생성</button>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button type="button" disabled={!valid} onClick={onSubmit}>프로젝트 생성</Button>
         </>
       )}
     >
@@ -78,8 +80,8 @@ function DeleteProjectDialog({ project, onClose, onConfirm }: {
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <button className={`${styles.dangerButton} type-body`} type="button" onClick={onConfirm}>삭제 계속</button>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button variant="danger" type="button" onClick={onConfirm}>삭제 계속</Button>
         </>
       )}
     >
@@ -92,12 +94,12 @@ function DeleteProjectDialog({ project, onClose, onConfirm }: {
 
 // Project 독립 목록·최소 생성·공개 상태·삭제 관리 화면
 export default function ProjectManagement() {
+  const { notify } = useNotification();
   const router = useRouter();
   const adminAction = useAdminAction();
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [feedback, setFeedback] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [createInput, setCreateInput] = useState<ProjectCreateInput>(EMPTY_CREATE);
   const [deleteCandidate, setDeleteCandidate] = useState<ProjectSummary | null>(null);
@@ -115,7 +117,7 @@ export default function ProjectManagement() {
     } catch (caught) {
       if (requestSequence.current === requestId) {
         if (silent) {
-          setFeedback(`최신 프로젝트 목록 재조회 실패: ${formatApiError(caught)}`);
+          notify({ type: "error", title: "프로젝트 목록 새로고침 실패", message: formatApiError(caught) });
         } else {
           setError(formatApiError(caught));
         }
@@ -123,7 +125,7 @@ export default function ProjectManagement() {
     } finally {
       if (requestSequence.current === requestId && !silent) setLoading(false);
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     let active = true;
@@ -146,6 +148,7 @@ export default function ProjectManagement() {
       mutation: (verification) => createProject(input, verification),
       onSuccess: (created) => {
         setCreateInput(EMPTY_CREATE);
+        notify({ type: "success", title: "프로젝트 생성 완료", message: "프로젝트를 생성했습니다." });
         router.push(`/admin/projects/${created.id}/edit`);
       },
     });
@@ -158,7 +161,7 @@ export default function ProjectManagement() {
       actionLabel: `${project.name} 프로젝트 ${project.enabled ? "비공개" : "공개"} 전환`,
       mutation: (verification) => updateProjectStatus(project.id, !project.enabled, verification),
       onSuccess: () => {
-        setFeedback(`${project.name} 공개 상태를 변경했습니다.`);
+        notify({ type: "success", title: "프로젝트 상태 변경 완료", message: `${project.name} 공개 상태를 변경했습니다.` });
         void loadProjects(true);
       },
     });
@@ -174,7 +177,7 @@ export default function ProjectManagement() {
       actionLabel: `${project.name} 프로젝트 삭제`,
       mutation: (verification) => deleteProject(project.id, verification),
       onSuccess: () => {
-        setFeedback(`${project.name} 프로젝트를 삭제했습니다.`);
+        notify({ type: "success", title: "프로젝트 삭제 완료", message: `${project.name} 프로젝트를 삭제했습니다.` });
         void loadProjects(true);
       },
     });
@@ -185,9 +188,8 @@ export default function ProjectManagement() {
       <PageHeader
         title="Projects"
         description="프로젝트 Draft, 공개 상태와 표시 순서를 관리합니다."
-        action={<button className={`${styles.primaryButton} type-body`} type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />새 프로젝트</button>}
+        action={<Button type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />새 프로젝트</Button>}
       />
-      {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
 
       <section className={`${styles.managementSurface} ${styles.projectTableSection}`} aria-label="프로젝트 관리">

@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import { createAdminChallenge } from "./admin-action-api";
 import {
   createProject,
@@ -60,7 +61,7 @@ describe("Project 목록 관리", () => {
   afterEach(cleanup);
 
   it("Project Identity와 운영 Metadata를 우선순위 순서로 표시", async () => {
-    render(<ProjectManagement />);
+    render(<NotificationProvider><ProjectManagement /></NotificationProvider>);
 
     const table = await screen.findByRole("table");
     const surface = screen.getByRole("region", { name: "프로젝트 관리" });
@@ -81,7 +82,7 @@ describe("Project 목록 관리", () => {
   });
 
   it("Name·Slug만 입력하고 PROJECT_CREATE 후 Editor로 이동", async () => {
-    render(<ProjectManagement />);
+    render(<NotificationProvider><ProjectManagement /></NotificationProvider>);
     await screen.findByText("Project One");
 
     fireEvent.click(screen.getByRole("button", { name: "새 프로젝트" }));
@@ -102,6 +103,7 @@ describe("Project 목록 관리", () => {
       { name: "New Project", slug: "new-project" },
       { challengeId: "challenge-project", verificationCode: "654321" },
     ));
+    expect(await screen.findByRole("status")).toHaveTextContent("프로젝트 생성 완료");
     expect(navigation.push).toHaveBeenCalledWith("/admin/projects/31/edit");
   });
 

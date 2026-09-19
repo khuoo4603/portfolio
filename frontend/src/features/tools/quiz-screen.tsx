@@ -1,8 +1,10 @@
 "use client";
 
-import { CircleCheck, Copy, Eraser, FileJson, Info, PanelLeftClose, PanelLeftOpen, Save, Trash2, TriangleAlert, X } from "lucide-react";
+import { Copy, Eraser, FileJson, PanelLeftClose, PanelLeftOpen, Save, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import ConfirmDialog from "@/features/admin/confirm-dialog";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import Button from "@/components/ui/button";
+import { NotificationProvider, useNotification } from "@/components/ui/notification/notification-provider";
 import { formatApiError } from "@/lib/api/client";
 import type { QuizSummary } from "@/types/api";
 import {
@@ -33,24 +35,6 @@ type QuizConfirmation =
   | { kind: "delete"; quizId: number; title: string };
 
 type SaveStatus = "unsaved" | "saved" | "changes" | "saving" | "error";
-
-type QuizNotificationKind = "success" | "info" | "error";
-
-type QuizNotification = {
-  id: number;
-  kind: QuizNotificationKind;
-  title: string;
-  message: string;
-  closing?: boolean;
-};
-
-const NOTIFICATION_DURATION: Record<QuizNotificationKind, number> = {
-  success: 10_000,
-  info: 10_000,
-  error: 30_000,
-};
-const NOTIFICATION_EXIT_DURATION = 180;
-const MAX_NOTIFICATIONS = 4;
 
 // Clipboard API와 기존 비보안 Context Fallback 복사
 async function copyText(text: string) {
@@ -292,49 +276,16 @@ function SavedQuizHistory({
   );
 }
 
-// Quiz 동작 결과 안내용 우측 상단 Notification Stack
-function QuizNotificationCenter({
-  notifications,
-  onClose,
-}: {
-  notifications: QuizNotification[];
-  onClose: (id: number) => void;
-}) {
-  return (
-    <aside className={styles.quizNotificationCenter} aria-label="Quiz 알림">
-      {notifications.map((notification) => (
-        <section
-          className={`${styles.quizNotification} ${styles[`quizNotification${notification.kind[0].toUpperCase()}${notification.kind.slice(1)}`]} ${notification.closing ? styles.quizNotificationClosing : ""}`}
-          key={notification.id}
-          role={notification.kind === "error" ? "alert" : "status"}
-          aria-live={notification.kind === "error" ? "assertive" : "polite"}
-        >
-          <div className={styles.quizNotificationIcon} aria-hidden="true">
-            {notification.kind === "success" ? <CircleCheck /> : null}
-            {notification.kind === "info" ? <Info /> : null}
-            {notification.kind === "error" ? <TriangleAlert /> : null}
-          </div>
-          <div className={styles.quizNotificationContent}>
-            <strong className="type-body">{notification.title}</strong>
-            <p className="type-small">{notification.message}</p>
-          </div>
-          <button
-            className={styles.quizNotificationClose}
-            type="button"
-            aria-label={`${notification.title} 알림 닫기`}
-            onClick={() => onClose(notification.id)}
-          >
-            <X aria-hidden="true" />
-          </button>
-        </section>
-      ))}
-    </aside>
-  );
-}
-
 // 기존 Quiz Engine과 개인 저장 Workspace를 결합한 화면
 export default function QuizScreen() {
+  const { isProviderMounted } = useNotification();
+
+  return isProviderMounted ? <QuizScreenContent /> : <NotificationProvider><QuizScreenContent /></NotificationProvider>;
+}
+
+function QuizScreenContent() {
   const { hasTool } = useToolsSession();
+  const { notify } = useNotification();
   const quizEnabled = hasTool("QUIZ");
   const [jsonInput, setJsonInput] = useState("");
   const [quizJson, setQuizJson] = useState<unknown | null>(null);
@@ -352,49 +303,11 @@ export default function QuizScreen() {
   const [actionQuizId, setActionQuizId] = useState<number | null>(null);
   const [confirmation, setConfirmation] = useState<QuizConfirmation | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
-  const [notifications, setNotifications] = useState<QuizNotification[]>([]);
   const confirmInFlight = useRef(false);
   const compactHistoryToggle = useRef<HTMLButtonElement | null>(null);
   const restoreHistoryFocus = useRef(false);
-  const notificationId = useRef(0);
-  const notificationTimers = useRef(new Map<number, number>());
   const isDesktop = useViewportMatch("(min-width: 1024px)", true);
   const preview = useMemo(() => exam ? buildAnswerText(exam, answers) : "", [answers, exam]);
-
-  // 알림 퇴장 처리와 Timer 해제
-  const closeNotification = useCallback((id: number) => {
-    const timer = notificationTimers.current.get(id);
-    if (timer !== undefined) window.clearTimeout(timer);
-    setNotifications((current) => current.map((notification) => (
-      notification.id === id ? { ...notification, closing: true } : notification
-    )));
-    notificationTimers.current.set(id, window.setTimeout(() => {
-      notificationTimers.current.delete(id);
-      setNotifications((current) => current.filter((notification) => notification.id !== id));
-    }, NOTIFICATION_EXIT_DURATION));
-  }, []);
-
-  // Quiz 비동기 결과의 단일 Notification 등록
-  const notify = useCallback((kind: QuizNotificationKind, title: string, message: string) => {
-    const id = notificationId.current + 1;
-    notificationId.current = id;
-    setNotifications((current) => {
-      const active = current.filter((notification) => !notification.closing);
-      const overflow = active.slice(0, Math.max(0, active.length - (MAX_NOTIFICATIONS - 1)));
-      overflow.forEach((notification) => {
-        const timer = notificationTimers.current.get(notification.id);
-        if (timer !== undefined) window.clearTimeout(timer);
-        notificationTimers.current.delete(notification.id);
-      });
-      return [...active.slice(-(MAX_NOTIFICATIONS - 1)), { id, kind, title, message }];
-    });
-    notificationTimers.current.set(id, window.setTimeout(() => closeNotification(id), NOTIFICATION_DURATION[kind]));
-  }, [closeNotification]);
-
-  useEffect(() => () => {
-    notificationTimers.current.forEach((timer) => window.clearTimeout(timer));
-    notificationTimers.current.clear();
-  }, []);
 
   // Quiz 진입과 저장 직후 최근 수정순 이력 갱신
   const loadSavedQuizzes = useCallback(async () => {
@@ -405,7 +318,7 @@ export default function QuizScreen() {
       setSavedListLoaded(true);
     } catch (caught) {
       setSavedListLoaded(false);
-      notify("error", "저장 목록 불러오기 실패", formatApiError(caught));
+      notify({ type: "error", title: "저장 목록 불러오기 실패", message: formatApiError(caught) });
     } finally {
       setSavedLoading(false);
     }
@@ -487,9 +400,9 @@ export default function QuizScreen() {
       setSavedTitle(parsedExam.title?.trim() ?? "");
       setDirty(true);
       setSaveStatus("unsaved");
-      notify("success", "문제 불러오기 완료", "문제를 정상적으로 불러왔습니다.");
+      notify({ type: "success", title: "문제 불러오기 완료", message: "문제를 정상적으로 불러왔습니다." });
     } catch (caught) {
-      notify("error", "문제 불러오기 실패", caught instanceof Error ? caught.message : "JSON 내용을 확인하세요.");
+      notify({ type: "error", title: "문제 불러오기 실패", message: caught instanceof Error ? caught.message : "JSON 내용을 확인하세요." });
     }
   };
 
@@ -518,13 +431,13 @@ export default function QuizScreen() {
   const handleSave = async () => {
     if (!exam || quizJson === null) {
       setSaveStatus("error");
-      notify("error", "저장할 수 없음", "먼저 문제를 불러오세요.");
+      notify({ type: "error", title: "저장할 수 없음", message: "먼저 문제를 불러오세요." });
       return;
     }
     const title = savedTitle.trim();
     if (!title) {
       setSaveStatus("error");
-      notify("error", "저장할 수 없음", "저장 제목을 입력해 주세요.");
+      notify({ type: "error", title: "저장할 수 없음", message: "저장 제목을 입력해 주세요." });
       return;
     }
 
@@ -538,12 +451,12 @@ export default function QuizScreen() {
       setSavedTitle(saved.title);
       setDirty(false);
       setSaveStatus("saved");
-      notify("success", "저장 완료", `“${saved.title}”을 저장했습니다.`);
+      notify({ type: "success", title: "저장 완료", message: `“${saved.title}”을 저장했습니다.` });
       void loadSavedQuizzes();
     } catch (caught) {
       setDirty(true);
       setSaveStatus("error");
-      notify("error", "저장 실패", formatApiError(caught));
+      notify({ type: "error", title: "저장 실패", message: formatApiError(caught) });
     }
   };
 
@@ -567,13 +480,13 @@ export default function QuizScreen() {
       setSavedTitle(saved.title);
       setDirty(false);
       setSaveStatus("saved");
-      notify("info", "불러오기 완료", `“${saved.title}”을 불러왔습니다.`);
+      notify({ type: "info", title: "불러오기 완료", message: `“${saved.title}”을 불러왔습니다.` });
       setHistoryOpen(false);
       return true;
     } catch (caught) {
-      notify("error", "문제 불러오기 실패", caught instanceof SyntaxError || caught instanceof Error && !("status" in caught)
+      notify({ type: "error", title: "문제 불러오기 실패", message: caught instanceof SyntaxError || caught instanceof Error && !("status" in caught)
         ? caught.message
-        : formatApiError(caught));
+        : formatApiError(caught) });
       return false;
     } finally {
       setActionQuizId(null);
@@ -592,10 +505,10 @@ export default function QuizScreen() {
         setDirty(true);
         setSaveStatus("unsaved");
       }
-      notify("success", "삭제 완료", `“${deletedTitle}”을 삭제했습니다.`);
+      notify({ type: "success", title: "삭제 완료", message: `“${deletedTitle}”을 삭제했습니다.` });
       return true;
     } catch (caught) {
-      notify("error", "삭제 실패", formatApiError(caught));
+      notify({ type: "error", title: "삭제 실패", message: formatApiError(caught) });
       return false;
     } finally {
       setActionQuizId(null);
@@ -654,22 +567,22 @@ export default function QuizScreen() {
   const handlePromptCopy = async () => {
     try {
       await copyText(QUIZ_PROMPT);
-      notify("success", "복사 완료", "GPT 문제 생성 지시문을 복사했습니다.");
+      notify({ type: "success", title: "복사 완료", message: "GPT 문제 생성 지시문을 복사했습니다." });
     } catch {
-      notify("error", "복사 실패", "브라우저 권한을 확인하세요.");
+      notify({ type: "error", title: "복사 실패", message: "브라우저 권한을 확인하세요." });
     }
   };
 
   const handleAnswerCopy = async () => {
     if (!exam) {
-      notify("error", "복사할 수 없음", "먼저 문제를 불러오세요.");
+      notify({ type: "error", title: "복사할 수 없음", message: "먼저 문제를 불러오세요." });
       return;
     }
     try {
       await copyText(buildAnswerText(exam, answers));
-      notify("success", "복사 완료", "문항 포함 답안을 복사했습니다.");
+      notify({ type: "success", title: "복사 완료", message: "문항 포함 답안을 복사했습니다." });
     } catch {
-      notify("error", "복사 실패", "브라우저 권한을 확인하세요.");
+      notify({ type: "error", title: "복사 실패", message: "브라우저 권한을 확인하세요." });
     }
   };
 
@@ -767,25 +680,24 @@ export default function QuizScreen() {
                   </label>
                 ) : null}
                 <div className={styles.actionBar} role="group" aria-label="Quiz 작업">
-                  <button className={`${styles.primaryButton} type-body`} type="button" onClick={handleLoad}>
+                  <Button type="button" onClick={handleLoad}>
                     <FileJson aria-hidden="true" /> 문제 불러오기
-                  </button>
-                  <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => void handlePromptCopy()}>
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={() => void handlePromptCopy()}>
                     <Copy aria-hidden="true" /> GPT 문제 생성 지시문 복사
-                  </button>
-                  <button className={`${styles.secondaryButton} type-body`} type="button" onClick={handleReset}>
+                  </Button>
+                  <Button variant="secondary" type="button" onClick={handleReset}>
                     <Eraser aria-hidden="true" /> 전체 초기화
-                  </button>
+                  </Button>
                   {exam ? (
                     <>
-                      <button
-                        className={`${styles.primaryButton} type-body`}
+                      <Button
                         type="button"
                         onClick={() => void handleSave()}
                         disabled={saveStatus === "saving"}
                       >
                         <Save aria-hidden="true" /> 저장
-                      </button>
+                      </Button>
                     </>
                   ) : null}
                 </div>
@@ -802,9 +714,9 @@ export default function QuizScreen() {
                       {[exam.description || "", `총 ${exam.questions.length}문항`].filter(Boolean).join(" · ")}
                     </p>
                   </div>
-                  <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => void handleAnswerCopy()}>
+                  <Button variant="secondary" type="button" onClick={() => void handleAnswerCopy()}>
                     <Copy aria-hidden="true" /> 문항 포함 답안 복사
-                  </button>
+                  </Button>
                 </div>
                     </section>
 
@@ -853,7 +765,6 @@ export default function QuizScreen() {
           <PanelLeftOpen aria-hidden="true" />
         </button>
       ) : null}
-      <QuizNotificationCenter notifications={notifications} onClose={closeNotification} />
       <ConfirmDialog
         open={confirmation !== null}
         title={confirmation?.kind === "delete" ? "저장된 문제 삭제" : "문제 교체"}
