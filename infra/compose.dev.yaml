@@ -14,8 +14,10 @@ services:
       SPRING_PROFILES_ACTIVE: dev
     volumes:
       - type: bind
-        source: /opt/portfolio/storage/dev
+        source: /opt/portfolio/persistent/storage/dev
         target: /app/storage
+        bind:
+          create_host_path: false
       - type: bind
         source: /opt/portfolio/logs/dev/backend
         target: /app/logs
