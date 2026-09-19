@@ -241,65 +241,6 @@
   color: var(--text-secondary);
 }
 
-.primaryButton,
-.secondaryButton {
-  display: inline-flex;
-  min-height: var(--space-40);
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-8);
-  padding: var(--space-8) var(--space-16);
-  border-radius: var(--radius-value-sm);
-  box-shadow: var(--control-shadow-rest);
-  cursor: pointer;
-  font-family: var(--font-family-primary);
-  font-weight: 700;
-  transition:
-    background-color var(--motion-duration-160) var(--motion-easing-default),
-    border-color var(--motion-duration-160) var(--motion-easing-default),
-    box-shadow var(--motion-duration-160) var(--motion-easing-default),
-    color var(--motion-duration-160) var(--motion-easing-default);
-}
-
-.primaryButton {
-  border: 1px solid var(--accent-strong);
-  background: var(--accent-strong);
-  color: var(--control-foreground);
-}
-
-.secondaryButton {
-  border: 1px solid var(--border-default);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-}
-
-.primaryButton:hover:not(:disabled),
-.secondaryButton:hover:not(:disabled) {
-  box-shadow: var(--control-shadow-hover);
-}
-
-.primaryButton:hover:not(:disabled) {
-  background: var(--accent-primary);
-}
-
-.secondaryButton:hover:not(:disabled) {
-  border-color: var(--border-strong);
-  background: var(--bg-elevated);
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled {
-  cursor: not-allowed;
-  box-shadow: none;
-  opacity: 0.48;
-}
-
-.primaryButton svg,
-.secondaryButton svg {
-  width: var(--space-20);
-  height: var(--space-20);
-}
-
 /* 기존 오른쪽에 한 열을 더한 4열 2행 Launcher Composition */
 .launcherGrid {
   display: grid;
@@ -1591,146 +1532,6 @@
   white-space: nowrap;
 }
 
-.quizNotificationCenter {
-  --quiz-notification-success: #34d399;
-  --quiz-notification-info: #60a5fa;
-  --quiz-notification-error: #fbbf24;
-
-  position: fixed;
-  z-index: 30;
-  top: calc(var(--portfolio-header-height) + var(--space-20));
-  right: var(--space-24);
-  display: grid;
-  width: min(430px, calc(100vw - var(--space-40)));
-  gap: var(--space-12);
-  pointer-events: none;
-}
-
-.quizNotification {
-  display: grid;
-  grid-template-columns: var(--space-40) minmax(0, 1fr) calc(var(--space-24) + var(--space-4));
-  align-items: center;
-  gap: var(--space-12);
-  min-height: var(--space-80);
-  padding: var(--space-16);
-  border: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
-  border-radius: var(--radius-value-lg);
-  background: var(--bg-surface);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--text-primary) 3%, transparent),
-    0 2px 4px color-mix(in srgb, var(--text-primary) 5%, transparent),
-    0 12px 24px color-mix(in srgb, var(--text-primary) 5%, transparent);
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-  transition:
-    opacity 200ms var(--motion-easing-default),
-    transform 200ms var(--motion-easing-default),
-    box-shadow 200ms var(--motion-easing-default);
-  animation: quizNotificationEnter 200ms var(--motion-easing-default);
-}
-
-.quizNotification:hover {
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--text-primary) 4%, transparent),
-    0 16px 28px color-mix(in srgb, var(--text-primary) 8%, transparent);
-  transform: translateY(-1px) scale(1.01);
-}
-
-:global([data-theme="dark"]) .quizNotification {
-  border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
-  background: color-mix(in srgb, var(--bg-base) 72%, var(--bg-surface));
-  box-shadow:
-    inset 0 -20px 80px -20px color-mix(in srgb, var(--text-primary) 10%, transparent),
-    0 12px 28px color-mix(in srgb, var(--bg-base) 34%, transparent);
-  backdrop-filter: blur(6px);
-}
-
-.quizNotificationContent {
-  min-width: 0;
-}
-
-.quizNotificationContent strong,
-.quizNotificationContent p {
-  margin: 0;
-}
-
-.quizNotificationContent strong {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.quizNotificationContent p {
-  margin-top: var(--space-4);
-  color: var(--text-secondary);
-  line-height: var(--line-height-small);
-  overflow-wrap: anywhere;
-}
-
-.quizNotificationIcon {
-  display: grid;
-  width: var(--space-40);
-  height: var(--space-40);
-  border-radius: var(--radius-value-md);
-  place-items: center;
-}
-
-.quizNotificationIcon svg {
-  width: var(--space-20);
-  height: var(--space-20);
-}
-
-.quizNotificationSuccess .quizNotificationIcon {
-  background: var(--quiz-notification-success);
-  color: var(--ink-950);
-}
-
-.quizNotificationInfo .quizNotificationIcon {
-  background: var(--quiz-notification-info);
-  color: var(--ink-950);
-}
-
-.quizNotificationError .quizNotificationIcon {
-  background: var(--quiz-notification-error);
-  color: var(--ink-950);
-}
-
-.quizNotificationClose {
-  display: grid;
-  width: var(--space-24);
-  height: var(--space-24);
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-value-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  place-items: center;
-}
-
-.quizNotificationClose:hover,
-.quizNotificationClose:focus-visible {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-
-.quizNotificationClose svg {
-  width: var(--space-16);
-  height: var(--space-16);
-}
-
-.quizNotificationClosing {
-  opacity: 0;
-  transform: translateY(calc(var(--space-8) * -1));
-}
-
-@keyframes quizNotificationEnter {
-  from {
-    opacity: 0;
-    transform: translateY(calc(var(--space-8) * -1));
-  }
-}
-
 .questionParts {
   display: grid;
   min-width: 0;
@@ -2164,12 +1965,6 @@
     text-align: left;
   }
 
-  .quizNotificationCenter {
-    top: calc(var(--portfolio-header-height) + var(--space-12));
-    right: var(--space-16);
-    width: calc(100vw - var(--space-32));
-  }
-
   .launcherGrid {
     max-width: none;
     grid-template-columns: 1fr;
@@ -2276,8 +2071,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .primaryButton,
-  .secondaryButton,
   .linkCard,
   .linkExternalIcon,
   .cardContent,
@@ -2285,16 +2078,6 @@
   .cardCta,
   .cardOverlay {
     transition: none;
-  }
-
-  .quizNotification {
-    animation: none;
-    transition: none;
-  }
-
-  .quizNotification:hover,
-  .quizNotificationClosing {
-    transform: none;
   }
 
   .quizLayout,
@@ -2322,8 +2105,6 @@
     transform: translate(-50%, -50%) scale(1);
   }
 
-  .primaryButton:hover:not(:disabled),
-  .secondaryButton:hover:not(:disabled),
   .linkCard:hover,
   .linkCard:is(:hover, :focus-visible) .linkExternalIcon {
     transform: none;

@@ -9,6 +9,11 @@
   overflow: visible;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-value-md);
+  background: var(--bg-elevated);
+}
+
+/* Dark Theme 기존 Value Card 계층 유지 */
+:global(html[data-theme="dark"]) .root {
   background: var(--bg-surface);
 }
 

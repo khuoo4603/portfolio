@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
+import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import type { AdminMonitoringData } from "./admin-types";
 import { createMonitoringTarget, getAdminMonitoring, updateMonitoringSettings, updateMonitoringTarget } from "./admin-read-api";
 import MonitoringScreen from "./monitoring-screen";
@@ -67,6 +68,11 @@ describe("Monitoring 독립 관리 화면", () => {
     expect(screen.getByRole("heading", { name: "Monitoring 설정" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Target" })).toBeInTheDocument();
     expect(screen.getByText("URL 미설정")).toBeInTheDocument();
+    const targetsTable = screen.getByRole("table");
+    expect(within(targetsTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Target", "Health URL", "순서", "상태", "작업"]);
+    expect(within(targetsTable).getByText("0")).toBeInTheDocument();
+    expect(within(targetsTable).getByRole("button", { name: "Portfolio API Target 수정" })).toBeInTheDocument();
+    expect(within(targetsTable).queryByText("PORTFOLIO_BACKEND")).not.toBeInTheDocument();
     expect(screen.queryByText("점검 주기와 요청 정책을 관리합니다.")).not.toBeInTheDocument();
     expect(screen.queryByText("등록된 전체 서비스 점검 대상을 관리합니다.")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Monitoring 설정" })).not.toBeInTheDocument();
@@ -181,7 +187,7 @@ describe("Monitoring 독립 관리 화면", () => {
     render(<MonitoringScreen />);
 
     await screen.findByText("Portfolio API");
-    fireEvent.click(screen.getAllByRole("button", { name: "수정" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Portfolio API Target 수정" }));
     expect(screen.queryByRole("textbox", { name: "Service Key" })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("표시명"), { target: { value: "Portfolio Runtime API" } });
     fireEvent.click(screen.getByRole("button", { name: "Target 저장" }));
@@ -200,7 +206,7 @@ describe("Monitoring 독립 관리 화면", () => {
       traceId: "trace-target",
       fieldErrors: [{ field: "displayName", message: "표시명 중복" }],
     }));
-    render(<MonitoringScreen />);
+    render(<NotificationProvider><MonitoringScreen /></NotificationProvider>);
 
     await screen.findByText("Portfolio API");
     fireEvent.click(screen.getByRole("button", { name: "Target 추가" }));
@@ -209,5 +215,56 @@ describe("Monitoring 독립 관리 화면", () => {
     fireEvent.click(screen.getByRole("button", { name: "Target 등록" }));
     expect(await screen.findByText("표시명 중복")).toBeInTheDocument();
     expect(screen.getByLabelText("표시명")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("Settings 일반 요청 오류는 Notification으로 표시", async () => {
+    vi.mocked(updateMonitoringSettings).mockRejectedValue(new ApiError(500, {
+      code: "COMMON_INTERNAL_ERROR",
+      message: "설정 저장을 완료하지 못했습니다.",
+      traceId: "trace-settings",
+      fieldErrors: [],
+    }));
+    render(<NotificationProvider><MonitoringScreen /></NotificationProvider>);
+
+    await screen.findByLabelText("검사 주기");
+    fireEvent.click(screen.getByRole("button", { name: "설정 저장" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("설정 저장을 완료하지 못했습니다.");
+  });
+
+  it("Settings Backend fieldErrors는 입력 오류만 표시", async () => {
+    vi.mocked(updateMonitoringSettings).mockRejectedValue(new ApiError(400, {
+      code: "VALIDATION_ERROR",
+      message: "입력값을 확인하세요.",
+      traceId: "trace-settings-field",
+      fieldErrors: [{ field: "checkIntervalSeconds", message: "검사 주기 오류" }],
+    }));
+    render(<NotificationProvider><MonitoringScreen /></NotificationProvider>);
+
+    await screen.findByLabelText("검사 주기");
+    fireEvent.click(screen.getByRole("button", { name: "설정 저장" }));
+
+    expect(await screen.findByText("검사 주기 오류")).toBeInTheDocument();
+    expect(screen.getByLabelText("검사 주기")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("Target 일반 요청 오류는 Dialog를 유지하고 Notification으로 표시", async () => {
+    vi.mocked(createMonitoringTarget).mockRejectedValue(new ApiError(500, {
+      code: "COMMON_INTERNAL_ERROR",
+      message: "Target을 등록하지 못했습니다.",
+      traceId: "trace-target-general",
+      fieldErrors: [],
+    }));
+    render(<NotificationProvider><MonitoringScreen /></NotificationProvider>);
+
+    await screen.findByText("Portfolio API");
+    fireEvent.click(screen.getByRole("button", { name: "Target 추가" }));
+    fireEvent.change(screen.getByLabelText("Service Key"), { target: { value: "NEW_SERVICE" } });
+    fireEvent.change(screen.getByLabelText("표시명"), { target: { value: "New Service" } });
+    fireEvent.click(screen.getByRole("button", { name: "Target 등록" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Target을 등록하지 못했습니다.");
+    expect(screen.getByRole("dialog", { name: "Target 추가" })).toBeInTheDocument();
   });
 });

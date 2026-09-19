@@ -2,6 +2,7 @@
 
 import { ArrowDown, ArrowUp, ImagePlus, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
+import Button, { buttonClassName } from "@/components/ui/button";
 import AdminImagePreview from "./admin-image-preview";
 import type { Technology } from "./admin-types";
 import { StateSwitch } from "./admin-ui";
@@ -10,6 +11,14 @@ import { moveProjectItem } from "./project-editor-model";
 import styles from "./admin.module.css";
 
 export type ProjectEditorSection = "basic" | "results" | "background" | "features" | "development" | "architecture" | "engineering" | "technologies" | "media";
+
+function getImageModeLabel(mode: ProjectEditorDraft["thumbnail"]["mode"]) {
+  return {
+    KEEP: "기존 이미지 유지",
+    UPLOAD: "새 이미지 선택",
+    REMOVE: "이미지 제거 예정",
+  }[mode];
+}
 
 type PanelProps = {
   section: ProjectEditorSection;
@@ -47,7 +56,7 @@ function PanelHeading({ title, description, onAdd }: { title: string; descriptio
   return (
     <div className={styles.projectPanelHeading}>
       <div><h2 className="type-title">{title}</h2><p className="type-small">{description}</p></div>
-      {onAdd && <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onAdd}><Plus aria-hidden="true" />항목 추가</button>}
+      {onAdd && <Button variant="secondary" type="button" onClick={onAdd}><Plus aria-hidden="true" />항목 추가</Button>}
     </div>
   );
 }
@@ -57,7 +66,7 @@ function BasicPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">)
   const update = (patch: Partial<ProjectEditorDraft["project"]>) => setDraft((current) => ({ ...current, project: { ...current.project, ...patch } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="기본 정보 편집">
-      <PanelHeading title="기본 정보" description="공개 상태를 제외한 카드와 상세 Hero 정보를 편집합니다." />
+      <PanelHeading title="기본 정보" description="프로젝트 카드와 상세 화면에 표시할 기본 정보를 관리합니다." />
       <div className={styles.projectFieldsGrid}>
         <TextField label="Name" value={draft.project.name} maxLength={200} onChange={(name) => update({ name })} />
         <TextField label="Slug" value={draft.project.slug} maxLength={100} onChange={(slug) => update({ slug })} />
@@ -82,7 +91,7 @@ function ResultsPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft"
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, results: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="성과 편집">
-      <PanelHeading title="성과" description="Title과 선택 Description을 순서대로 관리합니다." onAdd={() => setItems([...items, { title: "", description: null }])} />
+      <PanelHeading title="성과" description="프로젝트 성과와 설명을 표시 순서대로 관리합니다." onAdd={() => setItems([...items, { title: "", description: null }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`result-${index}`}>
           <div className={styles.projectItemFields}>
@@ -102,7 +111,7 @@ function BackgroundPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDra
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, background: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="문제 배경 편집">
-      <PanelHeading title="문제 배경" description="선택 Title과 Body를 관리합니다." onAdd={() => setItems([...items, { title: null, body: "" }])} />
+      <PanelHeading title="문제 배경" description="프로젝트의 문제 배경과 설명을 관리합니다." onAdd={() => setItems([...items, { title: null, body: "" }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`background-${index}`}>
           <div className={styles.projectItemFields}>
@@ -122,7 +131,7 @@ function FeaturesPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, features: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="주요 기능 편집">
-      <PanelHeading title="주요 기능" description="Title과 선택 Description을 관리합니다." onAdd={() => setItems([...items, { title: "", description: null }])} />
+      <PanelHeading title="주요 기능" description="프로젝트의 주요 기능과 설명을 관리합니다." onAdd={() => setItems([...items, { title: "", description: null }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`feature-${index}`}>
           <div className={styles.projectItemFields}>
@@ -145,7 +154,7 @@ function DevelopmentPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDr
       <PanelHeading title="직접 담당한 개발 영역" description="영역별 작업 목록을 관리합니다." onAdd={() => setItems([...items, { title: "", items: [] }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`development-${index}`}>
-          <div className={styles.projectItemFields}>
+          <div className={`${styles.projectItemFields} ${styles.developmentFields}`}>
             <TextField label={`개발 영역 ${index + 1} Title`} value={item.title} onChange={(title) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, title } : value))} />
             <div className={styles.nestedStringList}>
               <span className="type-small">Items</span>
@@ -155,7 +164,7 @@ function DevelopmentPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDr
                   <ItemActions index={taskIndex} length={item.items.length} label={`개발 영역 ${index + 1} Item ${taskIndex + 1}`} onMove={(direction) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, items: moveProjectItem(value.items, taskIndex, direction) } : value))} onDelete={() => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, items: value.items.filter((_, valueIndex) => valueIndex !== taskIndex) } : value))} />
                 </div>
               ))}
-              <button className={`${styles.textButton} type-small`} type="button" onClick={() => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, items: [...value.items, ""] } : value))}>Item 추가</button>
+              <Button className={styles.nestedStringAdd} variant="secondary" size="small" type="button" onClick={() => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, items: [...value.items, ""] } : value))}><Plus aria-hidden="true" />Item 추가</Button>
             </div>
           </div>
           <ItemActions index={index} length={items.length} label={`개발 영역 ${index + 1}`} onMove={(direction) => setItems(moveProjectItem(items, index, direction))} onDelete={() => setItems(items.filter((_, itemIndex) => itemIndex !== index))} />
@@ -182,13 +191,13 @@ function ArchitecturePanel({
   }));
   return (
     <section className={styles.projectEditorPanel} aria-label="아키텍처 편집">
-      <PanelHeading title="아키텍처" description="Architecture Image와 이미지 하단 Notes를 관리합니다." onAdd={() => setNotes([...notes, { title: "", body: "" }])} />
+      <PanelHeading title="아키텍처" description="아키텍처 이미지와 설명을 관리합니다." onAdd={() => setNotes([...notes, { title: "", body: "" }])} />
       <section className={styles.mediaGroup}>
         <div className={styles.mediaGroupHeading}>
-          <div><h3 className="type-body">Architecture Image</h3><p className="type-small">현재 상태: {draft.architectureImage.mode}</p></div>
+          <div><h3 className="type-body">Architecture Image</h3><p className="type-small">{getImageModeLabel(draft.architectureImage.mode)}</p></div>
           <div className={styles.mediaGroupActions}>
-            <label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onArchitectureImageFile(file); event.currentTarget.value = ""; }} /></label>
-            <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onArchitectureImageRemove}>Remove</button>
+            <label className={buttonClassName({ variant: "secondary", className: "type-body" })}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onArchitectureImageFile(file); event.currentTarget.value = ""; }} /></label>
+            <Button variant="secondary" type="button" onClick={onArchitectureImageRemove}>이미지 제거</Button>
           </div>
         </div>
         <div className={styles.architectureDraftPreview}>
@@ -220,7 +229,7 @@ function EngineeringPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDr
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, engineering: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="기술적 문제 해결 편집">
-      <PanelHeading title="기술적 문제 해결" description="Problem·Solution·Result와 선택 Summary를 관리합니다." onAdd={() => setItems([...items, { title: "", summary: null, problem: "", solution: "", result: "" }])} />
+      <PanelHeading title="기술적 문제 해결" description="기술적 문제와 해결 과정, 결과를 관리합니다." onAdd={() => setItems([...items, { title: "", summary: null, problem: "", solution: "", result: "" }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`engineering-${index}`}>
           <div className={styles.projectItemFields}>
@@ -242,35 +251,30 @@ function TechnologyPanel({ draft, setDraft, technologyMaster }: Pick<PanelProps,
   const setItems = (technologies: ProjectEditorDraft["technologies"]) => setDraft((current) => ({ ...current, technologies }));
   return (
     <section className={styles.projectEditorPanel} aria-label="기술 편집">
-      <PanelHeading title="기술" description="technology_master에서 선택하고 강조·순서를 관리합니다." />
+      <PanelHeading title="기술" description="프로젝트에 사용한 기술과 강조 여부, 표시 순서를 관리합니다." />
       <div className={styles.technologyPicker}>
         <label className={styles.formField}><span className="type-small">프로젝트 기술 선택</span><select className="type-body" value={selectedId} onChange={(event) => setSelectedId(event.currentTarget.value)}><option value="">기술 선택</option>{technologyMaster.filter((item) => !selected.has(item.id)).map((item) => <option key={item.id} value={item.id} disabled={!item.enabled}>{item.name}{item.enabled ? "" : " · 비활성"}</option>)}</select></label>
-        <button className={`${styles.secondaryButton} type-body`} type="button" disabled={!selectedId} onClick={() => { const id = Number(selectedId); setItems([...draft.technologies, { technologyId: id, showOnCard: false, highlighted: false, displayOrder: draft.technologies.length }]); setSelectedId(""); }}>추가</button>
+        <Button variant="secondary" type="button" disabled={!selectedId} onClick={() => { const id = Number(selectedId); setItems([...draft.technologies, { technologyId: id, showOnCard: false, highlighted: false, displayOrder: draft.technologies.length }]); setSelectedId(""); }}><Plus aria-hidden="true" />추가</Button>
       </div>
-      <div className={styles.projectItemList}>{draft.technologies.map((item, index) => {
+      <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.projectTechnologyTable}`}><thead><tr><th>기술</th><th>분류</th><th>강조</th><th>표시 순서</th><th>작업</th></tr></thead><tbody>{draft.technologies.map((item, index) => {
         const technology = technologyMaster.find((value) => value.id === item.technologyId);
         const technologyName = technology?.name ?? `Technology #${item.technologyId}`;
         return (
-          <article className={styles.technologyDraftRow} key={item.technologyId}>
-            <div>
-              <strong className="type-body">{technologyName}</strong>
-              <span className="type-small">{technology?.category}{technology && !technology.enabled ? " · 기존 비활성 연결" : ""}</span>
-            </div>
-            <div className={styles.technologyHighlight}>
-              <span className="type-small">Highlighted</span>
-              <StateSwitch
+          <tr key={item.technologyId}>
+            <td className={styles.projectTechnologyPrimarySummary} data-label="기술"><strong className="type-body">{technologyName}</strong></td>
+            <td className={styles.projectTechnologyCategorySummary} data-label="분류"><span className="type-small">{technology?.category}{technology && !technology.enabled ? " · 기존 비활성 연결" : ""}</span></td>
+            <td className={styles.projectTechnologyHighlightSummary} data-label="강조"><StateSwitch
                 enabled={item.highlighted}
-                label={`${technologyName} Highlighted ${item.highlighted ? "OFF" : "ON"} 전환`}
+                label={`${technologyName} ${item.highlighted ? "강조 해제" : "강조 설정"}`}
                 onClick={() => setItems(draft.technologies.map((value, itemIndex) => (
                   itemIndex === index ? { ...value, highlighted: !value.highlighted } : value
                 )))}
-              />
-            </div>
-            <NumberField label="Display Order" value={item.displayOrder} min={0} onChange={(displayOrder) => setItems(draft.technologies.map((value, itemIndex) => itemIndex === index ? { ...value, displayOrder: displayOrder ?? 0 } : value))} />
-            <ItemActions index={index} length={draft.technologies.length} label={technologyName} onMove={(direction) => setItems(moveProjectItem(draft.technologies, index, direction).map((value, itemIndex) => ({ ...value, displayOrder: itemIndex })))} onDelete={() => setItems(draft.technologies.filter((_, itemIndex) => itemIndex !== index))} />
-          </article>
+              /></td>
+            <td className={styles.projectTechnologyOrderSummary} data-label="표시 순서"><input className={`${styles.projectTechnologyOrderInput} type-body`} aria-label={`${technologyName} 표시 순서`} type="number" min={0} value={item.displayOrder} onChange={(event) => setItems(draft.technologies.map((value, itemIndex) => itemIndex === index ? { ...value, displayOrder: event.currentTarget.value === "" ? 0 : Number(event.currentTarget.value) } : value))} /></td>
+            <td className={styles.projectTechnologyActionsSummary} data-label="작업"><ItemActions index={index} length={draft.technologies.length} label={technologyName} onMove={(direction) => setItems(moveProjectItem(draft.technologies, index, direction).map((value, itemIndex) => ({ ...value, displayOrder: itemIndex })))} onDelete={() => setItems(draft.technologies.filter((_, itemIndex) => itemIndex !== index))} /></td>
+          </tr>
         );
-      })}</div>
+      })}</tbody></table></div>
     </section>
   );
 }
@@ -296,7 +300,7 @@ function MediaRow({ item, index, length, onDelete, onRestore, onChange, onMove }
         <TextField label="Alt Text" value={item.altText} onChange={(altText) => onChange({ altText: altText || null })} />
         <NumberField label="Display Order" value={item.displayOrder} min={0} onChange={(displayOrder) => onChange({ displayOrder: displayOrder ?? 0 })} />
       </div>
-      {item.deleted ? <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onRestore}><RotateCcw aria-hidden="true" />삭제 취소</button> : <ItemActions index={index} length={length} label={`Carousel ${index + 1}`} onMove={onMove} onDelete={onDelete} />}
+      {item.deleted ? <Button variant="secondary" type="button" onClick={onRestore}><RotateCcw aria-hidden="true" />삭제 취소</Button> : <ItemActions index={index} length={length} label={`Carousel ${index + 1}`} onMove={onMove} onDelete={onDelete} />}
     </article>
   );
 }
@@ -307,9 +311,9 @@ function MediaPanel(props: Pick<PanelProps, "draft" | "onThumbnailFile" | "onThu
   const thumbnailSource = draft.thumbnail.previewUrl || (draft.thumbnail.mode === "KEEP" ? draft.thumbnail.imageUrl : null);
   return (
     <section className={styles.projectEditorPanel} aria-label="미디어 편집">
-      <PanelHeading title="미디어" description="Thumbnail과 Carousel을 Local Draft에서 함께 관리합니다." />
-      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Thumbnail</h3><p className="type-small">현재 상태: {draft.thumbnail.mode}</p></div><div className={styles.mediaGroupActions}><label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onThumbnailFile(file); event.currentTarget.value = ""; }} /></label><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onThumbnailRemove}>Remove</button></div></div><div className={styles.thumbnailDraftPreview}><AdminImagePreview alt="Thumbnail Preview" fallback={<span className="type-small">Thumbnail 없음</span>} sizes="420px" src={thumbnailSource} /></div></section>
-      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Carousel</h3><p className="type-small">{draft.media.filter((item) => !item.deleted).length}개 사용</p></div><label className={`${styles.secondaryButton} type-body`}><ImagePlus aria-hidden="true" />이미지 추가<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onAddMedia(file); event.currentTarget.value = ""; }} /></label></div><div className={styles.projectItemList}>{draft.media.map((item, index) => <MediaRow key={item.key} item={item} index={index} length={draft.media.length} onDelete={() => onDeleteMedia(item.key)} onRestore={() => onChangeMedia(item.key, { deleted: false })} onChange={(patch) => onChangeMedia(item.key, patch)} onMove={(direction) => onMoveMedia(item.key, direction)} />)}</div></section>
+      <PanelHeading title="미디어" description="대표 이미지와 상세 화면 이미지를 관리합니다." />
+      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Thumbnail</h3><p className="type-small">{getImageModeLabel(draft.thumbnail.mode)}</p></div><div className={styles.mediaGroupActions}><label className={buttonClassName({ variant: "secondary", className: "type-body" })}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onThumbnailFile(file); event.currentTarget.value = ""; }} /></label><Button variant="secondary" type="button" onClick={onThumbnailRemove}>이미지 제거</Button></div></div><div className={styles.thumbnailDraftPreview}><AdminImagePreview alt="Thumbnail Preview" fallback={<span className="type-small">Thumbnail 없음</span>} sizes="420px" src={thumbnailSource} /></div></section>
+      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Carousel</h3><p className="type-small">{draft.media.filter((item) => !item.deleted).length}개 사용</p></div><label className={buttonClassName({ variant: "secondary", className: "type-body" })}><Plus aria-hidden="true" />이미지 추가<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onAddMedia(file); event.currentTarget.value = ""; }} /></label></div><div className={styles.projectItemList}>{draft.media.map((item, index) => <MediaRow key={item.key} item={item} index={index} length={draft.media.length} onDelete={() => onDeleteMedia(item.key)} onRestore={() => onChangeMedia(item.key, { deleted: false })} onChange={(patch) => onChangeMedia(item.key, patch)} onMove={(direction) => onMoveMedia(item.key, direction)} />)}</div></section>
       {fileError ? <p className={`${styles.inlineError} type-small`} role="alert">{fileError}</p> : null}
     </section>
   );

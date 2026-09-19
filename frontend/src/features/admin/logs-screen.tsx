@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Button from "@/components/ui/button";
 import { formatApiError } from "@/lib/api/client";
 import type { ErrorLog, ErrorLogPage, LoginLog, LoginLogPage } from "./admin-types";
 import {
@@ -35,6 +36,23 @@ type ErrorFilters = {
 const PAGE_SIZE = 50;
 const EMPTY_LOGIN_FILTERS: LoginFilters = { from: "", to: "", email: "", result: "" };
 const EMPTY_ERROR_FILTERS: ErrorFilters = { from: "", to: "", service: "", statusCode: "" };
+const LOGIN_FAILURE_REASON_LABELS: Record<string, string> = {
+  INVALID_CREDENTIALS: "이메일 또는 비밀번호 불일치",
+  ACCOUNT_DISABLED: "비활성화 계정",
+  RATE_LIMITED: "로그인 시도 제한 초과",
+  VERIFICATION_FAILED: "이메일 인증 실패",
+  VERIFICATION_EXPIRED: "이메일 인증 만료",
+  VERIFICATION_LOCKED: "이메일 인증 잠금",
+};
+
+// Backend 로그인 실패 사유 코드의 관리자 화면 표시 문구 변환
+function formatLoginFailureReason(reason: string | null) {
+  if (!reason) {
+    return "-";
+  }
+
+  return LOGIN_FAILURE_REASON_LABELS[reason] ?? reason;
+}
 
 // Backend Filtering과 Pagination을 사용하는 로그인·5xx 운영 기록 조회 화면
 export default function LogsScreen() {
@@ -244,10 +262,10 @@ export default function LogsScreen() {
             </label>
           </>
         )}
-        <button className={`${styles.secondaryButton} ${styles.filterSubmit} type-body`} type="submit">
+        <Button className={styles.filterSubmit} variant="secondary" type="submit">
           <Search aria-hidden="true" />
           조회
-        </button>
+        </Button>
       </form>
 
       <p className={`${styles.inlineError} type-small`} role="alert" aria-live="polite">{filterError}</p>
@@ -310,7 +328,7 @@ export default function LogsScreen() {
 function LoginLogTable({ items }: { items: LoginLog[] }) {
   return (
     <div className={`${styles.dataTableWrap} ${styles.logTableWrap}`}>
-      <table className={`${styles.dataTable} ${styles.logTable}`}>
+      <table className={`${styles.dataTable} ${styles.logTable} ${styles.loginLogTable}`}>
         <thead>
           <tr><th>시각 / 계정</th><th>결과</th><th>접속 정보</th><th>실패 사유</th><th>Trace ID</th></tr>
         </thead>
@@ -320,7 +338,7 @@ function LoginLogTable({ items }: { items: LoginLog[] }) {
               <td data-label="시각 / 계정"><time className={styles.techMeta}>{formatDateTime(item.occurredAt)}</time><strong>{item.email}</strong></td>
               <td data-label="결과"><StatusLabel tone={item.result === "SUCCESS" ? "success" : "error"}>{item.result}</StatusLabel></td>
               <td data-label="접속 정보"><span>{item.browser || "-"} · {item.os || "-"}</span><small className={styles.techMeta}>{item.device || "-"} / {item.ip}</small></td>
-              <td data-label="실패 사유">{item.failureReason || "-"}</td>
+              <td data-label="실패 사유">{formatLoginFailureReason(item.failureReason)}</td>
               <td data-label="Trace ID"><code className={styles.traceId}>{item.traceId}</code></td>
             </tr>
           ))}
@@ -334,7 +352,7 @@ function LoginLogTable({ items }: { items: LoginLog[] }) {
 function ErrorLogTable({ items }: { items: ErrorLog[] }) {
   return (
     <div className={`${styles.dataTableWrap} ${styles.logTableWrap}`}>
-      <table className={`${styles.dataTable} ${styles.logTable}`}>
+      <table className={`${styles.dataTable} ${styles.logTable} ${styles.errorLogTable}`}>
         <thead>
           <tr><th>시각 / 서비스</th><th>요청</th><th>상태</th><th>오류 요약</th><th>Trace ID</th></tr>
         </thead>

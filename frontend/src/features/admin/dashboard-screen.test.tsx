@@ -69,6 +69,9 @@ describe("Admin Dashboard 실제 API 상태", () => {
     expect(await screen.findByText("4,321")).toBeInTheDocument();
     expect(screen.getByLabelText("2026-09, 방문자 4321, 페이지 조회 9716")).toBeInTheDocument();
     expect(screen.getByText("Portfolio API")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "사이트 현황" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("term")).toHaveLength(8);
+    expect(screen.getAllByRole("definition")).toHaveLength(8);
     expect(screen.getByRole("link", { name: "Monitoring 관리" })).toHaveAttribute("href", "/admin/monitoring");
     expect(screen.queryByRole("button", { name: "Monitoring 설정" })).not.toBeInTheDocument();
     expect(screen.queryByText("Portfolio Frontend")).not.toBeInTheDocument();

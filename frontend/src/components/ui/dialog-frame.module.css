@@ -1,0 +1,71 @@
+.dialogBackdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-24);
+  background: color-mix(in srgb, var(--ink-950) 78%, transparent);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  animation: backdrop-enter var(--motion-duration-160) var(--motion-easing-default) both;
+}
+
+.dialogFrame {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(620px, 100%);
+  max-height: calc(100dvh - var(--space-48));
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-value-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--ink-950) 20%, transparent);
+  animation: dialog-enter var(--motion-duration-240) var(--motion-easing-default) both;
+}
+
+.compactDialog { width: min(calc(var(--space-160) * 3), 100%); }
+.secureDialog { border-color: var(--border-accent); }
+
+.dialogHeader, .dialogBody, .dialogFooter { position: relative; z-index: 1; }
+.dialogHeader { grid-row: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-20); padding: var(--space-24); border-bottom: 1px solid var(--border-default); }
+.dialogHeader > div { min-width: 0; }
+.dialogHeader h2, .dialogHeader p { margin: 0; }
+.dialogHeader h2 { color: var(--text-heading); font-weight: 700; }
+.dialogHeader p { margin-top: var(--space-4); color: var(--text-secondary); }
+.dialogBody { grid-row: 2; overflow-y: auto; padding: var(--space-24); }
+.dialogFooter { grid-row: 3; display: flex; justify-content: flex-end; gap: var(--space-8); padding: var(--space-16) var(--space-24); border-top: 1px solid var(--border-default); background: var(--bg-elevated); }
+.confirmMessage { margin: 0; color: var(--text-primary); }
+
+.dialogCloseButton { width: 36px; height: 36px; display: inline-grid; flex: 0 0 auto; place-items: center; padding: 0; border: 1px solid transparent; border-radius: var(--radius-value-sm); background: transparent; color: var(--text-secondary); cursor: pointer; }
+.dialogCloseButton:hover, .dialogCloseButton:focus-visible { border-color: var(--border-default); background: var(--bg-elevated); color: var(--text-primary); }
+.dialogCloseButton:disabled { cursor: not-allowed; opacity: .48; }
+.dialogCloseButton svg { width: 18px; height: 18px; }
+
+@keyframes backdrop-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dialog-enter { from { opacity: 0; transform: translateY(var(--space-8)); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 1023px) {
+  .dialogBackdrop { place-items: end center; padding: 0; }
+  .dialogFrame { width: 100%; max-height: calc(100dvh - var(--space-24)); border-radius: var(--radius-value-md) var(--radius-value-md) 0 0; border-bottom: 0; }
+  .dialogHeader, .dialogBody { padding: var(--space-20); }
+  .dialogFooter { padding: var(--space-12) var(--space-20) max(var(--space-16), env(safe-area-inset-bottom)); }
+  .compactBackdrop { place-items: center; padding: var(--space-20); }
+  .compactBackdrop .compactDialog { width: min(calc(var(--space-160) * 3), 100%); max-height: calc(100dvh - var(--space-40)); border: 1px solid var(--border-accent); border-radius: var(--radius-value-md); }
+}
+
+@media (max-width: 767px) {
+  .dialogBackdrop { place-items: center; padding: var(--space-16); }
+  .dialogFrame { width: 100%; max-height: calc(100dvh - var(--space-32)); border: 1px solid var(--border-default); border-radius: var(--radius-value-md); }
+  .dialogFooter { flex-wrap: wrap; }
+  .compactBackdrop { padding: var(--space-16); }
+  .compactBackdrop .compactDialog { max-height: calc(100dvh - var(--space-32)); }
+}
+
+@media (max-width: 389px) { .dialogFooter { display: grid; grid-template-columns: 1fr 1fr; } }
+@media (prefers-reduced-motion: reduce) { .dialogBackdrop, .dialogFrame { animation: none; } }

@@ -3,14 +3,17 @@
 import {
   ChevronDown,
   ChevronUp,
+  Edit3,
   FileText,
   Link as LinkIcon,
-  MoreHorizontal,
   Plus,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Button from "@/components/ui/button";
+import { useNotification } from "@/components/ui/notification/notification-provider";
 import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type {
@@ -51,7 +54,6 @@ import {
   PageHeader,
   PageLoading,
   StateSwitch,
-  SubmitButton,
   formatDateTime,
   formatFileSize,
 } from "./admin-ui";
@@ -244,14 +246,13 @@ function ContentPanel({
                 ) : (
                   <input className="type-body" type={definition.contentCode === "EMAIL" ? "email" : "text"} value={values[definition.contentCode]} onChange={(event) => setValues({ ...values, [definition.contentCode]: event.currentTarget.value })} />
                 )}
-                <code>{definition.category}/{definition.contentCode}</code>
               </label>
             ))}
           </section>
         ))}
         <div className={styles.formActionRow}>
           <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
-          <SubmitButton busy={busy} disabled={changedItems.length === 0}>저장</SubmitButton>
+          <Button busy={busy} disabled={changedItems.length === 0}>저장</Button>
         </div>
       </form>
     </section>
@@ -260,6 +261,7 @@ function ContentPanel({
 
 // 실제 Site DTO와 작업별 ADMIN_ACTION을 연결한 관리 화면
 export default function SiteScreen() {
+  const { notify } = useNotification();
   const [data, setData] = useState<SiteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -267,11 +269,9 @@ export default function SiteScreen() {
   const [profileEditor, setProfileEditor] = useState<{ item?: ProfileEntry } | null>(null);
   const [technologyEditor, setTechnologyEditor] = useState<{ item?: Technology } | null>(null);
   const [linkEditor, setLinkEditor] = useState<{ item?: ExternalLink } | null>(null);
-  const [menuKey, setMenuKey] = useState<string | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const [portfolioDraft, setPortfolioDraft] = useState<PortfolioTechnology[]>([]);
-  const [feedback, setFeedback] = useState("");
   const requestSequence = useRef(0);
   const adminAction = useAdminAction();
 
@@ -288,7 +288,7 @@ export default function SiteScreen() {
     } catch (caught) {
       if (requestSequence.current === requestId) {
         if (silent) {
-          setFeedback(`최신 Site 데이터 재조회 실패: ${formatApiError(caught)}`);
+          notify({ type: "error", title: "Site 새로고침 실패", message: formatApiError(caught) });
         } else {
           setData(null);
           setError(formatApiError(caught));
@@ -299,7 +299,7 @@ export default function SiteScreen() {
         setLoading(false);
       }
     }
-  }, []);
+  }, [notify]);
 
   useEffect(() => {
     let active = true;
@@ -315,8 +315,7 @@ export default function SiteScreen() {
   }, [loadSite]);
 
   const completeMutation = (message: string) => {
-    setFeedback(message);
-    setMenuKey(null);
+    notify({ type: "success", title: "Site 변경 완료", message });
     void loadSite(true);
   };
 
@@ -342,7 +341,6 @@ export default function SiteScreen() {
   };
 
   const deleteProfile = (item: ProfileEntry) => {
-    setMenuKey(null);
     void adminAction.start({
       ...siteActionBindings.profileEntryDelete(item.id),
       actionLabel: `${item.title} 항목 삭제`,
@@ -373,7 +371,6 @@ export default function SiteScreen() {
   };
 
   const deleteTechnologyItem = (item: Technology) => {
-    setMenuKey(null);
     void adminAction.start({
       ...siteActionBindings.technologyDelete(item.id),
       actionLabel: `${item.name} 기술 삭제`,
@@ -413,7 +410,6 @@ export default function SiteScreen() {
   };
 
   const deleteLink = (item: ExternalLink) => {
-    setMenuKey(null);
     void adminAction.start({
       ...siteActionBindings.externalLinkDelete(item.id),
       actionLabel: `${item.name} 외부 링크 삭제`,
@@ -469,7 +465,6 @@ export default function SiteScreen() {
   return (
     <>
       <PageHeader title="Site" description="포트폴리오에 노출되는 콘텐츠와 공개 상태를 관리합니다." />
-      {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
 
       {loading ? (
@@ -480,7 +475,7 @@ export default function SiteScreen() {
         <section className={`${styles.managementSurface} ${styles.siteManagementSurface}`} aria-label="사이트 관리">
           <div className={`${styles.lineTabs} ${styles.siteTabs}`} role="tablist" aria-label="사이트 관리 영역">
             {TABS.map((item) => (
-              <button key={item.id} className={tab === item.id ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === item.id} onClick={() => { setTab(item.id); setMenuKey(null); }}>
+              <button key={item.id} className={tab === item.id ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)}>
                 {item.label}
               </button>
             ))}
@@ -488,9 +483,9 @@ export default function SiteScreen() {
 
           <div className={styles.siteTabPanel} role="tabpanel">
             {tab === "content" && <ContentPanel contents={data.portfolioContents} title="기본 콘텐츠" busy={adminAction.issuing} onSubmit={saveContents} />}
-            {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} />}
-            {tab === "technology" && <TechnologiesPanel items={data.technologyMaster} portfolioItems={data.portfolioTechnologies} draft={portfolioDraft} setDraft={setPortfolioDraft} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setTechnologyEditor({})} onEdit={(item) => setTechnologyEditor({ item })} onDelete={deleteTechnologyItem} onToggle={toggleTechnology} onSavePortfolio={savePortfolioTechnologies} />}
-            {tab === "links" && <ExternalLinksPanel items={data.externalLinks} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} />}
+            {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} />}
+            {tab === "technology" && <TechnologiesPanel items={data.technologyMaster} portfolioItems={data.portfolioTechnologies} draft={portfolioDraft} setDraft={setPortfolioDraft} onCreate={() => setTechnologyEditor({})} onEdit={(item) => setTechnologyEditor({ item })} onDelete={deleteTechnologyItem} onToggle={toggleTechnology} onSavePortfolio={savePortfolioTechnologies} />}
+            {tab === "links" && <ExternalLinksPanel items={data.externalLinks} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} />}
             {tab === "resume" && <ResumePanel data={data} file={resumeFile} error={fileError} onSelect={selectResume} onSubmit={saveResume} />}
           </div>
         </section>
@@ -504,33 +499,34 @@ export default function SiteScreen() {
   );
 }
 
-function ProfileEntriesPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onDelete, onToggle }: { items: ProfileEntry[]; menuKey: string | null; setMenuKey: (key: string | null) => void; onCreate: () => void; onEdit: (item: ProfileEntry) => void; onDelete: (item: ProfileEntry) => void; onToggle: (item: ProfileEntry) => void }) {
+function ProfileEntriesPanel({ items, onCreate, onEdit, onDelete, onToggle }: { items: ProfileEntry[]; onCreate: () => void; onEdit: (item: ProfileEntry) => void; onDelete: (item: ProfileEntry) => void; onToggle: (item: ProfileEntry) => void }) {
   const [filter, setFilter] = useState<ProfileFilter>("ALL");
   const filteredItems = filter === "ALL" ? items : items.filter((item) => item.entryType === filter);
 
   return (
     <section className={styles.operationalSection} aria-labelledby="profile-entries-title">
-      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">이력</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</button></div>
+      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">이력</h2></div><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</Button></div>
       <SegmentedControl className={`${styles.linkFilters} ${styles.profileFilters}`} label="이력 유형" options={PROFILE_FILTERS} value={filter} onChange={setFilter} />
       {items.length === 0 ? <EmptyState title="등록 항목 없음" description="등록된 프로필 반복 항목이 없습니다." /> : (
-        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기간</th><th>제목</th><th>기관 또는 역할</th><th>유형 / 상태</th><th>순서</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
-          {filteredItems.map((item) => { const key = `profile-${item.id}`; return (
+        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteProfileTable}`}><thead><tr><th>기간</th><th>제목</th><th>기관 또는 역할</th><th>유형</th><th>상태</th><th>순서</th><th>작업</th></tr></thead><tbody>
+          {filteredItems.map((item) => (
             <tr key={item.id}>
               <td data-label="기간"><span>{item.periodText || ""}</span></td>
               <td data-label="제목"><strong>{item.title}</strong></td>
               <td data-label="기관 또는 역할"><span>{item.organization || item.role || ""}</span></td>
-              <td data-label="유형 / 상태"><div className={styles.profileRowStatus}><span className="type-small">{PROFILE_FILTERS.find((filterOption) => filterOption.value === item.entryType)?.label}</span><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.title} ${item.enabled ? "비노출" : "노출"} 전환`} /></div></td>
+              <td data-label="유형"><span className="type-small">{PROFILE_FILTERS.find((filterOption) => filterOption.value === item.entryType)?.label}</span></td>
+              <td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.title} ${item.enabled ? "비노출" : "노출"} 전환`} /></td>
               <td data-label="순서">{item.displayOrder}</td>
-              <td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.title} 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td>
+              <td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.title} 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.title} 삭제`}><Trash2 aria-hidden="true" /></button></div></td>
             </tr>
-          ); })}
+          ))}
         </tbody></table></div>
       )}
     </section>
   );
 }
 
-function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, setMenuKey, onCreate, onEdit, onDelete, onToggle, onSavePortfolio }: { items: Technology[]; portfolioItems: PortfolioTechnology[]; draft: PortfolioTechnology[]; setDraft: React.Dispatch<React.SetStateAction<PortfolioTechnology[]>>; menuKey: string | null; setMenuKey: (key: string | null) => void; onCreate: () => void; onEdit: (item: Technology) => void; onDelete: (item: Technology) => void; onToggle: (item: Technology) => void; onSavePortfolio: (items: PortfolioTechnology[]) => void }) {
+function TechnologiesPanel({ items, portfolioItems, draft, setDraft, onCreate, onEdit, onDelete, onToggle, onSavePortfolio }: { items: Technology[]; portfolioItems: PortfolioTechnology[]; draft: PortfolioTechnology[]; setDraft: React.Dispatch<React.SetStateAction<PortfolioTechnology[]>>; onCreate: () => void; onEdit: (item: Technology) => void; onDelete: (item: Technology) => void; onToggle: (item: Technology) => void; onSavePortfolio: (items: PortfolioTechnology[]) => void }) {
   const [view, setView] = useState<TechnologyView>("all");
   const [selectedTechnologyId, setSelectedTechnologyId] = useState("");
   const available = items.filter((item) => item.enabled && !draft.some((mapping) => mapping.technologyId === item.id));
@@ -563,15 +559,15 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, se
         <div>
           {view === "all" ? <h2 id="technologies-title" className="type-title">전체 기술 스택</h2> : <h2 id="portfolio-technologies-title" className="type-title">보유 기술 스택</h2>}
         </div>
-        {view === "all" && <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />기술 추가</button>}
+        {view === "all" && <Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />기술 추가</Button>}
       </div>
       <SegmentedControl className={styles.technologyViewControl} label="기술 보기" options={TECHNOLOGY_VIEWS} value={view} onChange={setView} />
       {view === "all" ? (
         items.length === 0 ? <EmptyState title="등록 기술 없음" description="기술 사전 항목이 없습니다." /> : (
-          <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기술명</th><th>분류</th><th>Icon URL</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
-            {items.map((item) => { const key = `technology-${item.id}`; return (
-              <tr key={item.id}><td data-label="기술명"><strong>{item.name}</strong></td><td data-label="분류"><code>{item.category}</code></td><td data-label="Icon URL"><code>{item.iconUrl || "-"}</code></td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 기술 ${item.enabled ? "비활성" : "활성"} 전환`} /></td><td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.name} 기술 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td></tr>
-            ); })}
+          <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteTechnologyTable}`}><thead><tr><th>기술명</th><th>분류</th><th>상태</th><th>작업</th></tr></thead><tbody>
+            {items.map((item) => (
+              <tr key={item.id}><td data-label="기술명"><strong>{item.name}</strong></td><td data-label="분류"><code>{item.category}</code></td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 기술 ${item.enabled ? "비활성" : "활성"} 전환`} /></td><td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.name} 기술 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.name} 기술 삭제`}><Trash2 aria-hidden="true" /></button></div></td></tr>
+            ))}
           </tbody></table></div>
         )
       ) : <>
@@ -580,7 +576,7 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, se
             <option value="">기술 선택</option>
             {available.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
-          <button className={`${styles.secondaryButton} type-body`} type="button" disabled={!selectedTechnologyId} onClick={add}><Plus aria-hidden="true" />추가</button>
+          <Button variant="secondary" type="button" disabled={!selectedTechnologyId} onClick={add}><Plus aria-hidden="true" />추가</Button>
         </div>
         {draft.length === 0 ? <EmptyState title="보유 기술 없음" description="포트폴리오에 노출할 기술을 추가해 주세요." /> : (
           <ol className={styles.portfolioTechnologyList} aria-label="선택된 보유 기술">{draft.map((mapping, index) => {
@@ -588,21 +584,21 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, se
             return <li key={mapping.technologyId} className={styles.portfolioTechnologyRow}><div className={styles.portfolioTechnologyIdentity}><strong className="type-body">{technology?.name ?? `기술 #${mapping.technologyId}`}</strong><span className="type-small">표시 순서 {mapping.displayOrder}</span></div><div className={styles.portfolioTechnologyActions}><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 위로`} disabled={index === 0} onClick={() => move(index, -1)}><ChevronUp aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 아래로`} disabled={index === draft.length - 1} onClick={() => move(index, 1)}><ChevronDown aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 보유 기술에서 제거`} onClick={() => setDraft((current) => normalizeOrder(current.filter((item) => item.technologyId !== mapping.technologyId)))}><X aria-hidden="true" /></button></div></li>;
           })}</ol>
         )}
-        <div className={styles.portfolioTechnologyFooter}><p className="type-small">변경된 전체 구성을 한 번에 저장합니다.</p><SubmitButton busy={false} type="button" disabled={!portfolioChanged} onClick={() => onSavePortfolio(draft)}>보유 기술 저장</SubmitButton></div>
+        <div className={styles.portfolioTechnologyFooter}><p className="type-small">변경된 전체 구성을 한 번에 저장합니다.</p><Button type="button" disabled={!portfolioChanged} onClick={() => onSavePortfolio(draft)}>보유 기술 저장</Button></div>
       </>}
     </section>
   );
 }
 
-function ExternalLinksPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onDelete, onToggle }: { items: ExternalLink[]; menuKey: string | null; setMenuKey: (key: string | null) => void; onCreate: () => void; onEdit: (item: ExternalLink) => void; onDelete: (item: ExternalLink) => void; onToggle: (item: ExternalLink) => void }) {
+function ExternalLinksPanel({ items, onCreate, onEdit, onDelete, onToggle }: { items: ExternalLink[]; onCreate: () => void; onEdit: (item: ExternalLink) => void; onDelete: (item: ExternalLink) => void; onToggle: (item: ExternalLink) => void }) {
   return (
     <section className={styles.operationalSection} aria-labelledby="external-links-title">
-      <div className={styles.sectionHeading}><div><h2 id="external-links-title" className="type-title">외부 링크</h2></div><button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCreate}><Plus aria-hidden="true" />링크 추가</button></div>
+      <div className={styles.sectionHeading}><div><h2 id="external-links-title" className="type-title">외부 링크</h2></div><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />링크 추가</Button></div>
       {items.length === 0 ? <EmptyState title="외부 링크 없음" description="공개 영역에 연결할 외부 링크가 없습니다." /> : (
-        <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>이름 / URL</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
-          {items.map((item) => { const key = `link-${item.id}`; return (
-            <tr key={item.id}><td data-label="이름 / URL"><div className={styles.linkIdentity}><LinkIcon aria-hidden="true" /><div><strong>{item.name}</strong><code>{item.url}</code></div></div></td><td data-label="순서">{item.displayOrder}</td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 링크 ${item.enabled ? "비노출" : "노출"} 전환`} /></td><td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.name} 링크 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td></tr>
-          ); })}
+        <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteExternalLinksTable}`}><thead><tr><th>이름 / URL</th><th>순서</th><th>상태</th><th>작업</th></tr></thead><tbody>
+          {items.map((item) => (
+            <tr key={item.id}><td data-label="이름 / URL"><div className={styles.linkIdentity}><LinkIcon aria-hidden="true" /><div><strong>{item.name}</strong><code>{item.url}</code></div></div></td><td data-label="순서">{item.displayOrder}</td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 링크 ${item.enabled ? "비노출" : "노출"} 전환`} /></td><td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.name} 링크 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.name} 링크 삭제`}><Trash2 aria-hidden="true" /></button></div></td></tr>
+          ))}
         </tbody></table></div>
       )}
     </section>
@@ -621,7 +617,7 @@ function ResumePanel({ data, file, error, onSelect, onSubmit }: { data: SiteData
         <input id="resume-pdf" className={styles.srOnly} type="file" accept="application/pdf,.pdf" onChange={(event) => onSelect(event.currentTarget.files?.[0])} />
         <label htmlFor="resume-pdf"><Upload aria-hidden="true" /><span><strong className="type-body">PDF 파일 선택</strong><small>최대 10MB</small></span></label>
         <div className={styles.selectedFile}><span className="type-small">선택 파일</span><strong className="type-body">{file ? `${file.name} · ${formatFileSize(file.size)}` : "선택되지 않음"}</strong></div>
-        <button className={`${styles.primaryButton} type-body`} type="button" disabled={!file} onClick={onSubmit}>{data.resume ? "PDF 교체" : "PDF 등록"}</button>
+        <Button type="button" disabled={!file} onClick={onSubmit}>{data.resume ? "PDF 교체" : "PDF 등록"}</Button>
       </div>
       <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
     </section>

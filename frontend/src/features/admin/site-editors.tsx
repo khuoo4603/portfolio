@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Button from "@/components/ui/button";
 import type {
   ExternalLink,
   ExternalLinkInput,
@@ -11,8 +12,7 @@ import type {
   TechnologyCategory,
   TechnologyInput,
 } from "./admin-types";
-import DialogFrame from "./dialog-frame";
-import { SubmitButton } from "./admin-ui";
+import DialogFrame from "@/components/ui/dialog-frame";
 import styles from "./admin.module.css";
 
 type EditorState<T> = { item?: T } | null;
@@ -72,8 +72,8 @@ export function ProfileEditor({
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button type="button" onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >
@@ -138,8 +138,8 @@ export function TechnologyEditor({
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button type="button" onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >
@@ -201,8 +201,8 @@ export function ExternalLinkEditor({
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button type="button" onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >

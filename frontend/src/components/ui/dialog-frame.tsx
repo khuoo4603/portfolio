@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
-import styles from "./admin.module.css";
+import styles from "./dialog-frame.module.css";
 
 type DialogFrameProps = {
   open: boolean;
@@ -19,7 +19,7 @@ type DialogFrameProps = {
 
 const FOCUSABLE = "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])";
 
-// Escape와 Focus Trap을 포함한 Admin 공통 Dialog Frame
+// Escape와 Focus Trap을 포함한 공통 Dialog Frame
 export default function DialogFrame({
   open,
   title,
@@ -37,9 +37,7 @@ export default function DialogFrame({
   const descriptionId = useId();
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
+    if (!open) return;
 
     const previousOverflow = document.body.style.overflow;
     const previousFocus = document.activeElement as HTMLElement | null;
@@ -58,9 +56,7 @@ export default function DialogFrame({
         return;
       }
 
-      if (event.key !== "Tab" || !dialogRef.current) {
-        return;
-      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
 
       const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
       const first = focusable[0];
@@ -78,7 +74,6 @@ export default function DialogFrame({
     };
 
     document.addEventListener("keydown", handleKeyDown);
-
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", handleKeyDown);
@@ -87,15 +82,11 @@ export default function DialogFrame({
     };
   }, [closeOnEscape, onClose, open]);
 
-  if (!open) {
-    return null;
-  }
+  if (!open) return null;
 
   return (
     <div className={`${styles.dialogBackdrop} ${compact ? styles.compactBackdrop : ""}`} role="presentation" onMouseDown={(event) => {
-      if (closeOnBackdrop && event.target === event.currentTarget) {
-        onClose();
-      }
+      if (closeOnBackdrop && event.target === event.currentTarget) onClose();
     }}>
       <div
         ref={dialogRef}
@@ -108,11 +99,9 @@ export default function DialogFrame({
         <header className={styles.dialogHeader}>
           <div>
             <h2 id={titleId} className="type-title">{title}</h2>
-            {description && (
-              <p id={descriptionId} className="type-body">{description}</p>
-            )}
+            {description && <p id={descriptionId} className="type-body">{description}</p>}
           </div>
-          <button className={styles.iconButton} type="button" onClick={onClose} aria-label="대화상자 닫기">
+          <button className={styles.dialogCloseButton} type="button" onClick={onClose} aria-label="대화상자 닫기">
             <X aria-hidden="true" />
           </button>
         </header>

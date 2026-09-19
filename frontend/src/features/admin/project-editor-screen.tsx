@@ -1,12 +1,15 @@
 "use client";
 
-import { ArrowLeft, Eye, Save, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import Button from "@/components/ui/button";
+import SegmentedControl from "@/components/ui/segmented-control";
+import { useNotification } from "@/components/ui/notification/notification-provider";
 import { formatApiError } from "@/lib/api/client";
 import type { ProjectDetail, Technology } from "./admin-types";
 import AdminActionDialog from "./admin-action-dialog";
-import ConfirmDialog from "./confirm-dialog";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { getAdminProject, projectActionBindings, saveProject } from "./admin-project-api";
 import { getAdminSite } from "./admin-site-api";
 import {
@@ -35,8 +38,14 @@ const SECTIONS: Array<{ id: ProjectEditorSection; label: string }> = [
   { id: "media", label: "미디어" },
 ];
 
+const VIEW_MODE_OPTIONS = [
+  { value: "editor", label: "편집 모드" },
+  { value: "preview", label: "미리보기 모드" },
+] as const;
+
 // Project Editor GET·Local Draft·Object URL·단일 Save 흐름 조정
 export default function ProjectEditorScreen({ projectId }: { projectId: number }) {
+  const { notify } = useNotification();
   const router = useRouter();
   const adminAction = useAdminAction();
   const [detail, setDetail] = useState<ProjectDetail | null>(null);
@@ -47,7 +56,7 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
   const [viewMode, setViewMode] = useState<"editor" | "preview">("editor");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [feedback, setFeedback] = useState("");
+  const [validationError, setValidationError] = useState("");
   const [fileError, setFileError] = useState("");
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const requestSequence = useRef(0);
@@ -79,18 +88,18 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
       setTechnologyMaster(site.technologyMaster);
       setInitialSignature(projectDraftSignature(nextDraft));
       setFileError("");
-      if (silent) setFeedback("프로젝트를 저장하고 Server 최신 상태로 동기화했습니다.");
+      if (silent) notify({ type: "success", title: "프로젝트 저장 완료", message: "프로젝트를 저장하고 최신 상태로 동기화했습니다." });
     } catch (caught) {
       if (requestSequence.current !== requestId) return;
       if (silent) {
-        setFeedback(`저장은 완료됐지만 최신 상태 재조회에 실패했습니다: ${formatApiError(caught)}`);
+        notify({ type: "error", title: "프로젝트 새로고침 실패", message: formatApiError(caught) });
       } else {
         setError(formatApiError(caught));
       }
     } finally {
       if (requestSequence.current === requestId && !silent) setLoading(false);
     }
-  }, [projectId, revokeAll]);
+  }, [notify, projectId, revokeAll]);
 
   useEffect(() => {
     let active = true;
@@ -230,7 +239,7 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
   const save = () => {
     if (!draft || !dirty) return;
     if (!draft.project.name.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.project.slug)) {
-      setFeedback("Name과 URL-safe Slug를 확인해 주세요.");
+      setValidationError("Name과 URL-safe Slug를 확인해 주세요.");
       setSection("basic");
       return;
     }
@@ -249,17 +258,14 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
   return (
     <div className={styles.projectEditorPage}>
       <header className={styles.projectEditorHeader}>
-        <button className={`${styles.secondaryButton} type-body`} type="button" onClick={back}><ArrowLeft aria-hidden="true" />목록</button>
+        <Button variant="secondary" type="button" onClick={back}><ArrowLeft aria-hidden="true" />목록</Button>
         <div className={styles.projectEditorIdentity}><span className="type-small">Project #{detail.project.id}</span><h1 className="type-title">{draft.project.name || "Untitled Project"}</h1><span className={styles.projectSaveState} role="status">{dirty ? "변경사항 있음" : "저장됨"}</span></div>
         <div className={styles.projectEditorActions}>
-          <div className={styles.projectModeSwitch} role="group" aria-label="Project Editor 모드">
-            <button type="button" aria-pressed={viewMode === "editor"} onClick={() => setViewMode("editor")}><SlidersHorizontal aria-hidden="true" />편집 모드</button>
-            <button type="button" aria-pressed={viewMode === "preview"} onClick={() => setViewMode("preview")}><Eye aria-hidden="true" />미리보기 모드</button>
-          </div>
-          <button className={`${styles.primaryButton} type-body`} type="button" disabled={!dirty || adminAction.issuing} onClick={save}><Save aria-hidden="true" />저장</button>
+          <SegmentedControl className={styles.projectViewControl} label="Project Editor 모드" options={VIEW_MODE_OPTIONS} value={viewMode} onChange={setViewMode} />
+          <Button type="button" disabled={!dirty || adminAction.issuing} onClick={save}><Save aria-hidden="true" />저장</Button>
         </div>
       </header>
-      {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
+      {validationError && <p className={`${styles.inlineError} type-small`} role="alert">{validationError}</p>}
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
 
       <div className={styles.projectEditorLayout} data-view-mode={viewMode}>

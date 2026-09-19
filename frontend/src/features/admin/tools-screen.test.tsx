@@ -1,5 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/lib/api/client";
+import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import {
   createToolLink,
   deleteToolLink,
@@ -82,11 +84,15 @@ describe("Admin Tools 실제 API 관리", () => {
 
   it("실제 Registry와 Preview 선택 UI·허용 Category만 표시", async () => {
     render(<ToolsScreen />);
-    expect(await screen.findByRole("region", { name: "Tool 상태 관리" })).toBeInTheDocument();
+    const toolStatus = await screen.findByRole("region", { name: "Tool 상태 관리" });
+    expect(within(toolStatus).getByRole("switch", { name: "Quiz Tool 비활성화" })).toHaveAttribute("aria-checked", "true");
+    expect(within(toolStatus).queryByText("활성")).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Links 데이터 관리" })).toBeInTheDocument();
     expect(await screen.findByText("QUIZ")).toBeInTheDocument();
     expect(screen.getByText("LINKS")).toBeInTheDocument();
     expect(screen.getByText("/api/v1/tools/media/links/17")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Spring Docs Link 수정" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Spring Docs Link 삭제" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Link 추가" }));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("option", { name: "REFERENCE" })).toBeInTheDocument();
@@ -156,8 +162,7 @@ describe("Admin Tools 실제 API 관리", () => {
   it("수정은 KEEP으로 시작하고 기본 선택은 DEFAULT로 전달", async () => {
     render(<ToolsScreen />);
     await screen.findByText("QUIZ");
-    fireEvent.click(screen.getByRole("button", { name: "Spring Docs Link 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "수정" }));
+    fireEvent.click(screen.getByRole("button", { name: "Spring Docs Link 수정" }));
     let dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("기존 이미지 유지")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "저장" }));
@@ -166,8 +171,7 @@ describe("Admin Tools 실제 API 관리", () => {
       image: null,
     }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Spring Docs Link 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "수정" }));
+    fireEvent.click(screen.getByRole("button", { name: "Spring Docs Link 수정" }));
     dialog = screen.getByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: /기본 Preview/ }));
     fireEvent.click(within(dialog).getByRole("button", { name: "저장" }));
@@ -202,5 +206,36 @@ describe("Admin Tools 실제 API 관리", () => {
     expect(screen.getByText("Spring Docs")).toBeInTheDocument();
     expect(screen.getByText("My Service")).toBeInTheDocument();
     expect(getAdminTools).toHaveBeenCalledOnce();
+  });
+
+  it("초기 조회 실패는 PageError로 표시", async () => {
+    vi.mocked(getAdminTools).mockRejectedValue(new ApiError(500, {
+      code: "COMMON_INTERNAL_ERROR",
+      message: "Tools 정보를 불러오지 못했습니다.",
+      traceId: "trace-tools-load",
+      fieldErrors: [],
+    }));
+    render(<ToolsScreen />);
+
+    expect(await screen.findByText("Tools 정보를 불러오지 못했습니다. (추적 ID: trace-tools-load)")).toBeInTheDocument();
+  });
+
+  it("Mutation 뒤 재조회 실패는 Tools 화면을 유지하고 Notification으로 표시", async () => {
+    vi.mocked(getAdminTools)
+      .mockResolvedValueOnce(toolsData)
+      .mockRejectedValueOnce(new ApiError(500, {
+        code: "COMMON_INTERNAL_ERROR",
+        message: "Tools 정보를 불러오지 못했습니다.",
+        traceId: "trace-tools-refresh",
+        fieldErrors: [],
+      }));
+    render(<NotificationProvider><ToolsScreen /></NotificationProvider>);
+
+    await screen.findByText("QUIZ");
+    fireEvent.click(screen.getByRole("switch", { name: "Quiz Tool 비활성화" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Tools 변경 완료");
+    expect(await screen.findByRole("alert")).toHaveTextContent("변경은 완료되었지만 최신 Tools 데이터를 불러오지 못했습니다.");
+    expect(screen.getByText("QUIZ")).toBeInTheDocument();
   });
 });

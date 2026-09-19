@@ -720,6 +720,11 @@
   margin: 0;
   border: 1px solid var(--border-accent);
   border-radius: var(--radius-value-sm);
+  background: var(--bg-elevated);
+}
+
+/* Dark Theme 기존 Architecture Frame 계층 유지 */
+:global(html[data-theme="dark"]) .architectureImageFrame {
   background: var(--bg-surface);
 }
 

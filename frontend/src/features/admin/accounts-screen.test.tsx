@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
+import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import type { AccountItem } from "./admin-types";
 import { createAdminChallenge } from "./admin-action-api";
 import {
@@ -250,5 +251,39 @@ describe("Admin Accounts 실제 API 관리", () => {
 
     expect(await screen.findByText("마지막 활성 관리자는 비활성화할 수 없습니다. (추적 ID: trace-last-admin)")).toBeInTheDocument();
     expect(getAdminAccounts).toHaveBeenCalledTimes(1);
+  });
+
+  it("초기 조회 실패는 PageError로 표시", async () => {
+    vi.mocked(getAdminAccounts).mockRejectedValue(new ApiError(500, {
+      code: "COMMON_INTERNAL_ERROR",
+      message: "계정 정보를 불러오지 못했습니다.",
+      traceId: "trace-accounts-load",
+      fieldErrors: [],
+    }));
+    render(<AccountsScreen />);
+
+    expect(await screen.findByText("계정 정보를 불러오지 못했습니다. (추적 ID: trace-accounts-load)")).toBeInTheDocument();
+  });
+
+  it("Mutation 뒤 재조회 실패는 Accounts 화면을 유지하고 Notification으로 표시", async () => {
+    vi.mocked(getAdminAccounts)
+      .mockResolvedValueOnce({ items: [account] })
+      .mockRejectedValueOnce(new ApiError(500, {
+        code: "COMMON_INTERNAL_ERROR",
+        message: "계정 정보를 불러오지 못했습니다.",
+        traceId: "trace-accounts-refresh",
+        fieldErrors: [],
+      }));
+    render(<NotificationProvider><AccountsScreen /></NotificationProvider>);
+
+    await screen.findByText("admin@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "admin@example.com 계정 작업" }));
+    fireEvent.click(screen.getByRole("button", { name: "비활성화" }));
+    await screen.findByRole("heading", { name: "관리자 이메일 재인증" });
+    submitOtp();
+
+    expect(await screen.findByText("계정 변경 완료")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("변경은 완료되었지만 최신 계정 정보를 불러오지 못했습니다.");
+    expect(screen.getByText("admin@example.com")).toBeInTheDocument();
   });
 });
