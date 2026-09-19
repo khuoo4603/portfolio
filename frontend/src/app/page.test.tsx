@@ -5,6 +5,7 @@ import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
 import {
   EAST_ASIA_CROP,
   EAST_ASIA_DOT_COUNT,
+  EAST_ASIA_MOBILE_DOT_COUNT,
   EAST_ASIA_FOCUS,
   EAST_ASIA_FOCUS_POINT,
   EAST_ASIA_GRID_HEIGHT,
@@ -18,6 +19,7 @@ import {
   MOBILE_KOREA_VIEWBOX,
   TABLET_PORTRAIT_KOREA_VIEWBOX,
   WORLD_MAP_DOT_COUNT,
+  WORLD_MAP_MOBILE_DOT_COUNT,
   WORLD_MAP_GRID_HEIGHT,
   WORLD_MAP_SIZE,
   calculateEastAsiaFocusRatio,
@@ -227,6 +229,77 @@ describe("포트폴리오 메인", () => {
       .toHaveAttribute("href", "/maps/east-asia-map-dots.svg#east-asia-map-dots");
     expect(document.querySelector(".topology-focus-map-dots"))
       .toHaveAttribute("data-dot-count", String(EAST_ASIA_DOT_COUNT));
+  });
+
+  it("Mobile Performance Profile uses low-density map assets only", async () => {
+    const idleCallbacks: IdleRequestCallback[] = [];
+    vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+      matches: query.includes("(max-width: 767px)") || query.includes("max-height: 600px"),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })));
+    vi.stubGlobal("requestIdleCallback", vi.fn((callback: IdleRequestCallback) => {
+      idleCallbacks.push(callback);
+      return idleCallbacks.length;
+    }));
+    vi.stubGlobal("cancelIdleCallback", vi.fn());
+
+    render(<Home />);
+
+    await waitFor(() => {
+      expect(document.querySelector(".topology-map-dots")).toHaveAttribute(
+        "href",
+        "/maps/world-map-dots-mobile.svg#world-map-dots-mobile",
+      );
+      expect(document.querySelector(".topology-map-dots")).toHaveAttribute(
+        "data-dot-count",
+        String(WORLD_MAP_MOBILE_DOT_COUNT),
+      );
+    });
+
+    await act(async () => {
+      idleCallbacks.forEach((callback) => callback({
+        didTimeout: false,
+        timeRemaining: () => 50,
+      }));
+    });
+
+    expect(document.querySelector(".topology-narrative-world-map-dots")).toHaveAttribute(
+      "href",
+      "/maps/world-map-dots-mobile.svg#world-map-dots-mobile",
+    );
+    expect(document.querySelector(".topology-narrative-world-map-dots")).toHaveAttribute(
+      "data-dot-count",
+      String(WORLD_MAP_MOBILE_DOT_COUNT),
+    );
+    expect(document.querySelector(".topology-focus-map-dots")).toHaveAttribute(
+      "href",
+      "/maps/east-asia-map-dots-mobile.svg#east-asia-map-dots-mobile",
+    );
+    expect(document.querySelector(".topology-focus-map-dots")).toHaveAttribute(
+      "data-dot-count",
+      String(EAST_ASIA_MOBILE_DOT_COUNT),
+    );
+    expect(WORLD_MAP_MOBILE_DOT_COUNT).toBe(13629);
+    expect(EAST_ASIA_MOBILE_DOT_COUNT).toBeGreaterThanOrEqual(5000);
+    expect(EAST_ASIA_MOBILE_DOT_COUNT).toBeLessThanOrEqual(15000);
+    expect(document.querySelector(".topology-map-dots")).not.toHaveAttribute(
+      "href",
+      "/maps/world-map-dots.svg#world-map-dots",
+    );
+    expect(document.querySelector(".topology-narrative-world-map-dots")).not.toHaveAttribute(
+      "href",
+      "/maps/world-map-dots.svg#world-map-dots",
+    );
+    expect(document.querySelector(".topology-focus-map-dots")).not.toHaveAttribute(
+      "href",
+      "/maps/east-asia-map-dots.svg#east-asia-map-dots",
+    );
   });
 
   it("대한민국 Server와 지정된 세 Resource만 표시", () => {
