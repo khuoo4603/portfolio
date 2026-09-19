@@ -15,7 +15,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
@@ -64,9 +63,6 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
 
     @Autowired
     private ApplicationContext applicationContext;
-
-    @Autowired
-    private Environment environment;
 
     @BeforeEach
     void setUp() {
@@ -142,8 +138,23 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
                 VALUES ('active@example.com', '활성 계정', 'hash', 'USER', TRUE),
                        ('disabled@example.com', '비활성 계정', 'hash', 'USER', FALSE)
                 """);
+        jdbcTemplate.update("""
+                UPDATE monitoring_targets
+                SET display_name = CASE service_key
+                        WHEN 'PORTFOLIO_FRONTEND' THEN 'Public Web'
+                        WHEN 'PORTFOLIO_BACKEND' THEN 'API Server'
+                        ELSE display_name
+                    END,
+                    enabled = service_key IN ('PORTFOLIO_FRONTEND', 'PORTFOLIO_BACKEND'),
+                    display_order = CASE service_key
+                        WHEN 'PORTFOLIO_BACKEND' THEN 10
+                        WHEN 'PORTFOLIO_FRONTEND' THEN 20
+                        ELSE display_order
+                    END
+                """);
         insertServiceStatus("SHKUTRACK", "DOWN", null, null);
         insertServiceStatus("PORTFOLIO_FRONTEND", "UP", 18, 204);
+        insertServiceStatus("PORTFOLIO_BACKEND", "DOWN", null, 503);
 
         mockMvc.perform(get(DASHBOARD_PATH)).andExpect(status().isUnauthorized());
         mockMvc.perform(get(DASHBOARD_PATH).with(user("user").roles("USER")))
@@ -162,11 +173,13 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.traffic.trend[3].visitors").value(2))
                 .andExpect(jsonPath("$.traffic.trend[3].pageViews").value(6))
                 .andExpect(jsonPath("$.serviceStatus.length()").value(2))
-                .andExpect(jsonPath("$.serviceStatus[0].serviceKey").value("PORTFOLIO_FRONTEND"))
-                .andExpect(jsonPath("$.serviceStatus[0].status").value("UP"))
+                .andExpect(jsonPath("$.serviceStatus[0].serviceKey").value("PORTFOLIO_BACKEND"))
+                .andExpect(jsonPath("$.serviceStatus[0].displayName").value("API Server"))
+                .andExpect(jsonPath("$.serviceStatus[0].status").value("DOWN"))
                 .andExpect(jsonPath("$.serviceStatus[0].lastCheckedAt").value(
                         org.hamcrest.Matchers.endsWith("+09:00")))
-                .andExpect(jsonPath("$.serviceStatus[1].serviceKey").value("SHKUTRACK"))
+                .andExpect(jsonPath("$.serviceStatus[1].serviceKey").value("PORTFOLIO_FRONTEND"))
+                .andExpect(jsonPath("$.serviceStatus[1].displayName").value("Public Web"))
                 .andExpect(jsonPath("$.siteSummary.publicProjects").value(1))
                 .andExpect(jsonPath("$.siteSummary.portfolioTechnologies").value(12))
                 .andExpect(jsonPath("$.siteSummary.activeTools").value(2))
@@ -182,7 +195,6 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
 
         assertThat(applicationContext).isInstanceOf(WebApplicationContext.class);
         assertThat(applicationContext.getBeansOfType(MonitoringScheduler.class)).isEmpty();
-        assertThat(environment.getProperty("portfolio.monitoring.enabled", Boolean.class)).isFalse();
     }
 
     // Login Logs 권한과 기간·Email·결과·복합 조건·Pagination 계약 검증
@@ -417,6 +429,35 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
                 UPDATE projects
                 SET enabled = CASE WHEN slug = 'kyvc' THEN TRUE ELSE FALSE END
                 WHERE slug IN ('kyvc', 'shkutrack', 'shkuload')
+                """);
+        jdbcTemplate.update("""
+                UPDATE monitoring_targets
+                SET display_name = CASE service_key
+                        WHEN 'PORTFOLIO_FRONTEND' THEN 'Portfolio Frontend'
+                        WHEN 'PORTFOLIO_BACKEND' THEN 'Portfolio Backend'
+                        WHEN 'KYVC_FRONTEND' THEN 'KYvC Frontend'
+                        WHEN 'KYVC_BACKEND' THEN 'KYvC Backend'
+                        WHEN 'KYVC_CORE' THEN 'KYvC Core'
+                        WHEN 'SHKUTRACK' THEN 'SHKUTrack'
+                    END,
+                    health_url = CASE service_key
+                        WHEN 'PORTFOLIO_FRONTEND' THEN 'http://frontend:3000/healthz'
+                        WHEN 'PORTFOLIO_BACKEND' THEN 'http://backend:8080/actuator/health'
+                        ELSE NULL
+                    END,
+                    enabled = service_key IN ('PORTFOLIO_FRONTEND', 'PORTFOLIO_BACKEND'),
+                    display_order = CASE service_key
+                        WHEN 'PORTFOLIO_FRONTEND' THEN 1
+                        WHEN 'PORTFOLIO_BACKEND' THEN 2
+                        WHEN 'KYVC_FRONTEND' THEN 3
+                        WHEN 'KYVC_BACKEND' THEN 4
+                        WHEN 'KYVC_CORE' THEN 5
+                        WHEN 'SHKUTRACK' THEN 6
+                    END
+                WHERE service_key IN (
+                    'PORTFOLIO_FRONTEND', 'PORTFOLIO_BACKEND', 'KYVC_FRONTEND',
+                    'KYVC_BACKEND', 'KYVC_CORE', 'SHKUTRACK'
+                )
                 """);
     }
 

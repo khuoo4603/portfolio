@@ -75,9 +75,9 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                   AND table_name <> 'flyway_schema_history'
                 """, Integer.class);
 
-        assertThat(flyway.info().applied()).hasSize(2);
-        assertThat(flyway.info().current().getDescription()).isEqualTo("seed initial data");
-        assertThat(tableCount).isEqualTo(21);
+        assertThat(flyway.info().applied()).hasSize(3);
+        assertThat(flyway.info().current().getDescription()).isEqualTo("add monitoring runtime config");
+        assertThat(tableCount).isEqualTo(23);
         assertThat(jdbcTemplate.queryForObject("SHOW TIME ZONE", String.class)).isEqualTo("Asia/Seoul");
         assertThat(jdbcTemplate.queryForObject("SHOW server_encoding", String.class)).isEqualTo("UTF8");
         assertThat(environment.getProperty("management.endpoints.web.exposure.include")).isEqualTo("health");

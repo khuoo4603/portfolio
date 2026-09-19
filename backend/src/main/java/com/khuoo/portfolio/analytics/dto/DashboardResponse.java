@@ -39,6 +39,7 @@ public record DashboardResponse(
     // 서비스 현재 상태 항목
     public record ServiceStatusItem(
             @Schema(description = "서비스 식별 Key") String serviceKey,
+            @Schema(description = "서비스 표시명") String displayName,
             @Schema(description = "현재 상태") ServiceStatus status,
             @Schema(description = "응답시간 밀리초", nullable = true) Integer responseTimeMs,
             @Schema(description = "HTTP 상태 코드", nullable = true) Integer httpStatus,

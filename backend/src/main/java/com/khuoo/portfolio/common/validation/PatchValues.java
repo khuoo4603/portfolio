@@ -75,6 +75,15 @@ public final class PatchValues {
         return result;
     }
 
+    // null 불가 양수 정수 값 정규화
+    public static int positiveInt(JsonNode value) {
+        int result = nonNegativeInt(value);
+        if (result == 0) {
+            throw invalid();
+        }
+        return result;
+    }
+
     // null 불가 SMALLINT 범위 값 판독
     public static short shortValue(JsonNode value) {
         if (value == null || !value.isIntegralNumber() || !value.canConvertToInt()) {

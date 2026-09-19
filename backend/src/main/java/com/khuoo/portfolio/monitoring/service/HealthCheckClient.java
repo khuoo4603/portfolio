@@ -1,6 +1,5 @@
 package com.khuoo.portfolio.monitoring.service;
 
-import com.khuoo.portfolio.common.util.PortfolioConstants;
 import com.khuoo.portfolio.common.util.PortfolioEnums.ServiceStatus;
 
 import java.io.IOException;
@@ -13,32 +12,31 @@ import java.time.Duration;
 // JDK HTTP Client 기반 단일 서비스 Health 검사
 public class HealthCheckClient {
 
-    private final HttpClient httpClient;
-    private final Duration requestTimeout;
-    private final Duration retryDelay;
-
-    public HealthCheckClient(HttpClient httpClient, Duration requestTimeout, Duration retryDelay) {
-        this.httpClient = httpClient;
-        this.requestTimeout = requestTimeout;
-        this.retryDelay = retryDelay;
-    }
-
-    // 최초 실패 후 최대 한 번 재시도한 최종 상태 반환
-    public HealthCheckResult check(URI uri) {
+    // DB Snapshot Retry 정책 기반 최종 상태 반환
+    public HealthCheckResult check(URI uri, MonitoringRuntimeSettings settings) {
         HealthCheckResult result = HealthCheckResult.unreachable();
-        for (int attempt = 0; attempt <= PortfolioConstants.Monitoring.MAX_RETRIES; attempt++) {
-            result = request(uri);
-            if (result.status() == ServiceStatus.UP || attempt == PortfolioConstants.Monitoring.MAX_RETRIES) {
+        int maxRetries = Math.max(0, settings.maxRetries());
+        HttpClient httpClient;
+        try {
+            httpClient = HttpClient.newBuilder()
+                    .connectTimeout(settings.connectTimeout())
+                    .build();
+        } catch (RuntimeException exception) {
+            return result;
+        }
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            result = request(httpClient, uri, settings.requestTimeout());
+            if (result.status() == ServiceStatus.UP || attempt == maxRetries) {
                 return result;
             }
-            if (!waitForRetry()) {
+            if (!waitForRetry(settings.retryDelay())) {
                 return HealthCheckResult.unreachable();
             }
         }
         return result;
     }
 
-    private HealthCheckResult request(URI uri) {
+    private HealthCheckResult request(HttpClient httpClient, URI uri, Duration requestTimeout) {
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(requestTimeout)
                 .GET()
@@ -59,7 +57,7 @@ public class HealthCheckClient {
         }
     }
 
-    private boolean waitForRetry() {
+    private boolean waitForRetry(Duration retryDelay) {
         if (retryDelay.isZero()) {
             return true;
         }
@@ -68,6 +66,8 @@ public class HealthCheckClient {
             return true;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+            return false;
+        } catch (IllegalArgumentException exception) {
             return false;
         }
     }
@@ -80,7 +80,7 @@ public class HealthCheckClient {
     // 최종 상태와 저장 가능한 응답 측정값
     public record HealthCheckResult(ServiceStatus status, Integer responseTimeMs, Integer httpStatus) {
 
-        private static HealthCheckResult unreachable() {
+        public static HealthCheckResult unreachable() {
             return new HealthCheckResult(ServiceStatus.DOWN, null, null);
         }
     }

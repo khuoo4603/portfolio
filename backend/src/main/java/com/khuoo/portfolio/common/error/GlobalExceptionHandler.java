@@ -139,6 +139,11 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(errorCode.status())
                     .body(ErrorResponse.from(errorCode, TraceContext.get(request)));
         }
+        if (hasConstraint(exception, "uq_monitoring_targets_service_key")) {
+            ErrorCode errorCode = ErrorCode.MONITORING_TARGET_KEY_CONFLICT;
+            return ResponseEntity.status(errorCode.status())
+                    .body(ErrorResponse.from(errorCode, TraceContext.get(request)));
+        }
         return handleUnexpected(exception, request);
     }
 

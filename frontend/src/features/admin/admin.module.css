@@ -540,42 +540,84 @@
 }
 
 .stateSwitch {
-  min-width: 66px;
+  --switch-on: #4f8a76;
+  --switch-off: #c9d3dd;
+  --switch-thumb: #fff;
+  --switch-thumb-border: transparent;
+  --switch-text: #fff;
+  position: relative;
+  width: 68px;
+  height: 30px;
+  min-width: 68px;
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  padding: var(--space-4) var(--space-8);
-  border: 1px solid var(--border-default);
+  justify-content: center;
+  padding: 0;
+  border: 0;
   border-radius: var(--radius-value-pill);
-  background: var(--bg-input);
-  color: var(--text-secondary);
+  background: var(--switch-off);
+  color: var(--switch-text);
   cursor: pointer;
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-small);
-  line-height: var(--line-height-small);
-}
-
-.stateSwitch > span {
-  width: 14px;
-  height: 14px;
-  border-radius: var(--radius-value-pill);
-  background: var(--status-neutral);
+  font-family: var(--font-family-primary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  overflow: visible;
   transition: background-color var(--motion-duration-160) var(--motion-easing-default);
 }
 
-.stateSwitch[aria-checked="true"] {
-  border-color: var(--accent-secondary);
-  color: var(--status-success);
+:global([data-theme="dark"]) .stateSwitch {
+  --switch-on: #416f61;
+  --switch-off: #4a5563;
+  --switch-thumb: #303a46;
+  --switch-thumb-border: #586575;
 }
 
-.stateSwitch[aria-checked="true"] > span {
-  background: var(--status-success);
+.stateSwitch[aria-checked="true"] {
+  background: var(--switch-on);
+}
+
+.stateSwitchText {
+  position: absolute;
+  right: var(--space-12);
+  color: var(--switch-text);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.stateSwitch[aria-checked="true"] .stateSwitchText {
+  right: auto;
+  left: var(--space-12);
+}
+
+.stateSwitchThumb {
+  width: 34px;
+  height: 34px;
+  position: absolute;
+  top: 50%;
+  left: -2px;
+  box-sizing: border-box;
+  border-radius: var(--radius-value-pill);
+  background: var(--switch-thumb);
+  border: 1px solid var(--switch-thumb-border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.20);
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: transform var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.stateSwitch[aria-checked="true"] .stateSwitchThumb {
+  transform: translate(38px, -50%);
 }
 
 .stateSwitch:disabled {
-  cursor: wait;
-  opacity: 0.5;
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.stateSwitch:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .dashboardFlow,
@@ -1637,6 +1679,123 @@
   color: var(--status-error);
 }
 
+/* Monitoring Target 목록의 구조화된 행 구성 */
+.monitoringSurfaceHeader {
+  padding-block: var(--space-16);
+}
+
+.monitoringTargetList {
+  display: grid;
+  gap: 0;
+}
+
+.unitField {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.unitField > span {
+  min-width: 30px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.monitoringTargetRow {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(128px, 0.7fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-16);
+  padding: var(--space-16) 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.monitoringTargetIdentity {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.monitoringTargetIdentity code {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitoringTargetUrl {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* Monitoring 독립 관리 화면의 설정·Target 운영 구성 */
+.monitoringSettingsForm {
+  display: grid;
+  gap: 0;
+}
+
+.monitoringSettingsBody {
+  display: grid;
+  gap: var(--space-20);
+  padding: var(--space-20);
+}
+
+.monitoringSettingsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-16) var(--space-20);
+}
+
+.managementSurface .monitoringTargetList {
+  padding-inline: var(--space-20);
+}
+
+.monitoringTargetRow {
+  grid-template-columns: minmax(160px, 0.7fr) minmax(0, 1fr) auto auto auto;
+}
+
+.monitoringTargetOrder {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.monitoringTargetError {
+  grid-column: 1 / -1;
+}
+
+.targetDialogForm,
+.targetDialogFields {
+  display: grid;
+  gap: var(--space-20);
+}
+
+.targetDialogFields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+.targetDialogWideField {
+  grid-column: 1 / -1;
+}
+
+.targetDialogSwitchField {
+  display: grid;
+  align-content: start;
+  gap: var(--space-8);
+}
+
+.targetDialogSwitchField > span {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 .challengeState {
   display: grid;
   gap: var(--space-12);
@@ -2677,7 +2836,7 @@
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border: 1px solid var(--border-default);
-  background: var(--bg-input);
+  background: var(--bg-elevated);
 }
 
 .architectureDraftPreview,
@@ -3047,6 +3206,14 @@
   }
 
   .projectTable tr > td:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .monitoringTargetRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .monitoringTargetUrl {
     grid-column: 1 / -1;
   }
 }
@@ -3551,6 +3718,54 @@
   }
 }
 
+/* Monitoring Page Tablet·Mobile Target 행 재배치 */
+@media (max-width: 1199px) {
+  .monitoringSettingsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
+  .monitoringSettingsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .monitoringTargetRow {
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+  }
+
+  .monitoringTargetUrl {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  .monitoringSettingsGrid,
+  .targetDialogFields {
+    grid-template-columns: 1fr;
+  }
+
+  .targetDialogWideField {
+    grid-column: auto;
+  }
+
+  .managementSurface .monitoringTargetList,
+  .monitoringSettingsBody {
+    padding-inline: var(--space-16);
+  }
+
+  .monitoringTargetRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-8) var(--space-12);
+  }
+
+  .monitoringTargetIdentity,
+  .monitoringTargetUrl,
+  .monitoringTargetOrder {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 389px) {
   .adminContent {
     width: calc(100% - var(--space-24));
@@ -3572,6 +3787,8 @@
   .logoutButton,
   .primaryButton,
   .secondaryButton,
+  .stateSwitch,
+  .stateSwitchThumb,
   .siteTabPanel,
   .mobileDrawer,
   .loadingHeading::after,

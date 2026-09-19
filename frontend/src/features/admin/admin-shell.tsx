@@ -9,6 +9,7 @@ import {
   PanelTop,
   PanelsTopLeft,
   ArrowRightLeft,
+  Activity,
   ScrollText,
   UserRound,
   Users,
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: "/admin/projects", label: "Projects", icon: PanelsTopLeft },
   { href: "/admin/accounts", label: "Accounts", icon: Users },
   { href: "/admin/tools", label: "Tools", icon: Wrench },
+  { href: "/admin/monitoring", label: "Monitoring", icon: Activity },
   { href: "/admin/logs", label: "Logs", icon: ScrollText },
 ] as const;
 

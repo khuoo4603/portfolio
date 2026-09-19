@@ -1,6 +1,5 @@
 package com.khuoo.portfolio.monitoring.repository;
 
-import com.khuoo.portfolio.common.util.PortfolioConstants;
 import com.khuoo.portfolio.common.util.PortfolioEnums.ServiceStatus;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.Comparator;
 import java.util.List;
 
 // PostgreSQL 기반 저장된 서비스 현재 상태 조회 구현
@@ -20,31 +18,32 @@ public class ServiceStatusQueryRepositoryImpl implements ServiceStatusQueryRepos
 
     private final EntityManager entityManager;
 
-    // 고정 대상 중 DB에 존재하는 상태 Row만 조회
+    // 활성 대상과 연결된 DB 상태 Row를 표시 순서대로 조회
     @Override
     public List<StatusView> findCurrent() {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = entityManager.createNativeQuery("""
-                        SELECT service_key, status, response_time_ms, http_status, last_checked_at
-                        FROM service_status
-                        WHERE service_key IN (:serviceKeys)
+                        SELECT status.service_key, target.display_name, status.status,
+                               status.response_time_ms, status.http_status, status.last_checked_at
+                        FROM monitoring_targets target
+                        JOIN service_status status ON status.service_key = target.service_key
+                        WHERE target.enabled = TRUE
+                        ORDER BY target.display_order ASC, target.id ASC
                         """)
-                .setParameter("serviceKeys", PortfolioConstants.ServiceKey.ORDERED)
                 .getResultList();
         return rows.stream()
                 .map(this::toView)
-                .sorted(Comparator.comparingInt(view ->
-                        PortfolioConstants.ServiceKey.ORDERED.indexOf(view.serviceKey())))
                 .toList();
     }
 
     private StatusView toView(Object[] row) {
         return new StatusView(
                 (String) row[0],
-                ServiceStatus.valueOf((String) row[1]),
-                integer(row[2]),
+                (String) row[1],
+                ServiceStatus.valueOf((String) row[2]),
                 integer(row[3]),
-                offsetDateTime(row[4])
+                integer(row[4]),
+                offsetDateTime(row[5])
         );
     }
 

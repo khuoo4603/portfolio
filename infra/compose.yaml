@@ -55,7 +55,6 @@ services:
       MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
       MAIL_SMTP_STARTTLS_ENABLE: ${MAIL_SMTP_STARTTLS_ENABLE:-true}
       MAIL_USERNAME: ${MAIL_USERNAME:?MAIL_USERNAME is required}
-      MONITORING_ENABLED: "false"
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-PORTFOLIO_SESSION}
       SESSION_IDLE_TIMEOUT: ${SESSION_IDLE_TIMEOUT:-8h}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
@@ -87,16 +86,6 @@ services:
     image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required}:${BACKEND_IMAGE_TAG:?BACKEND_IMAGE_TAG is required}
     environment:
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      KYVC_BACKEND_HEALTH_URL: ${KYVC_BACKEND_HEALTH_URL:?KYVC_BACKEND_HEALTH_URL is required}
-      KYVC_CORE_HEALTH_URL: ${KYVC_CORE_HEALTH_URL:?KYVC_CORE_HEALTH_URL is required}
-      KYVC_FRONTEND_HEALTH_URL: ${KYVC_FRONTEND_HEALTH_URL:?KYVC_FRONTEND_HEALTH_URL is required}
-      MONITORING_CONNECT_TIMEOUT: ${MONITORING_CONNECT_TIMEOUT:-2s}
-      MONITORING_ENABLED: "true"
-      MONITORING_REQUEST_TIMEOUT: ${MONITORING_REQUEST_TIMEOUT:-3s}
-      MONITORING_RETRY_DELAY: ${MONITORING_RETRY_DELAY:-500ms}
-      PORTFOLIO_BACKEND_HEALTH_URL: http://backend:8080/actuator/health
-      PORTFOLIO_FRONTEND_HEALTH_URL: http://frontend:3000/healthz
-      SHKUTRACK_HEALTH_URL: ${SHKUTRACK_HEALTH_URL:?SHKUTRACK_HEALTH_URL is required}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?POSTGRES_USER is required}
       SPRING_MAIN_WEB_APPLICATION_TYPE: none
@@ -105,8 +94,6 @@ services:
       - runtime
     depends_on:
       postgres:
-        condition: service_healthy
-      backend:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1"]

@@ -56,7 +56,25 @@ fi
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 infra_dir="$(cd -- "$script_dir/.." && pwd)"
+persistent_root="/opt/portfolio/persistent"
+persistent_storage_dir="$persistent_root/storage/$environment"
 state_dir="$portfolio_root/state/$environment"
+
+# Backend 영속 파일 NAS Mount 및 환경별 Storage 경로 검증
+ensure_persistent_storage() {
+  if [[ ! -d "$persistent_storage_dir" || -L "$persistent_storage_dir" ]]; then
+    echo "Persistent storage directory is invalid: $persistent_storage_dir" >&2
+    exit 1
+  fi
+  if ! findmnt -rn -T "$persistent_storage_dir" -t nfs,nfs4 >/dev/null; then
+    echo "Persistent NAS mount is unavailable: $persistent_root" >&2
+    exit 1
+  fi
+}
+
+if [[ "$component" == "backend" ]]; then
+  ensure_persistent_storage
+fi
 
 # 롤백 상태 태그 읽기 및 유효성 검증
 read_state_tag() {
