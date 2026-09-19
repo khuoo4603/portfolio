@@ -12,10 +12,46 @@ export type TrafficPoint = {
 
 export type ServiceStatus = {
   serviceKey: string;
+  displayName: string;
   status: "UP" | "DOWN";
   responseTimeMs: number | null;
   httpStatus: number | null;
   lastCheckedAt: string;
+};
+
+export type MonitoringSettings = {
+  enabled: boolean;
+  checkIntervalSeconds: number;
+  connectTimeoutMs: number;
+  requestTimeoutMs: number;
+  retryDelayMs: number;
+  maxRetries: number;
+  updatedAt: string;
+};
+
+export type MonitoringSettingsInput = Omit<MonitoringSettings, "updatedAt">;
+
+export type MonitoringTarget = {
+  id: number;
+  serviceKey: string;
+  displayName: string;
+  healthUrl: string | null;
+  enabled: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MonitoringTargetCreateInput = Pick<
+  MonitoringTarget,
+  "serviceKey" | "displayName" | "healthUrl" | "enabled" | "displayOrder"
+>;
+
+export type MonitoringTargetUpdateInput = Omit<MonitoringTargetCreateInput, "serviceKey">;
+
+export type AdminMonitoringData = {
+  settings: MonitoringSettings;
+  targets: MonitoringTarget[];
 };
 
 export type DashboardData = {

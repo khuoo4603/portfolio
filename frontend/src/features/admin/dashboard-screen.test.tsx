@@ -20,6 +20,7 @@ function dashboardData(month: string, visitors: number): DashboardData {
     },
     serviceStatus: [{
       serviceKey: "PORTFOLIO_BACKEND",
+      displayName: "Portfolio Backend",
       status: "UP",
       responseTimeMs: 42,
       httpStatus: 200,
@@ -58,14 +59,18 @@ describe("Admin Dashboard 실제 API 상태", () => {
     expect(screen.queryByText("3,842")).not.toBeInTheDocument();
   });
 
-  it("Backend 응답을 Dashboard 운영 Surface에 표시", async () => {
-    vi.mocked(getAdminDashboard).mockResolvedValue(dashboardData("2026-09", 4_321));
+  it("Backend displayName과 Monitoring 설정 진입점을 Dashboard 운영 Surface에 표시", async () => {
+    const data = dashboardData("2026-09", 4_321);
+    data.serviceStatus[0].displayName = "Portfolio API";
+    vi.mocked(getAdminDashboard).mockResolvedValue(data);
     render(<DashboardScreen />);
 
     expect(await screen.findByRole("region", { name: "Dashboard 운영 현황" })).toBeInTheDocument();
     expect(await screen.findByText("4,321")).toBeInTheDocument();
     expect(screen.getByLabelText("2026-09, 방문자 4321, 페이지 조회 9716")).toBeInTheDocument();
-    expect(screen.getByText("Portfolio Backend")).toBeInTheDocument();
+    expect(screen.getByText("Portfolio API")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Monitoring 관리" })).toHaveAttribute("href", "/admin/monitoring");
+    expect(screen.queryByRole("button", { name: "Monitoring 설정" })).not.toBeInTheDocument();
     expect(screen.queryByText("Portfolio Frontend")).not.toBeInTheDocument();
     expect(screen.queryByText("기간별 방문자와 페이지 조회를 비교합니다.")).not.toBeInTheDocument();
     expect(screen.queryByText("현재 연결 상태와 최근 점검 결과입니다.")).not.toBeInTheDocument();

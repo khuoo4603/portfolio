@@ -98,8 +98,8 @@ export function StateSwitch({
       onClick={onClick}
       disabled={disabled}
     >
-      <span aria-hidden="true" />
-      <strong>{enabled ? "ON" : "OFF"}</strong>
+      <span className={styles.stateSwitchText} aria-hidden="true">{enabled ? "ON" : "OFF"}</span>
+      <span className={styles.stateSwitchThumb} aria-hidden="true" />
     </button>
   );
 }

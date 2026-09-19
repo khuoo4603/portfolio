@@ -86,9 +86,10 @@ describe("Admin Session Gate와 Sidebar", () => {
 
     const sidebar = screen.getByLabelText("관리자 Sidebar 공간");
     const navigationMenu = within(sidebar).getByRole("navigation", { name: "관리자 메뉴" });
-    for (const label of ["Dashboard", "Site", "Projects", "Accounts", "Tools", "Logs"]) {
+    for (const label of ["Dashboard", "Site", "Projects", "Accounts", "Tools", "Monitoring", "Logs"]) {
       expect(within(navigationMenu).getByText(label)).toBeInTheDocument();
     }
+    expect(within(navigationMenu).getByRole("link", { name: "Monitoring" })).toHaveAttribute("href", "/admin/monitoring");
     expect(within(sidebar).getByText("PORTFOLIO ADMIN")).toBeInTheDocument();
     expect(within(sidebar).getAllByText(admin.name)).toHaveLength(1);
     expect(within(sidebar).getByText(`${admin.role} · ${admin.email}`)).toBeInTheDocument();
@@ -121,9 +122,10 @@ describe("Admin Session Gate와 Sidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "관리자 메뉴 열기" }));
     const drawer = screen.getByRole("dialog", { name: "모바일 관리자 메뉴" });
     const navigationMenu = within(drawer).getByRole("navigation", { name: "관리자 메뉴" });
-    for (const label of ["Dashboard", "Site", "Projects", "Accounts", "Tools", "Logs"]) {
+    for (const label of ["Dashboard", "Site", "Projects", "Accounts", "Tools", "Monitoring", "Logs"]) {
       expect(within(navigationMenu).getByRole("link", { name: label })).toBeInTheDocument();
     }
+    expect(within(navigationMenu).getByRole("link", { name: "Monitoring" })).toHaveAttribute("href", "/admin/monitoring");
     expect(within(drawer).getByText("PORTFOLIO ADMIN")).toBeInTheDocument();
     expect(within(drawer).getAllByText(admin.name)).toHaveLength(1);
     expect(within(drawer).getByRole("link", { name: "Tools로 이동" })).toHaveAttribute("href", "/tools");

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type { DashboardData, TrafficPoint } from "./admin-types";
@@ -12,15 +13,6 @@ const PERIOD_FILTERS: ReadonlyArray<{ value: DashboardMonths; label: string }> =
   { value: 6, label: "6개월" },
   { value: 12, label: "12개월" },
 ];
-
-const SERVICE_NAMES: Record<string, string> = {
-  PORTFOLIO_FRONTEND: "Portfolio Frontend",
-  PORTFOLIO_BACKEND: "Portfolio Backend",
-  KYVC_FRONTEND: "KYvC Frontend",
-  KYVC_BACKEND: "KYvC Backend",
-  KYVC_CORE: "KYvC Core",
-  SHKUTRACK: "SHKUTrack",
-};
 
 function chartPoints(items: TrafficPoint[], key: "visitors" | "pageViews", maxValue: number) {
   if (items.length === 0) {
@@ -195,13 +187,16 @@ export default function DashboardScreen() {
           </div>
           <div className={styles.dashboardSecondaryGrid}>
             <section className={`${styles.managementSurface} ${styles.servicePanel}`} aria-labelledby="service-title">
-              <div className={styles.managementSurfaceHeader}><div><h2 id="service-title" className="type-title">서비스 상태</h2></div></div>
+              <div className={styles.managementSurfaceHeader}>
+                <div><h2 id="service-title" className="type-title">서비스 상태</h2></div>
+                <Link className={`${styles.secondaryButton} type-body`} href="/admin/monitoring">Monitoring 관리</Link>
+              </div>
               <div className={styles.serviceRows}>
                 {data.serviceStatus.length === 0 ? (
                   <EmptyState title="서비스 상태 없음" description="수신된 서비스 상태가 없습니다." />
                 ) : data.serviceStatus.map((service) => (
                   <div key={service.serviceKey} className={styles.serviceRow}>
-                    <div><strong className="type-body">{SERVICE_NAMES[service.serviceKey] ?? service.serviceKey}</strong><span className="type-small">{formatDateTime(service.lastCheckedAt)}</span></div>
+                    <div><strong className="type-body">{service.displayName}</strong><span className="type-small">{formatDateTime(service.lastCheckedAt)}</span></div>
                     <StatusLabel tone={service.status === "UP" ? "success" : "error"}>{service.status === "UP" ? "정상" : "장애"}</StatusLabel>
                     <div className={`${styles.serviceMeta} type-small`}><span>{service.responseTimeMs === null ? "-" : `${service.responseTimeMs} ms`}</span><span>{service.httpStatus ?? "-"}</span></div>
                   </div>
