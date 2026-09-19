@@ -604,15 +604,23 @@
   gap: var(--space-24);
 }
 
-.dashboardHeroGrid {
+.dashboardMainGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 1fr);
+  grid-template-columns: minmax(0, 2.1fr) minmax(340px, 0.9fr);
   gap: var(--space-24);
+  align-items: stretch;
+}
+
+.dashboardOverviewColumn {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-16);
 }
 
 .dashboardKpiGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-12);
   margin: 0;
 }
@@ -621,16 +629,11 @@
   min-width: 0;
   display: grid;
   align-content: space-between;
-  min-height: 142px;
-  padding: var(--space-20);
+  min-height: 92px;
+  padding: var(--space-16) var(--space-20);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-value-sm);
   background: var(--bg-surface);
-}
-
-.dashboardKpiPrimary {
-  border-color: var(--border-accent);
-  background: color-mix(in srgb, var(--accent-primary) 9%, var(--bg-surface));
 }
 
 .dashboardKpi dt,
@@ -643,18 +646,13 @@
 }
 
 .dashboardKpi dd {
-  margin-top: var(--space-12);
+  margin-top: var(--space-8);
   color: var(--text-primary);
   font-family: var(--font-family-mono);
-  font-size: var(--font-size-heading);
-  line-height: var(--line-height-heading);
+  font-size: var(--font-size-title);
+  font-weight: 700;
+  line-height: var(--line-height-title);
   overflow-wrap: anywhere;
-}
-
-.dashboardSecondaryGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
-  gap: var(--space-24);
 }
 
 .trafficPanel .trafficChart,
@@ -672,10 +670,6 @@
 
 .servicePanel .serviceRows {
   padding-inline: var(--space-20);
-}
-
-.siteSummaryPanel .compactSummary {
-  border: 0;
 }
 
 .summarySection,
@@ -713,8 +707,7 @@
   color: var(--text-secondary);
 }
 
-.summaryRow,
-.compactSummary {
+.summaryRow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
@@ -722,27 +715,22 @@
   background: var(--bg-surface);
 }
 
-.summaryRow > div,
-.compactSummary > div {
+.summaryRow > div {
   min-width: 0;
   padding: var(--space-20);
   border-right: 1px solid var(--border-default);
 }
 
-.summaryRow > div:last-child,
-.compactSummary > div:last-child {
+.summaryRow > div:last-child {
   border-right: 0;
 }
 
 .summaryRow dt,
-.summaryRow dd,
-.compactSummary dt,
-.compactSummary dd {
+.summaryRow dd {
   margin: 0;
 }
 
-.summaryRow dt,
-.compactSummary dt {
+.summaryRow dt {
   color: var(--text-secondary);
 }
 
@@ -933,13 +921,6 @@
 .serviceMeta {
   justify-items: end;
   font-family: var(--font-family-mono) !important;
-}
-
-.compactSummary dd {
-  margin-top: var(--space-4);
-  color: var(--text-primary);
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-title);
 }
 
 .filterBar,
@@ -2610,18 +2591,15 @@
 
 /* 고정 Sidebar가 유지되는 좁은 Desktop 운영 화면 재배치 */
 @media (min-width: 1024px) and (max-width: 1279px) {
-  .summaryRow,
-  .compactSummary {
+  .summaryRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .summaryRow > div:nth-child(2),
-  .compactSummary > div:nth-child(2) {
+  .summaryRow > div:nth-child(2) {
     border-right: 0;
   }
 
-  .summaryRow > div:nth-child(-n + 2),
-  .compactSummary > div:nth-child(-n + 2) {
+  .summaryRow > div:nth-child(-n + 2) {
     border-bottom: 1px solid var(--border-default);
   }
 
@@ -2629,8 +2607,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .dashboardHeroGrid,
-  .dashboardSecondaryGrid {
+  .dashboardMainGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2752,8 +2729,7 @@
     grid-template-columns: 1fr;
   }
 
-  .dashboardHeroGrid,
-  .dashboardSecondaryGrid {
+  .dashboardMainGrid {
     grid-template-columns: 1fr;
   }
 
@@ -2810,13 +2786,13 @@
 
 /* Tablet 이하 Table의 핵심·보조 Metadata 재배치 */
 @media (max-width: 1023px) {
-  .dashboardHeroGrid,
-  .dashboardSecondaryGrid {
+  .dashboardMainGrid {
     grid-template-columns: 1fr;
   }
 
   .dashboardKpiGrid {
-    max-width: 680px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
   }
 
   .managementSurfaceHeader {
@@ -3172,18 +3148,15 @@
     justify-self: start;
   }
 
-  .summaryRow,
-  .compactSummary {
+  .summaryRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .summaryRow > div:nth-child(2),
-  .compactSummary > div:nth-child(2) {
+  .summaryRow > div:nth-child(2) {
     border-right: 0;
   }
 
-  .summaryRow > div:nth-child(-n + 2),
-  .compactSummary > div:nth-child(-n + 2) {
+  .summaryRow > div:nth-child(-n + 2) {
     border-bottom: 1px solid var(--border-default);
   }
 
@@ -3205,8 +3178,8 @@
   }
 
   .dashboardKpi {
-    min-height: 120px;
-    padding: var(--space-16);
+    min-height: 84px;
+    padding: var(--space-12);
   }
 
   .managementSurfaceHeader {
@@ -3226,10 +3199,6 @@
   .trafficPanel .trafficChart,
   .servicePanel .serviceRows {
     padding-inline: var(--space-16);
-  }
-
-  .siteSummaryPanel .compactSummary > div {
-    padding: var(--space-16);
   }
 
   .siteManagementSurface .siteTabs,
@@ -3718,8 +3687,7 @@
     width: calc(100% - var(--space-24));
   }
 
-  .summaryRow > div,
-  .compactSummary > div {
+  .summaryRow > div {
     padding: var(--space-16);
   }
 

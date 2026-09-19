@@ -169,7 +169,8 @@ export default function DashboardScreen() {
         <PageError message={error} onRetry={() => void loadDashboard()} />
       ) : data ? (
         <section className={styles.dashboardOperations} aria-label="Dashboard 운영 현황">
-          <div className={styles.dashboardHeroGrid}>
+          <div className={styles.dashboardMainGrid}>
+            <div className={styles.dashboardOverviewColumn}>
             <section className={`${styles.managementSurface} ${styles.trafficPanel}`} aria-labelledby="trend-title">
               <div className={styles.managementSurfaceHeader}>
                 <div>
@@ -180,13 +181,16 @@ export default function DashboardScreen() {
               <TrafficChart trend={data.traffic.trend} />
             </section>
             <dl className={styles.dashboardKpiGrid}>
-              <div className={`${styles.dashboardKpi} ${styles.dashboardKpiPrimary}`}><dt className="type-small">오늘 방문자</dt><dd>{data.traffic.todayVisitors.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">오늘 방문자</dt><dd>{data.traffic.todayVisitors.toLocaleString("ko-KR")}</dd></div>
               <div className={styles.dashboardKpi}><dt className="type-small">오늘 페이지 조회</dt><dd>{data.traffic.todayPageViews.toLocaleString("ko-KR")}</dd></div>
               <div className={styles.dashboardKpi}><dt className="type-small">이번 달 방문자</dt><dd>{data.traffic.monthVisitors.toLocaleString("ko-KR")}</dd></div>
               <div className={styles.dashboardKpi}><dt className="type-small">이번 달 페이지 조회</dt><dd>{data.traffic.monthPageViews.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">공개 프로젝트</dt><dd>{data.siteSummary.publicProjects.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">활성 기술</dt><dd>{data.siteSummary.portfolioTechnologies.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">활성 Tool</dt><dd>{data.siteSummary.activeTools.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">활성 계정</dt><dd>{data.siteSummary.activeAccounts.toLocaleString("ko-KR")}</dd></div>
             </dl>
-          </div>
-          <div className={styles.dashboardSecondaryGrid}>
+            </div>
             <section className={`${styles.managementSurface} ${styles.servicePanel}`} aria-labelledby="service-title">
               <div className={styles.managementSurfaceHeader}>
                 <div><h2 id="service-title" className="type-title">서비스 상태</h2></div>
@@ -203,15 +207,6 @@ export default function DashboardScreen() {
                   </div>
                 ))}
               </div>
-            </section>
-            <section className={`${styles.managementSurface} ${styles.siteSummaryPanel}`} aria-labelledby="site-summary-title">
-              <div className={styles.managementSurfaceHeader}><div><h2 id="site-summary-title" className="type-title">사이트 현황</h2></div></div>
-              <dl className={styles.compactSummary}>
-                <div><dt className="type-small">공개 프로젝트</dt><dd>{data.siteSummary.publicProjects}</dd></div>
-                <div><dt className="type-small">활성 기술</dt><dd>{data.siteSummary.portfolioTechnologies}</dd></div>
-                <div><dt className="type-small">활성 Tool</dt><dd>{data.siteSummary.activeTools}</dd></div>
-                <div><dt className="type-small">활성 계정</dt><dd>{data.siteSummary.activeAccounts}</dd></div>
-              </dl>
             </section>
           </div>
         </section>

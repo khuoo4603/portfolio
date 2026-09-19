@@ -77,7 +77,21 @@ describe("Admin 운영 로그 실제 API 상태", () => {
       page: 0,
       size: 50,
     });
-    expect(screen.getByText("INVALID_CREDENTIALS")).toBeInTheDocument();
+    expect(screen.getByText("이메일 또는 비밀번호 불일치")).toBeInTheDocument();
+  });
+
+  it("로그인 실패 사유의 미정의 코드와 null 값을 안전하게 표시", async () => {
+    vi.mocked(getLoginLogs).mockResolvedValue({
+      ...loginPage(),
+      items: [
+        { ...loginPage().items[0], id: 1, failureReason: "SOME_NEW_REASON" },
+        { ...loginPage().items[0], id: 2, failureReason: null, traceId: "trace-login-null" },
+      ],
+    });
+    render(<LogsScreen />);
+
+    expect(await screen.findByText("SOME_NEW_REASON")).toBeInTheDocument();
+    expect(screen.getByText("trace-login-null").closest("tr")).toHaveTextContent("-");
   });
 
   it("로그인 필터를 KST 범위로 변환하고 Backend에 전달", async () => {
