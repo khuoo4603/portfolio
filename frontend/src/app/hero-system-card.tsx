@@ -16,6 +16,7 @@ import HeroWorldMap, {
   HeroEastAsiaMap,
   HeroNarrativeWorldMap,
   KOREA_ANCHOR,
+  type MapDensity,
   MOBILE_KOREA_VIEWBOX,
   TABLET_PORTRAIT_KOREA_VIEWBOX,
   WORLD_MAP_SIZE,
@@ -191,6 +192,8 @@ export type GalleryViewport = "desktop" | "tablet" | "tabletPortrait" | "mobile"
 export type HeroScrollProfile = "default" | "portrait";
 export type MapCameraProfile = "default" | "mobilePortrait" | "tabletPortrait";
 export type MapNarrativeMode = "worldToFocus" | "focusOnly";
+
+export const MOBILE_PERFORMANCE_QUERY = "(max-width: 767px), (max-width: 1023px) and (orientation: landscape) and (max-height: 600px)";
 
 const galleryViewportMotion = {
   desktop: {
@@ -922,6 +925,7 @@ export default function HeroSystemCard() {
   const progressRef = useRef(0);
   const [galleryReady, setGalleryReady] = useState(false);
   const [mapGeometryReady, setMapGeometryReady] = useState(false);
+  const [mapDensity, setMapDensity] = useState<MapDensity>("low");
 
   useEffect(() => {
     const idleWindow = window as IdleWindow;
@@ -1040,11 +1044,12 @@ export default function HeroSystemCard() {
     const mobileLandscapeQuery = window.matchMedia(
       "(max-width: 1023px) and (orientation: landscape) and (max-height: 600px)",
     );
-    const mobilePerformanceQuery = window.matchMedia(
-      "(max-width: 767px), (max-width: 1023px) and (orientation: landscape) and (max-height: 600px)",
-    );
+    const mobilePerformanceQuery = window.matchMedia(MOBILE_PERFORMANCE_QUERY);
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updateMapDensity = () => {
+      setMapDensity(mobilePerformanceQuery.matches ? "low" : "full");
+    };
     let animationFrame = 0;
     let layoutFrame = 0;
     let galleryAnimationFrame = 0;
@@ -1868,12 +1873,18 @@ export default function HeroSystemCard() {
       });
     };
 
+    const handleMapDensityChange = () => {
+      updateMapDensity();
+      handleLayoutChange();
+    };
+
     // Motion 또는 Pointer 환경 변경 시 Marker 복원과 Layout 재계산
     const handleInteractionPreferenceChange = () => {
       resetMarkerPointer();
       handleLayoutChange();
     };
 
+    updateMapDensity();
     updateFocusMapLayout({ width: stage.offsetWidth, height: stage.offsetHeight });
     measureSceneGeometry();
     updateScene();
@@ -1893,7 +1904,7 @@ export default function HeroSystemCard() {
     tabletLandscapeQuery.addEventListener("change", handleLayoutChange);
     tabletLandscapeTouchQuery.addEventListener("change", handleLayoutChange);
     mobileLandscapeQuery.addEventListener("change", handleLayoutChange);
-    mobilePerformanceQuery.addEventListener("change", handleLayoutChange);
+    mobilePerformanceQuery.addEventListener("change", handleMapDensityChange);
     reducedMotionQuery.addEventListener("change", handleInteractionPreferenceChange);
     finePointerQuery.addEventListener("change", handleInteractionPreferenceChange);
 
@@ -1921,7 +1932,7 @@ export default function HeroSystemCard() {
       tabletLandscapeQuery.removeEventListener("change", handleLayoutChange);
       tabletLandscapeTouchQuery.removeEventListener("change", handleLayoutChange);
       mobileLandscapeQuery.removeEventListener("change", handleLayoutChange);
-      mobilePerformanceQuery.removeEventListener("change", handleLayoutChange);
+      mobilePerformanceQuery.removeEventListener("change", handleMapDensityChange);
       reducedMotionQuery.removeEventListener("change", handleInteractionPreferenceChange);
       finePointerQuery.removeEventListener("change", handleInteractionPreferenceChange);
       hero.style.removeProperty("--identity-opacity");
@@ -1944,7 +1955,7 @@ export default function HeroSystemCard() {
         <div className="topology-narrative-world-map-viewport" ref={narrativeMapRef}>
           <div className="topology-narrative-world-map-presentation">
             <div className="topology-narrative-world-map-camera">
-              <HeroNarrativeWorldMap geometryReady={mapGeometryReady} />
+              <HeroNarrativeWorldMap density={mapDensity} geometryReady={mapGeometryReady} />
             </div>
           </div>
         </div>
@@ -1953,7 +1964,7 @@ export default function HeroSystemCard() {
       <div aria-hidden="true" className="topology-focus-map-plane">
         <div className="topology-focus-map-viewport" ref={focusMapRef}>
           <div className="topology-focus-map-camera">
-            <HeroEastAsiaMap geometryReady={mapGeometryReady} />
+            <HeroEastAsiaMap density={mapDensity} geometryReady={mapGeometryReady} />
           </div>
         </div>
       </div>
@@ -2016,7 +2027,7 @@ export default function HeroSystemCard() {
 
         <div className="topology-map-clip">
           <div className="topology-map-layer" ref={mapRef}>
-            <HeroWorldMap />
+            <HeroWorldMap density={mapDensity} />
           </div>
         </div>
 
