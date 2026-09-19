@@ -508,7 +508,7 @@ function ProfileEntriesPanel({ items, onCreate, onEdit, onDelete, onToggle }: { 
       <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">이력</h2></div><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</Button></div>
       <SegmentedControl className={`${styles.linkFilters} ${styles.profileFilters}`} label="이력 유형" options={PROFILE_FILTERS} value={filter} onChange={setFilter} />
       {items.length === 0 ? <EmptyState title="등록 항목 없음" description="등록된 프로필 반복 항목이 없습니다." /> : (
-        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기간</th><th>제목</th><th>기관 또는 역할</th><th>유형</th><th>상태</th><th>순서</th><th>작업</th></tr></thead><tbody>
+        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteProfileTable}`}><thead><tr><th>기간</th><th>제목</th><th>기관 또는 역할</th><th>유형</th><th>상태</th><th>순서</th><th>작업</th></tr></thead><tbody>
           {filteredItems.map((item) => (
             <tr key={item.id}>
               <td data-label="기간"><span>{item.periodText || ""}</span></td>
@@ -564,9 +564,9 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, onCreate, o
       <SegmentedControl className={styles.technologyViewControl} label="기술 보기" options={TECHNOLOGY_VIEWS} value={view} onChange={setView} />
       {view === "all" ? (
         items.length === 0 ? <EmptyState title="등록 기술 없음" description="기술 사전 항목이 없습니다." /> : (
-          <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기술명</th><th>분류</th><th>Icon URL</th><th>상태</th><th>작업</th></tr></thead><tbody>
+          <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteTechnologyTable}`}><thead><tr><th>기술명</th><th>분류</th><th>상태</th><th>작업</th></tr></thead><tbody>
             {items.map((item) => (
-              <tr key={item.id}><td data-label="기술명"><strong>{item.name}</strong></td><td data-label="분류"><code>{item.category}</code></td><td data-label="Icon URL"><code>{item.iconUrl || "-"}</code></td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 기술 ${item.enabled ? "비활성" : "활성"} 전환`} /></td><td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.name} 기술 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.name} 기술 삭제`}><Trash2 aria-hidden="true" /></button></div></td></tr>
+              <tr key={item.id}><td data-label="기술명"><strong>{item.name}</strong></td><td data-label="분류"><code>{item.category}</code></td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 기술 ${item.enabled ? "비활성" : "활성"} 전환`} /></td><td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.name} 기술 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.name} 기술 삭제`}><Trash2 aria-hidden="true" /></button></div></td></tr>
             ))}
           </tbody></table></div>
         )
@@ -595,7 +595,7 @@ function ExternalLinksPanel({ items, onCreate, onEdit, onDelete, onToggle }: { i
     <section className={styles.operationalSection} aria-labelledby="external-links-title">
       <div className={styles.sectionHeading}><div><h2 id="external-links-title" className="type-title">외부 링크</h2></div><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />링크 추가</Button></div>
       {items.length === 0 ? <EmptyState title="외부 링크 없음" description="공개 영역에 연결할 외부 링크가 없습니다." /> : (
-        <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>이름 / URL</th><th>순서</th><th>상태</th><th>작업</th></tr></thead><tbody>
+        <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteExternalLinksTable}`}><thead><tr><th>이름 / URL</th><th>순서</th><th>상태</th><th>작업</th></tr></thead><tbody>
           {items.map((item) => (
             <tr key={item.id}><td data-label="이름 / URL"><div className={styles.linkIdentity}><LinkIcon aria-hidden="true" /><div><strong>{item.name}</strong><code>{item.url}</code></div></div></td><td data-label="순서">{item.displayOrder}</td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 링크 ${item.enabled ? "비노출" : "노출"} 전환`} /></td><td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.name} 링크 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.name} 링크 삭제`}><Trash2 aria-hidden="true" /></button></div></td></tr>
           ))}

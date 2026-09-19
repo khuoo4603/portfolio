@@ -72,6 +72,7 @@ describe("Monitoring 독립 관리 화면", () => {
     expect(within(targetsTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Target", "Health URL", "순서", "상태", "작업"]);
     expect(within(targetsTable).getByText("0")).toBeInTheDocument();
     expect(within(targetsTable).getByRole("button", { name: "Portfolio API Target 수정" })).toBeInTheDocument();
+    expect(within(targetsTable).queryByText("PORTFOLIO_BACKEND")).not.toBeInTheDocument();
     expect(screen.queryByText("점검 주기와 요청 정책을 관리합니다.")).not.toBeInTheDocument();
     expect(screen.queryByText("등록된 전체 서비스 점검 대상을 관리합니다.")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Monitoring 설정" })).not.toBeInTheDocument();

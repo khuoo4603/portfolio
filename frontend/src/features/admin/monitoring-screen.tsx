@@ -233,25 +233,24 @@ export default function MonitoringScreen() {
               <Button variant="secondary" type="button" onClick={() => setTargetDialog({ target: null })}><Plus aria-hidden="true" />Target 추가</Button>
             </div>
             <div className={styles.dataTableWrap}>
-              <table className={styles.dataTable}>
+              <table className={`${styles.dataTable} ${styles.monitoringTargetsTable}`}>
                 <thead><tr><th>Target</th><th>Health URL</th><th>순서</th><th>상태</th><th>작업</th></tr></thead>
                 <tbody>{data.targets.map((target) => {
                 const busy = targetBusyId === target.id;
                 return (
                   <tr key={target.id}>
-                    <td data-label="Target"><div className={styles.monitoringTargetIdentity}>
+                    <td className={styles.monitoringTargetSummary} data-label="Target"><div className={styles.monitoringTargetIdentity}>
                       <strong className="type-body">{target.displayName}</strong>
-                      <code>{target.serviceKey}</code>
                     </div></td>
-                    <td data-label="Health URL"><span className={`${styles.monitoringTargetUrl} type-small`}>{target.healthUrl ?? "URL 미설정"}</span></td>
-                    <td data-label="순서">{target.displayOrder}</td>
-                    <td data-label="상태"><StateSwitch
+                    <td className={styles.monitoringHealthUrlSummary} data-label="Health URL"><span className={`${styles.monitoringTargetUrl} type-small`}>{target.healthUrl ?? "URL 미설정"}</span></td>
+                    <td className={styles.monitoringOrderSummary} data-label="순서">{target.displayOrder}</td>
+                    <td className={styles.monitoringStatusSummary} data-label="상태"><StateSwitch
                       enabled={target.enabled}
                       disabled={busy}
                       label={`${target.displayName} ${target.enabled ? "비활성화" : "활성화"}`}
                       onClick={() => void toggleTarget(target)}
                     /></td>
-                    <td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" disabled={busy} onClick={() => setTargetDialog({ target })} aria-label={`${target.displayName} Target 수정`}><Edit3 aria-hidden="true" /></button></div></td>
+                    <td className={styles.monitoringActionsSummary} data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" disabled={busy} onClick={() => setTargetDialog({ target })} aria-label={`${target.displayName} Target 수정`}><Edit3 aria-hidden="true" /></button></div></td>
                   </tr>
                 );
                 })}</tbody>

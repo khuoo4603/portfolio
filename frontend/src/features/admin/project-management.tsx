@@ -208,7 +208,7 @@ export default function ProjectManagement() {
               <tbody>
                 {projects.map((project) => (
                   <tr key={project.id}>
-                    <td data-label="프로젝트">
+                    <td className={styles.projectIdentitySummary} data-label="프로젝트">
                       <div className={styles.projectIdentityCell}>
                         <div className={styles.projectThumbnail}>
                           <AdminImagePreview alt="" fallback={<ImageIcon aria-label="Thumbnail 없음" />} sizes="72px" src={project.thumbnailUrl} />
@@ -219,9 +219,9 @@ export default function ProjectManagement() {
                       </div>
                       </div>
                     </td>
-                    <td data-label="연도">{project.year ?? "—"}</td>
-                    <td data-label="순서">{project.displayOrder}</td>
-                    <td data-label="상태">
+                    <td className={styles.projectYearSummary} data-label="연도">{project.year ?? "—"}</td>
+                    <td className={styles.projectOrderSummary} data-label="순서">{project.displayOrder}</td>
+                    <td className={styles.projectStatusSummary} data-label="상태">
                       <div className={styles.projectStatusCell}>
                         <StateSwitch
                           enabled={project.enabled}
@@ -231,8 +231,8 @@ export default function ProjectManagement() {
                         />
                       </div>
                     </td>
-                    <td data-label="수정일"><time dateTime={project.updatedAt}>{formatDateTime(project.updatedAt)}</time></td>
-                    <td data-label="작업">
+                    <td className={styles.projectUpdatedSummary} data-label="수정일"><time dateTime={project.updatedAt}>{formatDateTime(project.updatedAt)}</time></td>
+                    <td className={styles.projectActionsSummary} data-label="작업">
                       <div className={styles.tableRowActions}>
                         <button className={styles.iconButton} type="button" aria-label={`${project.name} 편집`} onClick={() => router.push(`/admin/projects/${project.id}/edit`)}><Edit3 aria-hidden="true" /></button>
                         <button className={styles.iconButton} type="button" aria-label={`${project.name} 삭제`} onClick={() => setDeleteCandidate(project)}><Trash2 aria-hidden="true" /></button>

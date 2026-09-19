@@ -311,7 +311,7 @@ export default function LogsScreen() {
 function LoginLogTable({ items }: { items: LoginLog[] }) {
   return (
     <div className={`${styles.dataTableWrap} ${styles.logTableWrap}`}>
-      <table className={`${styles.dataTable} ${styles.logTable}`}>
+      <table className={`${styles.dataTable} ${styles.logTable} ${styles.loginLogTable}`}>
         <thead>
           <tr><th>시각 / 계정</th><th>결과</th><th>접속 정보</th><th>실패 사유</th><th>Trace ID</th></tr>
         </thead>
@@ -335,7 +335,7 @@ function LoginLogTable({ items }: { items: LoginLog[] }) {
 function ErrorLogTable({ items }: { items: ErrorLog[] }) {
   return (
     <div className={`${styles.dataTableWrap} ${styles.logTableWrap}`}>
-      <table className={`${styles.dataTable} ${styles.logTable}`}>
+      <table className={`${styles.dataTable} ${styles.logTable} ${styles.errorLogTable}`}>
         <thead>
           <tr><th>시각 / 서비스</th><th>요청</th><th>상태</th><th>오류 요약</th><th>Trace ID</th></tr>
         </thead>

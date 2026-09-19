@@ -205,7 +205,9 @@ describe("Admin Site 실제 API 관리", () => {
     expect(screen.queryByRole("heading", { name: "보유 기술 스택" })).not.toBeInTheDocument();
     expect(screen.getByText("DATABASE")).toBeInTheDocument();
     expect(screen.getByText("FRONTEND")).toBeInTheDocument();
-    expect(screen.getByText("/icons/tech/postgresql.svg")).toBeInTheDocument();
+    const technologiesTable = screen.getByRole("table");
+    expect(within(technologiesTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["기술명", "분류", "상태", "작업"]);
+    expect(within(technologiesTable).queryByText("/icons/tech/postgresql.svg")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "외부 링크" }));
     expect(screen.getByText("https://github.com/example")).toBeInTheDocument();

@@ -1532,15 +1532,6 @@
   gap: var(--space-4);
 }
 
-.monitoringTargetIdentity code {
-  overflow: hidden;
-  color: var(--text-muted);
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-small);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .monitoringTargetUrl {
   min-width: 0;
   margin: 0;
@@ -2224,7 +2215,8 @@
 
 .accountIdentity span {
   color: var(--text-muted);
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .projectIdentity code {
@@ -2837,17 +2829,18 @@
   }
 
   .dataTableWrap {
-    border-top: 1px solid var(--border-accent);
+    border: 0;
     overflow-x: clip;
   }
 
-  .managementSurface .dataTableWrap {
-    border: 0;
+  .dataTable {
+    display: block;
   }
 
-  .dataTable,
   .dataTable tbody {
-    display: block;
+    display: grid;
+    gap: var(--space-12);
+    padding: var(--space-12) var(--space-20);
   }
 
   .dataTable thead {
@@ -2858,8 +2851,12 @@
     position: relative;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-12) var(--space-16);
-    padding: var(--space-16) var(--space-20);
+    gap: var(--space-8) var(--space-16);
+    padding: var(--space-16);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-value-sm);
+    background: var(--bg-surface);
+    background-image: none;
   }
 
   .dataTable td {
@@ -2870,7 +2867,13 @@
     gap: var(--space-4);
     padding: 0;
     border: 0;
-    overflow-wrap: anywhere;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .dataTable td:first-child,
+  .dataTable td:last-child {
+    padding-inline: 0;
   }
 
   .dataTable td::before {
@@ -2891,41 +2894,258 @@
     display: none;
   }
 
-  .dataTable tr > td:first-child {
-    grid-column: 1 / -1;
-    padding-right: var(--space-48);
-  }
-
   .rowMenu {
     top: 38px;
     right: 0;
   }
 
-  .logTable tr {
-    grid-template-columns: 1fr;
+  .dataTable .tableRowActions {
+    justify-content: flex-start;
   }
 
-  .logTable tr > td:first-child,
-  .logTable td {
-    grid-column: auto;
-    padding-right: 0;
+  .dataTable td[data-label="작업"] {
+    position: absolute;
+    top: var(--space-16);
+    right: var(--space-16);
+    width: auto;
+  }
+
+  .dataTable td[data-label="작업"]::before {
+    display: none;
   }
 
   .requestPath,
-  .errorSummary,
   .traceId {
     max-width: 100%;
     white-space: normal;
     overflow-wrap: anywhere;
   }
 
+  .accountsSurface .dataTable tr > td:first-child,
   .projectTable tr > td:first-child {
     grid-column: 1 / -1;
+  }
+
+  .accountsSurface .dataTable tr > td:first-child {
     padding-right: var(--space-48);
   }
 
-  .projectTable tr > td:last-child {
+  .accountsSurface .dataTable td:nth-child(4) {
     grid-column: 1 / -1;
+  }
+
+  .accountsSurface .dataTable tr > td:first-child::before,
+  .projectIdentitySummary::before,
+  .monitoringTargetSummary::before,
+  .projectTechnologyPrimarySummary::before,
+  .siteProfileTable td:nth-child(2)::before,
+  .siteTechnologyTable td:first-child::before,
+  .siteExternalLinksTable td:first-child::before,
+  .toolLinksTable td:first-child::before,
+  .loginLogTable td:first-child::before,
+  .errorLogTable td:first-child::before {
+    display: none;
+  }
+
+  .projectTable tr {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "identity identity identity"
+      "year order status"
+      "updated updated updated";
+  }
+
+  .projectIdentitySummary {
+    width: auto;
+    max-width: none;
+    grid-area: identity;
+  }
+
+  .projectTable td:first-child {
+    width: auto;
+    max-width: none;
+  }
+
+  .projectYearSummary { grid-area: year; }
+  .projectOrderSummary { grid-area: order; }
+  .projectStatusSummary { grid-area: status; }
+  .projectUpdatedSummary { grid-area: updated; }
+  .projectActionsSummary { position: absolute; }
+
+  .projectTable .projectIdentityCell,
+  .projectTable .projectIdentity {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .projectTable .projectIdentity strong {
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+
+  .projectTable .projectIdentity code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .monitoringTargetsTable tr {
+    grid-template-areas:
+      "identity identity"
+      "url url"
+      "order status";
+  }
+
+  .monitoringTargetSummary { grid-area: identity; }
+  .monitoringHealthUrlSummary { grid-area: url; }
+  .monitoringOrderSummary { grid-area: order; }
+  .monitoringStatusSummary { grid-area: status; }
+  .monitoringActionsSummary { position: absolute; }
+
+  .monitoringTargetIdentity strong {
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+
+  .linkIdentity code {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+
+  .monitoringTargetUrl,
+  .linkIdentity code,
+  .dataTable td[data-label="대표 이미지"] code {
+    overflow-wrap: anywhere;
+  }
+
+  .projectTechnologyTable tr {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "identity identity identity"
+      "category highlight order";
+  }
+
+  .projectTechnologyPrimarySummary { grid-area: identity; }
+  .projectTechnologyCategorySummary { grid-area: category; }
+  .projectTechnologyHighlightSummary { grid-area: highlight; }
+  .projectTechnologyOrderSummary { grid-area: order; }
+  .projectTechnologyActionsSummary { position: absolute; }
+
+  .projectTechnologyPrimarySummary strong {
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+
+  .projectTechnologyOrderInput {
+    width: min(100%, 88px);
+  }
+
+  .siteProfileTable tr {
+    grid-template-columns: minmax(0, 1.7fr) minmax(64px, 0.7fr) minmax(72px, 0.8fr);
+    grid-template-areas:
+      "title title title"
+      "period type status"
+      "organization organization order";
+  }
+
+  .siteProfileTable td:nth-child(1) { grid-area: period; }
+  .siteProfileTable td:nth-child(2) { grid-area: title; }
+  .siteProfileTable td:nth-child(3) { grid-area: organization; }
+  .siteProfileTable td:nth-child(4) { grid-area: type; }
+  .siteProfileTable td:nth-child(5) { grid-area: status; }
+  .siteProfileTable td:nth-child(6) { grid-area: order; }
+
+  .siteProfileTable td:nth-child(1) > span {
+    white-space: nowrap;
+  }
+
+  .siteTechnologyTable tr {
+    grid-template-areas:
+      "identity identity"
+      "category status";
+  }
+
+  .siteTechnologyTable td:nth-child(1) { grid-area: identity; }
+  .siteTechnologyTable td:nth-child(2) { grid-area: category; }
+  .siteTechnologyTable td:nth-child(3) { grid-area: status; }
+
+  .monitoringHealthUrlSummary::before {
+    display: none;
+  }
+  .siteExternalLinksTable tr {
+    grid-template-areas:
+      "identity identity"
+      "order status";
+  }
+
+  .siteExternalLinksTable td:nth-child(1) { grid-area: identity; }
+  .siteExternalLinksTable td:nth-child(2) { grid-area: order; }
+  .siteExternalLinksTable td:nth-child(3) { grid-area: status; }
+  .toolLinksTable tr {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "identity identity identity"
+      "category order status"
+      "image image image";
+  }
+
+  .toolLinksTable td:nth-child(1) { grid-area: identity; }
+  .toolLinksTable td:nth-child(2) { grid-area: category; }
+  .toolLinksTable td:nth-child(3) { grid-area: image; }
+  .toolLinksTable td:nth-child(4) { grid-area: order; }
+  .toolLinksTable td:nth-child(5) { grid-area: status; }
+  .loginLogTable tr {
+    grid-template-areas:
+      "identity identity"
+      "result connection"
+      "failure failure"
+      "trace trace";
+  }
+
+  .loginLogTable td:nth-child(1) { grid-area: identity; }
+  .loginLogTable td:nth-child(2) { grid-area: result; }
+  .loginLogTable td:nth-child(3) { grid-area: connection; }
+  .loginLogTable td:nth-child(4) { grid-area: failure; }
+  .loginLogTable td:nth-child(5) { grid-area: trace; }
+
+  .errorLogTable tr {
+    grid-template-areas:
+      "identity identity"
+      "request status"
+      "error error"
+      "trace trace";
+  }
+
+  .errorLogTable td:nth-child(1) { grid-area: identity; }
+  .errorLogTable td:nth-child(2) { grid-area: request; }
+  .errorLogTable td:nth-child(3) { grid-area: status; }
+  .errorLogTable td:nth-child(4) { grid-area: error; }
+  .errorLogTable td:nth-child(5) { grid-area: trace; }
+
+  .dataTable tr {
+    --compact-action-space: var(--space-96);
+  }
+
+  .monitoringTargetsTable tr {
+    --compact-action-space: var(--space-48);
+  }
+
+  .projectTechnologyTable tr {
+    --compact-action-space: var(--space-128);
+  }
+
+  .projectIdentitySummary,
+  .monitoringTargetSummary,
+  .projectTechnologyPrimarySummary,
+  .siteProfileTable td:nth-child(2),
+  .siteTechnologyTable td:first-child,
+  .siteExternalLinksTable td:first-child,
+  .toolLinksTable td:first-child {
+    padding-right: var(--compact-action-space);
   }
 
 }
@@ -3109,14 +3329,6 @@
   .registryRow .statusLabel {
     grid-column: 1;
     grid-row: 2;
-  }
-
-  .linkIdentity span,
-  .linkIdentity code {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-    overflow-wrap: anywhere;
   }
 
   .pagination {
@@ -3397,6 +3609,108 @@
   .monitoringSettingsBody {
     padding-inline: var(--space-16);
   }
+}
+
+@media (max-width: 767px) {
+  .adminContent .stateSwitch {
+    width: 58px;
+    min-width: 58px;
+    height: 26px;
+    font-size: 10px;
+  }
+
+  .adminContent .stateSwitchText {
+    right: 9px;
+  }
+
+  .adminContent .stateSwitch[aria-checked="true"] .stateSwitchText {
+    left: 9px;
+  }
+
+  .adminContent .stateSwitchThumb {
+    width: 28px;
+    height: 28px;
+    left: -1px;
+  }
+
+  .adminContent .stateSwitch[aria-checked="true"] .stateSwitchThumb {
+    transform: translate(32px, -50%);
+  }
+
+  .adminContent .iconButton {
+    width: 30px;
+    height: 30px;
+  }
+
+  .adminContent .iconButton svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .adminContent .tableRowActions,
+  .adminContent .projectItemActions {
+    gap: var(--space-4);
+  }
+
+  .adminContent [data-button-size="medium"] {
+    min-height: 34px;
+    padding: var(--space-4) var(--space-12);
+    font-size: var(--font-size-small);
+    line-height: var(--line-height-small);
+  }
+
+  .adminContent [data-button-size="small"] {
+    min-height: 30px;
+    padding-inline: var(--space-8);
+  }
+
+  .adminContent [data-button-size] > span {
+    gap: var(--space-4);
+  }
+
+  .adminContent [data-button-size] svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .adminContent [data-segment-track] button {
+    min-height: 32px;
+    padding: var(--space-4) var(--space-8);
+    font-size: var(--font-size-small);
+    line-height: var(--line-height-small);
+  }
+
+  .adminContent .dataTable tr {
+    --compact-action-space: 72px;
+  }
+
+  .adminContent .monitoringTargetsTable tr {
+    --compact-action-space: 40px;
+  }
+
+  .adminContent .projectTechnologyTable tr {
+    --compact-action-space: 104px;
+  }
+}
+
+@media (max-width: 479px) {
+  .dataTable tbody {
+    padding-inline: var(--space-16);
+  }
+
+  .dataTable tr {
+    padding: var(--space-12);
+  }
+
+  .projectThumbnail {
+    width: 64px;
+    height: 44px;
+  }
+
+  .projectIdentityCell {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
 }
 
 @media (max-width: 389px) {

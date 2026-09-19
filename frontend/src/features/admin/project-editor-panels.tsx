@@ -256,22 +256,22 @@ function TechnologyPanel({ draft, setDraft, technologyMaster }: Pick<PanelProps,
         <label className={styles.formField}><span className="type-small">프로젝트 기술 선택</span><select className="type-body" value={selectedId} onChange={(event) => setSelectedId(event.currentTarget.value)}><option value="">기술 선택</option>{technologyMaster.filter((item) => !selected.has(item.id)).map((item) => <option key={item.id} value={item.id} disabled={!item.enabled}>{item.name}{item.enabled ? "" : " · 비활성"}</option>)}</select></label>
         <Button variant="secondary" type="button" disabled={!selectedId} onClick={() => { const id = Number(selectedId); setItems([...draft.technologies, { technologyId: id, showOnCard: false, highlighted: false, displayOrder: draft.technologies.length }]); setSelectedId(""); }}><Plus aria-hidden="true" />추가</Button>
       </div>
-      <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기술</th><th>분류</th><th>강조</th><th>표시 순서</th><th>작업</th></tr></thead><tbody>{draft.technologies.map((item, index) => {
+      <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.projectTechnologyTable}`}><thead><tr><th>기술</th><th>분류</th><th>강조</th><th>표시 순서</th><th>작업</th></tr></thead><tbody>{draft.technologies.map((item, index) => {
         const technology = technologyMaster.find((value) => value.id === item.technologyId);
         const technologyName = technology?.name ?? `Technology #${item.technologyId}`;
         return (
           <tr key={item.technologyId}>
-            <td data-label="기술"><strong className="type-body">{technologyName}</strong></td>
-            <td data-label="분류"><span className="type-small">{technology?.category}{technology && !technology.enabled ? " · 기존 비활성 연결" : ""}</span></td>
-            <td data-label="강조"><StateSwitch
+            <td className={styles.projectTechnologyPrimarySummary} data-label="기술"><strong className="type-body">{technologyName}</strong></td>
+            <td className={styles.projectTechnologyCategorySummary} data-label="분류"><span className="type-small">{technology?.category}{technology && !technology.enabled ? " · 기존 비활성 연결" : ""}</span></td>
+            <td className={styles.projectTechnologyHighlightSummary} data-label="강조"><StateSwitch
                 enabled={item.highlighted}
                 label={`${technologyName} ${item.highlighted ? "강조 해제" : "강조 설정"}`}
                 onClick={() => setItems(draft.technologies.map((value, itemIndex) => (
                   itemIndex === index ? { ...value, highlighted: !value.highlighted } : value
                 )))}
               /></td>
-            <td data-label="표시 순서"><input className={`${styles.projectTechnologyOrderInput} type-body`} aria-label={`${technologyName} 표시 순서`} type="number" min={0} value={item.displayOrder} onChange={(event) => setItems(draft.technologies.map((value, itemIndex) => itemIndex === index ? { ...value, displayOrder: event.currentTarget.value === "" ? 0 : Number(event.currentTarget.value) } : value))} /></td>
-            <td data-label="작업"><ItemActions index={index} length={draft.technologies.length} label={technologyName} onMove={(direction) => setItems(moveProjectItem(draft.technologies, index, direction).map((value, itemIndex) => ({ ...value, displayOrder: itemIndex })))} onDelete={() => setItems(draft.technologies.filter((_, itemIndex) => itemIndex !== index))} /></td>
+            <td className={styles.projectTechnologyOrderSummary} data-label="표시 순서"><input className={`${styles.projectTechnologyOrderInput} type-body`} aria-label={`${technologyName} 표시 순서`} type="number" min={0} value={item.displayOrder} onChange={(event) => setItems(draft.technologies.map((value, itemIndex) => itemIndex === index ? { ...value, displayOrder: event.currentTarget.value === "" ? 0 : Number(event.currentTarget.value) } : value))} /></td>
+            <td className={styles.projectTechnologyActionsSummary} data-label="작업"><ItemActions index={index} length={draft.technologies.length} label={technologyName} onMove={(direction) => setItems(moveProjectItem(draft.technologies, index, direction).map((value, itemIndex) => ({ ...value, displayOrder: itemIndex })))} onDelete={() => setItems(draft.technologies.filter((_, itemIndex) => itemIndex !== index))} /></td>
           </tr>
         );
       })}</tbody></table></div>
