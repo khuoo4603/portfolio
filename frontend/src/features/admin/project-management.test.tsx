@@ -70,12 +70,12 @@ describe("Project 목록 관리", () => {
     expect(screen.getByRole("button", { name: "새 프로젝트" })).toBeInTheDocument();
     expect(within(surface).queryByRole("button", { name: "새 프로젝트" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "프로젝트 목록" })).not.toBeInTheDocument();
-    for (const heading of ["Project", "Year", "Order", "Status", "Updated At", "Actions"]) {
+    for (const heading of ["프로젝트", "연도", "순서", "상태", "수정일", "작업"]) {
       expect(within(table).getByRole("columnheader", { name: heading })).toBeInTheDocument();
     }
     expect(within(table).getByText("Project One")).toBeInTheDocument();
     expect(within(table).getByText("/projects/project-one")).toBeInTheDocument();
-    expect(within(table).getByText("공개")).toBeInTheDocument();
+    expect(within(table).getByRole("switch", { name: "Project One 프로젝트 비공개 전환" })).toHaveAttribute("aria-checked", "true");
 
     fireEvent.click(within(table).getByRole("button", { name: "Project One 편집" }));
     expect(navigation.push).toHaveBeenCalledWith("/admin/projects/12/edit");

@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowLeft, Eye, Save, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import Button from "@/components/ui/button";
+import SegmentedControl from "@/components/ui/segmented-control";
 import { useNotification } from "@/components/ui/notification/notification-provider";
 import { formatApiError } from "@/lib/api/client";
 import type { ProjectDetail, Technology } from "./admin-types";
@@ -36,6 +37,11 @@ const SECTIONS: Array<{ id: ProjectEditorSection; label: string }> = [
   { id: "technologies", label: "기술" },
   { id: "media", label: "미디어" },
 ];
+
+const VIEW_MODE_OPTIONS = [
+  { value: "editor", label: "편집 모드" },
+  { value: "preview", label: "미리보기 모드" },
+] as const;
 
 // Project Editor GET·Local Draft·Object URL·단일 Save 흐름 조정
 export default function ProjectEditorScreen({ projectId }: { projectId: number }) {
@@ -255,10 +261,7 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
         <Button variant="secondary" type="button" onClick={back}><ArrowLeft aria-hidden="true" />목록</Button>
         <div className={styles.projectEditorIdentity}><span className="type-small">Project #{detail.project.id}</span><h1 className="type-title">{draft.project.name || "Untitled Project"}</h1><span className={styles.projectSaveState} role="status">{dirty ? "변경사항 있음" : "저장됨"}</span></div>
         <div className={styles.projectEditorActions}>
-          <div className={styles.projectModeSwitch} role="group" aria-label="Project Editor 모드">
-            <button type="button" aria-pressed={viewMode === "editor"} onClick={() => setViewMode("editor")}><SlidersHorizontal aria-hidden="true" />편집 모드</button>
-            <button type="button" aria-pressed={viewMode === "preview"} onClick={() => setViewMode("preview")}><Eye aria-hidden="true" />미리보기 모드</button>
-          </div>
+          <SegmentedControl className={styles.projectViewControl} label="Project Editor 모드" options={VIEW_MODE_OPTIONS} value={viewMode} onChange={setViewMode} />
           <Button type="button" disabled={!dirty || adminAction.issuing} onClick={save}><Save aria-hidden="true" />저장</Button>
         </div>
       </header>

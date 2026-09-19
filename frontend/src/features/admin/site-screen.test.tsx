@@ -167,12 +167,12 @@ describe("Admin Site 실제 API 관리", () => {
     expect(within(surface).getByRole("tablist", { name: "사이트 관리 영역" })).toBeInTheDocument();
     expect(within(surface).getByRole("tabpanel")).toContainElement(screen.getByDisplayValue("김현우"));
     expect(siteData().portfolioContents).toHaveLength(16);
-    expect(screen.getByText("COMMON/NAME")).toBeInTheDocument();
-    expect(screen.getByText("MAIN/HERO_STATEMENT")).toBeInTheDocument();
+    expect(screen.queryByText("COMMON/NAME")).not.toBeInTheDocument();
+    expect(screen.queryByText("MAIN/HERO_STATEMENT")).not.toBeInTheDocument();
     expect(screen.getByLabelText("소개 문구")).toHaveValue("문제에 맞는 기술과 설계를 선택하고,\n선택과 집중으로 서비스를 완성하는 개발자");
     expect(screen.queryByText("MAIN/HERO_DESCRIPTION")).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue("legacy description")).not.toBeInTheDocument();
-    expect(screen.getByText("CONTACT/EMAIL")).toBeInTheDocument();
+    expect(screen.queryByText("CONTACT/EMAIL")).not.toBeInTheDocument();
     expect(screen.getAllByRole("textbox")).toHaveLength(15);
     expect(screen.getAllByRole("tab")).toHaveLength(5);
     expect(screen.queryByRole("tab", { name: "프로젝트" })).not.toBeInTheDocument();
@@ -182,8 +182,11 @@ describe("Admin Site 실제 API 관리", () => {
     expect(screen.getByRole("button", { name: "학력" })).toBeInTheDocument();
     const profileTable = screen.getByRole("table");
     expect(within(profileTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
-      "기간", "제목", "기관 또는 역할", "유형 / 상태", "순서", "작업",
+      "기간", "제목", "기관 또는 역할", "유형", "상태", "순서", "작업",
     ]);
+    expect(within(profileTable).queryByRole("columnheader", { name: "유형 / 상태" })).not.toBeInTheDocument();
+    expect(within(profileTable).getByText("학력").closest("td")).toHaveAttribute("data-label", "유형");
+    expect(within(profileTable).getByRole("switch", { name: "소프트웨어융합전공 비노출 전환" }).closest("td")).toHaveAttribute("data-label", "상태");
     expect(within(profileTable).queryByText("유형 / 기간")).not.toBeInTheDocument();
     expect(within(profileTable).queryByText("대표")).not.toBeInTheDocument();
     expect(within(profileTable).queryByText("강조")).not.toBeInTheDocument();
@@ -242,8 +245,8 @@ describe("Admin Site 실제 API 관리", () => {
     fireEvent.click(within(filterGroup).getByRole("button", { name: "전체" }));
     expect(screen.getAllByRole("row")).toHaveLength(6);
     fireEvent.click(within(filterGroup).getByRole("button", { name: "활동" }));
-    fireEvent.click(screen.getByRole("button", { name: "개발 커뮤니티 활동 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "수정" }));
+    expect(screen.getByRole("button", { name: "개발 커뮤니티 활동 삭제" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "개발 커뮤니티 활동 수정" }));
     expect(screen.getByRole("dialog", { name: "이력 수정" })).toBeInTheDocument();
     expect(screen.getByDisplayValue("개발 커뮤니티 활동")).toBeInTheDocument();
     expect(getAdminSite).toHaveBeenCalledTimes(1);

@@ -3,10 +3,11 @@
 import {
   ChevronDown,
   ChevronUp,
+  Edit3,
   FileText,
   Link as LinkIcon,
-  MoreHorizontal,
   Plus,
+  Trash2,
   Upload,
   X,
 } from "lucide-react";
@@ -245,7 +246,6 @@ function ContentPanel({
                 ) : (
                   <input className="type-body" type={definition.contentCode === "EMAIL" ? "email" : "text"} value={values[definition.contentCode]} onChange={(event) => setValues({ ...values, [definition.contentCode]: event.currentTarget.value })} />
                 )}
-                <code>{definition.category}/{definition.contentCode}</code>
               </label>
             ))}
           </section>
@@ -269,7 +269,6 @@ export default function SiteScreen() {
   const [profileEditor, setProfileEditor] = useState<{ item?: ProfileEntry } | null>(null);
   const [technologyEditor, setTechnologyEditor] = useState<{ item?: Technology } | null>(null);
   const [linkEditor, setLinkEditor] = useState<{ item?: ExternalLink } | null>(null);
-  const [menuKey, setMenuKey] = useState<string | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
   const [portfolioDraft, setPortfolioDraft] = useState<PortfolioTechnology[]>([]);
@@ -317,7 +316,6 @@ export default function SiteScreen() {
 
   const completeMutation = (message: string) => {
     notify({ type: "success", title: "Site 변경 완료", message });
-    setMenuKey(null);
     void loadSite(true);
   };
 
@@ -343,7 +341,6 @@ export default function SiteScreen() {
   };
 
   const deleteProfile = (item: ProfileEntry) => {
-    setMenuKey(null);
     void adminAction.start({
       ...siteActionBindings.profileEntryDelete(item.id),
       actionLabel: `${item.title} 항목 삭제`,
@@ -374,7 +371,6 @@ export default function SiteScreen() {
   };
 
   const deleteTechnologyItem = (item: Technology) => {
-    setMenuKey(null);
     void adminAction.start({
       ...siteActionBindings.technologyDelete(item.id),
       actionLabel: `${item.name} 기술 삭제`,
@@ -414,7 +410,6 @@ export default function SiteScreen() {
   };
 
   const deleteLink = (item: ExternalLink) => {
-    setMenuKey(null);
     void adminAction.start({
       ...siteActionBindings.externalLinkDelete(item.id),
       actionLabel: `${item.name} 외부 링크 삭제`,
@@ -480,7 +475,7 @@ export default function SiteScreen() {
         <section className={`${styles.managementSurface} ${styles.siteManagementSurface}`} aria-label="사이트 관리">
           <div className={`${styles.lineTabs} ${styles.siteTabs}`} role="tablist" aria-label="사이트 관리 영역">
             {TABS.map((item) => (
-              <button key={item.id} className={tab === item.id ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === item.id} onClick={() => { setTab(item.id); setMenuKey(null); }}>
+              <button key={item.id} className={tab === item.id ? styles.lineTabActive : undefined} type="button" role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)}>
                 {item.label}
               </button>
             ))}
@@ -488,9 +483,9 @@ export default function SiteScreen() {
 
           <div className={styles.siteTabPanel} role="tabpanel">
             {tab === "content" && <ContentPanel contents={data.portfolioContents} title="기본 콘텐츠" busy={adminAction.issuing} onSubmit={saveContents} />}
-            {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} />}
-            {tab === "technology" && <TechnologiesPanel items={data.technologyMaster} portfolioItems={data.portfolioTechnologies} draft={portfolioDraft} setDraft={setPortfolioDraft} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setTechnologyEditor({})} onEdit={(item) => setTechnologyEditor({ item })} onDelete={deleteTechnologyItem} onToggle={toggleTechnology} onSavePortfolio={savePortfolioTechnologies} />}
-            {tab === "links" && <ExternalLinksPanel items={data.externalLinks} menuKey={menuKey} setMenuKey={setMenuKey} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} />}
+            {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} />}
+            {tab === "technology" && <TechnologiesPanel items={data.technologyMaster} portfolioItems={data.portfolioTechnologies} draft={portfolioDraft} setDraft={setPortfolioDraft} onCreate={() => setTechnologyEditor({})} onEdit={(item) => setTechnologyEditor({ item })} onDelete={deleteTechnologyItem} onToggle={toggleTechnology} onSavePortfolio={savePortfolioTechnologies} />}
+            {tab === "links" && <ExternalLinksPanel items={data.externalLinks} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} />}
             {tab === "resume" && <ResumePanel data={data} file={resumeFile} error={fileError} onSelect={selectResume} onSubmit={saveResume} />}
           </div>
         </section>
@@ -504,7 +499,7 @@ export default function SiteScreen() {
   );
 }
 
-function ProfileEntriesPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onDelete, onToggle }: { items: ProfileEntry[]; menuKey: string | null; setMenuKey: (key: string | null) => void; onCreate: () => void; onEdit: (item: ProfileEntry) => void; onDelete: (item: ProfileEntry) => void; onToggle: (item: ProfileEntry) => void }) {
+function ProfileEntriesPanel({ items, onCreate, onEdit, onDelete, onToggle }: { items: ProfileEntry[]; onCreate: () => void; onEdit: (item: ProfileEntry) => void; onDelete: (item: ProfileEntry) => void; onToggle: (item: ProfileEntry) => void }) {
   const [filter, setFilter] = useState<ProfileFilter>("ALL");
   const filteredItems = filter === "ALL" ? items : items.filter((item) => item.entryType === filter);
 
@@ -513,24 +508,25 @@ function ProfileEntriesPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onD
       <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">이력</h2></div><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</Button></div>
       <SegmentedControl className={`${styles.linkFilters} ${styles.profileFilters}`} label="이력 유형" options={PROFILE_FILTERS} value={filter} onChange={setFilter} />
       {items.length === 0 ? <EmptyState title="등록 항목 없음" description="등록된 프로필 반복 항목이 없습니다." /> : (
-        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기간</th><th>제목</th><th>기관 또는 역할</th><th>유형 / 상태</th><th>순서</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
-          {filteredItems.map((item) => { const key = `profile-${item.id}`; return (
+        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기간</th><th>제목</th><th>기관 또는 역할</th><th>유형</th><th>상태</th><th>순서</th><th>작업</th></tr></thead><tbody>
+          {filteredItems.map((item) => (
             <tr key={item.id}>
               <td data-label="기간"><span>{item.periodText || ""}</span></td>
               <td data-label="제목"><strong>{item.title}</strong></td>
               <td data-label="기관 또는 역할"><span>{item.organization || item.role || ""}</span></td>
-              <td data-label="유형 / 상태"><div className={styles.profileRowStatus}><span className="type-small">{PROFILE_FILTERS.find((filterOption) => filterOption.value === item.entryType)?.label}</span><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.title} ${item.enabled ? "비노출" : "노출"} 전환`} /></div></td>
+              <td data-label="유형"><span className="type-small">{PROFILE_FILTERS.find((filterOption) => filterOption.value === item.entryType)?.label}</span></td>
+              <td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.title} ${item.enabled ? "비노출" : "노출"} 전환`} /></td>
               <td data-label="순서">{item.displayOrder}</td>
-              <td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.title} 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td>
+              <td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.title} 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.title} 삭제`}><Trash2 aria-hidden="true" /></button></div></td>
             </tr>
-          ); })}
+          ))}
         </tbody></table></div>
       )}
     </section>
   );
 }
 
-function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, setMenuKey, onCreate, onEdit, onDelete, onToggle, onSavePortfolio }: { items: Technology[]; portfolioItems: PortfolioTechnology[]; draft: PortfolioTechnology[]; setDraft: React.Dispatch<React.SetStateAction<PortfolioTechnology[]>>; menuKey: string | null; setMenuKey: (key: string | null) => void; onCreate: () => void; onEdit: (item: Technology) => void; onDelete: (item: Technology) => void; onToggle: (item: Technology) => void; onSavePortfolio: (items: PortfolioTechnology[]) => void }) {
+function TechnologiesPanel({ items, portfolioItems, draft, setDraft, onCreate, onEdit, onDelete, onToggle, onSavePortfolio }: { items: Technology[]; portfolioItems: PortfolioTechnology[]; draft: PortfolioTechnology[]; setDraft: React.Dispatch<React.SetStateAction<PortfolioTechnology[]>>; onCreate: () => void; onEdit: (item: Technology) => void; onDelete: (item: Technology) => void; onToggle: (item: Technology) => void; onSavePortfolio: (items: PortfolioTechnology[]) => void }) {
   const [view, setView] = useState<TechnologyView>("all");
   const [selectedTechnologyId, setSelectedTechnologyId] = useState("");
   const available = items.filter((item) => item.enabled && !draft.some((mapping) => mapping.technologyId === item.id));
@@ -568,10 +564,10 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, se
       <SegmentedControl className={styles.technologyViewControl} label="기술 보기" options={TECHNOLOGY_VIEWS} value={view} onChange={setView} />
       {view === "all" ? (
         items.length === 0 ? <EmptyState title="등록 기술 없음" description="기술 사전 항목이 없습니다." /> : (
-          <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기술명</th><th>분류</th><th>Icon URL</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
-            {items.map((item) => { const key = `technology-${item.id}`; return (
-              <tr key={item.id}><td data-label="기술명"><strong>{item.name}</strong></td><td data-label="분류"><code>{item.category}</code></td><td data-label="Icon URL"><code>{item.iconUrl || "-"}</code></td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 기술 ${item.enabled ? "비활성" : "활성"} 전환`} /></td><td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.name} 기술 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td></tr>
-            ); })}
+          <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>기술명</th><th>분류</th><th>Icon URL</th><th>상태</th><th>작업</th></tr></thead><tbody>
+            {items.map((item) => (
+              <tr key={item.id}><td data-label="기술명"><strong>{item.name}</strong></td><td data-label="분류"><code>{item.category}</code></td><td data-label="Icon URL"><code>{item.iconUrl || "-"}</code></td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 기술 ${item.enabled ? "비활성" : "활성"} 전환`} /></td><td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.name} 기술 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.name} 기술 삭제`}><Trash2 aria-hidden="true" /></button></div></td></tr>
+            ))}
           </tbody></table></div>
         )
       ) : <>
@@ -594,15 +590,15 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, menuKey, se
   );
 }
 
-function ExternalLinksPanel({ items, menuKey, setMenuKey, onCreate, onEdit, onDelete, onToggle }: { items: ExternalLink[]; menuKey: string | null; setMenuKey: (key: string | null) => void; onCreate: () => void; onEdit: (item: ExternalLink) => void; onDelete: (item: ExternalLink) => void; onToggle: (item: ExternalLink) => void }) {
+function ExternalLinksPanel({ items, onCreate, onEdit, onDelete, onToggle }: { items: ExternalLink[]; onCreate: () => void; onEdit: (item: ExternalLink) => void; onDelete: (item: ExternalLink) => void; onToggle: (item: ExternalLink) => void }) {
   return (
     <section className={styles.operationalSection} aria-labelledby="external-links-title">
       <div className={styles.sectionHeading}><div><h2 id="external-links-title" className="type-title">외부 링크</h2></div><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />링크 추가</Button></div>
       {items.length === 0 ? <EmptyState title="외부 링크 없음" description="공개 영역에 연결할 외부 링크가 없습니다." /> : (
-        <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>이름 / URL</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
-          {items.map((item) => { const key = `link-${item.id}`; return (
-            <tr key={item.id}><td data-label="이름 / URL"><div className={styles.linkIdentity}><LinkIcon aria-hidden="true" /><div><strong>{item.name}</strong><code>{item.url}</code></div></div></td><td data-label="순서">{item.displayOrder}</td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 링크 ${item.enabled ? "비노출" : "노출"} 전환`} /></td><td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuKey(menuKey === key ? null : key)} aria-label={`${item.name} 링크 작업`} aria-expanded={menuKey === key}><MoreHorizontal aria-hidden="true" /></button>{menuKey === key && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuKey(null); onEdit(item); }}>수정</button><button type="button" onClick={() => onDelete(item)}>삭제</button></div>}</td></tr>
-          ); })}
+        <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>이름 / URL</th><th>순서</th><th>상태</th><th>작업</th></tr></thead><tbody>
+          {items.map((item) => (
+            <tr key={item.id}><td data-label="이름 / URL"><div className={styles.linkIdentity}><LinkIcon aria-hidden="true" /><div><strong>{item.name}</strong><code>{item.url}</code></div></div></td><td data-label="순서">{item.displayOrder}</td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 링크 ${item.enabled ? "비노출" : "노출"} 전환`} /></td><td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.name} 링크 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.name} 링크 삭제`}><Trash2 aria-hidden="true" /></button></div></td></tr>
+          ))}
         </tbody></table></div>
       )}
     </section>

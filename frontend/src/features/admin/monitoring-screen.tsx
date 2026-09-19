@@ -1,5 +1,6 @@
 "use client";
 
+import { Edit3, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/button";
 import { useNotification } from "@/components/ui/notification/notification-provider";
@@ -229,29 +230,32 @@ export default function MonitoringScreen() {
               <div>
                 <h2 id="monitoring-targets-title" className="type-title">Target</h2>
               </div>
-              <Button variant="secondary" type="button" onClick={() => setTargetDialog({ target: null })}>Target 추가</Button>
+              <Button variant="secondary" type="button" onClick={() => setTargetDialog({ target: null })}><Plus aria-hidden="true" />Target 추가</Button>
             </div>
-            <div className={styles.monitoringTargetList}>
-              {data.targets.map((target) => {
+            <div className={styles.dataTableWrap}>
+              <table className={styles.dataTable}>
+                <thead><tr><th>Target</th><th>Health URL</th><th>순서</th><th>상태</th><th>작업</th></tr></thead>
+                <tbody>{data.targets.map((target) => {
                 const busy = targetBusyId === target.id;
                 return (
-                  <article key={target.id} className={styles.monitoringTargetRow}>
-                    <div className={styles.monitoringTargetIdentity}>
+                  <tr key={target.id}>
+                    <td data-label="Target"><div className={styles.monitoringTargetIdentity}>
                       <strong className="type-body">{target.displayName}</strong>
                       <code>{target.serviceKey}</code>
-                    </div>
-                    <p className={`${styles.monitoringTargetUrl} type-small`}>{target.healthUrl ?? "URL 미설정"}</p>
-                    <span className={`${styles.monitoringTargetOrder} type-small`}>순서 {target.displayOrder}</span>
-                    <StateSwitch
+                    </div></td>
+                    <td data-label="Health URL"><span className={`${styles.monitoringTargetUrl} type-small`}>{target.healthUrl ?? "URL 미설정"}</span></td>
+                    <td data-label="순서">{target.displayOrder}</td>
+                    <td data-label="상태"><StateSwitch
                       enabled={target.enabled}
                       disabled={busy}
                       label={`${target.displayName} ${target.enabled ? "비활성화" : "활성화"}`}
                       onClick={() => void toggleTarget(target)}
-                    />
-                    <Button variant="secondary" size="small" type="button" disabled={busy} onClick={() => setTargetDialog({ target })}>수정</Button>
-                  </article>
+                    /></td>
+                    <td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" disabled={busy} onClick={() => setTargetDialog({ target })} aria-label={`${target.displayName} Target 수정`}><Edit3 aria-hidden="true" /></button></div></td>
+                  </tr>
                 );
-              })}
+                })}</tbody>
+              </table>
             </div>
           </section>
         </div>

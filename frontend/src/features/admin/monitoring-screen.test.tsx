@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import { NotificationProvider } from "@/components/ui/notification/notification-provider";
@@ -68,6 +68,10 @@ describe("Monitoring 독립 관리 화면", () => {
     expect(screen.getByRole("heading", { name: "Monitoring 설정" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Target" })).toBeInTheDocument();
     expect(screen.getByText("URL 미설정")).toBeInTheDocument();
+    const targetsTable = screen.getByRole("table");
+    expect(within(targetsTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Target", "Health URL", "순서", "상태", "작업"]);
+    expect(within(targetsTable).getByText("0")).toBeInTheDocument();
+    expect(within(targetsTable).getByRole("button", { name: "Portfolio API Target 수정" })).toBeInTheDocument();
     expect(screen.queryByText("점검 주기와 요청 정책을 관리합니다.")).not.toBeInTheDocument();
     expect(screen.queryByText("등록된 전체 서비스 점검 대상을 관리합니다.")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Monitoring 설정" })).not.toBeInTheDocument();
@@ -182,7 +186,7 @@ describe("Monitoring 독립 관리 화면", () => {
     render(<MonitoringScreen />);
 
     await screen.findByText("Portfolio API");
-    fireEvent.click(screen.getAllByRole("button", { name: "수정" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Portfolio API Target 수정" }));
     expect(screen.queryByRole("textbox", { name: "Service Key" })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("표시명"), { target: { value: "Portfolio Runtime API" } });
     fireEvent.click(screen.getByRole("button", { name: "Target 저장" }));

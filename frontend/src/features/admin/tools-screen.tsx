@@ -1,7 +1,7 @@
 "use client";
 
 import NextImage from "next/image";
-import { ExternalLink as ExternalLinkIcon, Image as ImageIcon, MoreHorizontal, Plus, Upload } from "lucide-react";
+import { Edit3, ExternalLink as ExternalLinkIcon, Image as ImageIcon, Plus, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Button, { buttonClassName } from "@/components/ui/button";
 import { useNotification } from "@/components/ui/notification/notification-provider";
@@ -32,7 +32,6 @@ import {
   PageHeader,
   PageLoading,
   StateSwitch,
-  StatusLabel,
 } from "./admin-ui";
 import styles from "./admin.module.css";
 
@@ -186,7 +185,6 @@ export default function ToolsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editor, setEditor] = useState<LinkEditorState>(null);
-  const [menuId, setMenuId] = useState<number | null>(null);
   const [linkFilter, setLinkFilter] = useState<LinkFilter>("ALL");
   const [mutating, setMutating] = useState(false);
   const requestSequence = useRef(0);
@@ -229,7 +227,6 @@ export default function ToolsScreen() {
 
   const complete = (message: string) => {
     notify({ type: "success", title: "Tools 변경 완료", message });
-    setMenuId(null);
     void loadTools(true);
   };
 
@@ -267,7 +264,6 @@ export default function ToolsScreen() {
 
   // Tool Link 삭제
   const deleteLink = (item: ToolLink) => {
-    setMenuId(null);
     void runMutation(() => deleteToolLink(item.id), "Tool Link를 삭제했습니다.");
   };
 
@@ -292,7 +288,6 @@ export default function ToolsScreen() {
               <div className={styles.toolRows}>{data.tools.map((tool) => (
                 <div key={tool.toolKey} className={styles.toolRow}>
                   <div className={styles.toolIdentity}><span className={styles.toolMark}>{tool.name.slice(0, 1).toUpperCase()}</span><div><strong className="type-body">{tool.name}</strong><code>{tool.toolKey}</code></div></div>
-                  <StatusLabel tone={tool.enabled ? "success" : "neutral"}>{tool.enabled ? "활성" : "비활성"}</StatusLabel>
                   <StateSwitch enabled={tool.enabled} disabled={mutating} onClick={() => changeToolStatus(tool)} label={`${tool.name} Tool ${tool.enabled ? "비활성화" : "활성화"}`} />
                 </div>
               ))}</div>
@@ -302,12 +297,12 @@ export default function ToolsScreen() {
             <div className={styles.managementSurfaceHeader}><div><h2 id="tool-links-title" className="type-title">Links 데이터</h2></div><Button variant="secondary" type="button" onClick={() => setEditor({})}><Plus aria-hidden="true" />Link 추가</Button></div>
             <SegmentedControl className={`${styles.linkFilters} ${styles.toolLinksFilter}`} label="Link 분류" options={LINK_FILTERS} value={linkFilter} onChange={setLinkFilter} />
             {data.links.length === 0 ? <EmptyState title="등록 Link 없음" description="Links Tool에 표시할 링크가 없습니다." /> : (
-              <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>Link</th><th>분류</th><th>대표 이미지</th><th>순서</th><th>상태</th><th><span className={styles.srOnly}>작업</span></th></tr></thead><tbody>
+              <div className={styles.dataTableWrap}><table className={styles.dataTable}><thead><tr><th>Link</th><th>분류</th><th>대표 이미지</th><th>순서</th><th>상태</th><th>작업</th></tr></thead><tbody>
                 {filteredLinks.map((link) => <tr key={link.id}>
                   <td data-label="Link"><div className={styles.linkIdentity}><ExternalLinkIcon aria-hidden="true" /><div><strong>{link.name}</strong><span>{link.description || "설명 없음"}</span><code>{link.url}</code></div></div></td>
                   <td data-label="분류"><code>{link.category}</code></td><td data-label="대표 이미지"><code>{link.imageUrl || "기본 Preview"}</code></td><td data-label="순서">{link.displayOrder}</td>
                   <td data-label="상태"><StateSwitch enabled={link.enabled} disabled={mutating} onClick={() => changeLinkStatus(link)} label={`${link.name} Link ${link.enabled ? "비노출" : "노출"} 전환`} /></td>
-                  <td className={styles.actionCell}><button className={styles.iconButton} type="button" onClick={() => setMenuId((current) => current === link.id ? null : link.id)} aria-label={`${link.name} Link 작업`} aria-expanded={menuId === link.id}><MoreHorizontal aria-hidden="true" /></button>{menuId === link.id && <div className={styles.rowMenu}><button type="button" onClick={() => { setMenuId(null); setEditor({ item: link }); }}>수정</button><button type="button" onClick={() => deleteLink(link)}>삭제</button></div>}</td>
+                  <td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => setEditor({ item: link })} aria-label={`${link.name} Link 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => deleteLink(link)} aria-label={`${link.name} Link 삭제`}><Trash2 aria-hidden="true" /></button></div></td>
                 </tr>)}
               </tbody></table></div>
             )}

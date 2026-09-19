@@ -16,7 +16,7 @@ import {
   projectActionBindings,
   updateProjectStatus,
 } from "./admin-project-api";
-import { EmptyState, PageError, PageHeader, PageLoading, StateSwitch, StatusLabel, formatDateTime } from "./admin-ui";
+import { EmptyState, PageError, PageHeader, PageLoading, StateSwitch, formatDateTime } from "./admin-ui";
 import DialogFrame from "@/components/ui/dialog-frame";
 import { useAdminAction } from "./use-admin-action";
 import styles from "./admin.module.css";
@@ -202,13 +202,13 @@ export default function ProjectManagement() {
             <table className={`${styles.dataTable} ${styles.projectTable}`}>
               <thead>
                 <tr>
-                  <th>Project</th><th>Year</th><th>Order</th><th>Status</th><th>Updated At</th><th>Actions</th>
+                  <th>프로젝트</th><th>연도</th><th>순서</th><th>상태</th><th>수정일</th><th>작업</th>
                 </tr>
               </thead>
               <tbody>
                 {projects.map((project) => (
                   <tr key={project.id}>
-                    <td data-label="Project">
+                    <td data-label="프로젝트">
                       <div className={styles.projectIdentityCell}>
                         <div className={styles.projectThumbnail}>
                           <AdminImagePreview alt="" fallback={<ImageIcon aria-label="Thumbnail 없음" />} sizes="72px" src={project.thumbnailUrl} />
@@ -219,11 +219,10 @@ export default function ProjectManagement() {
                       </div>
                       </div>
                     </td>
-                    <td data-label="Year">{project.year ?? "—"}</td>
-                    <td data-label="Order">{project.displayOrder}</td>
-                    <td data-label="Status">
+                    <td data-label="연도">{project.year ?? "—"}</td>
+                    <td data-label="순서">{project.displayOrder}</td>
+                    <td data-label="상태">
                       <div className={styles.projectStatusCell}>
-                        <StatusLabel tone={project.enabled ? "success" : "neutral"}>{project.enabled ? "공개" : "비공개"}</StatusLabel>
                         <StateSwitch
                           enabled={project.enabled}
                           disabled={adminAction.issuing}
@@ -232,9 +231,9 @@ export default function ProjectManagement() {
                         />
                       </div>
                     </td>
-                    <td data-label="Updated At"><time dateTime={project.updatedAt}>{formatDateTime(project.updatedAt)}</time></td>
-                    <td data-label="Actions">
-                      <div className={styles.projectRowActions}>
+                    <td data-label="수정일"><time dateTime={project.updatedAt}>{formatDateTime(project.updatedAt)}</time></td>
+                    <td data-label="작업">
+                      <div className={styles.tableRowActions}>
                         <button className={styles.iconButton} type="button" aria-label={`${project.name} 편집`} onClick={() => router.push(`/admin/projects/${project.id}/edit`)}><Edit3 aria-hidden="true" /></button>
                         <button className={styles.iconButton} type="button" aria-label={`${project.name} 삭제`} onClick={() => setDeleteCandidate(project)}><Trash2 aria-hidden="true" /></button>
                       </div>

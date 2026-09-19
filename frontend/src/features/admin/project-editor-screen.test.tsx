@@ -118,7 +118,9 @@ describe("Preview-first Project Editor", () => {
     expect(within(sectionNav).getAllByRole("button")).toHaveLength(9);
     expect(screen.getByLabelText("Tagline")).toHaveValue("");
     expect(screen.getByLabelText("Year")).toHaveValue(null);
-    expect(screen.getByRole("button", { name: /편집 모드/ })).toHaveAttribute("aria-pressed", "true");
+    const viewModeControl = screen.getByRole("group", { name: "Project Editor 모드" });
+    expect(within(viewModeControl).getByRole("button", { name: "편집 모드" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(viewModeControl).getByRole("button", { name: "미리보기 모드" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("status")).toHaveTextContent("저장됨");
     expect(screen.queryByRole("article", { name: "Project Detail Preview" })).not.toBeInTheDocument();
 
@@ -136,7 +138,7 @@ describe("Preview-first Project Editor", () => {
     }
   });
 
-  it("Card 노출 UI 없이 기존 showOnCard를 보존하고 Highlighted Switch를 Local Draft에 반영", async () => {
+  it("Card 노출 UI 없이 기존 showOnCard를 보존하고 강조 Switch를 Local Draft에 반영", async () => {
     const sectionNav = await renderEditor();
     fireEvent.click(within(sectionNav).getByRole("button", { name: /기술$/ }));
 
@@ -147,11 +149,16 @@ describe("Preview-first Project Editor", () => {
     const select = screen.getByLabelText("프로젝트 기술 선택");
     expect(within(select).getByRole("option", { name: "React" })).toBeEnabled();
     expect(within(select).getByRole("option", { name: "Legacy · 비활성" })).toBeDisabled();
+    const technologyTable = within(technologyPanel).getByRole("table");
+    expect(within(technologyTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["기술", "분류", "강조", "표시 순서", "작업"]);
+    expect(within(technologyTable).getByText("Java")).toBeInTheDocument();
+    expect(within(technologyTable).getByLabelText("Java 표시 순서")).toHaveValue(0);
 
-    const highlighted = within(technologyPanel).getByRole("switch", { name: "Java Highlighted OFF 전환" });
+    expect(within(technologyPanel).queryByText("Highlighted")).not.toBeInTheDocument();
+    const highlighted = within(technologyPanel).getByRole("switch", { name: "Java 강조 해제" });
     expect(highlighted).toHaveAttribute("aria-checked", "true");
     fireEvent.click(highlighted);
-    expect(within(technologyPanel).getByRole("switch", { name: "Java Highlighted ON 전환" })).toHaveAttribute("aria-checked", "false");
+    expect(within(technologyPanel).getByRole("switch", { name: "Java 강조 설정" })).toHaveAttribute("aria-checked", "false");
     expect(saveProject).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
@@ -166,12 +173,20 @@ describe("Preview-first Project Editor", () => {
     });
   });
 
+  it("직접 담당한 개발 영역에서 Item 추가 Button을 제공", async () => {
+    const sectionNav = await renderEditor();
+    fireEvent.click(within(sectionNav).getByRole("button", { name: /직접 담당한 개발 영역/ }));
+
+    expect(screen.getByRole("button", { name: "Item 추가" })).toBeInTheDocument();
+  });
+
   it("편집·미리보기 모드 전환 시 API 재조회 없이 Local Draft를 유지", async () => {
     await renderEditor();
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Local Draft Project" } });
     expect(screen.getByRole("status")).toHaveTextContent("변경사항 있음");
 
-    fireEvent.click(screen.getByRole("button", { name: /미리보기 모드/ }));
+    const viewModeControl = screen.getByRole("group", { name: "Project Editor 모드" });
+    fireEvent.click(within(viewModeControl).getByRole("button", { name: "미리보기 모드" }));
     const preview = screen.getByRole("article", { name: "Project Detail Preview" });
     expect(preview).toBeInTheDocument();
     expect(within(preview).getByRole("heading", { name: "Local Draft Project" })).toBeInTheDocument();
@@ -179,7 +194,7 @@ describe("Preview-first Project Editor", () => {
     expect(saveProject).not.toHaveBeenCalled();
     expect(getAdminProject).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: /편집 모드/ }));
+    fireEvent.click(within(viewModeControl).getByRole("button", { name: "편집 모드" }));
     expect(screen.getByLabelText("Name")).toHaveValue("Local Draft Project");
     expect(getAdminProject).toHaveBeenCalledTimes(1);
   });
@@ -207,14 +222,15 @@ describe("Preview-first Project Editor", () => {
     fireEvent.click(within(sectionNav).getByRole("button", { name: /아키텍처/ }));
 
     expect(screen.queryByText("Clients")).not.toBeInTheDocument();
-    expect(screen.getByText("현재 상태: KEEP")).toBeInTheDocument();
+    expect(screen.getByText("기존 이미지 유지")).toBeInTheDocument();
+    expect(screen.queryByText("현재 상태: KEEP")).not.toBeInTheDocument();
     fireEvent.error(screen.getByRole("img", { name: "Architecture Preview" }));
     expect(screen.getByText("Architecture Image 없음")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("파일 선택"), {
       target: { files: [new File(["architecture"], "architecture.png", { type: "image/png" })] },
     });
     await waitFor(() => expect(screen.getByRole("img", { name: "Architecture Preview" })).toHaveAttribute("src", "blob:architecture-1"));
-    expect(screen.getByText("현재 상태: UPLOAD")).toBeInTheDocument();
+    expect(screen.getByText("새 이미지 선택")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "항목 추가" }));
     fireEvent.change(screen.getByLabelText("Note 2 Title"), { target: { value: "Delivery" } });
@@ -225,8 +241,9 @@ describe("Preview-first Project Editor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Architecture Note 1 삭제" }));
     expect(screen.queryByDisplayValue("Delivery")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
-    expect(screen.getByText("현재 상태: REMOVE")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "이미지 제거" }));
+    expect(screen.getByText("이미지 제거 예정")).toBeInTheDocument();
+    expect(screen.queryByText("현재 상태: REMOVE")).not.toBeInTheDocument();
     expect(screen.getByText("Architecture Image 없음")).toBeInTheDocument();
     expect(revokeObjectUrl).toHaveBeenCalledWith("blob:architecture-1");
     expect(saveProject).not.toHaveBeenCalled();
@@ -293,7 +310,7 @@ describe("Preview-first Project Editor", () => {
     fireEvent.change(thumbnailInput, { target: { files: [new File(["two"], "two.webp", { type: "image/webp" })] } });
     expect(revokeObjectUrl).toHaveBeenCalledWith("blob:thumbnail-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("button", { name: "이미지 제거" }));
     expect(revokeObjectUrl).toHaveBeenCalledWith("blob:thumbnail-2");
 
     fireEvent.change(screen.getAllByLabelText("이미지 추가")[0], { target: { files: [new File(["carousel"], "carousel.webp", { type: "image/webp" })] } });
