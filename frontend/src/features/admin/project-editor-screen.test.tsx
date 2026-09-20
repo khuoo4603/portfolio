@@ -9,8 +9,8 @@ import ProjectEditorScreen from "./project-editor-screen";
 const navigation = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
-vi.mock("@/app/projects/kyvc/project-architecture", () => ({ default: () => <div>Architecture Preview</div> }));
-vi.mock("@/app/projects/kyvc/project-media-carousel", () => ({ default: () => <div>Carousel Preview</div> }));
+vi.mock("@/app/projects/[slug]/project-architecture", () => ({ default: () => <div>Architecture Preview</div> }));
+vi.mock("@/app/projects/[slug]/project-media-carousel", () => ({ default: () => <div>Carousel Preview</div> }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
   return { ...actual, createAdminChallenge: vi.fn() };

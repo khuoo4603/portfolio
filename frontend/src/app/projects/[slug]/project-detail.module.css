@@ -739,6 +739,7 @@
 }
 
 .architectureNote dt {
+  align-self: center;
   color: var(--text-primary);
   font-size: calc(var(--font-size-body-lg) + 1px);
   font-weight: 600;

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { ProjectArchitecture as ProjectArchitectureData } from "@/types/api";
-import styles from "./kyvc-detail.module.css";
+import styles from "./project-detail.module.css";
 
 type ProjectArchitectureProps = {
   projectName: string;

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { ProjectDetailModel } from "@/features/portfolio/project-detail";
 import { PUBLIC_COPY } from "@/features/portfolio/public-portfolio";
-import EngineeringList from "../kyvc/engineering-list";
-import ProjectArchitecture from "../kyvc/project-architecture";
-import ProjectMediaCarousel from "../kyvc/project-media-carousel";
-import ProjectRail from "../kyvc/project-rail";
+import EngineeringList from "./engineering-list";
+import ProjectArchitecture from "./project-architecture";
+import ProjectMediaCarousel from "./project-media-carousel";
+import ProjectRail from "./project-rail";
 import TechnologyIcon from "../../technology-icon";
-import styles from "../kyvc/kyvc-detail.module.css";
+import styles from "./project-detail.module.css";
 
 function technologyIconId(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");

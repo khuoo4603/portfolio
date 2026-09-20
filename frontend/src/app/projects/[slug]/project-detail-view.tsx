@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { ProjectDetailModel } from "@/features/portfolio/project-detail";
 import { PUBLIC_COPY, type PublicViewModel } from "@/features/portfolio/public-portfolio";
 import { PortfolioFooter, SiteHeader } from "../../portfolio-chrome";
-import styles from "../kyvc/kyvc-detail.module.css";
+import styles from "./project-detail.module.css";
 import ProjectDetailContent from "./project-detail-content";
 
 type ProjectDetailViewProps = {

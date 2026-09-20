@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ProjectEngineeringItem } from "@/types/api";
-import styles from "./kyvc-detail.module.css";
+import styles from "./project-detail.module.css";
 
 type EngineeringListProps = {
   items: readonly ProjectEngineeringItem[];
