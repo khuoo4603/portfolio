@@ -90,7 +90,7 @@ describe("동적 Project Detail View", () => {
     expect(within(carousel).getByText("01 / 05")).toBeInTheDocument();
   });
 
-  it("실제 Technology와 6개 typed Content 영역을 기존 순서로 표시", () => {
+  it("실제 Technology와 5개 typed Content 영역을 기존 순서로 표시", () => {
     render(<ProjectDetailView project={mapProjectDetail(KYVC_PROJECT_FIXTURE)} portfolio={portfolio} />);
 
     const stack = screen.getByRole("list", { name: "KYvC 전체 기술 스택" });
@@ -101,10 +101,10 @@ describe("동적 Project Detail View", () => {
     expect(within(stack).getByText("React").closest("li")).toHaveAttribute("data-mine", "false");
     expect(screen.getByText("Fixture 성과")).toBeInTheDocument();
     expect(screen.getByText("Fixture 성과 설명")).toBeInTheDocument();
-    expect(screen.getByText("Fixture 배경 제목")).toBeInTheDocument();
-    expect(screen.getByText("Fixture 문제 배경")).toBeInTheDocument();
-    expect(screen.getByText("Fixture 주요 기능")).toBeInTheDocument();
-    expect(screen.getByText("Fixture 기능 설명")).toBeInTheDocument();
+    expect(screen.getByText("Fixture 설명 제목")).toBeInTheDocument();
+    expect(screen.getByText("Fixture 프로젝트 설명")).toBeInTheDocument();
+    expect(screen.queryByText("Fixture 주요 기능")).not.toBeInTheDocument();
+    expect(screen.queryByText("Fixture 기능 설명")).not.toBeInTheDocument();
     expect(screen.getByText("Fixture Backend 작업")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "KYvC 시스템 아키텍처" })).toBeInTheDocument();
     expect(screen.getByText("Synology DSM Reverse Proxy → Nginx → Docker / Docker Compose")).toBeInTheDocument();
@@ -115,8 +115,8 @@ describe("동적 Project Detail View", () => {
     const railLinks = within(rail).getAllByRole("link");
     expect(railLinks).toHaveLength(5);
     expect(railLinks.map((link) => link.getAttribute("href"))).toEqual([
+      "#detail-overview",
       "#detail-stack-result",
-      "#detail-background",
       "#detail-development",
       "#detail-architecture",
       "#detail-engineering",
@@ -240,7 +240,7 @@ describe("동적 Project Detail View", () => {
     expect(main.querySelectorAll('section[id^="detail-"]')).toHaveLength(0);
     [
       "기술 스택 · 성과",
-      "문제 배경 · 주요 기능",
+      "프로젝트 설명",
       "직접 담당한 개발 영역",
       "아키텍처",
       "기술적 문제 해결",
@@ -305,31 +305,28 @@ describe("동적 Project Detail View", () => {
       {
         project: { ...EMPTY_PROJECT_FIXTURE, technologies: [{ ...KYVC_PROJECT_FIXTURE.technologies[0], highlighted: false }] },
         sectionId: "detail-stack-result",
-        area: "stack-title",
+        heading: "기술 스택",
       },
       {
         project: { ...EMPTY_PROJECT_FIXTURE, content: { ...EMPTY_PROJECT_FIXTURE.content, results: KYVC_PROJECT_FIXTURE.content.results } },
         sectionId: "detail-stack-result",
-        area: "result-title",
+        heading: "성과",
       },
       {
-        project: { ...EMPTY_PROJECT_FIXTURE, content: { ...EMPTY_PROJECT_FIXTURE.content, background: KYVC_PROJECT_FIXTURE.content.background } },
-        sectionId: "detail-background",
-        area: "background-title",
-      },
-      {
-        project: { ...EMPTY_PROJECT_FIXTURE, content: { ...EMPTY_PROJECT_FIXTURE.content, features: KYVC_PROJECT_FIXTURE.content.features } },
-        sectionId: "detail-background",
-        area: "features-title",
+        project: { ...EMPTY_PROJECT_FIXTURE, content: { ...EMPTY_PROJECT_FIXTURE.content, overview: KYVC_PROJECT_FIXTURE.content.overview } },
+        sectionId: "detail-overview",
+        heading: "프로젝트 설명",
       },
     ];
 
-    partialCases.forEach(({ project, sectionId, area }) => {
+    partialCases.forEach(({ project, sectionId, heading }) => {
       const view = render(<ProjectDetailView project={mapProjectDetail(project)} portfolio={portfolio} />);
       const section = view.container.querySelector<HTMLElement>(`section#${sectionId}`)!;
 
-      expect(section.querySelector('[data-single="true"]')).toBeInTheDocument();
-      expect(section.querySelector(`[aria-labelledby="${area}"]`)).toBeInTheDocument();
+      if (sectionId === "detail-stack-result") {
+        expect(section.querySelector('[data-single="true"]')).toBeInTheDocument();
+      }
+      expect(within(section).getByRole("heading", { name: heading })).toBeInTheDocument();
       expect(within(section).queryByText("-", { exact: true })).not.toBeInTheDocument();
       view.unmount();
     });

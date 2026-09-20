@@ -40,13 +40,13 @@ describe("Project Detail Mapping", () => {
       "React",
     ]);
     expect(model.content.results).toEqual([{ title: "Fixture 성과", description: "Fixture 성과 설명" }]);
-    expect(model.content.background).toEqual([{ title: "Fixture 배경 제목", body: "Fixture 문제 배경" }]);
-    expect(model.content.features).toEqual([{ title: "Fixture 주요 기능", description: "Fixture 기능 설명" }]);
+    expect(model.content.overview).toEqual([{ title: "Fixture 설명 제목", body: "Fixture 프로젝트 설명" }]);
+    expect(model.content).not.toHaveProperty("features");
     expect(model.content.development[0]).toEqual({ title: "Backend", items: ["Fixture Backend 작업"] });
     expect(model.content.engineering[0].title).toBe("Fixture 문제 해결");
     expect(model.sections.map((section) => section.id)).toEqual([
+      "detail-overview",
       "detail-stack-result",
-      "detail-background",
       "detail-development",
       "detail-architecture",
       "detail-engineering",
@@ -78,16 +78,14 @@ describe("Project Detail Mapping", () => {
     expect(hasProjectArchitecture({ notes: [{ title: "Runtime", body: "Docker" }] })).toBe(true);
   });
 
-  it("성과·기능 Description이 없어도 실제 Title을 보존", () => {
+  it("성과 Description이 없어도 실제 Title을 보존", () => {
     const model = mapProjectDetail({
       ...KYVC_PROJECT_FIXTURE,
       content: {
         ...KYVC_PROJECT_FIXTURE.content,
         results: [{ title: "Title only", description: null }],
-        features: [{ title: "Feature only", description: null }],
       },
     });
     expect(model.content.results).toEqual([{ title: "Title only", description: null }]);
-    expect(model.content.features).toEqual([{ title: "Feature only", description: null }]);
   });
 });

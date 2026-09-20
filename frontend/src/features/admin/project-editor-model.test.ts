@@ -29,8 +29,7 @@ const detail: ProjectDetail = {
   technologies: [],
   content: {
     results: [],
-    background: [{ title: null, body: "Body" }],
-    features: [],
+    overview: [{ title: null, body: "Body" }],
     development: [],
     architecture: { notes: [] },
     engineering: [],

@@ -165,19 +165,6 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
                 "UPDATE project_contents SET features_json = '[]'::jsonb WHERE project_id = ?",
                 projectId
         );
-        ActionChallenge invalidContent = challenge("PROJECT_STATUS_UPDATE", "PROJECT", projectId.toString());
-        changeStatus(projectId, true, invalidContent)
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.fieldErrors[*].field")
-                        .value(org.hamcrest.Matchers.hasItem("content.features")));
-        assertThat(projectEnabled(projectId)).isFalse();
-        assertThat(challengeStatus(invalidContent.id())).isEqualTo("ACTIVE");
-        jdbcTemplate.update("""
-                UPDATE project_contents
-                SET features_json = '[{"title":"Feature","description":"Description"}]'::jsonb
-                WHERE project_id = ?
-                """, projectId);
-
         ActionChallenge wrongOperation = challenge("PROJECT_DELETE", "PROJECT", projectId.toString());
         changeStatus(projectId, true, wrongOperation).andExpect(status().isForbidden());
         assertThat(projectEnabled(projectId)).isFalse();
@@ -311,7 +298,7 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
                     ?,
                     '[{"title":"Result","description":"Description"}]',
                     '[{"body":"Background"}]',
-                    '[{"title":"Feature","description":"Description"}]',
+                    '[]',
                     '[{"title":"Backend","items":["API"]}]',
                     '{"notes":[{"title":"Infra","body":"Backend"}]}',
                     '[{"title":"Issue","problem":"Problem","solution":"Solution","result":"Result"}]',

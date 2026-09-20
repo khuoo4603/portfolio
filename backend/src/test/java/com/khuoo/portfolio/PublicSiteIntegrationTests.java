@@ -106,7 +106,7 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 )
                 VALUES (?, '[{"title":"Result","description":"Description"}]',
                         '[{"body":"Background"}]',
-                        '[{"title":"Feature","description":"Description"}]',
+                        '[]',
                         '[{"title":"Backend","items":["API"]}]',
                         '{"notes":[{"title":"Infra","body":"Spring"}]}',
                         '[{"title":"Issue","summary":"S","problem":"P","solution":"F","result":"R"}]',
@@ -128,7 +128,7 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(jsonPath("$.technologies.length()").value(1))
                 .andExpect(jsonPath("$.technologies[0].highlighted").value(true))
                 .andExpect(jsonPath("$.content.results[0].title").value("Result"))
-                .andExpect(jsonPath("$.content.background[0].body").value("Background"))
+                .andExpect(jsonPath("$.content.overview[0].body").value("Background"))
                 .andExpect(jsonPath("$.content.architecture.notes[0].body").value("Spring"))
                 .andExpect(jsonPath("$.architectureImageUrl").value(
                         "/api/v1/public/media/projects/" + projectId + "/architecture"))
@@ -145,8 +145,8 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(emptyProjectId))
                 .andExpect(jsonPath("$.content.results.length()").value(0))
-                .andExpect(jsonPath("$.content.background.length()").value(0))
-                .andExpect(jsonPath("$.content.features.length()").value(0))
+                .andExpect(jsonPath("$.content.overview.length()").value(0))
+                .andExpect(jsonPath("$.content.features").doesNotExist())
                 .andExpect(jsonPath("$.content.development.length()").value(0))
                 .andExpect(jsonPath("$.content.architecture").isMap())
                 .andExpect(jsonPath("$.content.engineering.length()").value(0));

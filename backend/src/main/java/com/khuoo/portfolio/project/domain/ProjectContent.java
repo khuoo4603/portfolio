@@ -13,7 +13,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 
-// 프로젝트 상세의 고정 6개 JSON 본문
+// 프로젝트 상세의 고정 5개 JSON 본문
 @Getter
 @Entity
 @Table(name = "project_contents")
@@ -30,11 +30,7 @@ public class ProjectContent {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "background_json", nullable = false, columnDefinition = "jsonb")
-    private JsonNode background;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "features_json", nullable = false, columnDefinition = "jsonb")
-    private JsonNode features;
+    private JsonNode overview;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "development_json", nullable = false, columnDefinition = "jsonb")
@@ -60,8 +56,7 @@ public class ProjectContent {
     private ProjectContent(
             Long projectId,
             JsonNode results,
-            JsonNode background,
-            JsonNode features,
+            JsonNode overview,
             JsonNode development,
             JsonNode architecture,
             String architectureImageStorageKey,
@@ -70,8 +65,7 @@ public class ProjectContent {
     ) {
         this.projectId = projectId;
         this.results = results;
-        this.background = background;
-        this.features = features;
+        this.overview = overview;
         this.development = development;
         this.architecture = architecture;
         this.architectureImageStorageKey = architectureImageStorageKey;
@@ -83,8 +77,7 @@ public class ProjectContent {
     public static ProjectContent create(
             Long projectId,
             JsonNode results,
-            JsonNode background,
-            JsonNode features,
+            JsonNode overview,
             JsonNode development,
             JsonNode architecture,
             String architectureImageStorageKey,
@@ -94,8 +87,7 @@ public class ProjectContent {
         return new ProjectContent(
                 projectId,
                 results,
-                background,
-                features,
+                overview,
                 development,
                 architecture,
                 architectureImageStorageKey,
@@ -104,11 +96,10 @@ public class ProjectContent {
         );
     }
 
-    // 프로젝트 고정 본문 6개 Section 전체 교체
+    // 프로젝트 고정 본문 5개 Section 전체 교체
     public void replace(
             JsonNode newResults,
-            JsonNode newBackground,
-            JsonNode newFeatures,
+            JsonNode newOverview,
             JsonNode newDevelopment,
             JsonNode newArchitecture,
             String newArchitectureImageStorageKey,
@@ -116,8 +107,7 @@ public class ProjectContent {
             OffsetDateTime changedAt
     ) {
         results = newResults;
-        background = newBackground;
-        features = newFeatures;
+        overview = newOverview;
         development = newDevelopment;
         architecture = newArchitecture;
         architectureImageStorageKey = newArchitectureImageStorageKey;
