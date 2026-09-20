@@ -23,8 +23,7 @@ export const KYVC_PROJECT_FIXTURE: PublicProjectDetail = {
   ],
   content: {
     results: [{ title: "Fixture 성과", description: "Fixture 성과 설명" }],
-    background: [{ title: "Fixture 배경 제목", body: "Fixture 문제 배경" }],
-    features: [{ title: "Fixture 주요 기능", description: "Fixture 기능 설명" }],
+    overview: [{ title: "Fixture 설명 제목", body: "Fixture 프로젝트 설명" }],
     development: [{ title: "Backend", items: ["Fixture Backend 작업"] }],
     architecture: {
       notes: [
@@ -59,8 +58,7 @@ export const EMPTY_PROJECT_FIXTURE: PublicProjectDetail = {
   technologies: [],
   content: {
     results: [],
-    background: [],
-    features: [],
+    overview: [],
     development: [],
     architecture: { notes: [] },
     engineering: [],

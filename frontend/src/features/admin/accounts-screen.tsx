@@ -2,6 +2,8 @@
 
 import { MoreHorizontal, Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Button from "@/components/ui/button";
+import { useNotification } from "@/components/ui/notification/notification-provider";
 import { formatApiError } from "@/lib/api/client";
 import type { AccountInput, AccountItem, AccountRole } from "./admin-types";
 import AdminActionDialog from "./admin-action-dialog";
@@ -14,14 +16,13 @@ import {
   updateAccountStatus,
   type AccountQuery,
 } from "./admin-account-api";
-import DialogFrame from "./dialog-frame";
+import DialogFrame from "@/components/ui/dialog-frame";
 import {
   EmptyState,
   PageError,
   PageHeader,
   PageLoading,
   StatusLabel,
-  SubmitButton,
   formatDateTime,
 } from "./admin-ui";
 import { useAdminAction } from "./use-admin-action";
@@ -80,10 +81,10 @@ function AccountCreateDialog({
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("account-create-form") as HTMLFormElement | null)?.requestSubmit()}>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button type="button" onClick={() => (document.getElementById("account-create-form") as HTMLFormElement | null)?.requestSubmit()}>
             계정 생성
-          </SubmitButton>
+          </Button>
         </>
       )}
     >
@@ -152,10 +153,10 @@ function PasswordDialog({
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("password-reset-form") as HTMLFormElement | null)?.requestSubmit()}>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button type="button" onClick={() => (document.getElementById("password-reset-form") as HTMLFormElement | null)?.requestSubmit()}>
             비밀번호 초기화
-          </SubmitButton>
+          </Button>
         </>
       )}
     >
@@ -173,6 +174,7 @@ function PasswordDialog({
 
 // Backend Filter와 작업별 ADMIN_ACTION을 사용하는 계정 관리 화면
 export default function AccountsScreen() {
+  const { notify } = useNotification();
   const [accounts, setAccounts] = useState<AccountItem[] | null>(null);
   const [filters, setFilters] = useState<AccountFilters>(EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<AccountFilters>(EMPTY_FILTERS);
@@ -181,15 +183,16 @@ export default function AccountsScreen() {
   const [createOpen, setCreateOpen] = useState(false);
   const [passwordAccount, setPasswordAccount] = useState<AccountItem | null>(null);
   const [menuId, setMenuId] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState("");
   const requestSequence = useRef(0);
   const openMenuRef = useRef<HTMLTableCellElement | null>(null);
   const adminAction = useAdminAction();
 
-  const loadAccounts = useCallback(async () => {
+  const loadAccounts = useCallback(async (silent = false) => {
     const requestId = ++requestSequence.current;
-    setLoading(true);
-    setError("");
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     const query: AccountQuery = {
       keyword: appliedFilters.keyword.trim() || undefined,
       role: appliedFilters.role || undefined,
@@ -202,15 +205,23 @@ export default function AccountsScreen() {
       }
     } catch (caught) {
       if (requestSequence.current === requestId) {
-        setAccounts(null);
-        setError(formatApiError(caught));
+        if (silent) {
+          notify({
+            type: "error",
+            title: "최신 데이터 조회 실패",
+            message: "변경은 완료되었지만 최신 계정 정보를 불러오지 못했습니다.",
+          });
+        } else {
+          setAccounts(null);
+          setError(formatApiError(caught));
+        }
       }
     } finally {
-      if (requestSequence.current === requestId) {
+      if (!silent && requestSequence.current === requestId) {
         setLoading(false);
       }
     }
-  }, [appliedFilters]);
+  }, [appliedFilters, notify]);
 
   useEffect(() => {
     let active = true;
@@ -248,9 +259,9 @@ export default function AccountsScreen() {
   };
 
   const completeMutation = (message: string) => {
-    setFeedback(message);
+    notify({ type: "success", title: "계정 변경 완료", message });
     setMenuId(null);
-    void loadAccounts();
+    void loadAccounts(true);
   };
 
   const queueCreate = (input: AccountInput) => {
@@ -303,15 +314,9 @@ export default function AccountsScreen() {
       <PageHeader
         title="Accounts"
         description="관리자와 Tools 사용 계정의 권한, 활성 상태와 최근 로그인을 관리합니다."
-        action={(
-          <button className={`${styles.primaryButton} type-body`} type="button" onClick={() => setCreateOpen(true)}>
-            <Plus aria-hidden="true" />
-            계정 생성
-          </button>
-        )}
       />
-
-      <form className={styles.filterBar} onSubmit={handleFilter}>
+      <section className={`${styles.managementSurface} ${styles.accountsSurface}`} aria-label="계정 관리">
+        <form className={`${styles.filterBar} ${styles.accountsFilterBar}`} onSubmit={handleFilter}>
         <label>
           <span className="type-small">계정 검색</span>
           <div className={styles.searchField}>
@@ -335,10 +340,10 @@ export default function AccountsScreen() {
             <option value="false">비활성</option>
           </select>
         </label>
-        <button className={`${styles.secondaryButton} type-body`} type="submit">조회</button>
-      </form>
+          <Button variant="secondary" type="submit">조회</Button>
+          <Button type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />계정 생성</Button>
+        </form>
 
-      {feedback && <p className={`${styles.feedbackBanner} type-body`} role="status">{feedback}</p>}
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
 
       {loading ? (
@@ -350,12 +355,11 @@ export default function AccountsScreen() {
       ) : accounts ? (
         <div className={styles.dataTableWrap}>
           <table className={styles.dataTable}>
-            <thead><tr><th>계정</th><th>이름</th><th>권한</th><th>상태</th><th>최근 로그인</th><th><span className={styles.srOnly}>작업</span></th></tr></thead>
+            <thead><tr><th>계정</th><th>권한</th><th>상태</th><th>최근 로그인</th><th><span className={styles.srOnly}>작업</span></th></tr></thead>
             <tbody>
               {accounts.map((account) => (
                 <tr key={account.id}>
-                  <td data-label="계정"><strong>{account.email}</strong></td>
-                  <td data-label="이름">{account.name}</td>
+                  <td data-label="계정"><div className={styles.accountIdentity}><strong>{account.name}</strong><span>{account.email}</span></div></td>
                   <td data-label="권한"><span className={styles.roleBadge}>{account.role}</span></td>
                   <td data-label="상태"><StatusLabel tone={account.enabled ? "success" : "neutral"}>{account.enabled ? "활성" : "비활성"}</StatusLabel></td>
                   <td data-label="최근 로그인"><time>{formatDateTime(account.recentLoginAt)}</time></td>
@@ -369,6 +373,7 @@ export default function AccountsScreen() {
           </table>
         </div>
       ) : null}
+      </section>
 
       {createOpen && <AccountCreateDialog onClose={() => setCreateOpen(false)} onSubmit={queueCreate} />}
       {passwordAccount && <PasswordDialog account={passwordAccount} onClose={() => setPasswordAccount(null)} onSubmit={queuePassword} />}

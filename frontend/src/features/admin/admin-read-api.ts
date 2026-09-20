@@ -1,8 +1,14 @@
 import { apiRequest } from "@/lib/api/client";
 import type {
+  AdminMonitoringData,
   DashboardData,
   ErrorLogPage,
   LoginLogPage,
+  MonitoringSettings,
+  MonitoringSettingsInput,
+  MonitoringTarget,
+  MonitoringTargetCreateInput,
+  MonitoringTargetUpdateInput,
 } from "./admin-types";
 
 export type DashboardMonths = 6 | 12;
@@ -41,6 +47,35 @@ export function kstEndOfDay(value: string) {
 export function getAdminDashboard(months: DashboardMonths) {
   return apiRequest<DashboardData>("/admin/dashboard", {
     query: { months },
+  });
+}
+
+// Monitoring 설정과 관리 대상을 함께 조회
+export function getAdminMonitoring() {
+  return apiRequest<AdminMonitoringData>("/admin/monitoring");
+}
+
+// Monitoring 실행 설정 변경
+export function updateMonitoringSettings(input: MonitoringSettingsInput) {
+  return apiRequest<MonitoringSettings>("/admin/monitoring/settings", {
+    method: "PATCH",
+    json: input,
+  });
+}
+
+// Monitoring Target 등록
+export function createMonitoringTarget(input: MonitoringTargetCreateInput) {
+  return apiRequest<MonitoringTarget>("/admin/monitoring/targets", {
+    method: "POST",
+    json: input,
+  });
+}
+
+// Monitoring Target 변경
+export function updateMonitoringTarget(targetId: number, input: MonitoringTargetUpdateInput) {
+  return apiRequest<MonitoringTarget>(`/admin/monitoring/targets/${targetId}`, {
+    method: "PATCH",
+    json: input,
   });
 }
 

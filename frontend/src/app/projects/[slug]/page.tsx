@@ -9,6 +9,7 @@ import {
   fetchPublicPortfolio,
   fetchPublicProject,
 } from "@/lib/api/public-server";
+import { getDefaultOgImageUrl, getPublicSiteOrigin, publicUrl } from "@/lib/metadata/public-metadata";
 import ProjectDetailView, { ProjectErrorView } from "./project-detail-view";
 
 type ProjectPageProps = {
@@ -38,10 +39,33 @@ export async function generateMetadata({ params }: ProjectPageProps): Promise<Me
   const owner = portfolioResult.status === "fulfilled"
     ? mapPublicPortfolio(portfolioResult.value).content.NAME
     : null;
+  const title = project.name
+    ? owner ? `${project.name} | ${owner} 포트폴리오` : project.name
+    : undefined;
+  const description = project.summaryText || undefined;
+  const origin = getPublicSiteOrigin();
+  const canonical = origin ? publicUrl(origin, `/projects/${encodeURIComponent(project.slug)}`) : undefined;
+  const image = getDefaultOgImageUrl(origin);
 
   return {
-    title: owner ? `${project.name} | ${owner} 포트폴리오` : project.name,
-    description: project.summaryText || undefined,
+    title,
+    description,
+    alternates: canonical ? { canonical } : undefined,
+    openGraph: {
+      type: "website",
+      locale: "ko_KR",
+      title,
+      description,
+      url: canonical,
+      siteName: owner || undefined,
+      images: image ? [{ url: image }] : undefined,
+    },
+    twitter: image ? {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    } : undefined,
   };
 }
 

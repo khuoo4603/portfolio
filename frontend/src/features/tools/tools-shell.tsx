@@ -1,10 +1,13 @@
 "use client";
 
-import { LoaderCircle } from "lucide-react";
+import { ArrowRightLeft, LoaderCircle } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { SiteHeader, type HeaderNavigationItem } from "@/app/portfolio-chrome";
-import DialogFrame from "@/features/admin/dialog-frame";
+import Button from "@/components/ui/button";
+import DialogFrame from "@/components/ui/dialog-frame";
+import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import { formatCountdown, useCountdown } from "@/features/auth/challenge-time";
 import OtpInput from "@/features/auth/otp-input";
 import { formatApiError } from "@/lib/api/client";
@@ -63,12 +66,12 @@ function ProfileDialog({
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onLogout}>
+          <Button variant="secondary" type="button" onClick={onLogout}>
             로그아웃
-          </button>
-          <button className={`${styles.primaryButton} type-body`} type="button" onClick={onPasswordChange}>
+          </Button>
+          <Button type="button" onClick={onPasswordChange}>
             비밀번호 변경
-          </button>
+          </Button>
         </>
       )}
     >
@@ -215,13 +218,10 @@ export function PasswordChangeDialog({
       closeOnEscape={!formInProgress}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose} disabled={submitting}>
+          <Button variant="secondary" type="button" onClick={onClose} disabled={submitting}>
             취소
-          </button>
-          <button className={`${styles.primaryButton} type-body`} type="submit" form="tools-password-change-form" disabled={inputDisabled}>
-            <span>{submitting ? "변경 중" : "비밀번호 변경"}</span>
-            {submitting && <LoaderCircle className={styles.spinIcon} aria-hidden="true" />}
-          </button>
+          </Button>
+          <Button busy={submitting} type="submit" form="tools-password-change-form" disabled={inputDisabled}>비밀번호 변경</Button>
         </>
       )}
     >
@@ -393,6 +393,7 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
   });
 
   return (
+    <NotificationProvider topOffset="calc(var(--portfolio-header-height, var(--space-64)) + var(--space-20))">
     <div className={styles.toolsShell}>
       <SiteHeader
         mark="Tools"
@@ -400,6 +401,15 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
         markLabel="Tools 홈"
         navigation={navigation}
         navigationLabel="Tools 주요 메뉴"
+        leadingUtilityActions={session.user.role === "ADMIN" ? (
+          <Link
+            className={styles.toolsAdminHeaderLink}
+            href="/admin"
+            aria-label="Admin으로 이동"
+          >
+            <ArrowRightLeft aria-hidden="true" />
+          </Link>
+        ) : null}
         utilityActions={(
           <button className={styles.profileBadge} type="button" onClick={() => setProfileOpen(true)}>
             <span className={styles.profileBadgeAvatar} aria-hidden="true">
@@ -408,6 +418,12 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
             <span className="type-small">{session.user.name}</span>
           </button>
         )}
+        mobileUtilityActions={session.user.role === "ADMIN" ? (
+          <Link className={styles.toolsAdminMobileLink} href="/admin" aria-label="Admin으로 이동">
+            <ArrowRightLeft aria-hidden="true" />
+            <span>Admin으로 이동</span>
+          </Link>
+        ) : null}
       />
 
       <ToolsSessionContext.Provider value={session}>{children}</ToolsSessionContext.Provider>
@@ -434,5 +450,6 @@ export default function ToolsShell({ children }: { children: ReactNode }) {
         />
       ) : null}
     </div>
+    </NotificationProvider>
   );
 }

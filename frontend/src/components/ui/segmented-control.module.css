@@ -1,6 +1,6 @@
 .viewport {
   --segment-active-background: var(--bg-surface);
-  --segment-active-border: transparent;
+  --segment-active-border: var(--border-strong);
   --segment-active-shadow: var(--control-shadow-active);
   --segment-track-border: var(--border-default);
   --segment-track-shadow: var(--control-shadow-rest);
@@ -69,12 +69,6 @@
 .segment[aria-pressed="true"] {
   color: var(--text-primary);
   font-weight: 600;
-}
-
-/* Dark Theme의 Track 및 Active Tile 경계 강화 */
-:global([data-theme="dark"]) .viewport {
-  --segment-active-border: color-mix(in srgb, var(--accent-primary) 78%, var(--ink-300));
-  --segment-track-border: color-mix(in srgb, var(--border-accent) 82%, var(--ink-300));
 }
 
 @media (max-width: 767px) {

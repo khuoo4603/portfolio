@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 
 type PortfolioTheme = "light" | "dark";
 
 const THEME_TRANSITION_DURATION = 520;
 const THEME_TRANSITION_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-// Theme 전환 Origin과 Viewport 전체를 덮는 반경 계산
 export function calculateThemeReveal(
   rect: Pick<DOMRect, "left" | "top" | "width" | "height">,
   viewportWidth: number,
@@ -36,12 +35,20 @@ function applyTheme(theme: PortfolioTheme) {
   }
 }
 
-// View Transition 기반 Light·Dark Theme 전환 제어
-export default function ThemeToggle() {
+// Root Snapshot 기반 Theme 원형 전환
+export default function ThemeToggle({
+  ariaLabel = "색상 테마 전환",
+  className,
+  children,
+}: {
+  ariaLabel?: string;
+  className?: string;
+  children?: ReactNode;
+}) {
+  // Theme 전환과 Browser 저장
   const themeToggleRef = useRef<HTMLButtonElement>(null);
   const themeTransitionRunningRef = useRef(false);
 
-  // 현재 Theme 반전과 Circle Reveal 전환 제어
   const handleThemeToggle = async () => {
     if (themeTransitionRunningRef.current) {
       return;
@@ -50,13 +57,13 @@ export default function ThemeToggle() {
     const root = document.documentElement;
     const nextTheme: PortfolioTheme = root.dataset.theme === "dark" ? "light" : "dark";
     const button = themeToggleRef.current;
-    const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
     if (
-      typeof document.startViewTransition !== "function"
-      || isReducedMotion
-      || !button
-      || typeof root.animate !== "function"
+      typeof document.startViewTransition !== "function" ||
+      isReducedMotion ||
+      !button ||
+      typeof root.animate !== "function"
     ) {
       applyTheme(nextTheme);
       return;
@@ -68,7 +75,6 @@ export default function ThemeToggle() {
       window.innerHeight,
     );
     let themeApplied = false;
-
     themeTransitionRunningRef.current = true;
 
     try {
@@ -108,16 +114,17 @@ export default function ThemeToggle() {
   return (
     <button
       ref={themeToggleRef}
-      className="theme-toggle"
+      className={className ? `theme-toggle ${className}` : "theme-toggle"}
       type="button"
       onClick={handleThemeToggle}
-      aria-label="색상 테마 전환"
+      aria-label={ariaLabel}
     >
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <circle className="theme-toggle-orbit" cx="12" cy="12" r="7.5" />
         <path className="theme-toggle-half" d="M12 4.5a7.5 7.5 0 0 1 0 15Z" />
         <path className="theme-toggle-axis" d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" />
       </svg>
+      {children}
     </button>
   );
 }

@@ -12,53 +12,61 @@
         </encoder>
     </appender>
 
-    <appender name="APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${logPath}/application.log</file>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>ERROR</level>
-            <onMatch>DENY</onMatch>
-            <onMismatch>NEUTRAL</onMismatch>
-        </filter>
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
-        </filter>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${logPath}/archive/application-%d{yyyy-MM-dd,Asia/Seoul}.%i.log</fileNamePattern>
-            <maxFileSize>50MB</maxFileSize>
-        </rollingPolicy>
-        <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-    </appender>
-
-    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${logPath}/error.log</file>
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>ERROR</level>
-        </filter>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${logPath}/archive/error-%d{yyyy-MM-dd,Asia/Seoul}.%i.log</fileNamePattern>
-            <maxFileSize>50MB</maxFileSize>
-        </rollingPolicy>
-        <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
-            <charset>UTF-8</charset>
-        </encoder>
-    </appender>
-
     <logger name="PORTFOLIO_STARTUP_CONSOLE" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="com.khuoo.portfolio.common.startup.StartupLoggerRunner" level="INFO" additivity="false">
-        <appender-ref ref="APPLICATION_FILE"/>
-        <appender-ref ref="ERROR_FILE"/>
-    </logger>
+    <springProfile name="!monitor">
+        <appender name="APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${logPath}/application.log</file>
+            <filter class="ch.qos.logback.classic.filter.LevelFilter">
+                <level>ERROR</level>
+                <onMatch>DENY</onMatch>
+                <onMismatch>NEUTRAL</onMismatch>
+            </filter>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>INFO</level>
+            </filter>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${logPath}/archive/application-%d{yyyy-MM-dd,Asia/Seoul}.%i.log</fileNamePattern>
+                <maxFileSize>50MB</maxFileSize>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
 
-    <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="APPLICATION_FILE"/>
-        <appender-ref ref="ERROR_FILE"/>
-    </root>
+        <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${logPath}/error.log</file>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>ERROR</level>
+            </filter>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${logPath}/archive/error-%d{yyyy-MM-dd,Asia/Seoul}.%i.log</fileNamePattern>
+                <maxFileSize>50MB</maxFileSize>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <logger name="com.khuoo.portfolio.common.startup.StartupLoggerRunner" level="INFO" additivity="false">
+            <appender-ref ref="APPLICATION_FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
+        </logger>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="APPLICATION_FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="monitor">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
 </configuration>

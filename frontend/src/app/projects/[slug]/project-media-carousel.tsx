@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import type { ProjectMedia } from "@/types/api";
-import styles from "./kyvc-detail.module.css";
+import styles from "./project-detail.module.css";
 
 type ProjectMediaCarouselProps = {
   media: readonly ProjectMedia[];

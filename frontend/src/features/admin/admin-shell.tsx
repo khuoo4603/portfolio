@@ -8,6 +8,8 @@ import {
   Menu,
   PanelTop,
   PanelsTopLeft,
+  ArrowRightLeft,
+  Activity,
   ScrollText,
   UserRound,
   Users,
@@ -16,6 +18,8 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ThemeToggle from "@/app/theme-toggle";
+import Button from "@/components/ui/button";
+import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import { ApiError, formatApiError } from "@/lib/api/client";
 import { logout as logoutRequest } from "@/lib/auth/auth-api";
 import { useAuthSession } from "@/lib/auth/use-auth-session";
@@ -28,6 +32,7 @@ const NAV_ITEMS = [
   { href: "/admin/projects", label: "Projects", icon: PanelsTopLeft },
   { href: "/admin/accounts", label: "Accounts", icon: Users },
   { href: "/admin/tools", label: "Tools", icon: Wrench },
+  { href: "/admin/monitoring", label: "Monitoring", icon: Activity },
   { href: "/admin/logs", label: "Logs", icon: ScrollText },
 ] as const;
 
@@ -56,10 +61,9 @@ function Navigation({
   return (
     <div className={styles.navigationInner}>
       <div className={styles.adminIdentity}>
-        <span className={styles.identityMark}>{account.name.trim().charAt(0).toUpperCase() || "A"}</span>
+        <span className={styles.identityMark}>KH</span>
         <span className={styles.identityCopy}>
-          <strong>{account.name}</strong>
-          <small>{account.role}</small>
+          <strong>PORTFOLIO ADMIN</strong>
         </span>
       </div>
 
@@ -83,17 +87,25 @@ function Navigation({
       </nav>
 
       <div className={styles.navigationBottom}>
-        <div className={styles.themeControl}>
-          <ThemeToggle />
+        <Link
+          className={styles.workspaceSwitchLink}
+          href="/tools"
+          aria-label="Tools로 이동"
+          onClick={onNavigate}
+        >
+          <ArrowRightLeft aria-hidden="true" />
+          <span>Tools로 이동</span>
+        </Link>
+        <ThemeToggle className={styles.themeControl}>
           <span>Theme</span>
-        </div>
+        </ThemeToggle>
         <div className={styles.accountSummary}>
           <span className={styles.accountAvatar} aria-hidden="true">
             {account.name.trim().charAt(0) || <UserRound />}
           </span>
           <span className={styles.accountCopy}>
             <strong>{account.name}</strong>
-            <small>{account.email}</small>
+            <small>{account.role} · {account.email}</small>
           </span>
         </div>
         <button
@@ -227,9 +239,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <div className={styles.gateError} role="alert">
         <h1 className="type-title">Session을 확인하지 못했습니다</h1>
         <p className="type-body">{formatApiError(auth.error)}</p>
-        <button className={`${styles.secondaryButton} type-body`} type="button" onClick={() => void auth.refresh()}>
+        <Button variant="secondary" type="button" onClick={() => void auth.refresh()}>
           다시 시도
-        </button>
+        </Button>
       </div>
     </main>
   ) : !isAdmin ? (
@@ -243,7 +255,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   ) : null;
 
   return (
-    <>
+    <NotificationProvider>
       {sessionGate}
       <div className={styles.adminLayout} hidden={!isAdmin}>
         {adminUser ? (
@@ -269,7 +281,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             >
               <Menu aria-hidden="true" />
             </button>
-            <span>{adminUser.name} / {adminUser.role}</span>
+            <span>KH / ADMIN</span>
             <ThemeToggle />
           </header>
         ) : null}
@@ -300,6 +312,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <div className={styles.adminContent}>{children}</div>
         </main>
       </div>
-    </>
+    </NotificationProvider>
   );
 }

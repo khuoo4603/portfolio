@@ -10,16 +10,8 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Monitoring 활성 설정에서도 Backend Web Context의 Scheduler 비활성 검증
-@SpringBootTest(properties = {
-        "portfolio.monitoring.enabled=true",
-        "portfolio.monitoring.targets.portfolio-frontend=http://127.0.0.1:1/frontend",
-        "portfolio.monitoring.targets.portfolio-backend=http://127.0.0.1:1/backend",
-        "portfolio.monitoring.targets.kyvc-frontend=http://127.0.0.1:1/kyvc-frontend",
-        "portfolio.monitoring.targets.kyvc-backend=http://127.0.0.1:1/kyvc-backend",
-        "portfolio.monitoring.targets.kyvc-core=http://127.0.0.1:1/kyvc-core",
-        "portfolio.monitoring.targets.shkutrack=http://127.0.0.1:1/shkutrack"
-})
+// Backend Web Context의 Monitor Scheduler 비활성 검증
+@SpringBootTest
 class MonitoringWebConditionIntegrationTests extends PostgresIntegrationTest {
 
     @Autowired

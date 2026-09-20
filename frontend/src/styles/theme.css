@@ -1,26 +1,30 @@
 :root {
   color-scheme: light;
 
-  --bg-base: color-mix(in srgb, var(--sand-50) 86%, var(--ink-50));
-  --bg-surface: color-mix(in srgb, var(--sand-50) 70%, var(--sand-100));
-  --bg-elevated: color-mix(in srgb, var(--sand-50) 72%, var(--steel-50));
-  --text-heading: var(--steel-700);
+  --bg-base: color-mix(in srgb, white 97%, var(--ink-950));
+  --bg-surface: white;
+  --bg-elevated: color-mix(in srgb, white 95%, var(--ink-950));
+  --bg-input: color-mix(in srgb, white 96%, var(--ink-950));
+  --text-heading: var(--ink-950);
   --text-primary: var(--ink-950);
   --text-secondary: var(--ink-700);
-  --text-muted: var(--steel-700);
-  --border-default: var(--sage-300);
+  --text-muted: var(--ink-500);
+  --border-default: color-mix(in srgb, white 90%, var(--ink-950));
+  --border-strong: color-mix(in srgb, white 82%, var(--ink-950));
   --border-accent: var(--steel-400);
   --accent-primary: var(--steel-700);
   --accent-strong: var(--steel-800);
   --accent-soft: var(--steel-100);
   --accent-secondary: var(--sage-600);
+  --control-foreground: var(--sand-50);
   --focus-ring: var(--steel-600);
   --status-success: var(--sage-700);
   --status-error: var(--sand-800);
   --status-warning: var(--sand-700);
-  --control-shadow-rest: 0 4px 10px -8px color-mix(in srgb, var(--ink-950) 30%, transparent);
-  --control-shadow-hover: 0 6px 14px -8px color-mix(in srgb, var(--ink-950) 38%, transparent);
-  --control-shadow-active: 0 7px 16px -7px color-mix(in srgb, var(--ink-950) 42%, transparent);
+  --status-neutral: var(--steel-600);
+  --control-shadow-rest: 0 4px 10px -8px color-mix(in srgb, var(--ink-950) 16%, transparent);
+  --control-shadow-hover: 0 6px 14px -8px color-mix(in srgb, var(--ink-950) 22%, transparent);
+  --control-shadow-active: 0 7px 16px -7px color-mix(in srgb, var(--ink-950) 26%, transparent);
 }
 
 :root[data-theme="dark"] {
@@ -29,20 +33,24 @@
   --bg-base: var(--ink-950);
   --bg-surface: var(--ink-900);
   --bg-elevated: var(--ink-800);
-  --text-heading: var(--sand-300);
+  --bg-input: color-mix(in srgb, var(--ink-950) 82%, var(--ink-900));
+  --text-heading: var(--ink-50);
   --text-primary: var(--ink-50);
   --text-secondary: var(--ink-200);
   --text-muted: var(--ink-300);
   --border-default: var(--ink-700);
+  --border-strong: var(--ink-600);
   --border-accent: var(--steel-600);
   --accent-primary: var(--steel-400);
   --accent-strong: var(--steel-500);
   --accent-soft: var(--steel-800);
   --accent-secondary: var(--sage-500);
+  --control-foreground: var(--ink-950);
   --focus-ring: var(--steel-300);
   --status-success: var(--sage-400);
   --status-error: var(--sand-400);
   --status-warning: var(--sand-500);
+  --status-neutral: var(--ink-300);
   --control-shadow-rest:
     0 5px 10px -4px color-mix(in srgb, var(--ink-950) 94%, transparent),
     0 10px 22px -8px color-mix(in srgb, var(--steel-900) 58%, transparent);

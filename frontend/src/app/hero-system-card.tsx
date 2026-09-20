@@ -16,10 +16,14 @@ import HeroWorldMap, {
   HeroEastAsiaMap,
   HeroNarrativeWorldMap,
   KOREA_ANCHOR,
+  type MapDensity,
   MOBILE_KOREA_VIEWBOX,
   TABLET_PORTRAIT_KOREA_VIEWBOX,
   WORLD_MAP_SIZE,
   calculateEastAsiaFocusRatio,
+  calculateMapSurface,
+  calculatePortraitKoreaViewBox,
+  expandViewBoxAroundFocus,
   formatMapViewBox,
   projectPoint,
 } from "./hero-world-map";
@@ -53,18 +57,20 @@ export const PORTRAIT_HERO_SCROLL_TIMING = {
   mapCenterEnd: 0.1,
   zoomStart: 0.03,
   fullMapHoldDuration: 0,
-  baseZoomDuration: 0.3,
-  postZoomHoldDuration: 0.12,
-  sceneExitDuration: 0.12,
-  tailDuration: 0.2,
+  baseZoomDuration: 0.23,
+  postZoomHoldDuration: 0.1,
+  sceneExitDuration: 0.1,
+  tailDuration: 0.16,
 } as const;
 
 export const KOREA_ZOOM_DISTANCE_MULTIPLIER = 3.2;
 export const KOREA_ZOOM_SCALE_MULTIPLIER = EAST_ASIA_ZOOM_SCALE;
 export const MOBILE_KOREA_ZOOM_SCALE = 1.08 * 1.5;
+export const MOBILE_FOCUS_START_OVERVIEW_RATIO = 1.18;
 export const TABLET_PORTRAIT_KOREA_ZOOM_SCALE = (
   TABLET_PORTRAIT_KOREA_VIEWBOX.width * EAST_ASIA_ZOOM_SCALE * 1.5
 ) / EAST_ASIA_MAP_SIZE.width;
+export const TABLET_PORTRAIT_FOCUS_EXTRA_ZOOM = 1.12;
 export const WORLD_TO_FOCUS_SCALE = 360
   / (EAST_ASIA_SOURCE_CROP.lng.max - EAST_ASIA_SOURCE_CROP.lng.min);
 export const FINAL_VIRTUAL_ZOOM_SCALE = WORLD_TO_FOCUS_SCALE * EAST_ASIA_ZOOM_SCALE;
@@ -76,8 +82,11 @@ export const PORTRAIT_WORLD_CAMERA_PAN_START_SCALE = 1.08;
 export const MAP_DOT_SCREEN_WIDTH = {
   worldStart: 1.65,
   worldHandoff: 2.05,
+  tabletPortraitWorld: 2.6,
   focusFinal: 3.6,
 } as const;
+
+export const MAP_LAYER_VISIBILITY_EPSILON = 0.001;
 
 export const PROJECT_GALLERY_MOTIONS = [
   { exitX: -0.48, exitY: -0.16, from: 0.08, sideX: -0.32, sideY: -0.11, to: 0.51 },
@@ -87,16 +96,19 @@ export const PROJECT_GALLERY_MOTIONS = [
 
 const projectGalleryFrames = [
   {
+    caption: "특성화고 진로 특강",
     height: 525,
     src: "/images/profile/map-zoom-gallery-01.webp",
     width: 700,
   },
   {
+    caption: "KFIP Toss특별상 수상",
     height: 854,
     src: "/images/profile/map-zoom-gallery-02.webp",
     width: 1280,
   },
   {
+    caption: "Hello New() World 해커톤 대상 수상",
     height: 520,
     src: "/images/profile/map-zoom-gallery-03.webp",
     width: 960,
@@ -179,6 +191,9 @@ type GalleryFrameStyle = CSSProperties & {
 export type GalleryViewport = "desktop" | "tablet" | "tabletPortrait" | "mobile";
 export type HeroScrollProfile = "default" | "portrait";
 export type MapCameraProfile = "default" | "mobilePortrait" | "tabletPortrait";
+export type MapNarrativeMode = "worldToFocus" | "focusOnly";
+
+export const MOBILE_PERFORMANCE_QUERY = "(max-width: 767px), (max-width: 1023px) and (orientation: landscape) and (max-height: 600px)";
 
 const galleryViewportMotion = {
   desktop: {
@@ -196,8 +211,8 @@ const galleryViewportMotion = {
     offscreenMargin: 24,
     perspective: 1200,
     safeMargin: 20,
-    x: 0.72,
-    y: 0.75,
+    x: 0.78,
+    y: 0.68,
   },
   tabletPortrait: {
     blur: 14,
@@ -205,17 +220,17 @@ const galleryViewportMotion = {
     offscreenMargin: 24,
     perspective: 1200,
     safeMargin: 20,
-    x: 1,
-    y: 1,
+    x: 0.82,
+    y: 0.72,
   },
   mobile: {
-    blur: 5,
+    blur: 0,
     depth: 0.72,
     offscreenMargin: 16,
     perspective: 900,
     safeMargin: 16,
-    x: 0.45,
-    y: 0.63,
+    x: 0.66,
+    y: 0.54,
   },
 } as const;
 
@@ -301,7 +316,7 @@ export function calculateMapZoomState(
   const finalFocusScale = cameraProfile === "mobilePortrait"
     ? MOBILE_KOREA_ZOOM_SCALE
     : cameraProfile === "tabletPortrait"
-      ? TABLET_PORTRAIT_KOREA_ZOOM_SCALE
+      ? TABLET_PORTRAIT_KOREA_ZOOM_SCALE * TABLET_PORTRAIT_FOCUS_EXTRA_ZOOM
       : EAST_ASIA_ZOOM_SCALE;
   const cameraPanStart = cameraProfile === "default"
     ? WORLD_CAMERA_PAN_START_SCALE
@@ -334,6 +349,36 @@ export function calculateMapZoomState(
       focusDotProgress,
     ),
   };
+}
+
+// Mobile에서는 변화량이 작은 Dot Stroke Animation을 고정해 SVG Paint 비용을 줄인다.
+export function getMapDotWidths(
+  zoomState: Pick<ReturnType<typeof calculateMapZoomState>, "focusMapDotWidth" | "worldMapDotWidth">,
+  isMobilePerformanceProfile: boolean,
+  isTabletPortrait = false,
+) {
+  if (isMobilePerformanceProfile) {
+    return {
+      focusMapDotWidth: MAP_DOT_SCREEN_WIDTH.focusFinal,
+      worldMapDotWidth: MAP_DOT_SCREEN_WIDTH.worldHandoff,
+    };
+  }
+
+  if (isTabletPortrait) {
+    return {
+      focusMapDotWidth: zoomState.focusMapDotWidth,
+      worldMapDotWidth: MAP_DOT_SCREEN_WIDTH.tabletPortraitWorld,
+    };
+  }
+
+  return {
+    focusMapDotWidth: zoomState.focusMapDotWidth,
+    worldMapDotWidth: zoomState.worldMapDotWidth,
+  };
+}
+
+export function shouldUpdateMapTransform(opacity: number) {
+  return opacity > MAP_LAYER_VISIBILITY_EPSILON;
 }
 
 const calculateGallerySpatialState = (
@@ -399,8 +444,11 @@ type SceneGeometry = {
   galleryViewport: GalleryViewport;
   graph: SceneRect;
   isDesktop: boolean;
+  isMobilePerformanceProfile: boolean;
   isReducedMotion: boolean;
+  mobileFocusFinalScale: number;
   mapCameraProfile: MapCameraProfile;
+  narrativeMode: MapNarrativeMode;
   narrativeTargetX: number;
   narrativeTargetY: number;
   scrollLayout: {
@@ -412,6 +460,8 @@ type SceneGeometry = {
   stickyTop: number;
   worldUnitX: number;
   worldUnitY: number;
+  focusCameraOrigin: GalleryPoint;
+  narrativeCameraOrigin: GalleryPoint;
 };
 
 type GalleryAnchorInput = {
@@ -577,6 +627,72 @@ export function calculatePortraitWorldOffsetX(
   return (targetRatio - koreaRatioX) * mapWidth;
 }
 
+// Map 카메라 profile 기반 내러티브 경로 선택
+export function getMapNarrativeMode(cameraProfile: MapCameraProfile): MapNarrativeMode {
+  return cameraProfile === "mobilePortrait" ? "focusOnly" : "worldToFocus";
+}
+
+// Narrative mode별 Marker와 Gallery 공통 Map target 선택
+export function calculateMapNarrativeTarget(
+  narrativeMode: MapNarrativeMode,
+  narrativeTarget: GalleryPoint,
+  focusTarget: GalleryPoint,
+) {
+  return narrativeMode === "focusOnly" ? focusTarget : narrativeTarget;
+}
+
+// 확장 시작 ViewBox 기준 기존 최종 Geographic Coverage 보정
+export function calculateMobileFocusFinalScale(
+  currentMobileViewBox: { width: number },
+  mobileStartViewBox: { width: number },
+) {
+  return MOBILE_KOREA_ZOOM_SCALE * (mobileStartViewBox.width / currentMobileViewBox.width);
+}
+
+// Portrait World Map 전용 Presentation Surface 좌표 계산
+export function calculatePortraitWorldPresentationSurface(
+  stageWidth: number,
+  stageHeight: number,
+  koreaRatioX: number,
+) {
+  const width = stageHeight * 2.1;
+  const height = width / 2;
+  const offsetX = calculatePortraitWorldOffsetX(width, koreaRatioX);
+
+  return {
+    x: stageWidth / 2 + offsetX - width / 2,
+    y: stageHeight / 2 - height / 2,
+    width,
+    height,
+  };
+}
+
+// Tablet Portrait World Map 전용 Overscan Presentation Surface 계산
+export function calculateTabletPortraitWorldPresentation(
+  stageWidth: number,
+  stageHeight: number,
+  koreaRatioX: number,
+) {
+  const height = stageHeight * 1.15;
+  const width = height * 2;
+  const offsetX = calculatePortraitWorldOffsetX(width, koreaRatioX);
+
+  return {
+    x: stageWidth / 2 + offsetX - width / 2,
+    y: stageHeight / 2 - height / 2,
+    width,
+    height,
+  };
+}
+
+// Landscape 입력 특성 기반 Tablet profile 판정
+export function isTabletLandscapeProfile(
+  isTabletLandscapeSize: boolean,
+  isTabletLandscapeTouch: boolean,
+) {
+  return isTabletLandscapeSize || isTabletLandscapeTouch;
+}
+
 // Map Camera 이동이 반영된 Seoul Marker의 Gallery Plane Local 좌표 계산
 export function calculateGalleryOrigin(
   anchorGlobalX: number,
@@ -629,16 +745,42 @@ export function calculateHeroScrollMetrics(
   } as const;
 }
 
+export function calculateAboutLayout(
+  metrics: ReturnType<typeof calculateHeroScrollMetrics>,
+  stickyTop: number,
+  anchorScrollMargin: number,
+  isShortDesktop: boolean,
+) {
+  const aboutRevealPoint = isShortDesktop
+    ? metrics.sceneExitEnd
+    : metrics.sceneExitStart;
+  const aboutAnchorOffset = isShortDesktop
+    ? Math.max(anchorScrollMargin - stickyTop, 0)
+    : Math.max(
+      metrics.sceneExitEnd - metrics.sceneExitStart - stickyTop + anchorScrollMargin,
+      0,
+    );
+
+  return { aboutAnchorOffset, aboutRevealPoint };
+}
+
 // Scroll 픽셀 위치 기반 Hero Narrative 시각 상태 계산
 export function calculateHeroSceneState(
   scrollPixels: number,
   metrics: ReturnType<typeof calculateHeroScrollMetrics>,
   galleryViewport: GalleryViewport = "desktop",
   mapCameraProfile: MapCameraProfile = "default",
+  narrativeMode: MapNarrativeMode = "worldToFocus",
+  mobileFocusFinalScale = MOBILE_KOREA_ZOOM_SCALE,
 ) {
   const centerProgress = smoothProgress(scrollPixels, metrics.mapCenterStart, metrics.mapCenterEnd);
   const zoomProgress = phaseProgress(scrollPixels, metrics.zoomStart, metrics.zoomEnd);
   const zoomState = calculateMapZoomState(zoomProgress, mapCameraProfile);
+  const focusOnlyScale = interpolate(
+    1,
+    mobileFocusFinalScale,
+    smoothProgress(zoomProgress, 0, 1),
+  );
   const mapExit = scrollPixels > metrics.sceneExitStart
     ? smoothProgress(scrollPixels, metrics.sceneExitStart, metrics.sceneExitEnd)
     : 0;
@@ -649,11 +791,16 @@ export function calculateHeroSceneState(
     centerProgress,
     zoomProgress,
     ...zoomState,
+    focusMapScale: narrativeMode === "focusOnly" ? focusOnlyScale : zoomState.focusMapScale,
     mapExit,
     blurStrength: mapExit * 8,
     cardMapOpacity: (1 - centerProgress) * (1 - mapExit),
-    narrativeWorldMapOpacity: centerProgress * (1 - zoomState.focusTransition) * (1 - mapExit),
-    focusMapOpacity: zoomState.focusTransition * (1 - mapExit),
+    narrativeWorldMapOpacity: narrativeMode === "focusOnly"
+      ? 0
+      : centerProgress * (1 - zoomState.focusTransition) * (1 - mapExit),
+    focusMapOpacity: narrativeMode === "focusOnly"
+      ? centerProgress * (1 - mapExit)
+      : zoomState.focusTransition * (1 - mapExit),
     galleryFrames: projectGalleryFrames.map((_, index) => (
       calculateGalleryFrameState(zoomProgress, index, galleryViewport)
     )),
@@ -776,9 +923,9 @@ export default function HeroSystemCard() {
   const galleryPlaneRef = useRef<HTMLDivElement>(null);
   const galleryFrameRefs = useRef<Array<HTMLDivElement | null>>([]);
   const progressRef = useRef(0);
-  const galleryReadyRef = useRef(false);
   const [galleryReady, setGalleryReady] = useState(false);
   const [mapGeometryReady, setMapGeometryReady] = useState(false);
+  const [mapDensity, setMapDensity] = useState<MapDensity>("low");
 
   useEffect(() => {
     const idleWindow = window as IdleWindow;
@@ -792,21 +939,42 @@ export default function HeroSystemCard() {
       activated = true;
       if (idleCallbackId) idleWindow.cancelIdleCallback?.(idleCallbackId);
       if (fallbackTimeoutId) window.clearTimeout(fallbackTimeoutId);
-      window.removeEventListener("scroll", activateGeometry);
       setMapGeometryReady(true);
     };
 
-    window.addEventListener("scroll", activateGeometry, { passive: true, once: true });
     if (idleWindow.requestIdleCallback) {
-      idleCallbackId = idleWindow.requestIdleCallback(activateGeometry, { timeout: 80 });
+      idleCallbackId = idleWindow.requestIdleCallback(activateGeometry, { timeout: 800 });
     } else {
-      fallbackTimeoutId = window.setTimeout(activateGeometry, 0);
+      fallbackTimeoutId = window.setTimeout(activateGeometry, 500);
     }
 
     return () => {
       if (idleCallbackId) idleWindow.cancelIdleCallback?.(idleCallbackId);
       if (fallbackTimeoutId) window.clearTimeout(fallbackTimeoutId);
-      window.removeEventListener("scroll", activateGeometry);
+    };
+  }, []);
+
+  useEffect(() => {
+    const idleWindow = window as IdleWindow;
+    let idleCallbackId = 0;
+    let fallbackTimeoutId = 0;
+    let cancelled = false;
+
+    // Idle 구간의 Gallery optimized image mount
+    const prepareGallery = () => {
+      if (!cancelled) setGalleryReady(true);
+    };
+
+    if (idleWindow.requestIdleCallback) {
+      idleCallbackId = idleWindow.requestIdleCallback(prepareGallery, { timeout: 1200 });
+    } else {
+      fallbackTimeoutId = window.setTimeout(prepareGallery, 700);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleCallbackId) idleWindow.cancelIdleCallback?.(idleCallbackId);
+      if (fallbackTimeoutId) window.clearTimeout(fallbackTimeoutId);
     };
   }, []);
 
@@ -816,6 +984,15 @@ export default function HeroSystemCard() {
     const mapLayer = mapRef.current;
     const narrativeMapViewport = narrativeMapRef.current;
     const focusMapViewport = focusMapRef.current;
+    const narrativeMapPresentation = narrativeMapViewport?.querySelector<HTMLElement>(
+      ".topology-narrative-world-map-presentation",
+    );
+    const narrativeMapCamera = narrativeMapViewport?.querySelector<HTMLElement>(
+      ".topology-narrative-world-map-camera",
+    );
+    const focusMapCamera = focusMapViewport?.querySelector<HTMLElement>(
+      ".topology-focus-map-camera",
+    );
     const galleryPlane = galleryPlaneRef.current;
     const narrativeMapZoom = narrativeMapViewport?.querySelector<SVGGElement>(
       ".topology-narrative-world-map-zoom",
@@ -834,6 +1011,9 @@ export default function HeroSystemCard() {
       || !mapLayer
       || !narrativeMapViewport
       || !focusMapViewport
+      || !narrativeMapPresentation
+      || !narrativeMapCamera
+      || !focusMapCamera
       || !narrativeMapZoom
       || !focusMapZoom
       || !focusMapSvg
@@ -849,13 +1029,27 @@ export default function HeroSystemCard() {
       galleryPlane.querySelectorAll<HTMLImageElement>(".topology-project-gallery-image"),
     );
     const desktopQuery = window.matchMedia("(min-width: 1024px)");
-    const mobileQuery = window.matchMedia("(max-width: 767px)");
-    const portraitMapQuery = window.matchMedia("(max-width: 899px) and (orientation: portrait)");
+    const mobilePortraitQuery = window.matchMedia("(max-width: 767px) and (orientation: portrait)");
+    const tabletPortraitQuery = window.matchMedia(
+      "(min-width: 768px) and (max-width: 1199px) and (orientation: portrait)",
+    );
+    // CSS Tablet Portrait 범위와 Map·Scroll Runtime Profile 동기화
+    const portraitQuery = window.matchMedia("(max-width: 1199px) and (orientation: portrait)");
     const tabletLandscapeQuery = window.matchMedia(
       "(min-width: 768px) and (max-width: 1023px) and (orientation: landscape)",
     );
+    const tabletLandscapeTouchQuery = window.matchMedia(
+      "(orientation: landscape) and (hover: none) and (pointer: coarse)",
+    );
+    const mobileLandscapeQuery = window.matchMedia(
+      "(max-width: 1023px) and (orientation: landscape) and (max-height: 600px)",
+    );
+    const mobilePerformanceQuery = window.matchMedia(MOBILE_PERFORMANCE_QUERY);
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updateMapDensity = () => {
+      setMapDensity(mobilePerformanceQuery.matches ? "low" : "full");
+    };
     let animationFrame = 0;
     let layoutFrame = 0;
     let galleryAnimationFrame = 0;
@@ -875,30 +1069,71 @@ export default function HeroSystemCard() {
       viewport: GalleryViewport;
     } | null = null;
     let flowActive: boolean | null = null;
+    let mapNarrativeActive: boolean | null = null;
     let sceneGeometry: SceneGeometry | null = null;
+    const styleValueCache = new WeakMap<HTMLElement, Map<string, string>>();
 
-    const getMapCameraProfile = (): MapCameraProfile => {
-      if (!portraitMapQuery.matches) return "default";
+    const setStyleProperty = (target: HTMLElement, property: string, value: string) => {
+      let properties = styleValueCache.get(target);
 
-      return mobileQuery.matches ? "mobilePortrait" : "tabletPortrait";
+      if (!properties) {
+        properties = new Map();
+        styleValueCache.set(target, properties);
+      }
+      if (properties.get(property) === value) return;
+
+      properties.set(property, value);
+      target.style.setProperty(property, value);
     };
 
-    const getFocusViewBox = (cameraProfile: MapCameraProfile) => {
+    const getMapCameraProfile = (): MapCameraProfile => {
+      if (!portraitQuery.matches) return "default";
+
+      return mobilePortraitQuery.matches ? "mobilePortrait" : "tabletPortrait";
+    };
+
+    const getFocusViewBox = (cameraProfile: MapCameraProfile, stageSize?: GallerySize) => {
+      if (cameraProfile === "mobilePortrait" && stageSize) {
+        return calculatePortraitKoreaViewBox(stageSize.width, stageSize.height);
+      }
+      if (cameraProfile === "tabletPortrait" && stageSize) {
+        return calculatePortraitKoreaViewBox(
+          stageSize.width,
+          stageSize.height,
+          TABLET_PORTRAIT_KOREA_VIEWBOX,
+        );
+      }
       if (cameraProfile === "mobilePortrait") return MOBILE_KOREA_VIEWBOX;
       if (cameraProfile === "tabletPortrait") return TABLET_PORTRAIT_KOREA_VIEWBOX;
 
       return EAST_ASIA_VIEWBOX;
     };
 
+    const getFocusPresentationViewBox = (
+      cameraProfile: MapCameraProfile,
+      stageSize?: GallerySize,
+    ) => {
+      const currentViewBox = getFocusViewBox(cameraProfile, stageSize);
+
+      return cameraProfile === "mobilePortrait"
+        ? expandViewBoxAroundFocus(
+          currentViewBox,
+          EAST_ASIA_FOCUS_POINT,
+          MOBILE_FOCUS_START_OVERVIEW_RATIO,
+          EAST_ASIA_VIEWBOX,
+        )
+        : currentViewBox;
+    };
+
     // Portrait Profile별 East Asia Camera와 SVG 채움 방식 동기화
-    const updateFocusMapLayout = () => {
+    const updateFocusMapLayout = (stageSize?: GallerySize) => {
       const cameraProfile = getMapCameraProfile();
-      const viewBox = getFocusViewBox(cameraProfile);
+      const viewBox = getFocusPresentationViewBox(cameraProfile, stageSize);
 
       focusMapSvg.setAttribute("viewBox", formatMapViewBox(viewBox));
       focusMapSvg.setAttribute(
         "preserveAspectRatio",
-        cameraProfile === "default" ? "xMidYMid meet" : "xMidYMid slice",
+        "xMidYMid meet",
       );
     };
 
@@ -990,7 +1225,7 @@ export default function HeroSystemCard() {
         !bounds
         || event.pointerType !== "mouse"
         || progressRef.current > HERO_SCROLL_TIMING.topologyExitEnd
-        || mobileQuery.matches
+        || mobilePortraitQuery.matches
         || !finePointerQuery.matches
         || reducedMotionQuery.matches
       ) {
@@ -1041,6 +1276,14 @@ export default function HeroSystemCard() {
       }
     };
 
+    // Mobile 지도 내러티브 구간 Canvas 연속 RAF 상태 동기화
+    const updateMapNarrativeState = (active: boolean) => {
+      if (mapNarrativeActive === active) return;
+
+      mapNarrativeActive = active;
+      document.dispatchEvent(new CustomEvent("hero-map-narrative", { detail: active }));
+    };
+
     // 기존 Layout 높이 기반 Hero 실제 Scroll 거리 계산
     const getBaseScrollDistance = (isPinnedHeroLayout: boolean) => {
       hero.style.removeProperty("--hero-stage-height");
@@ -1058,6 +1301,7 @@ export default function HeroSystemCard() {
       isPinnedHeroLayout: boolean,
       stickyTop: number,
       scrollProfile: HeroScrollProfile,
+      isShortDesktop: boolean,
     ) => {
       const baseDistance = getBaseScrollDistance(isPinnedHeroLayout);
       const metrics = calculateHeroScrollMetrics(baseDistance, scrollProfile);
@@ -1076,14 +1320,15 @@ export default function HeroSystemCard() {
       const sceneStart = isPinnedHeroLayout
         ? heroTop
         : window.scrollY + systemRect.top - stickyTop;
-      const aboutTop = sceneStart + metrics.sceneExitStart + stickyTop;
-      const overlap = Math.max(heroTop + hero.offsetHeight - aboutTop, 0);
       const anchorScrollMargin = Number.parseFloat(window.getComputedStyle(aboutAnchor).scrollMarginTop) || 0;
-      // Fixed Header 보정 포함 Cross-fade 종료 시점 Anchor 위치
-      const aboutAnchorOffset = Math.max(
-        metrics.sceneExitEnd - metrics.sceneExitStart - stickyTop + anchorScrollMargin,
-        0,
+      const { aboutAnchorOffset, aboutRevealPoint } = calculateAboutLayout(
+        metrics,
+        stickyTop,
+        anchorScrollMargin,
+        isShortDesktop,
       );
+      const aboutTop = sceneStart + aboutRevealPoint + stickyTop;
+      const overlap = Math.max(heroTop + hero.offsetHeight - aboutTop, 0);
 
       aboutSection.style.setProperty("--about-transition-height", `${overlap}px`);
       aboutSection.style.setProperty("--about-anchor-offset", `${aboutAnchorOffset}px`);
@@ -1091,11 +1336,16 @@ export default function HeroSystemCard() {
       return { baseDistance, metrics, sceneStart };
     };
 
-    const getGalleryViewport = (isDesktop: boolean): GalleryViewport => (
-      mobileQuery.matches
+    const getGalleryViewport = (
+      isDesktop: boolean,
+      isTabletLandscape: boolean,
+    ): GalleryViewport => (
+      mobilePortraitQuery.matches
         ? "mobile"
-        : portraitMapQuery.matches
+        : tabletPortraitQuery.matches
           ? "tabletPortrait"
+          : isTabletLandscape
+            ? "tablet"
           : isDesktop
             ? "desktop"
             : "tablet"
@@ -1131,12 +1381,22 @@ export default function HeroSystemCard() {
 
     // Resize·Breakpoint·Image Layout 변경 시 Hero Scene Geometry 일괄 측정
     const measureSceneGeometry = () => {
-      const isDesktop = desktopQuery.matches;
-      const isPinnedHeroLayout = isDesktop || tabletLandscapeQuery.matches;
+      const isTabletLandscape = isTabletLandscapeProfile(
+        tabletLandscapeQuery.matches,
+        tabletLandscapeTouchQuery.matches,
+      );
+      const isDesktop = desktopQuery.matches && !isTabletLandscape;
+      const isMobilePerformanceProfile = mobilePerformanceQuery.matches;
+      const isPinnedHeroLayout = !portraitQuery.matches
+        && (isDesktop || isTabletLandscape || mobileLandscapeQuery.matches);
+      const isShortDesktop = isPinnedHeroLayout
+        && window.innerWidth >= 1180
+        && window.innerHeight <= 950;
       const isReducedMotion = reducedMotionQuery.matches;
       const mapCameraProfile = getMapCameraProfile();
-      const scrollProfile: HeroScrollProfile = portraitMapQuery.matches ? "portrait" : "default";
-      const galleryViewport = getGalleryViewport(isDesktop);
+      const narrativeMode = getMapNarrativeMode(mapCameraProfile);
+      const scrollProfile: HeroScrollProfile = portraitQuery.matches ? "portrait" : "default";
+      const galleryViewport = getGalleryViewport(isDesktop, isTabletLandscape);
       const stickyTop = Number.parseFloat(window.getComputedStyle(stage).top) || 0;
 
       if (isReducedMotion) {
@@ -1148,26 +1408,33 @@ export default function HeroSystemCard() {
 
       const scrollLayout = isReducedMotion
         ? null
-        : updateScrollLayout(isPinnedHeroLayout, stickyTop, scrollProfile);
+        : updateScrollLayout(isPinnedHeroLayout, stickyTop, scrollProfile, isShortDesktop);
       const stageRect = stage.getBoundingClientRect();
 
-      if (portraitMapQuery.matches) {
-        const portraitWorldMapWidth = stageRect.height * 2.1;
+      if (tabletPortraitQuery.matches) {
         const worldKoreaRatioX = serverPoint.x / WORLD_MAP_SIZE.width;
-        const portraitWorldOffsetX = calculatePortraitWorldOffsetX(
-          portraitWorldMapWidth,
+        const presentation = calculateTabletPortraitWorldPresentation(
+          stageRect.width,
+          stageRect.height,
           worldKoreaRatioX,
         );
 
-        stage.style.setProperty("--portrait-world-map-width", `${portraitWorldMapWidth}px`);
-        stage.style.setProperty("--portrait-world-map-offset-x", `${portraitWorldOffsetX}px`);
+        stage.style.setProperty("--portrait-world-presentation-x", `${presentation.x}px`);
+        stage.style.setProperty("--portrait-world-presentation-y", `${presentation.y}px`);
+        stage.style.setProperty("--portrait-world-presentation-width", `${presentation.width}px`);
+        stage.style.setProperty("--portrait-world-presentation-height", `${presentation.height}px`);
       } else {
-        stage.style.removeProperty("--portrait-world-map-width");
-        stage.style.removeProperty("--portrait-world-map-offset-x");
+        stage.style.removeProperty("--portrait-world-presentation-x");
+        stage.style.removeProperty("--portrait-world-presentation-y");
+        stage.style.removeProperty("--portrait-world-presentation-width");
+        stage.style.removeProperty("--portrait-world-presentation-height");
       }
 
       const graphRect = graph.getBoundingClientRect();
-      const narrativeMapRect = narrativeMapViewport.getBoundingClientRect();
+      const narrativeMapRect = (tabletPortraitQuery.matches
+        ? narrativeMapPresentation
+        : narrativeMapViewport
+      ).getBoundingClientRect();
       const focusMapRect = focusMapViewport.getBoundingClientRect();
       const mapWidth = mapLayer.offsetWidth;
       const mapHeight = mapLayer.offsetHeight;
@@ -1179,14 +1446,29 @@ export default function HeroSystemCard() {
       const anchorLocalY = mapTop + mapHeight * (serverPoint.y / WORLD_MAP_SIZE.height);
       const worldKoreaX = serverPoint.x / WORLD_MAP_SIZE.width;
       const worldKoreaY = serverPoint.y / WORLD_MAP_SIZE.height;
-      const narrativeLeft = narrativeMapRect.left - stageRect.left;
-      const narrativeTop = narrativeMapRect.top - stageRect.top;
-      const narrativeTargetX = narrativeLeft + narrativeMapRect.width * worldKoreaX;
-      const narrativeTargetY = narrativeTop + narrativeMapRect.height * worldKoreaY;
-      const focusViewBox = getFocusViewBox(mapCameraProfile);
+      const narrativeSurface = calculateMapSurface(
+        narrativeMapRect.width,
+        narrativeMapRect.height,
+        { x: 0, y: 0, ...WORLD_MAP_SIZE },
+      );
+      const currentFocusViewBox = getFocusViewBox(mapCameraProfile, {
+        width: stageRect.width,
+        height: stageRect.height,
+      });
+      const focusViewBox = getFocusPresentationViewBox(mapCameraProfile, {
+        width: stageRect.width,
+        height: stageRect.height,
+      });
+      const focusSurface = calculateMapSurface(focusMapRect.width, focusMapRect.height, focusViewBox);
       const focusRatio = calculateEastAsiaFocusRatio(focusViewBox);
-      const focusTargetX = focusMapRect.left - stageRect.left + focusMapRect.width * focusRatio.x;
-      const focusTargetY = focusMapRect.top - stageRect.top + focusMapRect.height * focusRatio.y;
+      const narrativeTargetX = narrativeMapRect.left - stageRect.left
+        + narrativeSurface.x + narrativeSurface.width * worldKoreaX;
+      const narrativeTargetY = narrativeMapRect.top - stageRect.top
+        + narrativeSurface.y + narrativeSurface.height * worldKoreaY;
+      const focusTargetX = focusMapRect.left - stageRect.left
+        + focusSurface.x + focusSurface.width * focusRatio.x;
+      const focusTargetY = focusMapRect.top - stageRect.top
+        + focusSurface.y + focusSurface.height * focusRatio.y;
 
       galleryLayout = isReducedMotion ? null : measureGalleryLayout(stageRect, galleryViewport);
       sceneGeometry = {
@@ -1204,8 +1486,13 @@ export default function HeroSystemCard() {
           height: graphRect.height,
         },
         isDesktop,
+        isMobilePerformanceProfile,
         isReducedMotion,
+        mobileFocusFinalScale: mapCameraProfile === "mobilePortrait"
+          ? calculateMobileFocusFinalScale(currentFocusViewBox, focusViewBox)
+          : MOBILE_KOREA_ZOOM_SCALE,
         mapCameraProfile,
+        narrativeMode,
         narrativeTargetX,
         narrativeTargetY,
         scrollLayout,
@@ -1217,8 +1504,16 @@ export default function HeroSystemCard() {
           documentTop: window.scrollY + stageRect.top,
         },
         stickyTop,
-        worldUnitX: Math.max(narrativeMapRect.width / WORLD_MAP_SIZE.width, Number.EPSILON),
-        worldUnitY: Math.max(narrativeMapRect.height / WORLD_MAP_SIZE.height, Number.EPSILON),
+        worldUnitX: Math.max(narrativeSurface.width / WORLD_MAP_SIZE.width, Number.EPSILON),
+        worldUnitY: Math.max(narrativeSurface.height / WORLD_MAP_SIZE.height, Number.EPSILON),
+        focusCameraOrigin: {
+          x: focusSurface.x + focusSurface.width * focusRatio.x,
+          y: focusSurface.y + focusSurface.height * focusRatio.y,
+        },
+        narrativeCameraOrigin: {
+          x: narrativeSurface.x + narrativeSurface.width * worldKoreaX,
+          y: narrativeSurface.y + narrativeSurface.height * worldKoreaY,
+        },
       };
     };
 
@@ -1250,12 +1545,14 @@ export default function HeroSystemCard() {
           viewport: layout.viewport,
         });
 
-        frame.style.setProperty("--gallery-opacity", String(galleryState.opacity));
-        frame.style.setProperty("--gallery-blur", `${galleryState.blur}px`);
-        frame.style.setProperty("--gallery-scale", String(galleryState.scale));
-        frame.style.setProperty("--gallery-x", `${position.x}px`);
-        frame.style.setProperty("--gallery-y", `${position.y}px`);
-        frame.style.setProperty("--gallery-z", `${galleryState.z}px`);
+        setStyleProperty(frame, "--gallery-opacity", String(galleryState.opacity));
+        setStyleProperty(frame, "--gallery-scale", String(galleryState.scale));
+        setStyleProperty(frame, "--gallery-x", `${position.x}px`);
+        setStyleProperty(frame, "--gallery-y", `${position.y}px`);
+        if (!sceneGeometry?.isMobilePerformanceProfile) {
+          setStyleProperty(frame, "--gallery-blur", `${galleryState.blur}px`);
+          setStyleProperty(frame, "--gallery-z", `${galleryState.z}px`);
+        }
       });
     };
 
@@ -1327,6 +1624,15 @@ export default function HeroSystemCard() {
 
       if (!galleryLayout || reducedMotionQuery.matches) return;
 
+      if (sceneGeometry?.isMobilePerformanceProfile) {
+        cancelGalleryFrame();
+        galleryInitialized = true;
+        galleryRenderedProgress = progress;
+        galleryRenderedOrigin = origin;
+        applyGalleryState(progress, origin);
+        return;
+      }
+
       if (!galleryInitialized) {
         galleryInitialized = true;
         galleryRenderedProgress = progress;
@@ -1349,10 +1655,19 @@ export default function HeroSystemCard() {
 
       if (!geometry) return;
 
-      const { galleryViewport, isReducedMotion, mapCameraProfile } = geometry;
+      const {
+        galleryViewport,
+        isMobilePerformanceProfile,
+        isReducedMotion,
+        mapCameraProfile,
+        mobileFocusFinalScale,
+        narrativeMode,
+      } = geometry;
 
       if (isReducedMotion) {
-        const finalFocusScale = calculateMapZoomState(1, mapCameraProfile).focusMapScale;
+        const finalFocusScale = narrativeMode === "focusOnly"
+          ? mobileFocusFinalScale
+          : calculateMapZoomState(1, mapCameraProfile).focusMapScale;
 
         cancelGalleryFrame();
         galleryInitialized = false;
@@ -1375,9 +1690,10 @@ export default function HeroSystemCard() {
           `translate(${EAST_ASIA_FOCUS_POINT.x} ${EAST_ASIA_FOCUS_POINT.y}) scale(${finalFocusScale}) translate(${-EAST_ASIA_FOCUS_POINT.x} ${-EAST_ASIA_FOCUS_POINT.y})`,
         );
         stage.style.setProperty("--card-map-opacity", "0");
-        stage.style.setProperty("--focus-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.focusFinal));
-        stage.style.setProperty("--world-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.worldHandoff));
+        setStyleProperty(stage, "--focus-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.focusFinal));
+        setStyleProperty(stage, "--world-map-dot-width", String(MAP_DOT_SCREEN_WIDTH.worldHandoff));
         stage.style.setProperty("--focus-map-opacity", "1");
+        stage.style.setProperty("--focus-map-visibility", "visible");
         stage.style.setProperty("--map-filter", "none");
         stage.style.setProperty("--map-translate-x", `${geometry.focusTranslateX}px`);
         stage.style.setProperty("--map-translate-y", `${geometry.focusTranslateY}px`);
@@ -1404,34 +1720,46 @@ export default function HeroSystemCard() {
       const scrollPixels = Math.min(Math.max(window.scrollY - sceneStart, 0), metrics.totalDistance);
 
       // Gallery 진입 전 저우선순위 이미지 요청 활성화
-      if (!galleryReadyRef.current && scrollPixels >= metrics.mapCenterStart) {
-        galleryReadyRef.current = true;
-        setGalleryReady(true);
-      }
-
       progressRef.current = scrollPixels / baseDistance;
       const state = calculateHeroSceneState(
         scrollPixels,
         metrics,
         galleryViewport,
         mapCameraProfile,
+        narrativeMode,
+        mobileFocusFinalScale,
+      );
+      const mapDotWidths = getMapDotWidths(
+        state,
+        isMobilePerformanceProfile,
+        mapCameraProfile === "tabletPortrait",
       );
 
+      if (!isMobilePerformanceProfile) {
+        narrativeMapCamera.style.transform = "";
+        focusMapCamera.style.transform = "";
+      }
+
       // World Camera와 Marker의 동일 Pan 좌표 적용
-      const worldCameraShiftX = (
+      const worldCameraShiftX = narrativeMode === "focusOnly" ? 0 : (
         geometry.focusTargetX - geometry.narrativeTargetX
       ) * state.cameraPanProgress;
-      const worldCameraShiftY = (
+      const worldCameraShiftY = narrativeMode === "focusOnly" ? 0 : (
         geometry.focusTargetY - geometry.narrativeTargetY
       ) * state.cameraPanProgress;
       const worldShiftSvgX = worldCameraShiftX / geometry.worldUnitX;
       const worldShiftSvgY = worldCameraShiftY / geometry.worldUnitY;
+      const mapTarget = calculateMapNarrativeTarget(
+        narrativeMode,
+        { x: geometry.narrativeTargetX, y: geometry.narrativeTargetY },
+        { x: geometry.focusTargetX, y: geometry.focusTargetY },
+      );
       const translateX = (
-        geometry.narrativeTargetX - (geometry.anchorViewportX - geometry.stage.left)
+        mapTarget.x - (geometry.anchorViewportX - geometry.stage.left)
       ) * state.centerProgress
         + worldCameraShiftX;
       const translateY = (
-        geometry.narrativeTargetY - geometry.anchorLocalY
+        mapTarget.y - geometry.anchorLocalY
       ) * state.centerProgress
         + worldCameraShiftY;
       const clipInset = -Math.max(
@@ -1446,36 +1774,70 @@ export default function HeroSystemCard() {
         geometry.stage.top,
       );
 
-      narrativeMapZoom.setAttribute(
-        "transform",
-        `translate(${worldShiftSvgX} ${worldShiftSvgY}) translate(${serverPoint.x} ${serverPoint.y}) scale(${state.narrativeWorldMapScale}) translate(${-serverPoint.x} ${-serverPoint.y})`,
+      if (
+        narrativeMode === "worldToFocus"
+        && isMobilePerformanceProfile
+        && shouldUpdateMapTransform(state.narrativeWorldMapOpacity)
+      ) {
+        const origin = geometry.narrativeCameraOrigin;
+        narrativeMapCamera.style.transform = `translate(${worldCameraShiftX}px, ${worldCameraShiftY}px) translate(${origin.x}px, ${origin.y}px) scale(${state.narrativeWorldMapScale}) translate(${-origin.x}px, ${-origin.y}px)`;
+      } else if (shouldUpdateMapTransform(state.narrativeWorldMapOpacity)) {
+        narrativeMapZoom.setAttribute(
+          "transform",
+          `translate(${worldShiftSvgX} ${worldShiftSvgY}) translate(${serverPoint.x} ${serverPoint.y}) scale(${state.narrativeWorldMapScale}) translate(${-serverPoint.x} ${-serverPoint.y})`,
+        );
+      }
+      if (isMobilePerformanceProfile && shouldUpdateMapTransform(state.focusMapOpacity)) {
+        const origin = geometry.focusCameraOrigin;
+        focusMapCamera.style.transform = `translate(${origin.x}px, ${origin.y}px) scale(${state.focusMapScale}) translate(${-origin.x}px, ${-origin.y}px)`;
+      } else if (shouldUpdateMapTransform(state.focusMapOpacity)) {
+        focusMapZoom.setAttribute(
+          "transform",
+          `translate(${EAST_ASIA_FOCUS_POINT.x} ${EAST_ASIA_FOCUS_POINT.y}) scale(${state.focusMapScale}) translate(${-EAST_ASIA_FOCUS_POINT.x} ${-EAST_ASIA_FOCUS_POINT.y})`,
+        );
+      }
+      setStyleProperty(stage, "--card-map-opacity", String(state.cardMapOpacity));
+      setStyleProperty(stage, "--connection-depth", `${16 * state.depth}px`);
+      setStyleProperty(stage, "--flow-depth", `${28 * state.depth}px`);
+      setStyleProperty(stage, "--flow-opacity", String(state.flowOpacity));
+      setStyleProperty(stage, "--frame-opacity", String(state.frameOpacity));
+      setStyleProperty(stage, "--focus-map-dot-width", String(mapDotWidths.focusMapDotWidth));
+      setStyleProperty(stage, "--inner-depth", `${52 * state.depth}px`);
+      setStyleProperty(stage, "--focus-map-opacity", String(state.focusMapOpacity));
+      setStyleProperty(stage, "--map-clip-inset", `${clipInset}px`);
+      setStyleProperty(
+        stage,
+        "--map-filter",
+        isMobilePerformanceProfile || state.mapExit === 0 ? "none" : `blur(${state.blurStrength}px)`,
       );
-      focusMapZoom.setAttribute(
-        "transform",
-        `translate(${EAST_ASIA_FOCUS_POINT.x} ${EAST_ASIA_FOCUS_POINT.y}) scale(${state.focusMapScale}) translate(${-EAST_ASIA_FOCUS_POINT.x} ${-EAST_ASIA_FOCUS_POINT.y})`,
+      setStyleProperty(stage, "--map-translate-x", `${translateX}px`);
+      setStyleProperty(stage, "--map-translate-y", `${translateY}px`);
+      setStyleProperty(stage, "--marker-opacity", String(state.markerOpacity));
+      setStyleProperty(stage, "--narrative-world-map-opacity", String(state.narrativeWorldMapOpacity));
+      setStyleProperty(
+        stage,
+        "--narrative-world-map-visibility",
+        shouldUpdateMapTransform(state.narrativeWorldMapOpacity) ? "visible" : "hidden",
       );
-      stage.style.setProperty("--card-map-opacity", String(state.cardMapOpacity));
-      stage.style.setProperty("--connection-depth", `${16 * state.depth}px`);
-      stage.style.setProperty("--flow-depth", `${28 * state.depth}px`);
-      stage.style.setProperty("--flow-opacity", String(state.flowOpacity));
-      stage.style.setProperty("--frame-opacity", String(state.frameOpacity));
-      stage.style.setProperty("--focus-map-dot-width", String(state.focusMapDotWidth));
-      stage.style.setProperty("--inner-depth", `${52 * state.depth}px`);
-      stage.style.setProperty("--focus-map-opacity", String(state.focusMapOpacity));
-      stage.style.setProperty("--map-clip-inset", `${clipInset}px`);
-      stage.style.setProperty("--map-filter", state.mapExit > 0 ? `blur(${state.blurStrength}px)` : "none");
-      stage.style.setProperty("--map-translate-x", `${translateX}px`);
-      stage.style.setProperty("--map-translate-y", `${translateY}px`);
-      stage.style.setProperty("--marker-opacity", String(state.markerOpacity));
-      stage.style.setProperty("--narrative-world-map-opacity", String(state.narrativeWorldMapOpacity));
-      stage.style.setProperty("--resource-depth", `${44 * state.depth}px`);
-      stage.style.setProperty("--server-opacity", String(state.serverOpacity));
-      stage.style.setProperty("--topology-opacity", String(state.topologyOpacity));
-      stage.style.setProperty("--world-map-dot-width", String(state.worldMapDotWidth));
-      aboutSection.style.setProperty("--about-opacity", String(state.aboutOpacity));
+      setStyleProperty(stage, "--resource-depth", `${44 * state.depth}px`);
+      setStyleProperty(stage, "--server-opacity", String(state.serverOpacity));
+      setStyleProperty(stage, "--topology-opacity", String(state.topologyOpacity));
+      setStyleProperty(stage, "--world-map-dot-width", String(mapDotWidths.worldMapDotWidth));
+      setStyleProperty(
+        stage,
+        "--focus-map-visibility",
+        shouldUpdateMapTransform(state.focusMapOpacity) ? "visible" : "hidden",
+      );
+      setStyleProperty(aboutSection, "--about-opacity", String(state.aboutOpacity));
       updateGalleryTarget(state.zoomProgress, galleryOrigin);
 
-      hero.style.setProperty("--identity-opacity", String(state.identityOpacity));
+      updateMapNarrativeState(
+        isMobilePerformanceProfile
+          && scrollPixels >= metrics.mapCenterStart
+          && scrollPixels < metrics.sceneExitEnd,
+      );
+
+      setStyleProperty(hero, "--identity-opacity", String(state.identityOpacity));
       updateFlowState(scrollPixels < metrics.topologyExitEnd);
 
       if (scrollPixels > metrics.topologyHoldEnd) {
@@ -1500,7 +1862,7 @@ export default function HeroSystemCard() {
       galleryLayout = null;
       galleryInitialized = false;
       sceneGeometry = null;
-      updateFocusMapLayout();
+      updateFocusMapLayout({ width: stage.offsetWidth, height: stage.offsetHeight });
       window.cancelAnimationFrame(animationFrame);
       animationFrame = 0;
       window.cancelAnimationFrame(layoutFrame);
@@ -1511,13 +1873,19 @@ export default function HeroSystemCard() {
       });
     };
 
+    const handleMapDensityChange = () => {
+      updateMapDensity();
+      handleLayoutChange();
+    };
+
     // Motion 또는 Pointer 환경 변경 시 Marker 복원과 Layout 재계산
     const handleInteractionPreferenceChange = () => {
       resetMarkerPointer();
       handleLayoutChange();
     };
 
-    updateFocusMapLayout();
+    updateMapDensity();
+    updateFocusMapLayout({ width: stage.offsetWidth, height: stage.offsetHeight });
     measureSceneGeometry();
     updateScene();
     galleryImages.forEach((image) => image.addEventListener("load", handleLayoutChange));
@@ -1530,9 +1898,13 @@ export default function HeroSystemCard() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleLayoutChange);
     desktopQuery.addEventListener("change", handleLayoutChange);
-    mobileQuery.addEventListener("change", handleLayoutChange);
-    portraitMapQuery.addEventListener("change", handleLayoutChange);
+    mobilePortraitQuery.addEventListener("change", handleLayoutChange);
+    tabletPortraitQuery.addEventListener("change", handleLayoutChange);
+    portraitQuery.addEventListener("change", handleLayoutChange);
     tabletLandscapeQuery.addEventListener("change", handleLayoutChange);
+    tabletLandscapeTouchQuery.addEventListener("change", handleLayoutChange);
+    mobileLandscapeQuery.addEventListener("change", handleLayoutChange);
+    mobilePerformanceQuery.addEventListener("change", handleMapDensityChange);
     reducedMotionQuery.addEventListener("change", handleInteractionPreferenceChange);
     finePointerQuery.addEventListener("change", handleInteractionPreferenceChange);
 
@@ -1554,16 +1926,23 @@ export default function HeroSystemCard() {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleLayoutChange);
       desktopQuery.removeEventListener("change", handleLayoutChange);
-      mobileQuery.removeEventListener("change", handleLayoutChange);
-      portraitMapQuery.removeEventListener("change", handleLayoutChange);
+      mobilePortraitQuery.removeEventListener("change", handleLayoutChange);
+      tabletPortraitQuery.removeEventListener("change", handleLayoutChange);
+      portraitQuery.removeEventListener("change", handleLayoutChange);
       tabletLandscapeQuery.removeEventListener("change", handleLayoutChange);
+      tabletLandscapeTouchQuery.removeEventListener("change", handleLayoutChange);
+      mobileLandscapeQuery.removeEventListener("change", handleLayoutChange);
+      mobilePerformanceQuery.removeEventListener("change", handleMapDensityChange);
       reducedMotionQuery.removeEventListener("change", handleInteractionPreferenceChange);
       finePointerQuery.removeEventListener("change", handleInteractionPreferenceChange);
       hero.style.removeProperty("--identity-opacity");
       hero.style.removeProperty("--hero-stage-height");
       heroSystem.style.removeProperty("--hero-stage-height");
-      stage.style.removeProperty("--portrait-world-map-width");
-      stage.style.removeProperty("--portrait-world-map-offset-x");
+      stage.style.removeProperty("--portrait-world-presentation-x");
+      stage.style.removeProperty("--portrait-world-presentation-y");
+      stage.style.removeProperty("--portrait-world-presentation-width");
+      stage.style.removeProperty("--portrait-world-presentation-height");
+      updateMapNarrativeState(false);
       aboutSection.style.removeProperty("--about-opacity");
       aboutSection.style.removeProperty("--about-transition-height");
       aboutSection.style.removeProperty("--about-anchor-offset");
@@ -1574,13 +1953,19 @@ export default function HeroSystemCard() {
     <div className="hero-visual-stage" ref={stageRef} style={initialStyle}>
       <div aria-hidden="true" className="topology-narrative-world-map-plane">
         <div className="topology-narrative-world-map-viewport" ref={narrativeMapRef}>
-          <HeroNarrativeWorldMap geometryReady={mapGeometryReady} />
+          <div className="topology-narrative-world-map-presentation">
+            <div className="topology-narrative-world-map-camera">
+              <HeroNarrativeWorldMap density={mapDensity} geometryReady={mapGeometryReady} />
+            </div>
+          </div>
         </div>
       </div>
 
       <div aria-hidden="true" className="topology-focus-map-plane">
         <div className="topology-focus-map-viewport" ref={focusMapRef}>
-          <HeroEastAsiaMap geometryReady={mapGeometryReady} />
+          <div className="topology-focus-map-camera">
+            <HeroEastAsiaMap density={mapDensity} geometryReady={mapGeometryReady} />
+          </div>
         </div>
       </div>
 
@@ -1618,12 +2003,15 @@ export default function HeroSystemCard() {
                   decoding="async"
                   fetchPriority="low"
                   height={frame.height}
-                  loading="lazy"
+                  loading="eager"
                   sizes="(max-width: 767px) 52vw, (max-width: 1023px) 50vw, 31vw"
                   src={frame.src}
                   width={frame.width}
                 />
               ) : null}
+              <span className="topology-project-gallery-caption type-small">
+                {frame.caption}
+              </span>
             </div>
           );
         })}
@@ -1639,7 +2027,7 @@ export default function HeroSystemCard() {
 
         <div className="topology-map-clip">
           <div className="topology-map-layer" ref={mapRef}>
-            <HeroWorldMap />
+            <HeroWorldMap density={mapDensity} />
           </div>
         </div>
 

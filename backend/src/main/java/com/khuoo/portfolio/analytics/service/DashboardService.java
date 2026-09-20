@@ -56,6 +56,7 @@ public class DashboardService {
                 serviceStatusQueryRepository.findCurrent().stream()
                         .map(status -> new DashboardResponse.ServiceStatusItem(
                                 status.serviceKey(),
+                                status.displayName(),
                                 status.status(),
                                 status.responseTimeMs(),
                                 status.httpStatus(),

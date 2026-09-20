@@ -7,11 +7,10 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-// Project Editor 고정 6개 Section 입력
+// Project Editor 고정 5개 Section 입력
 public record ProjectContentSaveRequest(
         @NotNull List<@NotNull @Valid ResultItem> results,
-        @NotNull List<@NotNull @Valid BackgroundItem> background,
-        @NotNull List<@NotNull @Valid FeatureItem> features,
+        @NotNull List<@NotNull @Valid OverviewItem> overview,
         @NotNull List<@NotNull @Valid DevelopmentItem> development,
         @NotNull @Valid Architecture architecture,
         @NotNull List<@NotNull @Valid EngineeringItem> engineering
@@ -24,17 +23,10 @@ public record ProjectContentSaveRequest(
     ) {
     }
 
-    // 문제 배경 항목
-    public record BackgroundItem(
+    // 프로젝트 설명 항목
+    public record OverviewItem(
             @Size(max = 300) String title,
             @NotBlank @Size(max = 10000) String body
-    ) {
-    }
-
-    // 주요 기능 항목
-    public record FeatureItem(
-            @NotBlank @Size(max = 300) String title,
-            @Size(max = 5000) String description
     ) {
     }
 

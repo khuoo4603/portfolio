@@ -28,7 +28,7 @@ export type ProjectDetailModel = Omit<PublicProjectDetail, "content" | "media" |
 
 const SECTION_LABELS = {
   stackResult: { id: "detail-stack-result", label: "기술 스택 · 성과" },
-  background: { id: "detail-background", label: "문제 배경 · 주요 기능" },
+  overview: { id: "detail-overview", label: "프로젝트 설명" },
   development: { id: "detail-development", label: "직접 담당한 개발 영역" },
   architecture: { id: "detail-architecture", label: "아키텍처" },
   engineering: { id: "detail-engineering", label: "기술적 문제 해결" },
@@ -127,19 +127,11 @@ export function mapProjectDetail(project: PublicProjectDetail): ProjectDetailMod
       const description = clean(item.description);
       return title ? [{ title, description }] : [];
     }),
-    background: project.content.background.flatMap((item) => {
+    overview: project.content.overview.flatMap((item) => {
       const body = clean(item.body);
       return body ? [{
         title: clean(item.title),
         body,
-      }] : [];
-    }),
-    features: project.content.features.flatMap((item) => {
-      const title = clean(item.title);
-      const description = clean(item.description);
-      return title ? [{
-        title,
-        description,
       }] : [];
     }),
     development: project.content.development.flatMap((item) => {
@@ -176,8 +168,8 @@ export function mapProjectDetail(project: PublicProjectDetail): ProjectDetailMod
     })
     .sort((left, right) => left.displayOrder - right.displayOrder);
   const sections: ProjectSection[] = [
+    ...(content.overview.length > 0 ? [SECTION_LABELS.overview] : []),
     ...(technologies.length > 0 || content.results.length > 0 ? [SECTION_LABELS.stackResult] : []),
-    ...(content.background.length > 0 || content.features.length > 0 ? [SECTION_LABELS.background] : []),
     ...(content.development.length > 0 ? [SECTION_LABELS.development] : []),
     ...(project.architectureImageUrl || hasProjectArchitecture(content.architecture)
       ? [SECTION_LABELS.architecture]

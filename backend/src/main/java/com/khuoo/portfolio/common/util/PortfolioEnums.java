@@ -103,7 +103,6 @@ public final class PortfolioEnums {
         AFFILIATION(PortfolioContentCategory.COMMON),
 
         HERO_STATEMENT(PortfolioContentCategory.MAIN),
-        HERO_DESCRIPTION(PortfolioContentCategory.MAIN),
 
         ABOUT_STATEMENT(PortfolioContentCategory.PROFILE),
         ABOUT_DESCRIPTION_1(PortfolioContentCategory.PROFILE),

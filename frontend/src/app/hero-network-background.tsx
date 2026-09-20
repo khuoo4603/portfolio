@@ -68,6 +68,7 @@ export default function HeroNetworkBackground() {
     let lastTime = performance.now();
     let isVisible = !document.hidden;
     let isIntersecting = true;
+    let isMapNarrativePaused = false;
     let isReducedMotion = motionQuery.matches;
     let isDark = root.dataset.theme !== "light";
     let continuousAnimationReady = false;
@@ -93,23 +94,23 @@ export default function HeroNetworkBackground() {
       const area = canvasWidth * canvasHeight;
 
       if (canvasWidth < 768) {
-        return Math.min(56, Math.max(38, Math.round(area / 7600)));
+        return Math.min(44, Math.max(32, Math.round(area / 9400)));
       }
 
       if (canvasWidth < 1024) {
-        return Math.min(84, Math.max(60, Math.round(area / 8800)));
+        return Math.min(68, Math.max(48, Math.round(area / 10400)));
       }
 
       if (canvasWidth < 1440) {
-        return Math.min(160, Math.max(120, Math.round(area / 7200)));
+        return Math.min(136, Math.max(104, Math.round(area / 9000)));
       }
 
-      return Math.min(170, Math.max(135, Math.round(area / 7600)));
+      return Math.min(150, Math.max(118, Math.round(area / 9200)));
     };
 
     const createParticle = (): NetworkParticle => {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 3.8 + Math.random() * 3.8;
+      const speed = 2.6 + Math.random() * 2.8;
       const graphCluster = Math.random() < 0.38;
       // 전체 Stage의 기본 분포와 Architecture 주변의 완만한 Density Bias
       const x = graphCluster
@@ -270,8 +271,8 @@ export default function HeroNetworkBackground() {
 
       const connectionDistance = width < 768 ? 104 : width < 1024 ? 128 : 156;
       const cellSize = connectionDistance * MAX_CONNECTION_DISTANCE_MULTIPLIER;
-      const connectionOpacity = isDark ? 0.38 : 0.26;
-      const particleOpacity = isDark ? 0.8 : 0.62;
+      const connectionOpacity = isDark ? 0.26 : 0.18;
+      const particleOpacity = isDark ? 0.62 : 0.48;
 
       connectionCounts.fill(0);
       context.clearRect(0, 0, width, height);
@@ -388,7 +389,11 @@ export default function HeroNetworkBackground() {
     };
 
     const canAnimate = () => (
-      continuousAnimationReady && isVisible && isIntersecting && !isReducedMotion
+      continuousAnimationReady
+      && isVisible
+      && isIntersecting
+      && !isReducedMotion
+      && !isMapNarrativePaused
     );
 
     const render = (time: number) => {
@@ -453,6 +458,11 @@ export default function HeroNetworkBackground() {
       isReducedMotion = event.matches;
       refreshAnimation();
     };
+    // Mobile 지도 내러티브 구간의 Canvas 정지
+    const handleMapNarrative = (event: Event) => {
+      isMapNarrativePaused = Boolean((event as CustomEvent<boolean>).detail);
+      refreshAnimation();
+    };
 
     readColors();
     resizeCanvas();
@@ -462,6 +472,7 @@ export default function HeroNetworkBackground() {
     themeObserver.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
     document.addEventListener("visibilitychange", handleVisibility);
     motionQuery.addEventListener("change", handleMotion);
+    document.addEventListener("hero-map-narrative", handleMapNarrative);
     scheduleContinuousAnimation();
 
     return () => {
@@ -473,6 +484,7 @@ export default function HeroNetworkBackground() {
       themeObserver.disconnect();
       document.removeEventListener("visibilitychange", handleVisibility);
       motionQuery.removeEventListener("change", handleMotion);
+      document.removeEventListener("hero-map-narrative", handleMapNarrative);
     };
   }, []);
 

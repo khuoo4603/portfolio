@@ -90,7 +90,7 @@ describe("동적 Project Detail View", () => {
     expect(within(carousel).getByText("01 / 05")).toBeInTheDocument();
   });
 
-  it("실제 Technology와 6개 typed Content 영역을 기존 순서로 표시", () => {
+  it("실제 Technology와 5개 typed Content 영역을 기존 순서로 표시", () => {
     render(<ProjectDetailView project={mapProjectDetail(KYVC_PROJECT_FIXTURE)} portfolio={portfolio} />);
 
     const stack = screen.getByRole("list", { name: "KYvC 전체 기술 스택" });
@@ -101,10 +101,10 @@ describe("동적 Project Detail View", () => {
     expect(within(stack).getByText("React").closest("li")).toHaveAttribute("data-mine", "false");
     expect(screen.getByText("Fixture 성과")).toBeInTheDocument();
     expect(screen.getByText("Fixture 성과 설명")).toBeInTheDocument();
-    expect(screen.getByText("Fixture 배경 제목")).toBeInTheDocument();
-    expect(screen.getByText("Fixture 문제 배경")).toBeInTheDocument();
-    expect(screen.getByText("Fixture 주요 기능")).toBeInTheDocument();
-    expect(screen.getByText("Fixture 기능 설명")).toBeInTheDocument();
+    expect(screen.getByText("Fixture 설명 제목")).toBeInTheDocument();
+    expect(screen.getByText("Fixture 프로젝트 설명")).toBeInTheDocument();
+    expect(screen.queryByText("Fixture 주요 기능")).not.toBeInTheDocument();
+    expect(screen.queryByText("Fixture 기능 설명")).not.toBeInTheDocument();
     expect(screen.getByText("Fixture Backend 작업")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "KYvC 시스템 아키텍처" })).toBeInTheDocument();
     expect(screen.getByText("Synology DSM Reverse Proxy → Nginx → Docker / Docker Compose")).toBeInTheDocument();
@@ -115,8 +115,8 @@ describe("동적 Project Detail View", () => {
     const railLinks = within(rail).getAllByRole("link");
     expect(railLinks).toHaveLength(5);
     expect(railLinks.map((link) => link.getAttribute("href"))).toEqual([
+      "#detail-overview",
       "#detail-stack-result",
-      "#detail-background",
       "#detail-development",
       "#detail-architecture",
       "#detail-engineering",
@@ -225,11 +225,7 @@ describe("동적 Project Detail View", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Empty Project" })).toBeInTheDocument();
     expect(screen.getByText("실제 Fixture tagline")).toBeInTheDocument();
-    const metadata = screen.getByText("역할").closest("dl")!;
-    expect(metadata.querySelectorAll("div")).toHaveLength(3);
-    expect(metadata).toHaveTextContent("역할-");
-    expect(metadata).toHaveTextContent("개발 기간-");
-    expect(metadata).toHaveTextContent("참여 인원-");
+    expect(document.querySelector("[data-metadata-count]")).not.toBeInTheDocument();
 
     const media = screen.getByRole("region", { name: "Empty Project 프로젝트 미디어" });
     expect(within(media).queryByRole("img")).not.toBeInTheDocument();
@@ -244,7 +240,7 @@ describe("동적 Project Detail View", () => {
     expect(main.querySelectorAll('section[id^="detail-"]')).toHaveLength(0);
     [
       "기술 스택 · 성과",
-      "문제 배경 · 주요 기능",
+      "프로젝트 설명",
       "직접 담당한 개발 영역",
       "아키텍처",
       "기술적 문제 해결",
@@ -284,5 +280,55 @@ describe("동적 Project Detail View", () => {
     expect(detail).toHaveTextContent("Fixture 문제");
     expect(detail).toHaveTextContent("Fixture 개선 방안");
     expect(detail).toHaveTextContent("Fixture 결과");
+  });
+
+  it("부분 데이터의 Hero Metadata와 Detail Subsection을 빈 값 없이 표시", () => {
+    const metadataCases = [
+      { project: { detailRole: "Role", startedAt: "2026-01-01", endedAt: "2026-01-02", teamSize: 3 }, count: 3 },
+      { project: { detailRole: "Role", startedAt: "2026-01-01", endedAt: "2026-01-02", teamSize: null }, count: 2 },
+      { project: { detailRole: null, startedAt: null, endedAt: null, teamSize: 3 }, count: 1 },
+      { project: { detailRole: null, startedAt: null, endedAt: null, teamSize: null }, count: 0 },
+    ];
+
+    metadataCases.forEach(({ project, count }) => {
+      const view = render(<ProjectDetailView project={mapProjectDetail({ ...EMPTY_PROJECT_FIXTURE, ...project })} portfolio={portfolio} />);
+
+      if (count === 0) {
+        expect(view.container.querySelector("[data-metadata-count]")).not.toBeInTheDocument();
+      } else {
+        expect(view.container.querySelector(`[data-metadata-count="${count}"]`)).toBeInTheDocument();
+      }
+      view.unmount();
+    });
+
+    const partialCases = [
+      {
+        project: { ...EMPTY_PROJECT_FIXTURE, technologies: [{ ...KYVC_PROJECT_FIXTURE.technologies[0], highlighted: false }] },
+        sectionId: "detail-stack-result",
+        heading: "기술 스택",
+      },
+      {
+        project: { ...EMPTY_PROJECT_FIXTURE, content: { ...EMPTY_PROJECT_FIXTURE.content, results: KYVC_PROJECT_FIXTURE.content.results } },
+        sectionId: "detail-stack-result",
+        heading: "성과",
+      },
+      {
+        project: { ...EMPTY_PROJECT_FIXTURE, content: { ...EMPTY_PROJECT_FIXTURE.content, overview: KYVC_PROJECT_FIXTURE.content.overview } },
+        sectionId: "detail-overview",
+        heading: "프로젝트 설명",
+      },
+    ];
+
+    partialCases.forEach(({ project, sectionId, heading }) => {
+      const view = render(<ProjectDetailView project={mapProjectDetail(project)} portfolio={portfolio} />);
+      const section = view.container.querySelector<HTMLElement>(`section#${sectionId}`)!;
+
+      if (sectionId === "detail-stack-result") {
+        expect(section.querySelector('[data-single="true"]')).toBeInTheDocument();
+      }
+      expect(within(section).getByRole("heading", { name: heading })).toBeInTheDocument();
+      expect(within(section).queryByText("-", { exact: true })).not.toBeInTheDocument();
+      view.unmount();
+    });
   });
 });

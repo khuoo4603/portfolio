@@ -48,8 +48,7 @@ function siteData(name = "김현우"): SiteData {
       { category: "COMMON", contentCode: "ENGLISH_NAME", contentValue: "KIM HYUNWOO", updatedAt: UPDATED_AT },
       { category: "COMMON", contentCode: "POSITION", contentValue: "BACKEND / INFRA DEVELOPER", updatedAt: UPDATED_AT },
       { category: "COMMON", contentCode: "AFFILIATION", contentValue: "성공회대학교", updatedAt: UPDATED_AT },
-      { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "Backend 개발부터 운영까지", updatedAt: UPDATED_AT },
-      { category: "MAIN", contentCode: "HERO_DESCRIPTION", contentValue: "서비스 설계와 운영", updatedAt: UPDATED_AT },
+      { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "문제에 맞는 기술과 설계를 선택하고,\n선택과 집중으로 서비스를 완성하는 개발자", updatedAt: UPDATED_AT },
       { category: "PROFILE", contentCode: "ABOUT_STATEMENT", contentValue: "문제에 맞는 기술 선택", updatedAt: UPDATED_AT },
       { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_1", contentValue: "소개 설명 1", updatedAt: UPDATED_AT },
       { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_2", contentValue: "소개 설명 2", updatedAt: UPDATED_AT },
@@ -158,16 +157,20 @@ describe("Admin Site 실제 API 관리", () => {
 
   afterEach(() => cleanup());
 
-  it("GET /admin/site 실제 DTO를 다섯 관리 영역과 16개 콘텐츠 Slot에 매핑", async () => {
+  it("GET /admin/site DTO를 다섯 관리 영역과 활성 콘텐츠에 매핑", async () => {
     render(<SiteScreen />);
 
     expect(await screen.findByDisplayValue("김현우")).toBeInTheDocument();
-    expect(siteData().portfolioContents).toHaveLength(16);
-    expect(screen.getByText("COMMON/NAME")).toBeInTheDocument();
-    expect(screen.getByText("MAIN/HERO_STATEMENT")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("문제에 맞는 기술 선택")).toBeInTheDocument();
-    expect(screen.getByText("CONTACT/EMAIL")).toBeInTheDocument();
-    expect(screen.getAllByRole("textbox")).toHaveLength(16);
+    expect(screen.queryByText("공개 포트폴리오에 표시되는 콘텐츠를 관리합니다.")).not.toBeInTheDocument();
+    const surface = screen.getByRole("region", { name: "사이트 관리" });
+    expect(within(surface).getByRole("tablist", { name: "사이트 관리 영역" })).toBeInTheDocument();
+    expect(within(surface).getByRole("tabpanel")).toContainElement(screen.getByDisplayValue("김현우"));
+    expect(siteData().portfolioContents).toHaveLength(15);
+    expect(screen.queryByText("COMMON/NAME")).not.toBeInTheDocument();
+    expect(screen.queryByText("MAIN/HERO_STATEMENT")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("소개 문구")).toHaveValue("문제에 맞는 기술과 설계를 선택하고,\n선택과 집중으로 서비스를 완성하는 개발자");
+    expect(screen.queryByText("CONTACT/EMAIL")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("textbox")).toHaveLength(15);
     expect(screen.getAllByRole("tab")).toHaveLength(5);
     expect(screen.queryByRole("tab", { name: "프로젝트" })).not.toBeInTheDocument();
 
@@ -176,22 +179,38 @@ describe("Admin Site 실제 API 관리", () => {
     expect(screen.getByRole("button", { name: "학력" })).toBeInTheDocument();
     const profileTable = screen.getByRole("table");
     expect(within(profileTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
-      "항목", "기간", "순서", "상태", "작업",
+      "기간", "제목", "기관 또는 역할", "유형", "상태", "순서", "작업",
     ]);
+    expect(within(profileTable).queryByRole("columnheader", { name: "유형 / 상태" })).not.toBeInTheDocument();
+    expect(within(profileTable).getByText("학력").closest("td")).toHaveAttribute("data-label", "유형");
+    expect(within(profileTable).getByRole("switch", { name: "소프트웨어융합전공 비노출 전환" }).closest("td")).toHaveAttribute("data-label", "상태");
     expect(within(profileTable).queryByText("유형 / 기간")).not.toBeInTheDocument();
     expect(within(profileTable).queryByText("대표")).not.toBeInTheDocument();
     expect(within(profileTable).queryByText("강조")).not.toBeInTheDocument();
     expect(within(profileTable).queryByText("일반")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "기술" }));
+    expect(screen.getByRole("tab", { name: "기술스택" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "기술" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "기술스택" }));
+    const viewSelector = screen.getByRole("group", { name: "기술 보기" });
+    const allHeading = screen.getByRole("heading", { name: "전체 기술 스택" });
+    expect(screen.queryByText("프로젝트와 포트폴리오에서 사용할 전체 기술을 관리합니다.")).not.toBeInTheDocument();
+    expect(allHeading.compareDocumentPosition(viewSelector) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("button", { name: "전체 기술 스택" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "보유 기술 스택" })).toBeInTheDocument();
+    expect(allHeading).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "보유 기술 스택" })).not.toBeInTheDocument();
     expect(screen.getByText("DATABASE")).toBeInTheDocument();
     expect(screen.getByText("FRONTEND")).toBeInTheDocument();
-    expect(screen.getByText("/icons/tech/postgresql.svg")).toBeInTheDocument();
+    const technologiesTable = screen.getByRole("table");
+    expect(within(technologiesTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["기술명", "분류", "상태", "작업"]);
+    expect(within(technologiesTable).queryByText("/icons/tech/postgresql.svg")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "외부 링크" }));
     expect(screen.getByText("https://github.com/example")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "이력서" }));
+    expect(screen.queryByText("현재 파일 1개만 유지하며 등록 또는 교체합니다.")).not.toBeInTheDocument();
     expect(screen.getByText("resume.pdf")).toBeInTheDocument();
     expect(screen.queryByText(/파일 크기/)).not.toBeInTheDocument();
   });
@@ -225,9 +244,9 @@ describe("Admin Site 실제 API 관리", () => {
     fireEvent.click(within(filterGroup).getByRole("button", { name: "전체" }));
     expect(screen.getAllByRole("row")).toHaveLength(6);
     fireEvent.click(within(filterGroup).getByRole("button", { name: "활동" }));
-    fireEvent.click(screen.getByRole("button", { name: "개발 커뮤니티 활동 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "수정" }));
-    expect(screen.getByRole("dialog", { name: "프로필 항목 수정" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "개발 커뮤니티 활동 삭제" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "개발 커뮤니티 활동 수정" }));
+    expect(screen.getByRole("dialog", { name: "이력 수정" })).toBeInTheDocument();
     expect(screen.getByDisplayValue("개발 커뮤니티 활동")).toBeInTheDocument();
     expect(getAdminSite).toHaveBeenCalledTimes(1);
   });
@@ -256,6 +275,19 @@ describe("Admin Site 실제 API 관리", () => {
     expect(await screen.findByDisplayValue("김현우 수정")).toBeInTheDocument();
   });
 
+  it("Hero 소개 문구만 변경하면 Legacy Description 없이 HERO_STATEMENT만 저장", async () => {
+    render(<SiteScreen />);
+    const statement = await screen.findByLabelText("소개 문구");
+    fireEvent.change(statement, { target: { value: "변경된 Hero 소개 문구" } });
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+
+    await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({ operation: "PORTFOLIO_CONTENT_UPDATE" })));
+    submitOtp();
+    await waitFor(() => expect(updatePortfolioContents).toHaveBeenCalledWith([
+      { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "변경된 Hero 소개 문구" },
+    ], { challengeId: "challenge-site", verificationCode: "654321" }));
+  });
+
   it("Profile Editor가 자격·교육과 enabled만 제공하고 featured 없이 Create Challenge를 실행", async () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");
@@ -265,6 +297,10 @@ describe("Admin Site 실제 API 관리", () => {
 
     expect(within(dialog).getByRole("option", { name: "학력" })).toHaveValue("EDUCATION");
     expect(within(dialog).getByRole("option", { name: "자격·교육" })).toHaveValue("CERTIFICATE");
+    expect(within(dialog).getByRole("heading", { name: "기본 정보" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "기간" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "상세 설명" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "노출 설정" })).toBeInTheDocument();
     expect(within(dialog).getByLabelText("노출 ON")).toBeChecked();
     expect(within(dialog).queryByLabelText("대표/강조")).not.toBeInTheDocument();
     fireEvent.change(within(dialog).getByLabelText("유형"), { target: { value: "CERTIFICATE" } });
@@ -318,7 +354,7 @@ describe("Admin Site 실제 API 관리", () => {
   it("Technology Editor가 6개 Category와 iconUrl만 사용", async () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");
-    fireEvent.click(screen.getByRole("tab", { name: "기술" }));
+    fireEvent.click(screen.getByRole("tab", { name: "기술스택" }));
     fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
     const dialog = screen.getByRole("dialog");
 
@@ -338,13 +374,21 @@ describe("Admin Site 실제 API 관리", () => {
     })));
   });
 
-  it("메인 기술 선택·순서를 별도 PUT Challenge로 저장", async () => {
+  it("보유 기술 스택 Draft가 View 전환 뒤에도 유지되고 별도 PUT Challenge로 저장", async () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");
-    fireEvent.click(screen.getByRole("tab", { name: "기술" }));
-    fireEvent.change(screen.getByLabelText("메인 노출 기술"), { target: { value: "8" } });
+    fireEvent.click(screen.getByRole("tab", { name: "기술스택" }));
+    fireEvent.click(screen.getByRole("button", { name: "보유 기술 스택" }));
+    const section = screen.getByRole("region", { name: "보유 기술 스택" });
+    expect(within(section).getByRole("group", { name: "기술 추가" })).toContainElement(screen.getByLabelText("보유 기술 선택"));
+    const list = within(section).getByRole("list", { name: "선택된 보유 기술" });
+    expect(within(list).getByRole("listitem")).toHaveTextContent("표시 순서 1");
+    fireEvent.change(screen.getByLabelText("보유 기술 선택"), { target: { value: "8" } });
     fireEvent.click(screen.getByRole("button", { name: "추가" }));
-    fireEvent.click(screen.getByRole("button", { name: "메인 구성 저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "전체 기술 스택" }));
+    fireEvent.click(screen.getByRole("button", { name: "보유 기술 스택" }));
+    expect(within(screen.getByRole("list", { name: "선택된 보유 기술" })).getAllByRole("listitem")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "보유 기술 저장" }));
 
     await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
       operation: "PORTFOLIO_TECHNOLOGY_UPDATE",

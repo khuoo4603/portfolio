@@ -1,9 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DELETE, GET, HEAD, PATCH, POST } from "./route";
 
-const loggingMocks = vi.hoisted(() => ({ recordFrontendError: vi.fn() }));
+const loggingMocks = vi.hoisted(() => ({
+  recordFrontendError: vi.fn(),
+  writeFrontendRequestLog: vi.fn(),
+}));
 vi.mock("@/lib/logging/frontend-error", () => ({
   recordFrontendError: loggingMocks.recordFrontendError,
+}));
+vi.mock("@/lib/logging/server-logger", () => ({
+  writeFrontendRequestLog: loggingMocks.writeFrontendRequestLog,
 }));
 
 const ORIGINAL_BACKEND_BASE_URL = process.env.BACKEND_BASE_URL;
@@ -20,7 +26,7 @@ describe("Same-Origin Backend Proxy", () => {
   beforeEach(() => {
     process.env.BACKEND_BASE_URL = "http://backend.local:8080";
     loggingMocks.recordFrontendError.mockReset().mockResolvedValue(undefined);
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    loggingMocks.writeFrontendRequestLog.mockReset();
   });
 
   afterEach(() => {
@@ -170,6 +176,15 @@ describe("Same-Origin Backend Proxy", () => {
       errorCode: "FRONTEND_BACKEND_CONNECTION_FAILED",
       traceId: payload.traceId,
     });
+    expect(loggingMocks.writeFrontendRequestLog).toHaveBeenCalledWith(expect.objectContaining({
+      method: "GET",
+      path: "/api/v1/public/portfolio",
+      status: 502,
+      errorCode: "FRONTEND_BACKEND_CONNECTION_FAILED",
+      traceId: payload.traceId,
+      proxyFailure: true,
+      stack: expect.any(String),
+    }));
   });
 
   it("Backend가 반환한 500은 Frontend 오류로 중복 기록하지 않음", async () => {
@@ -184,6 +199,7 @@ describe("Same-Origin Backend Proxy", () => {
 
     expect(response.status).toBe(500);
     expect(loggingMocks.recordFrontendError).not.toHaveBeenCalled();
+    expect(loggingMocks.writeFrontendRequestLog).not.toHaveBeenCalled();
   });
 
   it("유효 Request ID는 유지하고 유효하지 않은 ID는 재생성", async () => {

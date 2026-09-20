@@ -1,0 +1,112 @@
+.button {
+  display: inline-flex;
+  min-height: var(--space-40);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  border: 1px solid transparent;
+  border-radius: var(--radius-value-sm);
+  box-shadow: var(--control-shadow-rest);
+  cursor: pointer;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    background-color var(--motion-duration-160) var(--motion-easing-default),
+    border-color var(--motion-duration-160) var(--motion-easing-default),
+    box-shadow var(--motion-duration-160) var(--motion-easing-default),
+    color var(--motion-duration-160) var(--motion-easing-default);
+}
+
+.content {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+}
+
+.primary {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: var(--control-foreground);
+}
+
+.secondary {
+  border-color: var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.danger {
+  border-color: var(--status-error);
+  background: var(--status-error);
+  color: var(--control-foreground);
+}
+
+.button:hover:not(:disabled) {
+  box-shadow: var(--control-shadow-hover);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--accent-primary);
+}
+
+.secondary:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+}
+
+.danger:hover:not(:disabled) {
+  box-shadow: var(--control-shadow-active);
+}
+
+.button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--focus-ring) 44%, transparent);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.48;
+}
+
+.button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.small {
+  min-height: var(--space-32);
+  padding: var(--space-4) var(--space-12);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.small svg {
+  width: 16px;
+  height: 16px;
+}
+
+.loader {
+  flex: none;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .loader {
+    animation: none;
+    transition: none;
+  }
+}

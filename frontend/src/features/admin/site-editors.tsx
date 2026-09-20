@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Button from "@/components/ui/button";
 import type {
   ExternalLink,
   ExternalLinkInput,
@@ -11,11 +12,15 @@ import type {
   TechnologyCategory,
   TechnologyInput,
 } from "./admin-types";
-import DialogFrame from "./dialog-frame";
-import { SubmitButton } from "./admin-ui";
+import DialogFrame from "@/components/ui/dialog-frame";
 import styles from "./admin.module.css";
 
 type EditorState<T> = { item?: T } | null;
+
+// Dialog Form 내부 입력 목적 구분
+function EditorSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section className={styles.editorFormSection}><h3 className="type-small">{title}</h3><div className={styles.editorFormFields}>{children}</div></section>;
+}
 
 // 학력·경력·활동·수상·자격·교육 Backend Model 기반 Editor
 export function ProfileEditor({
@@ -62,62 +67,37 @@ export function ProfileEditor({
   return (
     <DialogFrame
       open={state !== null}
-      title={item ? "프로필 항목 수정" : "프로필 항목 추가"}
-      description="Public의 학력·경력·활동·수상·자격·교육 영역에 연결되는 반복 항목"
+      title={item ? "이력 수정" : "이력 추가"}
+      description="이력의 유형, 내용, 노출 상태를 관리합니다."
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button type="button" onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >
       <form id="profile-entry-form" className={styles.editorForm} onSubmit={handleSubmit}>
-        <div className={styles.formColumns}>
+        <EditorSection title="기본 정보">
           <label className={styles.formField}>
             <span className="type-small">유형</span>
             <select className="type-body" value={entryType} onChange={(event) => setEntryType(event.currentTarget.value as ProfileEntryType)}>
-              <option value="EDUCATION">학력</option>
-              <option value="EXPERIENCE">경력</option>
-              <option value="ACTIVITY">활동</option>
-              <option value="AWARD">수상</option>
-              <option value="CERTIFICATE">자격·교육</option>
+              <option value="EDUCATION">학력</option><option value="EXPERIENCE">경력</option><option value="ACTIVITY">활동</option><option value="AWARD">수상</option><option value="CERTIFICATE">자격·교육</option>
             </select>
           </label>
-          <label className={styles.formField}>
-            <span className="type-small">기간</span>
-            <input className="type-body" value={periodText} onChange={(event) => setPeriodText(event.currentTarget.value)} placeholder="화면 표시 문자열" />
-          </label>
-        </div>
-        <label className={styles.formField}>
-          <span className="type-small">제목</span>
-          <input className="type-body" value={title} onChange={(event) => setTitle(event.currentTarget.value)} required />
-        </label>
-        <div className={styles.formColumns}>
-          <label className={styles.formField}>
-            <span className="type-small">기관</span>
-            <input className="type-body" value={organization} onChange={(event) => setOrganization(event.currentTarget.value)} />
-          </label>
-          <label className={styles.formField}>
-            <span className="type-small">역할</span>
-            <input className="type-body" value={role} onChange={(event) => setRole(event.currentTarget.value)} />
-          </label>
-        </div>
-        <label className={styles.formField}>
-          <span className="type-small">설명</span>
-          <textarea className="type-body" rows={4} value={description} onChange={(event) => setDescription(event.currentTarget.value)} />
-        </label>
-        <label className={styles.formField}>
-          <span className="type-small">성과</span>
-          <textarea className="type-body" rows={3} value={achievement} onChange={(event) => setAchievement(event.currentTarget.value)} />
-        </label>
-        <label className={styles.formField}>
-          <span className="type-small">표시 순서</span>
-          <input className="type-body" type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(Number(event.currentTarget.value))} />
-        </label>
-        <div className={styles.checkRow}>
+          <label className={styles.formField}><span className="type-small">제목</span><input className="type-body" value={title} onChange={(event) => setTitle(event.currentTarget.value)} required /></label>
+          <label className={styles.formField}><span className="type-small">기관</span><input className="type-body" value={organization} onChange={(event) => setOrganization(event.currentTarget.value)} /></label>
+          <label className={styles.formField}><span className="type-small">역할</span><input className="type-body" value={role} onChange={(event) => setRole(event.currentTarget.value)} /></label>
+        </EditorSection>
+        <EditorSection title="기간"><label className={styles.formField}><span className="type-small">기간</span><input className="type-body" value={periodText} onChange={(event) => setPeriodText(event.currentTarget.value)} placeholder="화면 표시 문자열" /></label></EditorSection>
+        <EditorSection title="상세 설명">
+          <label className={styles.formField}><span className="type-small">설명</span><textarea className="type-body" rows={4} value={description} onChange={(event) => setDescription(event.currentTarget.value)} /></label>
+          <label className={styles.formField}><span className="type-small">성과</span><textarea className="type-body" rows={3} value={achievement} onChange={(event) => setAchievement(event.currentTarget.value)} /></label>
+        </EditorSection>
+        <EditorSection title="노출 설정">
+          <label className={styles.formField}><span className="type-small">표시 순서</span><input className="type-body" type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(Number(event.currentTarget.value))} /></label>
           <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">노출 ON</span></label>
-        </div>
+        </EditorSection>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
       </form>
     </DialogFrame>
@@ -158,28 +138,18 @@ export function TechnologyEditor({
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button type="button" onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >
       <form id="technology-form" className={styles.editorForm} onSubmit={handleSubmit}>
-        <label className={styles.formField}><span className="type-small">기술명</span><input className="type-body" value={name} onChange={(event) => setName(event.currentTarget.value)} required /></label>
-        <div className={styles.formColumns}>
-          <label className={styles.formField}>
-            <span className="type-small">분류</span>
-            <select className="type-body" value={category} onChange={(event) => setCategory(event.currentTarget.value as TechnologyCategory)}>
-              <option value="LANGUAGE">LANGUAGE</option>
-              <option value="BACKEND">BACKEND</option>
-              <option value="DATABASE">DATABASE</option>
-              <option value="FRONTEND">FRONTEND</option>
-              <option value="INFRA">INFRA</option>
-              <option value="DEVOPS">DEVOPS</option>
-            </select>
-          </label>
-          <label className={styles.formField}><span className="type-small">Icon URL</span><input className="type-body" value={iconUrl} onChange={(event) => setIconUrl(event.currentTarget.value)} placeholder="/icons/tech/example.svg" /></label>
-        </div>
-        <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">신규 연결 가능</span></label>
+        <EditorSection title="기본 정보">
+          <label className={styles.formField}><span className="type-small">기술명</span><input className="type-body" value={name} onChange={(event) => setName(event.currentTarget.value)} required /></label>
+          <label className={styles.formField}><span className="type-small">분류</span><select className="type-body" value={category} onChange={(event) => setCategory(event.currentTarget.value as TechnologyCategory)}><option value="LANGUAGE">LANGUAGE</option><option value="BACKEND">BACKEND</option><option value="DATABASE">DATABASE</option><option value="FRONTEND">FRONTEND</option><option value="INFRA">INFRA</option><option value="DEVOPS">DEVOPS</option></select></label>
+          <label className={`${styles.formField} ${styles.wideField}`}><span className="type-small">Icon URL</span><input className="type-body" value={iconUrl} onChange={(event) => setIconUrl(event.currentTarget.value)} placeholder="/icons/tech/example.svg" /></label>
+        </EditorSection>
+        <EditorSection title="노출 설정"><label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">신규 연결 가능</span></label></EditorSection>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
       </form>
     </DialogFrame>
@@ -231,16 +201,14 @@ export function ExternalLinkEditor({
       onClose={onClose}
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onClose}>취소</button>
-          <SubmitButton busy={false} type="button" onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>저장</SubmitButton>
+          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
+          <Button type="button" onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >
       <form id="external-link-form" className={styles.editorForm} onSubmit={handleSubmit}>
-        <label className={styles.formField}><span className="type-small">이름</span><input className="type-body" value={name} onChange={(event) => setName(event.currentTarget.value)} required /></label>
-        <label className={styles.formField}><span className="type-small">URL</span><input className="type-body" type="url" value={url} onChange={(event) => setUrl(event.currentTarget.value)} placeholder="https://" required /></label>
-        <label className={styles.formField}><span className="type-small">표시 순서</span><input className="type-body" type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(Number(event.currentTarget.value))} /></label>
-        <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">노출 ON</span></label>
+        <EditorSection title="기본 정보"><label className={styles.formField}><span className="type-small">이름</span><input className="type-body" value={name} onChange={(event) => setName(event.currentTarget.value)} required /></label><label className={`${styles.formField} ${styles.wideField}`}><span className="type-small">URL</span><input className="type-body" type="url" value={url} onChange={(event) => setUrl(event.currentTarget.value)} placeholder="https://" required /></label></EditorSection>
+        <EditorSection title="노출 설정"><label className={styles.formField}><span className="type-small">표시 순서</span><input className="type-body" type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(Number(event.currentTarget.value))} /></label><label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">노출 ON</span></label></EditorSection>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
       </form>
     </DialogFrame>

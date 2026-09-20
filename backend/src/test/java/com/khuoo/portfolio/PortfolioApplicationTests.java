@@ -24,7 +24,6 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
             "COMMON/POSITION",
             "COMMON/AFFILIATION",
             "MAIN/HERO_STATEMENT",
-            "MAIN/HERO_DESCRIPTION",
             "PROFILE/ABOUT_STATEMENT",
             "PROFILE/ABOUT_DESCRIPTION_1",
             "PROFILE/ABOUT_DESCRIPTION_2",
@@ -49,7 +48,14 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
             "Kubernetes",
             "GitHub Actions",
             "GHCR",
-            "Git"
+            "Git",
+            "JavaScript",
+            "Vite",
+            "Nginx",
+            "Spring Security",
+            "Flyway",
+            "k3s",
+            "ArgoCD"
     );
 
     @Autowired
@@ -77,7 +83,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
 
         assertThat(flyway.info().applied()).hasSize(2);
         assertThat(flyway.info().current().getDescription()).isEqualTo("seed initial data");
-        assertThat(tableCount).isEqualTo(21);
+        assertThat(tableCount).isEqualTo(23);
         assertThat(jdbcTemplate.queryForObject("SHOW TIME ZONE", String.class)).isEqualTo("Asia/Seoul");
         assertThat(jdbcTemplate.queryForObject("SHOW server_encoding", String.class)).isEqualTo("UTF8");
         assertThat(environment.getProperty("management.endpoints.web.exposure.include")).isEqualTo("health");
@@ -116,7 +122,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                     COUNT(*) FILTER (WHERE category = 'CONTACT') AS contact_count
                 FROM portfolio_contents
                 """)).containsEntry("common_count", 4L)
-                .containsEntry("main_count", 2L)
+                .containsEntry("main_count", 1L)
                 .containsEntry("profile_count", 9L)
                 .containsEntry("contact_count", 1L);
         assertThat(contentValue("COMMON", "NAME")).isEqualTo("김현우");
@@ -182,13 +188,37 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 WHERE title = '현대오토에버 특성화 고교생 화이트해커 양성교육'
                 """)).containsEntry("organization", "현대오토에버")
                 .containsEntry("entry_type", "CERTIFICATE");
+        assertThat(jdbcTemplate.queryForMap("""
+                SELECT organization, description
+                FROM profile_entries
+                WHERE title = 'QED'
+                """)).containsEntry("organization", null)
+                .containsEntry("description", "성공회대학교 보안동아리");
+        assertThat(jdbcTemplate.queryForMap("""
+                SELECT description, achievement
+                FROM profile_entries
+                WHERE title = 'SW·AI 교육 수기 공모전'
+                """)).containsEntry("description", "-")
+                .containsEntry("achievement", "최우수상 · 과학기술정보통신부 장관상");
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT name || ':' || icon_url
+                FROM technology_master
+                WHERE name IN ('JavaScript', 'Vite', 'Spring Security', 'Flyway', 'k3s', 'ArgoCD')
+                ORDER BY name
+                """, String.class)).containsExactly(
+                "ArgoCD:/icons/tech/argocd.svg",
+                "Flyway:/icons/tech/flyway.svg",
+                "JavaScript:/icons/tech/javascript.svg",
+                "Spring Security:/icons/tech/spring-security.svg",
+                "Vite:/icons/tech/vite.svg",
+                "k3s:/icons/tech/k3s.svg");
 
         assertThat(jdbcTemplate.queryForList(
                 "SELECT name FROM technology_master", String.class))
-                .hasSize(23)
+                .hasSize(25)
                 .containsAll(MAIN_TECHNOLOGIES)
                 .contains("Next.js", "React", "TypeScript", "Python", "FastAPI", "Nginx", "XRPL",
-                        "JavaScript", "Node.js", "Express", "EJS");
+                        "JavaScript", "Vite", "Spring Security", "Flyway", "k3s", "ArgoCD");
         assertThat(jdbcTemplate.queryForList("""
                 SELECT technology.name
                 FROM portfolio_technologies AS portfolio
@@ -241,8 +271,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 """, String.class)).containsExactly(
                 "project_id:NO",
                 "results_json:NO",
-                "background_json:NO",
-                "features_json:NO",
+                "overview_json:NO",
                 "development_json:NO",
                 "architecture_json:NO",
                 "architecture_image_storage_key:YES",
@@ -287,7 +316,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
     void projectSeedsMatchPublicData() throws Exception {
         assertThat(jdbcTemplate.queryForList(
                 "SELECT slug FROM projects ORDER BY display_order", String.class))
-                .containsExactly("kyvc", "shkutrack", "shkuload");
+                .containsExactly("portfolio", "kyvc", "shkutrack");
         assertThat(jdbcTemplate.queryForMap("""
                 SELECT name, year, tagline, description, card_role, summary, detail_role,
                        started_at::text, ended_at::text, team_size, display_order, enabled
@@ -296,15 +325,15 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 """))
                 .containsEntry("name", "KYvC")
                 .containsEntry("year", 2026)
-                .containsEntry("tagline", "법인 KYC 자동 심사 서비스")
-                .containsEntry("description", "법인 서류를 기반으로 KYC 심사를 자동화하고 검증 결과를 전자 증명 형태로 연결하는 서비스")
+                .containsEntry("tagline", "법인 KYC 심사·전자 자격증명 서비스")
+                .containsEntry("description", "법인 증빙서류를 OCR·LLM으로 분석하고 심사된 법인 정보를 VC로 발급해 VP 검증에 활용하는 KYC 서비스")
                 .containsEntry("card_role", "백엔드 · 인프라")
-                .containsEntry("summary", "법인 KYC 심사부터 Verifiable Credential 발급과 Verifiable Presentation 검증까지 하나의 흐름으로 연결한 기업 인증 플랫폼")
+                .containsEntry("summary", "법인 KYC 신청·서류 심사, VC 발급, Wallet 보관, VP 제출·검증을 구현한 법인 인증 프로젝트")
                 .containsEntry("detail_role", "PL · Backend · Infra")
                 .containsEntry("started_at", "2026-04-27")
                 .containsEntry("ended_at", "2026-08-18")
                 .containsEntry("team_size", 9)
-                .containsEntry("display_order", 1)
+                .containsEntry("display_order", 2)
                 .containsEntry("enabled", true);
         assertThat(jdbcTemplate.queryForMap("""
                 SELECT name, year, tagline, description, card_role, summary, detail_role,
@@ -312,40 +341,37 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 FROM projects
                 WHERE slug = 'shkutrack'
                 """))
-                .containsEntry("name", "SHKUTrack")
+                .containsEntry("name", "SKHUTrack")
                 .containsEntry("year", 2026)
-                .containsEntry("tagline", "성공회대학교 졸업 관리 서비스")
-                .containsEntry("description", "졸업요건 확인과 졸업 자료, 마이크로전공, 수강 전략을 하나의 흐름으로 관리하는 서비스")
+                .containsEntry("tagline", "성공회대학교 졸업요건 관리 서비스")
+                .containsEntry("description", "수강 이력을 바탕으로 총학점·교양·SEED·전공·전공탐색 요건과 부족 항목을 계산하고 성적·마이크로전공·자료를 관리하는 서비스")
                 .containsEntry("card_role", "풀스택 · 인프라")
-                .containsEntry("summary", null)
-                .containsEntry("detail_role", null)
-                .containsEntry("started_at", null)
+                .containsEntry("summary", "성공회대학교 학생을 위한 수강 이력 및 졸업요건, 포트폴리오 등 성공적인 졸업을 서포트하는 졸업관리 서비스")
+                .containsEntry("detail_role", "Full Stack · Infra")
+                .containsEntry("started_at", java.sql.Date.valueOf("2026-02-10"))
                 .containsEntry("ended_at", null)
-                .containsEntry("team_size", null)
-                .containsEntry("display_order", 2)
-                .containsEntry("enabled", false);
-        assertThat(jdbcTemplate.queryForMap("""
-                SELECT name, year, tagline, description, card_role, summary, detail_role,
-                       started_at, ended_at, team_size, display_order, enabled, thumbnail_storage_key
-                FROM projects
-                WHERE slug = 'shkuload'
-                """))
-                .containsEntry("name", "SHKULoad")
-                .containsEntry("year", 2023)
-                .containsEntry("tagline", "길찾기·중간지점·지하철 정보 서비스")
-                .containsEntry("description", "목적지 길찾기와 여러 위치의 중간지점 계산, 지하철 위치·지연정보를 제공하는 서비스")
-                .containsEntry("card_role", "백엔드")
-                .containsEntry("summary", null)
-                .containsEntry("detail_role", null)
-                .containsEntry("started_at", null)
-                .containsEntry("ended_at", null)
-                .containsEntry("team_size", null)
+                .containsEntry("team_size", 1)
                 .containsEntry("display_order", 3)
-                .containsEntry("enabled", false)
-                .containsEntry("thumbnail_storage_key", null);
+                .containsEntry("enabled", true);
+        assertThat(jdbcTemplate.queryForMap("""
+                SELECT slug, display_order, enabled, detail_role, team_size, summary
+                FROM projects
+                WHERE slug = 'portfolio'
+                """))
+                .containsEntry("slug", "portfolio")
+                .containsEntry("display_order", 1)
+                .containsEntry("enabled", true)
+                .containsEntry("detail_role", "Full Stack · Infra")
+                .containsEntry("team_size", 1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT summary FROM projects WHERE slug = 'portfolio'", String.class))
+                .doesNotContain("1인 개발");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT summary FROM projects WHERE slug = 'shkutrack'", String.class))
+                .doesNotContain("1인 개발");
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT summary FROM projects WHERE slug = 'kyvc'", String.class))
-                .startsWith("법인 KYC 심사부터 Verifiable Credential 발급");
+                .isEqualTo("법인 KYC 신청·서류 심사, VC 발급, Wallet 보관, VP 제출·검증을 구현한 법인 인증 프로젝트");
         assertThat(jdbcTemplate.queryForList("""
                 SELECT project.slug || ':' || technology.name
                 FROM project_technologies AS relation
@@ -353,13 +379,16 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 JOIN technology_master AS technology ON technology.id = relation.technology_id
                 ORDER BY project.display_order, relation.display_order
                 """, String.class)).containsExactly(
+                "portfolio:Next.js", "portfolio:React", "portfolio:TypeScript", "portfolio:Java",
+                "portfolio:Spring Boot", "portfolio:PostgreSQL", "portfolio:Docker", "portfolio:Docker Compose",
+                "portfolio:Linux", "portfolio:GitHub Actions", "portfolio:GHCR", "portfolio:Git",
                 "kyvc:Next.js", "kyvc:React", "kyvc:TypeScript", "kyvc:Java",
                 "kyvc:Spring Boot", "kyvc:Python", "kyvc:FastAPI", "kyvc:PostgreSQL",
                 "kyvc:MySQL", "kyvc:Docker", "kyvc:Docker Compose", "kyvc:Nginx",
                 "kyvc:Linux", "kyvc:GitHub Actions", "kyvc:GHCR", "kyvc:XRPL",
-                "shkutrack:Java", "shkutrack:Spring Boot", "shkutrack:PostgreSQL",
-                "shkutrack:Docker", "shkutrack:Kubernetes", "shkutrack:Nginx",
-                "shkuload:JavaScript", "shkuload:Node.js", "shkuload:Express", "shkuload:EJS"
+                "shkutrack:JavaScript", "shkutrack:Vite", "shkutrack:Nginx", "shkutrack:Java",
+                "shkutrack:Spring Boot", "shkutrack:Spring Security", "shkutrack:Flyway", "shkutrack:PostgreSQL",
+                "shkutrack:Docker", "shkutrack:k3s", "shkutrack:GitHub Actions", "shkutrack:GHCR", "shkutrack:ArgoCD"
         );
         assertThat(jdbcTemplate.queryForList("""
                 SELECT project.slug || ':' || technology.name || ':'
@@ -371,16 +400,20 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 JOIN technology_master AS technology ON technology.id = relation.technology_id
                 ORDER BY project.display_order, relation.display_order
                 """, String.class)).containsExactly(
+                "portfolio:Next.js:0:1:1", "portfolio:React:0:1:2", "portfolio:TypeScript:0:1:3",
+                "portfolio:Java:1:1:4", "portfolio:Spring Boot:1:1:5", "portfolio:PostgreSQL:1:1:6",
+                "portfolio:Docker:1:1:7", "portfolio:Docker Compose:0:1:8", "portfolio:Linux:0:1:9",
+                "portfolio:GitHub Actions:0:1:10", "portfolio:GHCR:0:1:11", "portfolio:Git:0:1:12",
                 "kyvc:Next.js:0:0:1", "kyvc:React:0:0:2", "kyvc:TypeScript:0:0:3",
                 "kyvc:Java:1:1:4", "kyvc:Spring Boot:1:1:5", "kyvc:Python:0:0:6",
                 "kyvc:FastAPI:0:0:7", "kyvc:PostgreSQL:1:1:8", "kyvc:MySQL:0:1:9",
                 "kyvc:Docker:1:1:10", "kyvc:Docker Compose:0:1:11", "kyvc:Nginx:0:1:12",
                 "kyvc:Linux:0:1:13", "kyvc:GitHub Actions:0:1:14", "kyvc:GHCR:0:1:15",
-                "kyvc:XRPL:0:0:16", "shkutrack:Java:1:0:1", "shkutrack:Spring Boot:1:0:2",
-                "shkutrack:PostgreSQL:1:0:3", "shkutrack:Docker:1:0:4",
-                "shkutrack:Kubernetes:1:0:5", "shkutrack:Nginx:1:0:6",
-                "shkuload:JavaScript:1:0:1", "shkuload:Node.js:1:0:2",
-                "shkuload:Express:1:0:3", "shkuload:EJS:1:0:4"
+                "kyvc:XRPL:0:0:16", "shkutrack:JavaScript:0:1:1", "shkutrack:Vite:0:1:2",
+                "shkutrack:Nginx:0:1:3", "shkutrack:Java:1:1:4", "shkutrack:Spring Boot:1:1:5",
+                "shkutrack:Spring Security:0:1:6", "shkutrack:Flyway:0:1:7",
+                "shkutrack:PostgreSQL:1:1:8", "shkutrack:Docker:0:1:9", "shkutrack:k3s:1:1:10",
+                "shkutrack:GitHub Actions:0:1:11", "shkutrack:GHCR:0:1:12", "shkutrack:ArgoCD:0:1:13"
         );
         assertThat(jdbcTemplate.queryForList("""
                 SELECT technology.name
@@ -392,7 +425,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 ORDER BY relation.display_order
                 """, String.class)).containsExactly("Java", "Spring Boot", "PostgreSQL", "Docker");
         assertThat(jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM project_contents", Integer.class)).isEqualTo(1);
+                "SELECT COUNT(*) FROM project_contents", Integer.class)).isEqualTo(3);
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT content.results_json -> 0 ->> 'title'
                 FROM project_contents AS content
@@ -403,45 +436,126 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 SELECT
                     jsonb_typeof(content.results_json) AS results_type,
                     content.results_json -> 0 ->> 'description' AS result_description,
-                    jsonb_typeof(content.background_json -> 0) AS background_type,
-                    content.background_json -> 0 ->> 'body' AS background_body,
-                    content.features_json -> 0 ->> 'description' AS feature_description,
+                    jsonb_typeof(content.overview_json -> 0) AS overview_type,
                     jsonb_array_length(content.development_json) AS development_count,
                     jsonb_array_length(content.architecture_json -> 'notes') AS architecture_note_count,
                     content.architecture_json -> 'notes' -> 0 ->> 'title' AS first_architecture_note,
-                    content.architecture_json -> 'notes' -> 0 ->> 'body' AS first_architecture_body,
                     content.architecture_json -> 'notes' -> 1 ->> 'title' AS second_architecture_note,
-                    content.architecture_json -> 'notes' -> 1 ->> 'body' AS second_architecture_body,
                     jsonb_array_length(content.engineering_json) AS engineering_count
                 FROM project_contents AS content
                 JOIN projects AS project ON project.id = content.project_id
                 WHERE project.slug = 'kyvc'
                 """))
                 .containsEntry("results_type", "array")
-                .containsEntry("result_description", "Toss 특별상")
-                .containsEntry("background_type", "object")
-                .containsEntry("background_body", "기존 법인 KYC는 법인 정보와 각종 증빙서류를 제출하고 심사기관이 이를 반복적으로 검토하는 과정이 필요합니다.")
-                .containsEntry("feature_description", null)
+                .containsEntry("result_description", null)
+                .containsEntry("overview_type", "object")
                 .containsEntry("development_count", 3)
                 .containsEntry("architecture_note_count", 2)
                 .containsEntry("first_architecture_note", "인프라 / 실행 환경")
-                .containsEntry(
-                        "first_architecture_body",
-                        "Synology DSM Reverse Proxy → Nginx → Docker / Docker Compose"
-                )
                 .containsEntry("second_architecture_note", "인프라 / 배포")
-                .containsEntry(
-                        "second_architecture_body",
-                        "GitHub Actions → GHCR → Self-hosted Runner → Docker / Docker Compose"
-                )
                 .containsEntry("engineering_count", 4);
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT note ->> 'body'
+                FROM project_contents AS content
+                CROSS JOIN LATERAL jsonb_array_elements(content.architecture_json -> 'notes') AS note
+                JOIN projects AS project ON project.id = content.project_id
+                WHERE project.slug = 'kyvc'
+                """, String.class)).allSatisfy(body -> assertThat(body).isNotBlank());
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM project_contents AS content,
-                     jsonb_array_elements(content.results_json || content.features_json) AS item
+                     jsonb_array_elements(content.results_json) AS item
                 WHERE item ? 'description'
                   AND item ->> 'title' = item ->> 'description'
                 """, Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT project.slug || ':' || (item ->> 'title')
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                CROSS JOIN LATERAL jsonb_array_elements(content.results_json) AS item
+                ORDER BY project.display_order, item ->> 'title'
+                """, String.class)).containsExactly(
+                "portfolio:운영 중에도 설정을 바꿀 수 있는 관리 구조 설계",
+                "kyvc:BKL 법률 검토 단계 진입",
+                "kyvc:KFIP Toss 특별상 수상",
+                "kyvc:Toss PoC 협의 단계 진입",
+                "shkutrack:성공회대학교 소프트웨어경진대회 1등");
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT project.slug || ':' || jsonb_array_length(content.overview_json)
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                ORDER BY project.display_order
+                """, String.class)).containsExactly(
+                "portfolio:3", "kyvc:3", "shkutrack:3");
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT project.slug || ':' || jsonb_array_length(content.results_json) || ':'
+                       || jsonb_array_length(content.overview_json) || ':'
+                       || jsonb_array_length(content.development_json) || ':'
+                       || jsonb_typeof(content.architecture_json) || ':'
+                       || jsonb_array_length(content.engineering_json)
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                ORDER BY project.display_order
+                """, String.class)).containsExactly(
+                "portfolio:1:3:3:object:2", "kyvc:3:3:3:object:4", "shkutrack:1:3:3:object:2");
+        assertThat(jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM project_contents AS content,
+                     jsonb_array_elements(content.results_json) AS item
+                WHERE item ? 'description'
+                """, Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT item ->> 'title'
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                CROSS JOIN LATERAL jsonb_array_elements(content.results_json) AS item
+                WHERE project.slug = 'portfolio'
+                """, String.class)).containsExactly("운영 중에도 설정을 바꿀 수 있는 관리 구조 설계");
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT item ->> 'title'
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                CROSS JOIN LATERAL jsonb_array_elements(content.overview_json) AS item
+                WHERE project.slug = 'portfolio'
+                """, String.class)).containsExactly(
+                "가끔 수정할수록 더 번거로운 포트폴리오",
+                "코드를 열지 않고 관리하고, 핵심은 바로 보이게",
+                "개발과 학업에 쓰는 개인 도구");
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT item ->> 'title'
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                CROSS JOIN LATERAL jsonb_array_elements(content.engineering_json) AS item
+                WHERE project.slug = 'portfolio'
+                """, String.class)).containsExactly(
+                "코드 수정 없이 운영 설정 변경",
+                "DB와 파일 저장 상태 맞추기");
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT item ->> 'title'
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                CROSS JOIN LATERAL jsonb_array_elements(content.results_json) AS item
+                WHERE project.slug = 'shkutrack'
+                """, String.class)).containsExactly("성공회대학교 소프트웨어경진대회 1등");
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT item ->> 'title'
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                CROSS JOIN LATERAL jsonb_array_elements(content.overview_json) AS item
+                WHERE project.slug = 'shkutrack'
+                """, String.class)).containsExactly(
+                "보기 어려웠던 졸업요건",
+                "수강계획 시뮬레이션",
+                "부족한 졸업요건을 한눈에");
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT item ->> 'title'
+                FROM project_contents AS content
+                JOIN projects AS project ON project.id = content.project_id
+                CROSS JOIN LATERAL jsonb_array_elements(content.engineering_json) AS item
+                WHERE project.slug = 'shkutrack'
+                """, String.class)).containsExactly(
+                "졸업요건 계산을 Rule과 Evaluator로 분리",
+                "재수강 과목의 중복 학점 반영 방지");
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM project_media", Integer.class)).isZero();
         String kyvcKey = jdbcTemplate.queryForObject(
@@ -455,13 +569,11 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 WHERE project.slug = 'kyvc'
                 """, String.class);
         assertThat(kyvcKey).matches("projects/\\d+/thumbnail/2a22886f-378c-45cd-8548-4f93b9036594\\.webp");
-        assertThat(trackKey).matches("projects/\\d+/thumbnail/383297dd-5394-5945-2c56-050f58034417\\.webp");
+        assertThat(trackKey).isNull();
         assertThat(architectureKey)
                 .matches("projects/\\d+/architecture/b2051589-7615-4bc8-aec5-f48f6ec84653\\.png");
         assertThat(fileStorageService.open(kyvcKey).getContentAsByteArray())
                 .isEqualTo(new ClassPathResource("seed/projects/kyvc-thumbnail.webp").getContentAsByteArray());
-        assertThat(fileStorageService.open(trackKey).getContentAsByteArray())
-                .isEqualTo(new ClassPathResource("seed/projects/shkutrack-thumbnail.webp").getContentAsByteArray());
         assertThat(fileStorageService.open(architectureKey).getContentAsByteArray())
                 .isEqualTo(new ClassPathResource("seed/projects/kyvc-architecture.png").getContentAsByteArray());
         assertThat(jdbcTemplate.queryForList(

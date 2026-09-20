@@ -102,6 +102,45 @@ describe("Tools 실제 연동 Workspace", () => {
     expect(screen.getByRole("navigation", { name: "Tools 주요 메뉴" })).toHaveTextContent("QuizLinks");
   });
 
+  it("ADMIN Session에서 Header를 Admin, Theme, Profile 순서로 구성", async () => {
+    mocks.useAuthSession.mockReturnValue(authenticated(admin));
+    render(<ToolsShell><ToolsLauncher /></ToolsShell>);
+
+    await screen.findByLabelText("Tools Launcher");
+    const headerUtilities = screen.getByRole("group", { name: "Header 유틸리티" });
+    const adminLink = within(headerUtilities).getByRole("link", { name: "Admin으로 이동" });
+    const themeToggle = headerUtilities.querySelector(":scope > .theme-toggle");
+    const profileButton = within(headerUtilities).getByRole("button", { name: admin.name });
+
+    expect(adminLink).toHaveAttribute("href", "/admin");
+    expect(adminLink.textContent?.trim()).toBe("");
+    expect(adminLink.querySelector("svg")).toBeInTheDocument();
+    expect(themeToggle).toBeInTheDocument();
+    expect(headerUtilities.children[0]).toBe(adminLink);
+    expect(headerUtilities.children[1]).toBe(themeToggle);
+    expect(headerUtilities.children[2]).toBe(profileButton);
+  });
+
+  it("USER Session에서는 Admin Workspace 링크를 DOM에 렌더링하지 않음", async () => {
+    mocks.useAuthSession.mockReturnValue(authenticated(user));
+    render(<ToolsShell><ToolsLauncher /></ToolsShell>);
+
+    await screen.findByLabelText("Tools Launcher");
+
+    expect(screen.queryByRole("link", { name: "Admin으로 이동" })).not.toBeInTheDocument();
+  });
+
+  it("ADMIN Tools Mobile Drawer에서도 Admin Workspace 링크를 제공", async () => {
+    mocks.useAuthSession.mockReturnValue(authenticated(admin));
+    render(<ToolsShell><ToolsLauncher /></ToolsShell>);
+
+    await screen.findByLabelText("Tools Launcher");
+    fireEvent.click(screen.getByRole("button", { name: "모바일 메뉴 열기" }));
+
+    const drawer = screen.getByRole("complementary", { name: "모바일 메뉴" });
+    expect(within(drawer).getByRole("link", { name: "Admin으로 이동" })).toHaveAttribute("href", "/admin");
+  });
+
   it("Auth loading부터 Registry 조회를 시작하고 ADMIN 전환에도 중복 호출하지 않음", async () => {
     let resolveTools!: (value: { items: ToolItem[] }) => void;
     mocks.getTools.mockReturnValue(new Promise((resolve) => { resolveTools = resolve; }));

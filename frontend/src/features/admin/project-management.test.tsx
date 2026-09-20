@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import { createAdminChallenge } from "./admin-action-api";
 import {
   createProject,
@@ -59,23 +60,29 @@ describe("Project 목록 관리", () => {
 
   afterEach(cleanup);
 
-  it("Thumbnail·Name·Slug·Year·Order·Status·Updated At·Actions를 표로 표시", async () => {
-    render(<ProjectManagement />);
+  it("Project Identity와 운영 Metadata를 우선순위 순서로 표시", async () => {
+    render(<NotificationProvider><ProjectManagement /></NotificationProvider>);
 
     const table = await screen.findByRole("table");
-    for (const heading of ["Thumbnail", "Name / Slug", "Year", "Order", "Status", "Updated At", "Actions"]) {
+    const surface = screen.getByRole("region", { name: "프로젝트 관리" });
+    expect(surface).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Projects" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "새 프로젝트" })).toBeInTheDocument();
+    expect(within(surface).queryByRole("button", { name: "새 프로젝트" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "프로젝트 목록" })).not.toBeInTheDocument();
+    for (const heading of ["프로젝트", "연도", "순서", "상태", "수정일", "작업"]) {
       expect(within(table).getByRole("columnheader", { name: heading })).toBeInTheDocument();
     }
     expect(within(table).getByText("Project One")).toBeInTheDocument();
     expect(within(table).getByText("/projects/project-one")).toBeInTheDocument();
-    expect(within(table).getByText("공개")).toBeInTheDocument();
+    expect(within(table).getByRole("switch", { name: "Project One 프로젝트 비공개 전환" })).toHaveAttribute("aria-checked", "true");
 
     fireEvent.click(within(table).getByRole("button", { name: "Project One 편집" }));
     expect(navigation.push).toHaveBeenCalledWith("/admin/projects/12/edit");
   });
 
   it("Name·Slug만 입력하고 PROJECT_CREATE 후 Editor로 이동", async () => {
-    render(<ProjectManagement />);
+    render(<NotificationProvider><ProjectManagement /></NotificationProvider>);
     await screen.findByText("Project One");
 
     fireEvent.click(screen.getByRole("button", { name: "새 프로젝트" }));
@@ -96,7 +103,17 @@ describe("Project 목록 관리", () => {
       { name: "New Project", slug: "new-project" },
       { challengeId: "challenge-project", verificationCode: "654321" },
     ));
+    expect(await screen.findByRole("status")).toHaveTextContent("프로젝트 생성 완료");
     expect(navigation.push).toHaveBeenCalledWith("/admin/projects/31/edit");
+  });
+
+  it("빈 목록에서도 관리 Surface 안에서 새 프로젝트를 시작할 수 있다", async () => {
+    vi.mocked(getAdminProjects).mockResolvedValueOnce({ items: [] });
+    render(<ProjectManagement />);
+
+    expect(await screen.findByText("프로젝트 없음")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "새 프로젝트" }));
+    expect(screen.getByRole("dialog", { name: "새 프로젝트" })).toBeInTheDocument();
   });
 
   it("목록 Switch를 PROJECT_STATUS_UPDATE 한 번으로 변경하고 재조회", async () => {

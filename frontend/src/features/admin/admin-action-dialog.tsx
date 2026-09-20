@@ -2,10 +2,10 @@
 
 import { LoaderCircle, MailCheck } from "lucide-react";
 import { useState } from "react";
+import Button from "@/components/ui/button";
+import DialogFrame from "@/components/ui/dialog-frame";
 import OtpInput from "@/features/auth/otp-input";
 import { formatCountdown, useCountdown } from "@/features/auth/challenge-time";
-import DialogFrame from "./dialog-frame";
-import { SubmitButton } from "./admin-ui";
 import type { AdminActionPhase } from "./use-admin-action";
 import styles from "./admin.module.css";
 
@@ -67,12 +67,12 @@ function AdminActionDialogContent({
       secure
       footer={(
         <>
-          <button className={`${styles.secondaryButton} type-body`} type="button" onClick={onCancel} disabled={busy}>
+          <Button variant="secondary" type="button" onClick={onCancel} disabled={busy}>
             취소
-          </button>
-          <SubmitButton busy={phase === "VERIFYING"} type="button" onClick={() => void onConfirm(code)} disabled={inputDisabled || !validCode || expiresIn === 0}>
+          </Button>
+          <Button busy={phase === "VERIFYING"} type="button" onClick={() => void onConfirm(code)} disabled={inputDisabled || !validCode || expiresIn === 0}>
             변경 실행
-          </SubmitButton>
+          </Button>
         </>
       )}
     >

@@ -2,6 +2,7 @@ import { isIP } from "node:net";
 import { randomUUID } from "node:crypto";
 import { getBackendBaseUrl } from "@/lib/api/backend-url";
 import { recordFrontendError } from "@/lib/logging/frontend-error";
+import { writeFrontendRequestLog } from "@/lib/logging/server-logger";
 
 const REQUEST_ID_HEADER = "X-Request-Id";
 const FORWARDED_FOR_HEADER = "X-Forwarded-For";
@@ -66,9 +67,18 @@ function responseHeaders(upstream: Response) {
   return headers;
 }
 
+// Runtime 경계를 넘어온 Proxy 오류의 Stack 문자열 추출
+function errorStack(error: unknown) {
+  if (typeof error !== "object" || error === null || !("stack" in error)) {
+    return undefined;
+  }
+  return typeof error.stack === "string" && error.stack.includes("\n") ? error.stack : undefined;
+}
+
 // `/api/v1/**` Browser 요청의 Backend Same-Origin 전달
 async function proxy(request: Request, context: ProxyContext) {
   const traceId = requestId(request.headers);
+  const startedAt = process.hrtime.bigint();
 
   try {
     const { path } = await context.params;
@@ -87,10 +97,16 @@ async function proxy(request: Request, context: ProxyContext) {
     return new Response(responseBody, { status: upstream.status, statusText: upstream.statusText, headers });
   } catch (error) {
     const pathname = new URL(request.url).pathname;
-    console.error(
-      `[frontend-error] traceId=${traceId} method=${request.method.toUpperCase()} path=${pathname} status=502 errorCode=FRONTEND_BACKEND_CONNECTION_FAILED`,
-      error,
-    );
+    writeFrontendRequestLog({
+      method: request.method,
+      path: pathname,
+      status: 502,
+      durationMs: Number(process.hrtime.bigint() - startedAt) / 1_000_000,
+      errorCode: "FRONTEND_BACKEND_CONNECTION_FAILED",
+      traceId,
+      proxyFailure: true,
+      stack: errorStack(error) ?? new Error("Frontend Proxy 연결 실패").stack,
+    });
     await recordFrontendError({
       method: request.method,
       path: pathname,

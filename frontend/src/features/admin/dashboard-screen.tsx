@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { buttonClassName } from "@/components/ui/button";
 import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
 import type { DashboardData, TrafficPoint } from "./admin-types";
@@ -12,15 +14,6 @@ const PERIOD_FILTERS: ReadonlyArray<{ value: DashboardMonths; label: string }> =
   { value: 6, label: "6개월" },
   { value: 12, label: "12개월" },
 ];
-
-const SERVICE_NAMES: Record<string, string> = {
-  PORTFOLIO_FRONTEND: "Portfolio Frontend",
-  PORTFOLIO_BACKEND: "Portfolio Backend",
-  KYVC_FRONTEND: "KYvC Frontend",
-  KYVC_BACKEND: "KYvC Backend",
-  KYVC_CORE: "KYvC Core",
-  SHKUTRACK: "SHKUTrack",
-};
 
 function chartPoints(items: TrafficPoint[], key: "visitors" | "pageViews", maxValue: number) {
   if (items.length === 0) {
@@ -159,85 +152,64 @@ export default function DashboardScreen() {
     <>
       <PageHeader
         title="Dashboard"
-        description="방문 현황, 서비스 상태와 사이트 현황을 한눈에 확인합니다."
-        action={(
-          <SegmentedControl label="방문 추이 기간" options={PERIOD_FILTERS} value={months} onChange={selectMonths} />
-        )}
+        description="방문 현황과 서비스 상태를 확인합니다."
       />
 
       {loading ? (
-        <PageLoading rows={6} />
+        <section className={styles.dashboardOperations} aria-label="Dashboard 운영 현황">
+          <section className={`${styles.managementSurface} ${styles.trafficPanel}`} aria-label="방문 추이">
+            <div className={styles.managementSurfaceHeader}>
+              <div><h2 className="type-title">방문 추이</h2></div>
+              <SegmentedControl label="방문 추이 기간" options={PERIOD_FILTERS} value={months} onChange={selectMonths} />
+            </div>
+            <PageLoading rows={4} />
+          </section>
+        </section>
       ) : error ? (
         <PageError message={error} onRetry={() => void loadDashboard()} />
       ) : data ? (
-        <div className={styles.dashboardFlow}>
-          <section className={styles.summarySection} aria-labelledby="traffic-summary-title">
-            <div className={styles.sectionHeading}>
-              <div>
-                <h2 id="traffic-summary-title" className="type-title">방문 현황</h2>
-              </div>
-            </div>
-            <dl className={styles.summaryRow}>
-              <div><dt className="type-small">오늘 방문자</dt><dd>{data.traffic.todayVisitors.toLocaleString("ko-KR")}</dd></div>
-              <div><dt className="type-small">오늘 페이지 조회</dt><dd>{data.traffic.todayPageViews.toLocaleString("ko-KR")}</dd></div>
-              <div><dt className="type-small">이번 달 방문자</dt><dd>{data.traffic.monthVisitors.toLocaleString("ko-KR")}</dd></div>
-              <div><dt className="type-small">이번 달 페이지 조회</dt><dd>{data.traffic.monthPageViews.toLocaleString("ko-KR")}</dd></div>
-            </dl>
-          </section>
-
-          <div className={styles.dashboardPrimaryGrid}>
-            <section className={styles.chartSection} aria-labelledby="trend-title">
-              <div className={styles.sectionHeading}>
+        <section className={styles.dashboardOperations} aria-label="Dashboard 운영 현황">
+          <div className={styles.dashboardMainGrid}>
+            <div className={styles.dashboardOverviewColumn}>
+            <section className={`${styles.managementSurface} ${styles.trafficPanel}`} aria-labelledby="trend-title">
+              <div className={styles.managementSurfaceHeader}>
                 <div>
                   <h2 id="trend-title" className="type-title">방문 추이</h2>
                 </div>
+                <SegmentedControl label="방문 추이 기간" options={PERIOD_FILTERS} value={months} onChange={selectMonths} />
               </div>
               <TrafficChart trend={data.traffic.trend} />
             </section>
-
-            <section className={styles.serviceSection} aria-labelledby="service-title">
-              <div className={styles.sectionHeading}>
-                <div>
-                  <h2 id="service-title" className="type-title">서비스 상태</h2>
-                </div>
+            <dl className={styles.dashboardKpiGrid}>
+              <div className={styles.dashboardKpi}><dt className="type-small">오늘 방문자</dt><dd>{data.traffic.todayVisitors.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">오늘 페이지 조회</dt><dd>{data.traffic.todayPageViews.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">이번 달 방문자</dt><dd>{data.traffic.monthVisitors.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">이번 달 페이지 조회</dt><dd>{data.traffic.monthPageViews.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">공개 프로젝트</dt><dd>{data.siteSummary.publicProjects.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">활성 기술</dt><dd>{data.siteSummary.portfolioTechnologies.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">활성 Tool</dt><dd>{data.siteSummary.activeTools.toLocaleString("ko-KR")}</dd></div>
+              <div className={styles.dashboardKpi}><dt className="type-small">활성 계정</dt><dd>{data.siteSummary.activeAccounts.toLocaleString("ko-KR")}</dd></div>
+            </dl>
+            </div>
+            <section className={`${styles.managementSurface} ${styles.servicePanel}`} aria-labelledby="service-title">
+              <div className={styles.managementSurfaceHeader}>
+                <div><h2 id="service-title" className="type-title">서비스 상태</h2></div>
+                <Link className={buttonClassName({ variant: "secondary", size: "medium", className: "type-body" })} href="/admin/monitoring">Monitoring 관리</Link>
               </div>
               <div className={styles.serviceRows}>
                 {data.serviceStatus.length === 0 ? (
                   <EmptyState title="서비스 상태 없음" description="수신된 서비스 상태가 없습니다." />
                 ) : data.serviceStatus.map((service) => (
                   <div key={service.serviceKey} className={styles.serviceRow}>
-                    <div>
-                      <strong className="type-body">{SERVICE_NAMES[service.serviceKey] ?? service.serviceKey}</strong>
-                      <span className="type-small">{formatDateTime(service.lastCheckedAt)}</span>
-                    </div>
-                    <StatusLabel tone={service.status === "UP" ? "success" : "error"}>
-                      {service.status === "UP" ? "정상" : "장애"}
-                    </StatusLabel>
-                    <div className={`${styles.serviceMeta} type-small`}>
-                      <span>{service.responseTimeMs === null ? "-" : `${service.responseTimeMs} ms`}</span>
-                      <span>{service.httpStatus ?? "-"}</span>
-                    </div>
+                    <div><strong className="type-body">{service.displayName}</strong><span className="type-small">{formatDateTime(service.lastCheckedAt)}</span></div>
+                    <StatusLabel tone={service.status === "UP" ? "success" : "error"}>{service.status === "UP" ? "정상" : "장애"}</StatusLabel>
+                    <div className={`${styles.serviceMeta} type-small`}><span>{service.responseTimeMs === null ? "-" : `${service.responseTimeMs} ms`}</span><span>{service.httpStatus ?? "-"}</span></div>
                   </div>
                 ))}
               </div>
             </section>
           </div>
-
-          <section className={styles.siteSummarySection} aria-labelledby="site-summary-title">
-            <div className={styles.sectionHeading}>
-              <div>
-                <h2 id="site-summary-title" className="type-title">사이트 현황</h2>
-              </div>
-            </div>
-            <dl className={styles.compactSummary}>
-              <div><dt className="type-small">공개 프로젝트</dt><dd>{data.siteSummary.publicProjects}</dd></div>
-              <div><dt className="type-small">활성 기술</dt><dd>{data.siteSummary.portfolioTechnologies}</dd></div>
-              <div><dt className="type-small">활성 Tool</dt><dd>{data.siteSummary.activeTools}</dd></div>
-              <div><dt className="type-small">활성 계정</dt><dd>{data.siteSummary.activeAccounts}</dd></div>
-            </dl>
-          </section>
-
-        </div>
+        </section>
       ) : null}
     </>
   );

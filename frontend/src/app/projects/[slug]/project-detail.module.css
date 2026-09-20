@@ -5,7 +5,7 @@
 
 .projectHero {
   position: relative;
-  padding-top: calc(var(--space-64) + var(--space-80));
+  padding-top: calc(var(--portfolio-header-height) + var(--space-80));
   padding-bottom: var(--section-gap-strong);
   overflow: hidden;
   border-bottom: 1px solid var(--border-default);
@@ -76,6 +76,14 @@
   border-bottom: 1px solid var(--border-default);
 }
 
+.heroMetadata[data-metadata-count="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.heroMetadata[data-metadata-count="1"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .heroMetadataItem {
   min-width: 0;
   padding: var(--space-24) var(--space-24) var(--space-24) 0;
@@ -98,7 +106,7 @@
   margin: var(--space-12) 0 0;
   flex-direction: column;
   gap: var(--space-4);
-  color: var(--text-primary);
+  color: var(--text-muted);
   font-family: var(--font-family-mono);
   overflow-wrap: anywhere;
 }
@@ -183,7 +191,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .mediaPlaceholder {
@@ -266,7 +274,7 @@
 .projectRail {
   position: sticky;
   z-index: 8;
-  top: calc(var(--space-64) + var(--space-48));
+  top: calc(var(--portfolio-header-height) + var(--space-48));
   align-self: start;
   margin-top: var(--section-gap);
 }
@@ -346,8 +354,8 @@
 }
 
 .detailSection {
-  padding-block: var(--section-gap);
-  scroll-margin-top: calc(var(--space-64) + var(--space-48));
+  padding-block: var(--space-80);
+  scroll-margin-top: calc(var(--portfolio-header-height) + var(--space-48));
   border-bottom: 1px solid var(--border-default);
 }
 
@@ -374,28 +382,29 @@
 }
 
 .stackResultSection > .sectionHeader,
-.backgroundFeaturesSection > .sectionHeader {
+.overviewSection > .sectionHeader {
   max-width: calc(var(--space-160) * 3);
 }
 
 .stackResultGrid {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  margin-top: var(--space-64);
+  margin-top: var(--space-48);
   column-gap: var(--space-48);
+}
+
+.stackResultGrid[data-single="true"] {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .stackArea,
 .resultArea,
-.backgroundArea,
-.featuresArea {
+.overviewArea {
   min-width: 0;
   border-top: 1px solid var(--border-accent);
 }
 
-.stackArea,
-.backgroundArea,
-.featuresArea {
+.stackArea {
   padding-top: var(--space-24);
 }
 
@@ -407,9 +416,7 @@
 }
 
 .stackHeading h3,
-.resultArea > h3,
-.backgroundArea > h3,
-.featuresArea > h3 {
+.resultArea > h3 {
   margin: 0;
   color: var(--text-heading);
   font-family: var(--font-family-primary);
@@ -434,10 +441,11 @@
 .stackList {
   display: flex;
   max-width: 750px;
-  margin: var(--space-32) 0 0;
+  margin: var(--space-32) auto 0;
   padding: 0;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: var(--space-8);
   list-style: none;
 }
@@ -510,8 +518,8 @@
 .resultItem {
   display: grid;
   grid-template-columns: var(--space-48) minmax(0, 1fr);
-  min-height: var(--space-80);
-  padding: var(--space-20) 0;
+  min-height: var(--space-64);
+  padding: var(--space-12) 0;
   align-items: center;
   border-top: 1px solid var(--border-default);
   column-gap: var(--space-24);
@@ -526,6 +534,7 @@
 
 .resultTitle {
   color: var(--text-primary);
+  font-size: calc(var(--font-size-body-lg) + 1px);
   font-weight: 600;
   word-break: keep-all;
 }
@@ -535,79 +544,64 @@
   gap: var(--space-8);
 }
 
-.resultDescription,
-.featureDescription {
+.resultDescription {
   margin: 0;
   color: var(--text-secondary);
   text-wrap: pretty;
   word-break: keep-all;
 }
 
-.backgroundFeaturesGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  margin-top: var(--space-64);
-  column-gap: var(--space-48);
+.overviewContent {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-48);
 }
 
-.backgroundCopy {
-  margin-top: var(--space-32);
+.overviewCopy {
+  width: 100%;
+  box-sizing: border-box;
+  padding-inline: var(--space-24);
+  padding-top: var(--space-32);
+  margin-top: 0;
   color: var(--text-secondary);
 }
 
-.backgroundCopy p {
+.overviewCopy p {
   margin: 0;
+  font-size: var(--font-size-body-lg);
+  line-height: var(--line-height-body-lg);
+  letter-spacing: var(--letter-spacing-body-lg);
   text-wrap: pretty;
   word-break: keep-all;
 }
 
-.backgroundItem + .backgroundItem {
+.overviewItem + .overviewItem {
   margin-top: var(--space-32);
 }
 
-.backgroundItem h4 {
+.overviewItem h4 {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: var(--space-8);
   margin: 0 0 var(--space-12);
   color: var(--text-primary);
+  font-size: calc(var(--font-size-body-lg) + 2px);
   font-weight: 600;
 }
 
-.featureList {
-  margin: var(--space-32) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.featureItem {
-  display: grid;
-  grid-template-columns: var(--space-48) minmax(0, 1fr);
-  min-height: var(--space-80);
-  padding: var(--space-24) 0;
-  align-items: center;
-  border-top: 1px solid var(--border-default);
-  column-gap: var(--space-20);
-}
-
-.featureNumber {
-  color: var(--text-muted);
-  font-family: var(--font-family-mono);
-  letter-spacing: 0.02em;
-}
-
-.featureTitle {
-  margin: 0;
-  color: var(--text-primary);
-  font-weight: 600;
-  word-break: keep-all;
-}
-
-.featureCopy {
-  display: grid;
-  gap: var(--space-8);
+.overviewItem h4::before {
+  content: "•";
+  flex: 0 0 auto;
+  color: currentColor;
+  font-size: 1.1em;
+  line-height: 1;
+  font-weight: 400;
 }
 
 .developmentList {
   position: relative;
-  margin: var(--space-64) 0 0;
+  margin: var(--space-48) 0 0;
   padding: 0;
   border-top: 1px solid var(--border-accent);
   list-style: none;
@@ -688,13 +682,9 @@
   content: "";
 }
 
-.architectureSection {
-  padding-top: var(--section-gap-strong);
-}
-
 .architectureVisual {
   display: grid;
-  margin-top: var(--space-64);
+  margin-top: var(--space-48);
   gap: var(--space-32);
 }
 
@@ -706,6 +696,11 @@
   margin: 0;
   border: 1px solid var(--border-accent);
   border-radius: var(--radius-value-sm);
+  background: var(--bg-elevated);
+}
+
+/* Dark Theme 기존 Architecture Frame 계층 유지 */
+:global(html[data-theme="dark"]) .architectureImageFrame {
   background: var(--bg-surface);
 }
 
@@ -744,7 +739,10 @@
 }
 
 .architectureNote dt {
+  align-self: center;
   color: var(--text-primary);
+  font-size: calc(var(--font-size-body-lg) + 1px);
+  font-weight: 600;
 }
 
 .architectureNote dd {
@@ -753,7 +751,7 @@
 
 .engineeringList {
   position: relative;
-  margin: var(--space-64) 0 0;
+  margin: var(--space-48) 0 0;
   padding: 0;
   border-top: 1px solid var(--border-accent);
   list-style: none;
@@ -893,7 +891,7 @@
 /* Compact Desktop의 Hero 여백 우선 축소 */
 @media (min-width: 1024px) and (max-width: 1439px) {
   .projectHero {
-    padding-top: calc(var(--space-64) + var(--space-48));
+    padding-top: calc(var(--portfolio-header-height) + var(--space-48));
     padding-bottom: var(--section-gap);
   }
 
@@ -920,7 +918,7 @@
 
 @media (max-width: 1023px) {
   .projectHero {
-    padding-top: calc(var(--space-112) + var(--space-64));
+    padding-top: calc(var(--portfolio-header-height) + var(--space-48));
   }
 
   .heroContent {
@@ -953,8 +951,12 @@
     display: block;
   }
 
+  .overviewCopy {
+    padding-inline: var(--space-16);
+  }
+
   .projectRail {
-    top: var(--space-112);
+    top: var(--portfolio-header-height);
     margin-top: 0;
     overflow-x: auto;
     border-bottom: 1px solid var(--border-default);
@@ -989,11 +991,10 @@
   }
 
   .detailSection {
-    scroll-margin-top: calc(var(--space-112) + var(--space-48));
+    scroll-margin-top: calc(var(--portfolio-header-height) + var(--space-48));
   }
 
-  .stackResultGrid,
-  .backgroundFeaturesGrid {
+  .stackResultGrid {
     column-gap: var(--space-32);
   }
 
@@ -1006,7 +1007,7 @@
 
 @media (max-width: 767px) {
   .projectHero {
-    padding-top: calc(var(--space-112) + var(--space-24));
+    padding-top: calc(var(--portfolio-header-height) + var(--space-24));
   }
 
   .heroContent {
@@ -1022,13 +1023,32 @@
     margin-top: var(--space-24);
   }
 
+  .overviewCopy {
+    padding-inline: 0;
+  }
+
   .heroMetadata {
     grid-template-columns: minmax(0, 1fr);
     margin-top: var(--space-32);
   }
 
   .heroMetadataItem {
+    display: grid;
+    grid-template-columns: var(--space-80) minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--space-16);
     padding: var(--space-16) 0;
+  }
+
+  .heroMetadataItem dt {
+    margin: 0;
+    text-align: left;
+  }
+
+  .heroMetadataItem dd {
+    margin: 0;
+    align-items: flex-end;
+    text-align: right;
   }
 
   .heroMetadataItem + .heroMetadataItem {
@@ -1078,15 +1098,8 @@
     text-align: right;
   }
 
-  .detailSection {
-    padding-block: var(--section-gap);
-    scroll-margin-top: calc(var(--space-112) + var(--space-48));
-  }
-
-  .stackResultGrid,
-  .backgroundFeaturesGrid {
+  .stackResultGrid {
     display: block;
-    margin-top: var(--space-48);
   }
 
   .resultArea {
@@ -1096,19 +1109,6 @@
   .resultItem {
     grid-template-columns: var(--space-48) minmax(0, 1fr);
     column-gap: var(--space-16);
-  }
-
-  .featuresArea {
-    margin-top: var(--space-64);
-  }
-
-  .featureItem {
-    grid-template-columns: var(--space-40) minmax(0, 1fr);
-    column-gap: var(--space-12);
-  }
-
-  .developmentList {
-    margin-top: var(--space-48);
   }
 
   .developmentList::before {
@@ -1135,26 +1135,17 @@
     margin-top: var(--space-20);
   }
 
-  .architectureVisual {
-    margin-top: var(--space-48);
-  }
-
   .detailSection > .emptyValue {
     margin-top: var(--space-48);
   }
 
   .architectureVisual {
-    margin-top: var(--space-48);
     gap: var(--space-24);
   }
 
   .architectureNote {
     grid-template-columns: 1fr;
     gap: var(--space-8);
-  }
-
-  .engineeringList {
-    margin-top: var(--space-48);
   }
 
   .engineeringTrigger {
@@ -1172,6 +1163,112 @@
     gap: var(--space-24);
   }
 
+}
+
+@media (max-width: 767px) and (orientation: portrait) {
+  .heroMetadataItem:has(> dd > span + span) dd > span:last-child {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  .heroContent {
+    display: block;
+  }
+
+  .projectSummary {
+    margin-top: var(--space-24);
+  }
+}
+
+/* 저높이 Landscape Project Detail 압축 구성 */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 600px) {
+  .projectHero {
+    padding-top: calc(var(--portfolio-header-height) + var(--space-24));
+    padding-bottom: var(--section-gap);
+  }
+
+  .heroContent {
+    margin-top: var(--space-24);
+  }
+
+  .heroMetadata {
+    margin-top: var(--space-32);
+  }
+
+  .carousel {
+    margin-top: var(--space-32);
+  }
+
+  .carouselStage {
+    height: clamp(220px, 60svh, 280px);
+  }
+
+}
+
+/* Mobile과 Compact Landscape Project Detail 전용 밀도 구성 */
+@media (max-width: 767px), (max-width: 1023px) and (orientation: landscape) and (max-height: 600px) {
+  .detailSection {
+    padding-block: var(--space-48);
+  }
+
+  .overviewContent,
+  .stackResultGrid,
+  .developmentList,
+  .architectureVisual,
+  .engineeringList {
+    margin-top: var(--space-32);
+  }
+
+  .overviewCopy {
+    padding-top: var(--space-24);
+  }
+
+  .projectRail {
+    display: none;
+  }
+
+  .sectionHeader {
+    margin-top: var(--space-20);
+    text-align: center;
+  }
+
+  .sectionTitle {
+    text-align: center;
+  }
+
+  .stackList {
+    display: flex;
+    width: 100%;
+    max-width: none;
+    margin: var(--space-32) 0 0;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    column-gap: var(--space-8);
+    row-gap: var(--space-8);
+  }
+
+  .resultArea {
+    margin-top: 0;
+  }
+
+  .stackArea + .resultArea {
+    margin-top: var(--space-48);
+  }
+
+  .resultList {
+    margin-top: var(--space-20);
+  }
+
+  .resultArea > h3 {
+    padding-top: var(--space-16);
+  }
+
+  .resultItem {
+    min-height: 0;
+    padding-block: var(--space-12);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

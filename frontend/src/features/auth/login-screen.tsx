@@ -28,6 +28,11 @@ type ChallengeState = {
 
 // 문자별 입력·정지·삭제 순서의 Tools와 Admin 전환
 function FlipWords() {
+  const [reducedMotion, setReducedMotion] = useState(
+    () => typeof window !== "undefined"
+      && typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   const [frame, setFrame] = useState({
     wordIndex: 0,
     visibleLength: 1,
@@ -35,6 +40,23 @@ function FlipWords() {
   });
 
   useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateReducedMotion = () => setReducedMotion(query.matches);
+
+    updateReducedMotion();
+    query.addEventListener("change", updateReducedMotion);
+    return () => query.removeEventListener("change", updateReducedMotion);
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      return;
+    }
+
     let delay = TYPING_SPEED_MS;
 
     if (frame.phase === "pause") {
@@ -73,9 +95,11 @@ function FlipWords() {
     }, delay);
 
     return () => window.clearTimeout(timer);
-  }, [frame]);
+  }, [frame, reducedMotion]);
 
-  const visibleWord = FLIP_WORDS[frame.wordIndex].slice(0, frame.visibleLength);
+  const visibleWord = reducedMotion
+    ? FLIP_WORDS[0]
+    : FLIP_WORDS[frame.wordIndex].slice(0, frame.visibleLength);
 
   return (
     <span className={styles.flipSegment} aria-hidden="true" data-motion>
@@ -116,8 +140,18 @@ export default function LoginScreen() {
   const expiresIn = useCountdown(challenge?.expiresAt || null);
   const resendIn = useCountdown(resendAvailableAt);
 
-  // 동일 Surface 내부 Form 전환 Motion
+  // Reduced Motion 환경의 Form 단계 즉시 전환
   const changeStep = (nextStep: "credentials" | "verification") => {
+    if (
+      typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setStep(nextStep);
+      setLeaving(false);
+      setBusy(false);
+      return;
+    }
+
     setLeaving(true);
     window.setTimeout(() => {
       setStep(nextStep);
@@ -278,7 +312,6 @@ export default function LoginScreen() {
                 <form className={styles.credentialsForm} onSubmit={handleLogin} noValidate>
                   <div className={styles.formHeading}>
                     <h2 className="type-title">Sign in</h2>
-                    <p className="type-body">로그인 후 계정 권한에 맞는 영역으로 이동합니다.</p>
                   </div>
 
                   <div className={styles.fieldGroup}>

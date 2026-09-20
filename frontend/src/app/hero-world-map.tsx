@@ -14,8 +14,8 @@ export const EAST_ASIA_CROP = {
 } as const;
 
 export const MOBILE_KOREA_CROP = {
-  lat: { min: 16, max: 59 },
-  lng: { min: 116, max: 138 },
+  lat: { min: 20, max: 55 },
+  lng: { min: 118, max: 136 },
 } as const;
 
 export const EAST_ASIA_ZOOM_SCALE = 1.75;
@@ -131,6 +131,79 @@ function calculateEastAsiaViewBox(region: GeoRegion): MapViewBox {
 
 export const MOBILE_KOREA_VIEWBOX = calculateEastAsiaViewBox(MOBILE_KOREA_CROP);
 
+// Portrait Stage 비율을 유지하면서 Korea Focus를 포함하는 카메라 범위 계산
+export function calculatePortraitKoreaViewBox(
+  viewportWidth: number,
+  viewportHeight: number,
+  bounds: MapViewBox = MOBILE_KOREA_VIEWBOX,
+): MapViewBox {
+  const aspectRatio = Math.max(viewportWidth, 1) / Math.max(viewportHeight, 1);
+  const boundsAspectRatio = bounds.width / bounds.height;
+  const width = aspectRatio <= boundsAspectRatio
+    ? bounds.height * aspectRatio
+    : bounds.width;
+  const height = aspectRatio <= boundsAspectRatio
+    ? bounds.height
+    : bounds.width / aspectRatio;
+  const x = Math.min(
+    Math.max(EAST_ASIA_FOCUS_POINT.x - width / 2, bounds.x),
+    bounds.x + bounds.width - width,
+  );
+  const y = Math.min(
+    Math.max(EAST_ASIA_FOCUS_POINT.y - height / 2, bounds.y),
+    bounds.y + bounds.height - height,
+  );
+
+  return { x, y, width, height };
+}
+
+// Focus 기준 확장 ViewBox의 Source Bounds 내 안전 배치
+export function expandViewBoxAroundFocus(
+  viewBox: MapViewBox,
+  focusPoint: { x: number; y: number },
+  ratio: number,
+  sourceBounds: MapViewBox,
+): MapViewBox {
+  const scale = Math.min(
+    Math.max(ratio, 1),
+    sourceBounds.width / viewBox.width,
+    sourceBounds.height / viewBox.height,
+  );
+  const width = viewBox.width * scale;
+  const height = viewBox.height * scale;
+  const x = Math.min(
+    Math.max(focusPoint.x - width / 2, sourceBounds.x),
+    sourceBounds.x + sourceBounds.width - width,
+  );
+  const y = Math.min(
+    Math.max(focusPoint.y - height / 2, sourceBounds.y),
+    sourceBounds.y + sourceBounds.height - height,
+  );
+
+  return { x, y, width, height };
+}
+
+// SVG viewBox와 렌더 영역의 meet 배치 결과 계산
+export function calculateMapSurface(
+  viewportWidth: number,
+  viewportHeight: number,
+  viewBox: MapViewBox,
+): MapViewBox {
+  const scale = Math.min(
+    Math.max(viewportWidth, 0) / viewBox.width,
+    Math.max(viewportHeight, 0) / viewBox.height,
+  );
+  const width = viewBox.width * scale;
+  const height = viewBox.height * scale;
+
+  return {
+    x: (viewportWidth - width) / 2,
+    y: (viewportHeight - height) / 2,
+    width,
+    height,
+  };
+}
+
 // 현재 Camera ViewBox 내부의 대한민국 상대 좌표 계산
 export function calculateEastAsiaFocusRatio(viewBox: MapViewBox) {
   return {
@@ -146,7 +219,20 @@ export function formatMapViewBox(viewBox: MapViewBox) {
 
 export const WORLD_MAP_GRID_HEIGHT = 280;
 export const WORLD_MAP_DOT_COUNT = 54643;
-const WORLD_MAP_DOT_ASSET = "/maps/world-map-dots.svg#world-map-dots";
+export const WORLD_MAP_MOBILE_DOT_COUNT = 13629;
+
+export type MapDensity = "low" | "full";
+
+const WORLD_MAP_DOT_ASSETS: Record<MapDensity, { count: number; href: string }> = {
+  full: {
+    count: WORLD_MAP_DOT_COUNT,
+    href: "/maps/world-map-dots.svg#world-map-dots",
+  },
+  low: {
+    count: WORLD_MAP_MOBILE_DOT_COUNT,
+    href: "/maps/world-map-dots-mobile.svg#world-map-dots-mobile",
+  },
+};
 
 export const EAST_ASIA_GRID_HEIGHT = 240;
 export const EAST_ASIA_GRID_WIDTH = Math.round(
@@ -154,10 +240,23 @@ export const EAST_ASIA_GRID_WIDTH = Math.round(
 );
 
 export const EAST_ASIA_DOT_COUNT = 64775;
-const EAST_ASIA_DOT_ASSET = "/maps/east-asia-map-dots.svg#east-asia-map-dots";
+export const EAST_ASIA_MOBILE_DOT_COUNT = 10977;
+
+const EAST_ASIA_DOT_ASSETS: Record<MapDensity, { count: number; href: string }> = {
+  full: {
+    count: EAST_ASIA_DOT_COUNT,
+    href: "/maps/east-asia-map-dots.svg#east-asia-map-dots",
+  },
+  low: {
+    count: EAST_ASIA_MOBILE_DOT_COUNT,
+    href: "/maps/east-asia-map-dots-mobile.svg#east-asia-map-dots-mobile",
+  },
+};
 
 // Aceternity 계열의 실제 대륙 Dot Field 지도
-export default function HeroWorldMap() {
+export default function HeroWorldMap({ density }: { density: MapDensity }) {
+  const asset = WORLD_MAP_DOT_ASSETS[density];
+
   return (
     <svg
       aria-hidden="true"
@@ -170,8 +269,8 @@ export default function HeroWorldMap() {
       <g className="topology-map-zoom">
         <use
           className="topology-map-dots"
-          data-dot-count={WORLD_MAP_DOT_COUNT}
-          href={WORLD_MAP_DOT_ASSET}
+          data-dot-count={asset.count}
+          href={asset.href}
         />
       </g>
     </svg>
@@ -179,7 +278,9 @@ export default function HeroWorldMap() {
 }
 
 // Hero Scroll Narrative Full Stage 전용 World Map
-export function HeroNarrativeWorldMap({ geometryReady }: { geometryReady: boolean }) {
+export function HeroNarrativeWorldMap({ density, geometryReady }: { density: MapDensity; geometryReady: boolean }) {
+  const asset = WORLD_MAP_DOT_ASSETS[density];
+
   return (
     <svg
       aria-hidden="true"
@@ -193,8 +294,8 @@ export function HeroNarrativeWorldMap({ geometryReady }: { geometryReady: boolea
         {geometryReady ? (
           <use
             className="topology-narrative-world-map-dots"
-            data-dot-count={WORLD_MAP_DOT_COUNT}
-            href={WORLD_MAP_DOT_ASSET}
+            data-dot-count={asset.count}
+            href={asset.href}
           />
         ) : null}
       </g>
@@ -203,7 +304,9 @@ export function HeroNarrativeWorldMap({ geometryReady }: { geometryReady: boolea
 }
 
 // Korea Zoom 후반부 LOD 전환 전용 East Asia Regional Map
-export function HeroEastAsiaMap({ geometryReady }: { geometryReady: boolean }) {
+export function HeroEastAsiaMap({ density, geometryReady }: { density: MapDensity; geometryReady: boolean }) {
+  const asset = EAST_ASIA_DOT_ASSETS[density];
+
   return (
     <svg
       aria-hidden="true"
@@ -217,8 +320,8 @@ export function HeroEastAsiaMap({ geometryReady }: { geometryReady: boolean }) {
         {geometryReady ? (
           <use
             className="topology-focus-map-dots"
-            data-dot-count={EAST_ASIA_DOT_COUNT}
-            href={EAST_ASIA_DOT_ASSET}
+            data-dot-count={asset.count}
+            href={asset.href}
           />
         ) : null}
       </g>

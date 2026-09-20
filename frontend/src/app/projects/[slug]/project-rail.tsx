@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { ProjectSection } from "@/features/portfolio/project-detail";
-import styles from "./kyvc-detail.module.css";
+import styles from "./project-detail.module.css";
 
 type ProjectRailProps = {
   sections: readonly ProjectSection[];

@@ -100,13 +100,12 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 """, projectId, technologyId);
         jdbcTemplate.update("""
                 INSERT INTO project_contents (
-                    project_id, results_json, background_json, features_json,
+                    project_id, results_json, overview_json,
                     development_json, architecture_json, engineering_json,
                     architecture_image_storage_key
                 )
                 VALUES (?, '[{"title":"Result","description":"Description"}]',
                         '[{"body":"Background"}]',
-                        '[{"title":"Feature","description":"Description"}]',
                         '[{"title":"Backend","items":["API"]}]',
                         '{"notes":[{"title":"Infra","body":"Spring"}]}',
                         '[{"title":"Issue","summary":"S","problem":"P","solution":"F","result":"R"}]',
@@ -128,7 +127,7 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(jsonPath("$.technologies.length()").value(1))
                 .andExpect(jsonPath("$.technologies[0].highlighted").value(true))
                 .andExpect(jsonPath("$.content.results[0].title").value("Result"))
-                .andExpect(jsonPath("$.content.background[0].body").value("Background"))
+                .andExpect(jsonPath("$.content.overview[0].body").value("Background"))
                 .andExpect(jsonPath("$.content.architecture.notes[0].body").value("Spring"))
                 .andExpect(jsonPath("$.architectureImageUrl").value(
                         "/api/v1/public/media/projects/" + projectId + "/architecture"))
@@ -138,6 +137,12 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 .andReturn().getResponse().getContentAsString();
         JsonNode content = objectMapper.readTree(response).get("content");
         assertThat(content.isObject()).isTrue();
+        assertThat(content.size()).isEqualTo(5);
+        assertThat(content.get("results")).isNotNull();
+        assertThat(content.get("overview")).isNotNull();
+        assertThat(content.get("development")).isNotNull();
+        assertThat(content.get("architecture")).isNotNull();
+        assertThat(content.get("engineering")).isNotNull();
         assertThat(content.get("results").isArray()).isTrue();
         assertThat(content.get("results").isString()).isFalse();
 
@@ -145,8 +150,7 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(emptyProjectId))
                 .andExpect(jsonPath("$.content.results.length()").value(0))
-                .andExpect(jsonPath("$.content.background.length()").value(0))
-                .andExpect(jsonPath("$.content.features.length()").value(0))
+                .andExpect(jsonPath("$.content.overview.length()").value(0))
                 .andExpect(jsonPath("$.content.development.length()").value(0))
                 .andExpect(jsonPath("$.content.architecture").isMap())
                 .andExpect(jsonPath("$.content.engineering.length()").value(0));

@@ -58,8 +58,7 @@ export function createProjectDraft(detail: ProjectDetail): ProjectEditorDraft {
     },
     content: {
       results: detail.content.results.map((item) => ({ ...item })),
-      background: detail.content.background.map((item) => ({ ...item })),
-      features: detail.content.features.map((item) => ({ ...item })),
+      overview: detail.content.overview.map((item) => ({ ...item })),
       development: detail.content.development.map((item) => ({ ...item, items: [...item.items] })),
       architecture: {
         notes: detail.content.architecture.notes.map((note) => ({ ...note })),

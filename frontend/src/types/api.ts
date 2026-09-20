@@ -41,7 +41,6 @@ export type PortfolioContentCode =
   | "POSITION"
   | "AFFILIATION"
   | "HERO_STATEMENT"
-  | "HERO_DESCRIPTION"
   | "ABOUT_STATEMENT"
   | "ABOUT_DESCRIPTION_1"
   | "ABOUT_DESCRIPTION_2"
@@ -104,14 +103,9 @@ export type ProjectResultItem = {
   description: string | null;
 };
 
-export type ProjectBackgroundItem = {
+export type ProjectOverviewItem = {
   title: string | null;
   body: string;
-};
-
-export type ProjectFeatureItem = {
-  title: string;
-  description: string | null;
 };
 
 export type ProjectDevelopmentItem = {
@@ -133,8 +127,7 @@ export type ProjectEngineeringItem = {
 
 export type ProjectContent = {
   results: ProjectResultItem[];
-  background: ProjectBackgroundItem[];
-  features: ProjectFeatureItem[];
+  overview: ProjectOverviewItem[];
   development: ProjectDevelopmentItem[];
   architecture: ProjectArchitecture;
   engineering: ProjectEngineeringItem[];

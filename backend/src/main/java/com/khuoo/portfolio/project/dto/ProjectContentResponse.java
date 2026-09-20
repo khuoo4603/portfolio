@@ -13,16 +13,13 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Objects;
 
-// 공개 프로젝트 상세의 고정 6개 본문 응답
+// 공개 프로젝트 상세의 고정 5개 본문 응답
 public record ProjectContentResponse(
         @Schema(description = "프로젝트 성과 목록")
         List<ResultItem> results,
 
-        @Schema(description = "문제 배경 항목")
-        List<BackgroundItem> background,
-
-        @Schema(description = "주요 기능 목록")
-        List<FeatureItem> features,
+        @Schema(description = "프로젝트 설명 항목")
+        List<OverviewItem> overview,
 
         @Schema(description = "직접 담당 개발 영역")
         List<DevelopmentItem> development,
@@ -36,9 +33,7 @@ public record ProjectContentResponse(
 
     private static final TypeReference<List<ResultItem>> RESULTS = new TypeReference<>() {
     };
-    private static final TypeReference<List<BackgroundItem>> BACKGROUND = new TypeReference<>() {
-    };
-    private static final TypeReference<List<FeatureItem>> FEATURES = new TypeReference<>() {
+    private static final TypeReference<List<OverviewItem>> OVERVIEW = new TypeReference<>() {
     };
     private static final TypeReference<List<DevelopmentItem>> DEVELOPMENT = new TypeReference<>() {
     };
@@ -49,8 +44,7 @@ public record ProjectContentResponse(
 
     public ProjectContentResponse {
         results = List.copyOf(Objects.requireNonNull(results));
-        background = List.copyOf(Objects.requireNonNull(background));
-        features = List.copyOf(Objects.requireNonNull(features));
+        overview = List.copyOf(Objects.requireNonNull(overview));
         development = List.copyOf(Objects.requireNonNull(development));
         architecture = Objects.requireNonNull(architecture);
         engineering = List.copyOf(Objects.requireNonNull(engineering));
@@ -59,7 +53,6 @@ public record ProjectContentResponse(
     // 프로젝트 본문 미등록 상태의 기본 빈 구조
     public static ProjectContentResponse empty() {
         return new ProjectContentResponse(
-                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),
@@ -72,8 +65,7 @@ public record ProjectContentResponse(
     public static ProjectContentResponse from(ProjectContent content, ObjectMapper objectMapper) {
         return new ProjectContentResponse(
                 read(objectMapper, content.getResults(), RESULTS),
-                read(objectMapper, content.getBackground(), BACKGROUND),
-                read(objectMapper, content.getFeatures(), FEATURES),
+                read(objectMapper, content.getOverview(), OVERVIEW),
                 read(objectMapper, content.getDevelopment(), DEVELOPMENT),
                 read(objectMapper, content.getArchitecture(), ARCHITECTURE),
                 read(objectMapper, content.getEngineering(), ENGINEERING)
@@ -99,23 +91,13 @@ public record ProjectContentResponse(
         }
     }
 
-    // 프로젝트 문제 배경 항목
-    public record BackgroundItem(
+    // 프로젝트 설명 항목
+    public record OverviewItem(
             @Schema(description = "선택 제목", nullable = true) String title,
-            @NotBlank @Schema(description = "문제 배경 본문") String body
+            @NotBlank @Schema(description = "프로젝트 설명 본문") String body
     ) {
-        public BackgroundItem {
+        public OverviewItem {
             Objects.requireNonNull(body);
-        }
-    }
-
-    // 프로젝트 주요 기능 항목
-    public record FeatureItem(
-            @NotBlank @Schema(description = "기능 제목") String title,
-            @Schema(description = "기능 설명", nullable = true) String description
-    ) {
-        public FeatureItem {
-            Objects.requireNonNull(title);
         }
     }
 

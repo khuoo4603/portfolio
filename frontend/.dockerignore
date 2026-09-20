@@ -1,0 +1,16 @@
+.dockerignore
+.env
+.env.*
+.git
+.gitignore
+.next
+Dockerfile
+README.md
+coverage
+node_modules
+npm-debug.log*
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+tsconfig.tsbuildinfo

@@ -1,7 +1,7 @@
 "use client";
 
 import ProjectDetailContent from "@/app/projects/[slug]/project-detail-content";
-import detailStyles from "@/app/projects/kyvc/kyvc-detail.module.css";
+import detailStyles from "@/app/projects/[slug]/project-detail.module.css";
 import { mapProjectDetail } from "@/features/portfolio/project-detail";
 import type { PublicProjectDetail } from "@/types/api";
 import type { Technology } from "./admin-types";
