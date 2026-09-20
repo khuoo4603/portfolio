@@ -14,24 +14,21 @@ describe("Public Portfolio Mapping", () => {
   it("Legacy Hero 설명이 non-empty여도 활성 Public ContentMap에서 제외", () => {
     const content = mapContents([
       { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "문제에 맞는 기술과 설계를 선택하고,\n선택과 집중으로 서비스를 완성하는 개발자" },
-      { category: "MAIN", contentCode: "HERO_DESCRIPTION", contentValue: "legacy description" },
       { category: "MAIN", contentCode: "UNKNOWN", contentValue: "제외" } as unknown as PortfolioContent,
     ]);
 
     expect(content).toEqual({ HERO_STATEMENT: "문제에 맞는 기술과 설계를 선택하고,\n선택과 집중으로 서비스를 완성하는 개발자" });
-    expect(content.HERO_DESCRIPTION).toBeUndefined();
     expect((content as Record<string, string>).UNKNOWN).toBeUndefined();
   });
 
-  it("Public Fixture가 UI Copy 없이 정확한 16개 관리 Slot만 사용", () => {
-    expect(PUBLIC_PORTFOLIO_FIXTURE.portfolioContents).toHaveLength(16);
+  it("Public Fixture가 UI Copy 없이 정확한 15개 관리 Slot만 사용", () => {
+    expect(PUBLIC_PORTFOLIO_FIXTURE.portfolioContents).toHaveLength(15);
     expect(PUBLIC_PORTFOLIO_FIXTURE.portfolioContents.map((item) => item.contentCode)).toEqual([
       "NAME",
       "ENGLISH_NAME",
       "POSITION",
       "AFFILIATION",
       "HERO_STATEMENT",
-      "HERO_DESCRIPTION",
       "ABOUT_STATEMENT",
       "ABOUT_DESCRIPTION_1",
       "ABOUT_DESCRIPTION_2",
@@ -77,7 +74,7 @@ describe("Public Portfolio Mapping", () => {
       "LANGUAGE", "BACKEND", "DATABASE", "FRONTEND", "INFRA", "DEVOPS",
     ]);
     expect(groups.find((group) => group.category === "INFRA")?.technologies.map((item) => item.name))
-      .toEqual(["Docker", "Docker Compose", "Linux", "Kubernetes"]);
+      .toEqual(["Docker", "Docker Compose", "Linux", "Kubernetes", "Nginx", "k3s"]);
   });
 
   it("FRONTEND 없는 Fixture는 5개 Group이며 Docker와 Docker Compose를 합치지 않음", () => {

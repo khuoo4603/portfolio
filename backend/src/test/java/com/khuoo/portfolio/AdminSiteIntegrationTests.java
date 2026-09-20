@@ -90,7 +90,7 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
         assertThat(challengeStatus(missing.id())).isEqualTo("ACTIVE");
     }
 
-    // 최종 16개 콘텐츠 Slot 전체 수정과 Category 매핑 검증
+    // 최종 15개 콘텐츠 Slot 전체 수정과 Category 매핑 검증
     @Test
     void everyPortfolioContentSlotCanBeUpdated() throws Exception {
         for (PortfolioContentCode contentCode : PortfolioContentCode.values()) {
@@ -108,12 +108,12 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
         ActionChallenge challenge = challenge("PORTFOLIO_CONTENT_UPDATE", "PORTFOLIO_CONTENT", null);
         updateContents(challenge, body, true)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items.length()").value(16));
+                .andExpect(jsonPath("$.items.length()").value(15));
 
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM portfolio_contents WHERE content_value LIKE 'after-%'",
                 Integer.class
-        )).isEqualTo(16);
+        )).isEqualTo(15);
     }
 
     // Profile 생성·PATCH Presence·explicit null·빈 PATCH·삭제 검증

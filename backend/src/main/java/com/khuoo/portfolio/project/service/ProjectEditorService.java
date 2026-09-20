@@ -353,13 +353,9 @@ public class ProjectEditorService {
                 content.results().stream()
                         .map(item -> new ProjectContentResponse.ResultItem(item.title(), item.description()))
                         .toList(),
-                content.background().stream()
-                        .map(item -> new ProjectContentResponse.BackgroundItem(
+                content.overview().stream()
+                        .map(item -> new ProjectContentResponse.OverviewItem(
                                 item.title(), item.body()))
-                        .toList(),
-                content.features().stream()
-                        .map(item -> new ProjectContentResponse.FeatureItem(
-                                item.title(), item.description()))
                         .toList(),
                 content.development().stream()
                         .map(item -> new ProjectContentResponse.DevelopmentItem(
@@ -389,8 +385,7 @@ public class ProjectEditorService {
             OffsetDateTime changedAt
     ) {
         JsonNode results = CONTENT_MAPPER.valueToTree(content.results());
-        JsonNode background = CONTENT_MAPPER.valueToTree(content.background());
-        JsonNode features = CONTENT_MAPPER.valueToTree(content.features());
+        JsonNode overview = CONTENT_MAPPER.valueToTree(content.overview());
         JsonNode development = CONTENT_MAPPER.valueToTree(content.development());
         JsonNode architecture = CONTENT_MAPPER.valueToTree(content.architecture());
         JsonNode engineering = CONTENT_MAPPER.valueToTree(content.engineering());
@@ -399,8 +394,7 @@ public class ProjectEditorService {
             entity = ProjectContent.create(
                     projectId,
                     results,
-                    background,
-                    features,
+                    overview,
                     development,
                     architecture,
                     architectureImageKey,
@@ -410,8 +404,7 @@ public class ProjectEditorService {
         } else {
             entity.replace(
                     results,
-                    background,
-                    features,
+                    overview,
                     development,
                     architecture,
                     architectureImageKey,

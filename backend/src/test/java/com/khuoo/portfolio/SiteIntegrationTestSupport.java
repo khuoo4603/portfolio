@@ -58,6 +58,8 @@ abstract class SiteIntegrationTestSupport extends PostgresIntegrationTest {
     @AfterEach
     void restoreSeedData() {
         clearSiteData();
+        jdbcTemplate.update("DELETE FROM monitoring_targets");
+        jdbcTemplate.update("DELETE FROM monitoring_settings");
         jdbcTemplate.update("DELETE FROM tool_links");
         jdbcTemplate.update("DELETE FROM tools");
 

@@ -28,14 +28,13 @@ import styles from "./admin.module.css";
 
 const SECTIONS: Array<{ id: ProjectEditorSection; label: string }> = [
   { id: "basic", label: "기본 정보" },
+  { id: "media", label: "미디어" },
+  { id: "overview", label: "프로젝트 설명" },
+  { id: "technologies", label: "기술" },
   { id: "results", label: "성과" },
-  { id: "background", label: "문제 배경" },
-  { id: "features", label: "주요 기능" },
   { id: "development", label: "직접 담당한 개발 영역" },
   { id: "architecture", label: "아키텍처" },
   { id: "engineering", label: "기술적 문제 해결" },
-  { id: "technologies", label: "기술" },
-  { id: "media", label: "미디어" },
 ];
 
 const VIEW_MODE_OPTIONS = [

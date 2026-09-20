@@ -226,13 +226,9 @@ public class AdminProjectService {
                 .anyMatch(item -> blank(item.title()))) {
             errors.add(new FieldErrorResponse("content.results", "성과 내용을 한 개 이상 입력하세요."));
         }
-        if (response.background().isEmpty() || response.background().stream()
+        if (response.overview().isEmpty() || response.overview().stream()
                 .anyMatch(item -> blank(item.body()))) {
-            errors.add(new FieldErrorResponse("content.background", "문제 배경을 한 개 이상 입력하세요."));
-        }
-        if (response.features().isEmpty() || response.features().stream()
-                .anyMatch(item -> blank(item.title()))) {
-            errors.add(new FieldErrorResponse("content.features", "주요 기능을 한 개 이상 입력하세요."));
+            errors.add(new FieldErrorResponse("content.overview", "프로젝트 설명을 한 개 이상 입력하세요."));
         }
         if (response.development().isEmpty() || response.development().stream()
                 .anyMatch(item -> blank(item.title()) || item.items().isEmpty()

@@ -769,6 +769,9 @@ a.project-thumbnail {
 .project-description {
   margin: var(--space-16) 0 0;
   color: var(--text-secondary);
+  text-wrap: pretty;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .project-meta {

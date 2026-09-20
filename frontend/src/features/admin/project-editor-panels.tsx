@@ -10,7 +10,7 @@ import type { EditorMedia, ProjectEditorDraft } from "./project-editor-model";
 import { moveProjectItem } from "./project-editor-model";
 import styles from "./admin.module.css";
 
-export type ProjectEditorSection = "basic" | "results" | "background" | "features" | "development" | "architecture" | "engineering" | "technologies" | "media";
+export type ProjectEditorSection = "basic" | "results" | "overview" | "development" | "architecture" | "engineering" | "technologies" | "media";
 
 function getImageModeLabel(mode: ProjectEditorDraft["thumbnail"]["mode"]) {
   return {
@@ -52,10 +52,10 @@ function ItemActions({ index, length, label, onMove, onDelete }: {
   );
 }
 
-function PanelHeading({ title, description, onAdd }: { title: string; description: string; onAdd?: () => void }) {
+function PanelHeading({ title, onAdd }: { title: string; onAdd?: () => void }) {
   return (
     <div className={styles.projectPanelHeading}>
-      <div><h2 className="type-title">{title}</h2><p className="type-small">{description}</p></div>
+      <div><h2 className="type-title">{title}</h2></div>
       {onAdd && <Button variant="secondary" type="button" onClick={onAdd}><Plus aria-hidden="true" />항목 추가</Button>}
     </div>
   );
@@ -66,20 +66,20 @@ function BasicPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">)
   const update = (patch: Partial<ProjectEditorDraft["project"]>) => setDraft((current) => ({ ...current, project: { ...current.project, ...patch } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="기본 정보 편집">
-      <PanelHeading title="기본 정보" description="프로젝트 카드와 상세 화면에 표시할 기본 정보를 관리합니다." />
+      <PanelHeading title="기본 정보" />
       <div className={styles.projectFieldsGrid}>
-        <TextField label="Name" value={draft.project.name} maxLength={200} onChange={(name) => update({ name })} />
-        <TextField label="Slug" value={draft.project.slug} maxLength={100} onChange={(slug) => update({ slug })} />
-        <NumberField label="Year" value={draft.project.year} min={1900} max={2100} onChange={(year) => update({ year })} />
-        <NumberField label="Display Order" value={draft.project.displayOrder} min={0} onChange={(displayOrder) => update({ displayOrder: displayOrder ?? 0 })} />
-        <TextField label="Tagline" value={draft.project.tagline} maxLength={300} onChange={(tagline) => update({ tagline: tagline || null })} wide />
-        <TextAreaField label="Description" value={draft.project.description} onChange={(description) => update({ description: description || null })} />
-        <TextField label="Card Role" value={draft.project.cardRole} maxLength={150} onChange={(cardRole) => update({ cardRole: cardRole || null })} />
-        <TextAreaField label="Summary" value={draft.project.summary} onChange={(summary) => update({ summary: summary || null })} />
-        <TextField label="Detail Role" value={draft.project.detailRole} maxLength={200} onChange={(detailRole) => update({ detailRole: detailRole || null })} />
-        <TextField label="Started At" type="date" value={draft.project.startedAt} onChange={(startedAt) => update({ startedAt: startedAt || null })} />
-        <TextField label="Ended At" type="date" value={draft.project.endedAt} onChange={(endedAt) => update({ endedAt: endedAt || null })} />
-        <NumberField label="Team Size" value={draft.project.teamSize} min={1} onChange={(teamSize) => update({ teamSize })} />
+        <TextField label="프로젝트명" value={draft.project.name} maxLength={200} onChange={(name) => update({ name })} />
+        <TextField label="URL 경로" value={draft.project.slug} maxLength={100} onChange={(slug) => update({ slug })} />
+        <NumberField label="연도" value={draft.project.year} min={1900} max={2100} onChange={(year) => update({ year })} />
+        <NumberField label="표시 순서" value={draft.project.displayOrder} min={0} onChange={(displayOrder) => update({ displayOrder: displayOrder ?? 0 })} />
+        <TextField label="한 줄 소개" value={draft.project.tagline} maxLength={300} onChange={(tagline) => update({ tagline: tagline || null })} wide />
+        <TextAreaField label="카드 설명" value={draft.project.description} onChange={(description) => update({ description: description || null })} />
+        <TextField label="카드 역할" value={draft.project.cardRole} maxLength={150} onChange={(cardRole) => update({ cardRole: cardRole || null })} />
+        <TextAreaField label="상세 요약" value={draft.project.summary} onChange={(summary) => update({ summary: summary || null })} />
+        <TextField label="상세 역할" value={draft.project.detailRole} maxLength={200} onChange={(detailRole) => update({ detailRole: detailRole || null })} />
+        <TextField label="개발 시작일" type="date" value={draft.project.startedAt} onChange={(startedAt) => update({ startedAt: startedAt || null })} />
+        <TextField label="개발 종료일" type="date" value={draft.project.endedAt} onChange={(endedAt) => update({ endedAt: endedAt || null })} />
+        <NumberField label="참여 인원" value={draft.project.teamSize} min={1} onChange={(teamSize) => update({ teamSize })} />
       </div>
     </section>
   );
@@ -91,7 +91,7 @@ function ResultsPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft"
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, results: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="성과 편집">
-      <PanelHeading title="성과" description="프로젝트 성과와 설명을 표시 순서대로 관리합니다." onAdd={() => setItems([...items, { title: "", description: null }])} />
+      <PanelHeading title="성과" onAdd={() => setItems([...items, { title: "", description: null }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`result-${index}`}>
           <div className={styles.projectItemFields}>
@@ -105,40 +105,20 @@ function ResultsPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft"
   );
 }
 
-// 선택 Title과 Body 문제 배경 편집 패널
-function BackgroundPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">) {
-  const items = draft.content.background;
-  const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, background: next } }));
+// 선택 Title과 Body 프로젝트 설명 편집 패널
+function OverviewPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">) {
+  const items = draft.content.overview;
+  const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, overview: next } }));
   return (
-    <section className={styles.projectEditorPanel} aria-label="문제 배경 편집">
-      <PanelHeading title="문제 배경" description="프로젝트의 문제 배경과 설명을 관리합니다." onAdd={() => setItems([...items, { title: null, body: "" }])} />
+    <section className={styles.projectEditorPanel} aria-label="프로젝트 설명 편집">
+      <PanelHeading title="프로젝트 설명" onAdd={() => setItems([...items, { title: null, body: "" }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
-        <article className={styles.projectItemEditor} key={`background-${index}`}>
+        <article className={styles.projectItemEditor} key={`overview-${index}`}>
           <div className={styles.projectItemFields}>
-            <TextField label={`문제 배경 ${index + 1} Title`} value={item.title} onChange={(title) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, title: title || null } : value))} />
-            <TextAreaField label={`문제 배경 ${index + 1} Body`} value={item.body} onChange={(body) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, body } : value))} />
+            <TextField label={`프로젝트 설명 ${index + 1} Title`} value={item.title} onChange={(title) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, title: title || null } : value))} />
+            <TextAreaField label={`프로젝트 설명 ${index + 1} Body`} value={item.body} onChange={(body) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, body } : value))} />
           </div>
-          <ItemActions index={index} length={items.length} label={`문제 배경 ${index + 1}`} onMove={(direction) => setItems(moveProjectItem(items, index, direction))} onDelete={() => setItems(items.filter((_, itemIndex) => itemIndex !== index))} />
-        </article>
-      ))}</div>
-    </section>
-  );
-}
-
-// 주요 기능 Title과 선택 Description 편집 패널
-function FeaturesPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">) {
-  const items = draft.content.features;
-  const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, features: next } }));
-  return (
-    <section className={styles.projectEditorPanel} aria-label="주요 기능 편집">
-      <PanelHeading title="주요 기능" description="프로젝트의 주요 기능과 설명을 관리합니다." onAdd={() => setItems([...items, { title: "", description: null }])} />
-      <div className={styles.projectItemList}>{items.map((item, index) => (
-        <article className={styles.projectItemEditor} key={`feature-${index}`}>
-          <div className={styles.projectItemFields}>
-            <TextField label={`주요 기능 ${index + 1} Title`} value={item.title} onChange={(title) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, title } : value))} />
-            <TextAreaField label={`주요 기능 ${index + 1} Description`} value={item.description} onChange={(description) => setItems(items.map((value, itemIndex) => itemIndex === index ? { ...value, description: description || null } : value))} />
-          </div>
-          <ItemActions index={index} length={items.length} label={`주요 기능 ${index + 1}`} onMove={(direction) => setItems(moveProjectItem(items, index, direction))} onDelete={() => setItems(items.filter((_, itemIndex) => itemIndex !== index))} />
+          <ItemActions index={index} length={items.length} label={`프로젝트 설명 ${index + 1}`} onMove={(direction) => setItems(moveProjectItem(items, index, direction))} onDelete={() => setItems(items.filter((_, itemIndex) => itemIndex !== index))} />
         </article>
       ))}</div>
     </section>
@@ -151,7 +131,7 @@ function DevelopmentPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDr
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, development: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="직접 담당한 개발 영역 편집">
-      <PanelHeading title="직접 담당한 개발 영역" description="영역별 작업 목록을 관리합니다." onAdd={() => setItems([...items, { title: "", items: [] }])} />
+      <PanelHeading title="직접 담당한 개발 영역" onAdd={() => setItems([...items, { title: "", items: [] }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`development-${index}`}>
           <div className={`${styles.projectItemFields} ${styles.developmentFields}`}>
@@ -191,7 +171,7 @@ function ArchitecturePanel({
   }));
   return (
     <section className={styles.projectEditorPanel} aria-label="아키텍처 편집">
-      <PanelHeading title="아키텍처" description="아키텍처 이미지와 설명을 관리합니다." onAdd={() => setNotes([...notes, { title: "", body: "" }])} />
+      <PanelHeading title="아키텍처" onAdd={() => setNotes([...notes, { title: "", body: "" }])} />
       <section className={styles.mediaGroup}>
         <div className={styles.mediaGroupHeading}>
           <div><h3 className="type-body">Architecture Image</h3><p className="type-small">{getImageModeLabel(draft.architectureImage.mode)}</p></div>
@@ -229,7 +209,7 @@ function EngineeringPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDr
   const setItems = (next: typeof items) => setDraft((current) => ({ ...current, content: { ...current.content, engineering: next } }));
   return (
     <section className={styles.projectEditorPanel} aria-label="기술적 문제 해결 편집">
-      <PanelHeading title="기술적 문제 해결" description="기술적 문제와 해결 과정, 결과를 관리합니다." onAdd={() => setItems([...items, { title: "", summary: null, problem: "", solution: "", result: "" }])} />
+      <PanelHeading title="기술적 문제 해결" onAdd={() => setItems([...items, { title: "", summary: null, problem: "", solution: "", result: "" }])} />
       <div className={styles.projectItemList}>{items.map((item, index) => (
         <article className={styles.projectItemEditor} key={`engineering-${index}`}>
           <div className={styles.projectItemFields}>
@@ -251,7 +231,7 @@ function TechnologyPanel({ draft, setDraft, technologyMaster }: Pick<PanelProps,
   const setItems = (technologies: ProjectEditorDraft["technologies"]) => setDraft((current) => ({ ...current, technologies }));
   return (
     <section className={styles.projectEditorPanel} aria-label="기술 편집">
-      <PanelHeading title="기술" description="프로젝트에 사용한 기술과 강조 여부, 표시 순서를 관리합니다." />
+      <PanelHeading title="기술" />
       <div className={styles.technologyPicker}>
         <label className={styles.formField}><span className="type-small">프로젝트 기술 선택</span><select className="type-body" value={selectedId} onChange={(event) => setSelectedId(event.currentTarget.value)}><option value="">기술 선택</option>{technologyMaster.filter((item) => !selected.has(item.id)).map((item) => <option key={item.id} value={item.id} disabled={!item.enabled}>{item.name}{item.enabled ? "" : " · 비활성"}</option>)}</select></label>
         <Button variant="secondary" type="button" disabled={!selectedId} onClick={() => { const id = Number(selectedId); setItems([...draft.technologies, { technologyId: id, showOnCard: false, highlighted: false, displayOrder: draft.technologies.length }]); setSelectedId(""); }}><Plus aria-hidden="true" />추가</Button>
@@ -311,7 +291,7 @@ function MediaPanel(props: Pick<PanelProps, "draft" | "onThumbnailFile" | "onThu
   const thumbnailSource = draft.thumbnail.previewUrl || (draft.thumbnail.mode === "KEEP" ? draft.thumbnail.imageUrl : null);
   return (
     <section className={styles.projectEditorPanel} aria-label="미디어 편집">
-      <PanelHeading title="미디어" description="대표 이미지와 상세 화면 이미지를 관리합니다." />
+      <PanelHeading title="미디어" />
       <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Thumbnail</h3><p className="type-small">{getImageModeLabel(draft.thumbnail.mode)}</p></div><div className={styles.mediaGroupActions}><label className={buttonClassName({ variant: "secondary", className: "type-body" })}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onThumbnailFile(file); event.currentTarget.value = ""; }} /></label><Button variant="secondary" type="button" onClick={onThumbnailRemove}>이미지 제거</Button></div></div><div className={styles.thumbnailDraftPreview}><AdminImagePreview alt="Thumbnail Preview" fallback={<span className="type-small">Thumbnail 없음</span>} sizes="420px" src={thumbnailSource} /></div></section>
       <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Carousel</h3><p className="type-small">{draft.media.filter((item) => !item.deleted).length}개 사용</p></div><label className={buttonClassName({ variant: "secondary", className: "type-body" })}><Plus aria-hidden="true" />이미지 추가<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onAddMedia(file); event.currentTarget.value = ""; }} /></label></div><div className={styles.projectItemList}>{draft.media.map((item, index) => <MediaRow key={item.key} item={item} index={index} length={draft.media.length} onDelete={() => onDeleteMedia(item.key)} onRestore={() => onChangeMedia(item.key, { deleted: false })} onChange={(patch) => onChangeMedia(item.key, patch)} onMove={(direction) => onMoveMedia(item.key, direction)} />)}</div></section>
       {fileError ? <p className={`${styles.inlineError} type-small`} role="alert">{fileError}</p> : null}
@@ -331,13 +311,12 @@ function NumberField({ label, value, min, max, onChange }: { label: string; valu
   return <label className={styles.formField}><span className="type-small">{label}</span><input className="type-body" aria-label={label} type="number" min={min} max={max} value={value ?? ""} onChange={(event) => onChange(event.currentTarget.value === "" ? null : Number(event.currentTarget.value))} /></label>;
 }
 
-// 고정 9개 Editor Section 중 현재 선택 Panel 렌더링
+// 고정 8개 Editor Section 중 현재 선택 Panel 렌더링
 export default function ProjectEditorPanel(props: PanelProps) {
   switch (props.section) {
     case "basic": return <BasicPanel {...props} />;
     case "results": return <ResultsPanel {...props} />;
-    case "background": return <BackgroundPanel {...props} />;
-    case "features": return <FeaturesPanel {...props} />;
+    case "overview": return <OverviewPanel {...props} />;
     case "development": return <DevelopmentPanel {...props} />;
     case "architecture": return <ArchitecturePanel {...props} />;
     case "engineering": return <EngineeringPanel {...props} />;

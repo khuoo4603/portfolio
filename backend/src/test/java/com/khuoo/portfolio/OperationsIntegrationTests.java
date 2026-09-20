@@ -72,6 +72,7 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
     @AfterEach
     void tearDown() {
         clearData();
+        jdbcTemplate.update("UPDATE projects SET enabled = TRUE WHERE slug IN ('portfolio', 'kyvc', 'shkutrack')");
     }
 
     // 허용 경로와 동일 방문자 Upsert 및 KST 날짜 기준 검증
@@ -181,7 +182,7 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.serviceStatus[1].serviceKey").value("PORTFOLIO_FRONTEND"))
                 .andExpect(jsonPath("$.serviceStatus[1].displayName").value("Public Web"))
                 .andExpect(jsonPath("$.siteSummary.publicProjects").value(1))
-                .andExpect(jsonPath("$.siteSummary.portfolioTechnologies").value(12))
+                .andExpect(jsonPath("$.siteSummary.portfolioTechnologies").value(19))
                 .andExpect(jsonPath("$.siteSummary.activeTools").value(2))
                 .andExpect(jsonPath("$.siteSummary.activeAccounts").value(1))
                 .andExpect(jsonPath("$.recentErrors").doesNotExist())
@@ -428,7 +429,7 @@ class OperationsIntegrationTests extends PostgresIntegrationTest {
         jdbcTemplate.update("""
                 UPDATE projects
                 SET enabled = CASE WHEN slug = 'kyvc' THEN TRUE ELSE FALSE END
-                WHERE slug IN ('kyvc', 'shkutrack', 'shkuload')
+                WHERE slug IN ('portfolio', 'kyvc', 'shkutrack')
                 """);
         jdbcTemplate.update("""
                 UPDATE monitoring_targets

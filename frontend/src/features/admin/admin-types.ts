@@ -154,14 +154,9 @@ export type ProjectResultItem = {
   description: string | null;
 };
 
-export type ProjectBackgroundItem = {
+export type ProjectOverviewItem = {
   title: string | null;
   body: string;
-};
-
-export type ProjectFeatureItem = {
-  title: string;
-  description: string | null;
 };
 
 export type ProjectDevelopmentItem = {
@@ -183,8 +178,7 @@ export type ProjectEngineeringItem = {
 
 export type ProjectContent = {
   results: ProjectResultItem[];
-  background: ProjectBackgroundItem[];
-  features: ProjectFeatureItem[];
+  overview: ProjectOverviewItem[];
   development: ProjectDevelopmentItem[];
   architecture: ProjectArchitecture;
   engineering: ProjectEngineeringItem[];

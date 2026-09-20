@@ -1294,8 +1294,8 @@ describe("포트폴리오 메인", () => {
     const introduction = document.querySelector<HTMLElement>(".about-introduction")!;
     expect(within(introduction).getByText("BACKEND / INFRA DEVELOPER")).toHaveClass("type-title");
     expect(introduction.querySelectorAll("p:not(.about-position)")).toHaveLength(2);
-    expect(introduction).toHaveTextContent(/성공회대학교에 재학 중인 김현우입니다/);
-    expect(introduction).toHaveTextContent(/실제로 운영 가능한 상태까지 완성하는 것을 중요하게 생각합니다/);
+    expect(introduction).toHaveTextContent(/현재 성공회대학교에서 Backend와 시스템 설계를 공부하고 있습니다/);
+    expect(introduction).toHaveTextContent(/인증·권한, 로그, 모니터링, 백업과 장애 복구 방법을 확인/);
     expect(within(aboutValues).getByRole("heading", { name: "개발 철학" })).toBeInTheDocument();
     expect(valueCards).toHaveLength(3);
     valueCards.forEach((card) => {
@@ -1320,12 +1320,15 @@ describe("포트폴리오 메인", () => {
 
     expect(within(techSection).getByText("Infrastructure")).toBeInTheDocument();
     expect(within(techSection).getByText("Frontend")).toBeInTheDocument();
-    expect(within(techSection).getByText("React")).toBeInTheDocument();
+    expect(within(techSection).getByText("JavaScript")).toBeInTheDocument();
     expect(within(techSection).getByText("Kubernetes")).toBeInTheDocument();
     expect(within(techSection).getByText("GHCR")).toBeInTheDocument();
     expect(within(techSection).getByText("Docker Compose")).toBeInTheDocument();
-    expect(techSection.querySelectorAll(".tech-item")).toHaveLength(13);
-    expect(techSection.querySelectorAll("img.tech-icon")).toHaveLength(13);
+    ["Vite", "Nginx", "Spring Security", "Flyway", "k3s", "ArgoCD"].forEach((name) => {
+      expect(within(techSection).getByText(name)).toBeInTheDocument();
+    });
+    expect(techSection.querySelectorAll(".tech-item")).toHaveLength(19);
+    expect(techSection.querySelectorAll("img.tech-icon")).toHaveLength(19);
     expect(techSection.querySelectorAll("svg.tech-icon")).toHaveLength(0);
     expect(within(techSection).queryByText("Backend / Infra 개발자로서 핵심적으로 사용하는 기술")).not.toBeInTheDocument();
     expect(within(techSection).queryByText("서비스 로직 구현과 관계형 데이터 처리의 기본 언어")).not.toBeInTheDocument();
@@ -1351,36 +1354,32 @@ describe("포트폴리오 메인", () => {
 
     const projectsSection = document.querySelector<HTMLElement>(".projects-section")!;
     const projectHistory = within(projectsSection).getByRole("list", { name: "연도별 프로젝트" });
+    expect(Array.from(projectHistory.querySelectorAll<HTMLAnchorElement>(".project-tab")).map((tab) => tab.hash))
+      .toEqual(["#project-portfolio", "#project-kyvc", "#project-shkutrack"]);
     expect(projectHistory.querySelector(".project-tab[href='#project-kyvc']")).toHaveTextContent("KYvC");
-    expect(projectHistory.querySelector(".project-tab[href='#project-shkutrack']")).toHaveTextContent("SHKUTrack");
-    expect(projectHistory.querySelector(".project-tab[href='#project-shkuload']")).toHaveTextContent("SHKULoad");
+    expect(projectHistory.querySelector(".project-tab[href='#project-shkutrack']")).toHaveTextContent("SKHUTrack");
+    expect(projectHistory.querySelector(".project-tab[href='#project-portfolio']")).toHaveTextContent("Portfolio");
     expect(within(projectsSection).getAllByText("2026")).toHaveLength(1);
-    expect(within(projectsSection).getAllByText("2023")).toHaveLength(1);
-    expect(within(projectsSection).getByText("법인 KYC 자동 심사 서비스")).toBeInTheDocument();
-    expect(within(projectsSection).getByText("성공회대학교 졸업 관리 서비스")).toBeInTheDocument();
-    expect(within(projectsSection).getByText("길찾기·중간지점·지하철 정보 서비스"))
+    expect(within(projectsSection).getByText("법인 KYC 심사·전자 자격증명 서비스")).toBeInTheDocument();
+    expect(within(projectsSection).getByText("성공회대학교 졸업요건 관리 서비스")).toBeInTheDocument();
+    expect(within(projectsSection).getByText("개인 포트폴리오·운영 도구 플랫폼"))
       .toBeInTheDocument();
-    expect(within(projectsSection).getByText(
-      "목적지 길찾기와 여러 위치의 중간지점 계산, 지하철 위치·지연정보를 제공하는 서비스",
-    )).toBeInTheDocument();
     expect(within(projectsSection).queryByText("사용자가 현재 프로젝트 목록에 포함시키려는 2023 프로젝트"))
       .not.toBeInTheDocument();
     expect(within(projectsSection).queryByText("프로젝트 정보 정리 예정")).not.toBeInTheDocument();
     expect(within(projectsSection).queryByText("제 시간표를 소개합니다.")).not.toBeInTheDocument();
     expect(projectsSection.querySelectorAll(".project-information .project-name")).toHaveLength(0);
     expect(within(projectsSection).queryByRole("heading", { name: "KYvC" })).not.toBeInTheDocument();
-    expect(within(projectsSection).queryByRole("heading", { name: "SHKUTrack" })).not.toBeInTheDocument();
-    expect(within(projectsSection).queryByRole("heading", { name: "SHKULoad" })).not.toBeInTheDocument();
+    expect(within(projectsSection).queryByRole("heading", { name: "SKHUTrack" })).not.toBeInTheDocument();
+    expect(within(projectsSection).queryByRole("heading", { name: "Portfolio" })).not.toBeInTheDocument();
 
     expect(within(projectsSection).getByRole("link", { name: "KYvC 프로젝트 상세 보기" }))
       .toHaveAttribute("href", "/projects/kyvc");
-    expect(within(projectsSection).getByRole("link", { name: "SHKUTrack 프로젝트 상세 보기" }))
-      .toHaveAttribute("href", "/projects/shkutrack");
     expect(within(projectsSection).getByRole("link", { name: "KYvC 자세히 보기" }))
       .toHaveAttribute("href", "/projects/kyvc");
     expect(within(projectsSection).getByRole("link", { name: "KYvC 자세히 보기" }))
       .toHaveClass("project-detail-link");
-    expect(within(projectsSection).getByRole("link", { name: "SHKUTrack 자세히 보기" }))
+    expect(within(projectsSection).getByRole("link", { name: "SKHUTrack 자세히 보기" }))
       .toHaveAttribute("href", "/projects/shkutrack");
     const expectedMetadata = [
       {
@@ -1396,10 +1395,10 @@ describe("포트폴리오 메인", () => {
         technologyCount: 6,
       },
       {
-        id: "shkuload",
-        role: "백엔드",
-        technologies: "JavaScript · Node.js · Express · EJS",
-        technologyCount: 4,
+        id: "portfolio",
+        role: "풀스택 · 인프라",
+        technologies: "Java · SQL · Spring Boot · PostgreSQL · MySQL · Docker · Docker Compose · Linux · Kubernetes · GitHub Actions · GHCR · Git · JavaScript · Vite · Nginx · Spring Security · Flyway · k3s · ArgoCD",
+        technologyCount: 19,
       },
     ];
 
@@ -1423,21 +1422,20 @@ describe("포트폴리오 메인", () => {
     expect(projectsSection.querySelectorAll(".project-role-badge")).toHaveLength(3);
     expect(projectsSection.querySelectorAll(".project-tech-badge")).toHaveLength(3);
     expect(projectsSection.querySelectorAll(".project-meta-separator")).toHaveLength(0);
-    expect(projectsSection.querySelectorAll(".project-tech-separator")).toHaveLength(11);
+    expect(projectsSection.querySelectorAll(".project-tech-separator")).toHaveLength(26);
     expect(projectsSection.querySelectorAll(".project-meta-badge")).toHaveLength(6);
     expect(projectsSection.querySelectorAll(".project-technology")).toHaveLength(0);
 
     const kyvcImageSrc = within(projectsSection).getByRole("img", { name: "KYvC 프로젝트 대표 화면" }).getAttribute("src") ?? "";
-    const shkuTrackImageSrc = within(projectsSection).getByRole("img", { name: "SHKUTrack 프로젝트 대표 화면" }).getAttribute("src") ?? "";
     expect(decodeURIComponent(kyvcImageSrc)).toContain("/api/v1/public/media/projects/1/thumbnail");
-    expect(decodeURIComponent(shkuTrackImageSrc)).toContain("/api/v1/public/media/projects/2/thumbnail");
-    const shkuLoadProject = projectsSection.querySelector<HTMLElement>("#project-shkuload")!;
-    expect(shkuLoadProject.querySelector("img")).not.toBeInTheDocument();
-    expect(shkuLoadProject.querySelector(".project-thumbnail-placeholder")).toBeInTheDocument();
-    const shkuLoadDetailLink = within(projectsSection).getByRole("link", { name: "SHKULoad 자세히 보기" });
-    expect(shkuLoadDetailLink).toHaveAttribute("href", "/projects/shkuload");
-    expect(shkuLoadDetailLink).not.toHaveAttribute("target");
-    expect(within(shkuLoadProject).getAllByRole("link")).toHaveLength(1);
+    expect(projectsSection.querySelector("#project-shkutrack .project-thumbnail-placeholder")).toBeInTheDocument();
+    const portfolioProject = projectsSection.querySelector<HTMLElement>("#project-portfolio")!;
+    expect(portfolioProject.querySelector("img")).not.toBeInTheDocument();
+    expect(portfolioProject.querySelector(".project-thumbnail-placeholder")).toBeInTheDocument();
+    const portfolioDetailLink = within(projectsSection).getByRole("link", { name: "Portfolio 자세히 보기" });
+    expect(portfolioDetailLink).toHaveAttribute("href", "/projects/portfolio");
+    expect(portfolioDetailLink).not.toHaveAttribute("target");
+    expect(within(portfolioProject).getAllByRole("link")).toHaveLength(1);
     expect(projectsSection.querySelector("a[href='https://github.com/woohyuk0428/SKHU_Contest']")).not.toBeInTheDocument();
     expect(document.querySelector(".project-visual")).not.toBeInTheDocument();
     expect(document.querySelector(".kyvc-structure")).not.toBeInTheDocument();
@@ -1468,14 +1466,14 @@ describe("포트폴리오 메인", () => {
       y: top,
       toJSON: () => ({}),
     });
-    const [kyvcRow, shkuTrackRow, shkuLoadRow] = Array.from(
+    const [portfolioRow, kyvcRow, shkuTrackRow] = Array.from(
       document.querySelectorAll<HTMLElement>(".project-panel"),
     );
     const projectHistory = document.querySelector<HTMLOListElement>(".project-showcases")!;
     const projectNodes = Array.from(document.querySelectorAll<HTMLSpanElement>(".project-node"));
-    vi.spyOn(kyvcRow, "getBoundingClientRect").mockReturnValue(createRect(-1000, 400));
-    vi.spyOn(shkuTrackRow, "getBoundingClientRect").mockReturnValue(createRect(-400, 400));
-    vi.spyOn(shkuLoadRow, "getBoundingClientRect").mockReturnValue(createRect(200, 400));
+    vi.spyOn(portfolioRow, "getBoundingClientRect").mockReturnValue(createRect(-1000, 400));
+    vi.spyOn(kyvcRow, "getBoundingClientRect").mockReturnValue(createRect(-400, 400));
+    vi.spyOn(shkuTrackRow, "getBoundingClientRect").mockReturnValue(createRect(200, 400));
     vi.spyOn(projectHistory, "getBoundingClientRect").mockReturnValue(createRect(0, 900, 0, 1000));
     projectNodes.forEach((node, index) => {
       vi.spyOn(node, "getBoundingClientRect").mockReturnValue(createRect(40 + index * 240, 8, 52, 8));
@@ -1484,13 +1482,13 @@ describe("포트폴리오 메인", () => {
     fireEvent.resize(window);
     fireEvent.scroll(window);
 
-    const shkuLoadTimelineLink = document.querySelector<HTMLAnchorElement>(
-      ".project-tab[href='#project-shkuload']",
+    const shkuTrackTimelineLink = document.querySelector<HTMLAnchorElement>(
+      ".project-tab[href='#project-shkutrack']",
     )!;
     await waitFor(() => {
-      expect(shkuLoadTimelineLink).toHaveAttribute("aria-current", "location");
+      expect(shkuTrackTimelineLink).toHaveAttribute("aria-current", "location");
     });
-    expect(document.querySelector(".project-tab[href='#project-kyvc']")).not.toHaveAttribute("aria-current");
+    expect(document.querySelector(".project-tab[href='#project-portfolio']")).not.toHaveAttribute("aria-current");
     expect(projectHistory.style.getPropertyValue("--project-timeline-left")).toBe("56px");
     expect(projectHistory.style.getPropertyValue("--project-timeline-top")).toBe("44px");
     expect(projectHistory.style.getPropertyValue("--project-timeline-height")).toBe("480px");
@@ -1546,10 +1544,10 @@ describe("포트폴리오 메인", () => {
     });
     const awardRegion = screen.getByRole("region", { name: "수상" });
     const awardRows = Array.from(awardRegion.querySelectorAll(".award-row"));
-    expect(awardRows[0]).toHaveTextContent("성공회대학교 소프트웨어경진대회SKHUTRack1등");
+    expect(awardRows[0]).toHaveTextContent("성공회대학교 소프트웨어경진대회SKHUTrack1등");
     expect(awardRows[1]).toHaveTextContent("KFIP 2026KYvCToss 특별상");
     expect(awardRows[2]).toHaveTextContent("성공회대학교 IT경진대회SKHURoad3등");
-    expect(awardRows[3]).toHaveTextContent("SW·AI 교육 수기 공모전최우수상 · 과학기술정보통신부 장관상");
+    expect(awardRows[3]).toHaveTextContent("SW·AI 교육 수기 공모전-최우수상 · 과학기술정보통신부 장관상");
     expect(awardRows[4]).toHaveTextContent("Hello New() WorldNewLife대상");
     expect(awardRows).toHaveLength(5);
     expect(within(awardRegion).queryByText("현대오토에버 특성화 고교생 화이트해커 양성교육")).not.toBeInTheDocument();
@@ -1562,7 +1560,7 @@ describe("포트폴리오 메인", () => {
     expect(screen.getByText("SW·AI 교육 수기 공모전")).toBeInTheDocument();
     expect(screen.queryByText("신나는 SW·AI 교육 수기 공모전")).not.toBeInTheDocument();
     expect(document.querySelectorAll(".education-info-row")).toHaveLength(11);
-    expect(document.querySelectorAll(".education-info-detail.type-small")).toHaveLength(10);
+    expect(document.querySelectorAll(".education-info-detail.type-small")).toHaveLength(11);
     expect(document.querySelectorAll(".education-info-outcome.type-small")).toHaveLength(8);
     expect(screen.queryByRole("heading", { name: "학업 성과" })).not.toBeInTheDocument();
     expect(screen.queryByText("21학점 · 4.5 / 4.5")).not.toBeInTheDocument();

@@ -37,8 +37,7 @@ const saveInput: ProjectSaveInput = {
     },
     content: {
       results: [{ title: "Result", description: "Description" }],
-      background: [{ title: "Background", body: "Body" }],
-      features: [{ title: "Feature", description: "Description" }],
+      overview: [{ title: "Overview", body: "Body" }],
       development: [{ title: "Backend", items: ["API"] }],
       architecture: { notes: [{ title: "Runtime", body: "Docker" }] },
       engineering: [{ title: "Problem", summary: null, problem: "P", solution: "S", result: "R" }],

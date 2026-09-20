@@ -53,22 +53,23 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
         String response = mockMvc.perform(get(PROJECTS_PATH).with(admin()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(3))
-                .andExpect(jsonPath("$.items[0].name").value("KYvC"))
-                .andExpect(jsonPath("$.items[0].slug").value("kyvc"))
+                .andExpect(jsonPath("$.items[0].name").value("Portfolio"))
+                .andExpect(jsonPath("$.items[0].slug").value("portfolio"))
                 .andExpect(jsonPath("$.items[0].enabled").value(true))
-                .andExpect(jsonPath("$.items[1].name").value("SHKUTrack"))
-                .andExpect(jsonPath("$.items[1].enabled").value(false))
-                .andExpect(jsonPath("$.items[2].name").value("SHKULoad"))
-                .andExpect(jsonPath("$.items[0].thumbnailUrl")
-                        .value(org.hamcrest.Matchers.startsWith(
-                                "/api/v1/admin/media/projects/")))
+                .andExpect(jsonPath("$.items[1].name").value("KYvC"))
+                .andExpect(jsonPath("$.items[1].slug").value("kyvc"))
+                .andExpect(jsonPath("$.items[1].enabled").value(true))
+                .andExpect(jsonPath("$.items[2].name").value("SKHUTrack"))
+                .andExpect(jsonPath("$.items[2].slug").value("shkutrack"))
+                .andExpect(jsonPath("$.items[2].enabled").value(true))
+                .andExpect(jsonPath("$.items[0].thumbnailUrl").value((Object) null))
                 .andReturn().getResponse().getContentAsString();
-        Long kyvcId = objectMapper.readTree(response).get("items").get(0).get("id").asLong();
-        mockMvc.perform(get(PROJECTS_PATH + "/" + kyvcId).with(admin()))
+        Long portfolioId = objectMapper.readTree(response).get("items").get(0).get("id").asLong();
+        mockMvc.perform(get(PROJECTS_PATH + "/" + portfolioId).with(admin()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.project.name").value("KYvC"))
-                .andExpect(jsonPath("$.technologies.length()").value(16))
-                .andExpect(jsonPath("$.content.engineering.length()").value(4));
+                .andExpect(jsonPath("$.project.name").value("Portfolio"))
+                .andExpect(jsonPath("$.technologies.length()").value(12))
+                .andExpect(jsonPath("$.content.engineering.length()").value(2));
 
         mockMvc.perform(get("/api/v1/admin/site/projects").with(admin()))
                 .andExpect(status().isNotFound());
@@ -161,23 +162,6 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
         assertThat(challengeStatus(incomplete.id())).isEqualTo("ACTIVE");
 
         Long projectId = publishableProject("publishable-project");
-        jdbcTemplate.update(
-                "UPDATE project_contents SET features_json = '[]'::jsonb WHERE project_id = ?",
-                projectId
-        );
-        ActionChallenge invalidContent = challenge("PROJECT_STATUS_UPDATE", "PROJECT", projectId.toString());
-        changeStatus(projectId, true, invalidContent)
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.fieldErrors[*].field")
-                        .value(org.hamcrest.Matchers.hasItem("content.features")));
-        assertThat(projectEnabled(projectId)).isFalse();
-        assertThat(challengeStatus(invalidContent.id())).isEqualTo("ACTIVE");
-        jdbcTemplate.update("""
-                UPDATE project_contents
-                SET features_json = '[{"title":"Feature","description":"Description"}]'::jsonb
-                WHERE project_id = ?
-                """, projectId);
-
         ActionChallenge wrongOperation = challenge("PROJECT_DELETE", "PROJECT", projectId.toString());
         changeStatus(projectId, true, wrongOperation).andExpect(status().isForbidden());
         assertThat(projectEnabled(projectId)).isFalse();
@@ -304,14 +288,13 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
                 """, projectId, technologyId);
         jdbcTemplate.update("""
                 INSERT INTO project_contents (
-                    project_id, results_json, background_json, features_json,
+                    project_id, results_json, overview_json,
                     development_json, architecture_json, engineering_json,
                     architecture_image_storage_key
                 ) VALUES (
                     ?,
                     '[{"title":"Result","description":"Description"}]',
                     '[{"body":"Background"}]',
-                    '[{"title":"Feature","description":"Description"}]',
                     '[{"title":"Backend","items":["API"]}]',
                     '{"notes":[{"title":"Infra","body":"Backend"}]}',
                     '[{"title":"Issue","problem":"Problem","solution":"Solution","result":"Result"}]',
@@ -322,6 +305,8 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
     }
 
     private void restoreSeedProjects() {
+        jdbcTemplate.update("DELETE FROM monitoring_targets");
+        jdbcTemplate.update("DELETE FROM monitoring_settings");
         jdbcTemplate.update("DELETE FROM tool_links");
         jdbcTemplate.update("DELETE FROM tools");
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator();

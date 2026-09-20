@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { ProjectDetailModel } from "@/features/portfolio/project-detail";
 import { PUBLIC_COPY } from "@/features/portfolio/public-portfolio";
-import EngineeringList from "../kyvc/engineering-list";
-import ProjectArchitecture from "../kyvc/project-architecture";
-import ProjectMediaCarousel from "../kyvc/project-media-carousel";
-import ProjectRail from "../kyvc/project-rail";
+import EngineeringList from "./engineering-list";
+import ProjectArchitecture from "./project-architecture";
+import ProjectMediaCarousel from "./project-media-carousel";
+import ProjectRail from "./project-rail";
 import TechnologyIcon from "../../technology-icon";
-import styles from "../kyvc/kyvc-detail.module.css";
+import styles from "./project-detail.module.css";
 
 function technologyIconId(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -43,8 +43,7 @@ export default function ProjectDetailContent({
   ].flatMap((item) => item ? [item] : []);
   const hasTechnologies = project.technologies.length > 0;
   const hasResults = content.results.length > 0;
-  const hasBackground = content.background.length > 0;
-  const hasFeatures = content.features.length > 0;
+  const hasOverview = content.overview.length > 0;
 
   return (
     <div className={styles.projectDetailCore}>
@@ -85,6 +84,28 @@ export default function ProjectDetailContent({
         <ProjectRail sections={project.sections} />
 
         <div className={styles.detailContent}>
+          {sectionIds.has("detail-overview") ? (
+            <section className={`${styles.detailSection} ${styles.overviewSection}`} id="detail-overview" aria-labelledby="overview-title">
+              <header className={styles.sectionHeader}>
+                <h2 className={`${styles.sectionTitle} type-heading`} id="overview-title">프로젝트 설명</h2>
+              </header>
+              <div className={styles.overviewContent}>
+                {hasOverview ? (
+                  <article className={styles.overviewArea}>
+                    <div className={styles.overviewCopy}>
+                      {content.overview.map((item, index) => (
+                        <article className={styles.overviewItem} key={`${index}-${item.body}`}>
+                          {item.title ? <h4 className="type-title">{item.title}</h4> : null}
+                          <p className="type-body">{item.body}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </article>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+
           {sectionIds.has("detail-stack-result") ? (
             <section className={`${styles.detailSection} ${styles.stackResultSection}`} id="detail-stack-result" aria-labelledby="stack-result-title">
               <header className={styles.sectionHeader}>
@@ -136,47 +157,6 @@ export default function ProjectDetailContent({
               </div>
             </section>
           ) : null}
-
-          {sectionIds.has("detail-background") ? (
-            <section className={`${styles.detailSection} ${styles.backgroundFeaturesSection}`} id="detail-background" aria-labelledby="background-features-title">
-              <header className={styles.sectionHeader}>
-                <h2 className={`${styles.sectionTitle} type-heading`} id="background-features-title">문제 배경 · 주요 기능</h2>
-              </header>
-              <div className={styles.backgroundFeaturesGrid} data-single={hasBackground !== hasFeatures ? "true" : undefined}>
-                {hasBackground ? (
-                  <article className={styles.backgroundArea} aria-labelledby="background-title">
-                  <h3 className="type-title" id="background-title">문제 배경</h3>
-                    <div className={styles.backgroundCopy}>
-                      {content.background.map((item, index) => (
-                        <article className={styles.backgroundItem} key={`${index}-${item.body}`}>
-                          {item.title ? <h4 className="type-title">{item.title}</h4> : null}
-                          <p className="type-body">{item.body}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </article>
-                ) : null}
-
-                {hasFeatures ? (
-                  <section className={styles.featuresArea} aria-labelledby="features-title">
-                  <h3 className="type-title" id="features-title">주요 기능</h3>
-                    <ol className={styles.featureList} aria-labelledby="features-title">
-                      {content.features.map((feature, index) => (
-                        <li className={styles.featureItem} key={`${index}-${feature.title}`}>
-                          <span className={`${styles.featureNumber} type-small`}>{String(index + 1).padStart(2, "0")}</span>
-                          <div className={styles.featureCopy}>
-                            <h4 className={`${styles.featureTitle} type-title`}>{feature.title}</h4>
-                            {feature.description ? <p className={`${styles.featureDescription} type-body`}>{feature.description}</p> : null}
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  </section>
-                ) : null}
-              </div>
-            </section>
-          ) : null}
-
           {sectionIds.has("detail-development") ? (
             <section className={`${styles.detailSection} ${styles.developmentSection}`} id="detail-development" aria-labelledby="development-title">
               <header className={styles.sectionHeader}>

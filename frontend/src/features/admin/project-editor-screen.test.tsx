@@ -9,8 +9,8 @@ import ProjectEditorScreen from "./project-editor-screen";
 const navigation = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
-vi.mock("@/app/projects/kyvc/project-architecture", () => ({ default: () => <div>Architecture Preview</div> }));
-vi.mock("@/app/projects/kyvc/project-media-carousel", () => ({ default: () => <div>Carousel Preview</div> }));
+vi.mock("@/app/projects/[slug]/project-architecture", () => ({ default: () => <div>Architecture Preview</div> }));
+vi.mock("@/app/projects/[slug]/project-media-carousel", () => ({ default: () => <div>Carousel Preview</div> }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
   return { ...actual, createAdminChallenge: vi.fn() };
@@ -47,8 +47,7 @@ const detail: ProjectDetail = {
   technologies: [{ technologyId: 3, name: "Java", category: "LANGUAGE", iconUrl: null, showOnCard: true, highlighted: true, displayOrder: 0 }],
   content: {
     results: [{ title: "Result", description: "Result description" }],
-    background: [{ title: null, body: "Background body" }],
-    features: [{ title: "Feature", description: "Feature description" }],
+    overview: [{ title: null, body: "Overview body" }],
     development: [{ title: "Backend", items: ["API"] }],
     architecture: { notes: [{ title: "Runtime", body: "Docker" }] },
     engineering: [{ title: "Issue", summary: null, problem: "Problem", solution: "Solution", result: "Result" }],
@@ -112,12 +111,22 @@ describe("Preview-first Project Editor", () => {
     else Reflect.deleteProperty(URL, "revokeObjectURL");
   });
 
-  it("nullable 기본정보와 고정 6개 Content를 포함한 9개 Section을 안전하게 편집", async () => {
+  it("nullable 기본정보와 고정 5개 Content를 포함한 8개 Section을 안전하게 편집", async () => {
     const sectionNav = await renderEditor();
 
-    expect(within(sectionNav).getAllByRole("button")).toHaveLength(9);
-    expect(screen.getByLabelText("Tagline")).toHaveValue("");
-    expect(screen.getByLabelText("Year")).toHaveValue(null);
+    expect(within(sectionNav).getAllByRole("button")).toHaveLength(8);
+    expect(within(sectionNav).getAllByRole("button").map((button) => button.textContent?.replace(/^\d{2}/, ""))).toEqual([
+      "기본 정보",
+      "미디어",
+      "프로젝트 설명",
+      "기술",
+      "성과",
+      "직접 담당한 개발 영역",
+      "아키텍처",
+      "기술적 문제 해결",
+    ]);
+    expect(screen.getByLabelText("한 줄 소개")).toHaveValue("");
+    expect(screen.getByLabelText("연도")).toHaveValue(null);
     const viewModeControl = screen.getByRole("group", { name: "Project Editor 모드" });
     expect(within(viewModeControl).getByRole("button", { name: "편집 모드" })).toHaveAttribute("aria-pressed", "true");
     expect(within(viewModeControl).getByRole("button", { name: "미리보기 모드" })).toHaveAttribute("aria-pressed", "false");
@@ -126,8 +135,7 @@ describe("Preview-first Project Editor", () => {
 
     const contentSections = [
       ["성과", "성과 편집"],
-      ["문제 배경", "문제 배경 편집"],
-      ["주요 기능", "주요 기능 편집"],
+      ["프로젝트 설명", "프로젝트 설명 편집"],
       ["직접 담당한 개발 영역", "직접 담당한 개발 영역 편집"],
       ["아키텍처", "아키텍처 편집"],
       ["기술적 문제 해결", "기술적 문제 해결 편집"],
@@ -182,7 +190,7 @@ describe("Preview-first Project Editor", () => {
 
   it("편집·미리보기 모드 전환 시 API 재조회 없이 Local Draft를 유지", async () => {
     await renderEditor();
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Local Draft Project" } });
+    fireEvent.change(screen.getByLabelText("프로젝트명"), { target: { value: "Local Draft Project" } });
     expect(screen.getByRole("status")).toHaveTextContent("변경사항 있음");
 
     const viewModeControl = screen.getByRole("group", { name: "Project Editor 모드" });
@@ -195,20 +203,20 @@ describe("Preview-first Project Editor", () => {
     expect(getAdminProject).toHaveBeenCalledTimes(1);
 
     fireEvent.click(within(viewModeControl).getByRole("button", { name: "편집 모드" }));
-    expect(screen.getByLabelText("Name")).toHaveValue("Local Draft Project");
+    expect(screen.getByLabelText("프로젝트명")).toHaveValue("Local Draft Project");
     expect(getAdminProject).toHaveBeenCalledTimes(1);
   });
 
   it("미저장 Editor 이탈을 사이트 확인 Dialog로 취소하거나 계속 진행", async () => {
     await renderEditor();
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Unsaved Project" } });
+    fireEvent.change(screen.getByLabelText("프로젝트명"), { target: { value: "Unsaved Project" } });
 
     fireEvent.click(screen.getByRole("button", { name: "목록" }));
     let confirm = screen.getByRole("dialog", { name: "변경사항 폐기" });
     expect(within(confirm).getByText("저장하지 않은 변경사항이 있습니다. 목록으로 이동할까요?")).toBeInTheDocument();
     expect(navigation.push).not.toHaveBeenCalled();
     fireEvent.click(within(confirm).getByRole("button", { name: "취소" }));
-    expect(screen.getByLabelText("Name")).toHaveValue("Unsaved Project");
+    expect(screen.getByLabelText("프로젝트명")).toHaveValue("Unsaved Project");
 
     fireEvent.click(screen.getByRole("button", { name: "목록" }));
     confirm = screen.getByRole("dialog", { name: "변경사항 폐기" });
@@ -259,7 +267,7 @@ describe("Preview-first Project Editor", () => {
       .mockResolvedValueOnce({ ...detail, project: { ...detail.project, name: "Reloaded Project" } });
     await renderEditor();
 
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Edited Project" } });
+    fireEvent.change(screen.getByLabelText("프로젝트명"), { target: { value: "Edited Project" } });
     expect(saveProject).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
@@ -274,7 +282,7 @@ describe("Preview-first Project Editor", () => {
     expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
     const saveInput = vi.mocked(saveProject).mock.calls[0][1];
     expect(saveInput.metadata.project.name).toBe("Edited Project");
-    expect(saveInput.metadata.content.background[0]).toEqual({ title: null, body: "Background body" });
+    expect(saveInput.metadata.content.overview[0]).toEqual({ title: null, body: "Overview body" });
 
     await act(async () => resolveSave(detail));
     await waitFor(() => expect(getAdminProject).toHaveBeenCalledTimes(2));
@@ -286,7 +294,7 @@ describe("Preview-first Project Editor", () => {
     vi.mocked(saveProject).mockRejectedValue(new Error("save failed"));
     await renderEditor();
 
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Unsaved Project" } });
+    fireEvent.change(screen.getByLabelText("프로젝트명"), { target: { value: "Unsaved Project" } });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
     await waitFor(() => expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeEnabled());
     submitOtp();
