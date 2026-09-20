@@ -158,8 +158,7 @@ CREATE TABLE project_technologies (
 CREATE TABLE project_contents (
     project_id BIGINT NOT NULL,
     results_json JSONB NOT NULL DEFAULT '[]'::jsonb,
-    background_json JSONB NOT NULL DEFAULT '[]'::jsonb,
-    features_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+    overview_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     development_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     architecture_json JSONB NOT NULL DEFAULT '{}'::jsonb,
     architecture_image_storage_key VARCHAR(255),
@@ -303,4 +302,36 @@ CREATE TABLE spring_session_attributes (
     CONSTRAINT pk_spring_session_attributes PRIMARY KEY (session_primary_id, attribute_name),
     CONSTRAINT fk_session_attributes_session
         FOREIGN KEY (session_primary_id) REFERENCES spring_session (primary_id) ON DELETE CASCADE
+);
+
+CREATE TABLE monitoring_settings (
+    id SMALLINT NOT NULL DEFAULT 1,
+    enabled BOOLEAN NOT NULL,
+    check_interval_seconds INTEGER NOT NULL,
+    connect_timeout_ms INTEGER NOT NULL,
+    request_timeout_ms INTEGER NOT NULL,
+    retry_delay_ms INTEGER NOT NULL,
+    max_retries INTEGER NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_monitoring_settings PRIMARY KEY (id),
+    CONSTRAINT ck_monitoring_settings_singleton CHECK (id = 1),
+    CONSTRAINT ck_monitoring_settings_interval CHECK (check_interval_seconds > 0),
+    CONSTRAINT ck_monitoring_settings_connect_timeout CHECK (connect_timeout_ms > 0),
+    CONSTRAINT ck_monitoring_settings_request_timeout CHECK (request_timeout_ms > 0),
+    CONSTRAINT ck_monitoring_settings_retry_delay CHECK (retry_delay_ms >= 0),
+    CONSTRAINT ck_monitoring_settings_max_retries CHECK (max_retries >= 0)
+);
+
+CREATE TABLE monitoring_targets (
+    id BIGSERIAL NOT NULL,
+    service_key VARCHAR(100) NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    health_url TEXT,
+    enabled BOOLEAN NOT NULL,
+    display_order INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_monitoring_targets PRIMARY KEY (id),
+    CONSTRAINT uq_monitoring_targets_service_key UNIQUE (service_key),
+    CONSTRAINT ck_monitoring_targets_display_order CHECK (display_order >= 0)
 );

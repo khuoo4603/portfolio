@@ -32,7 +32,7 @@ class PortfolioEnumsTest {
                 + PortfolioEnums.ErrorService.values().length;
 
         assertThat(enumGroupCount).isEqualTo(15);
-        assertThat(totalCodeCount).isEqualTo(86);
+        assertThat(totalCodeCount).isEqualTo(85);
         assertThat(PortfolioEnums.AccountRole.values())
                 .containsExactly(PortfolioEnums.AccountRole.ADMIN, PortfolioEnums.AccountRole.USER);
         assertThat(PortfolioEnums.AdminActionOperation.values()).hasSize(20);
@@ -72,7 +72,7 @@ class PortfolioEnumsTest {
                 .containsExactly(PortfolioEnums.ErrorService.FRONTEND, PortfolioEnums.ErrorService.BACKEND);
     }
 
-    // 콘텐츠 Slot 16개와 전체 상위 카테고리 매핑 검증
+    // 콘텐츠 Slot 15개와 전체 상위 카테고리 매핑 검증
     @Test
     void portfolioContentCodesUseDbCategoryMapping() {
         assertThat(PortfolioEnums.PortfolioContentCategory.values()).containsExactly(
@@ -81,13 +81,13 @@ class PortfolioEnumsTest {
                 PortfolioEnums.PortfolioContentCategory.PROFILE,
                 PortfolioEnums.PortfolioContentCategory.CONTACT
         );
-        assertThat(PortfolioEnums.PortfolioContentCode.values()).hasSize(16);
+        assertThat(PortfolioEnums.PortfolioContentCode.values()).hasSize(15);
         assertThat(PortfolioEnums.PortfolioContentCode.values())
                 .filteredOn(contentCode -> contentCode.category() == PortfolioEnums.PortfolioContentCategory.COMMON)
                 .hasSize(4);
         assertThat(PortfolioEnums.PortfolioContentCode.values())
                 .filteredOn(contentCode -> contentCode.category() == PortfolioEnums.PortfolioContentCategory.MAIN)
-                .hasSize(2);
+                .hasSize(1);
         assertThat(PortfolioEnums.PortfolioContentCode.values())
                 .filteredOn(contentCode -> contentCode.category() == PortfolioEnums.PortfolioContentCategory.PROFILE)
                 .hasSize(9);

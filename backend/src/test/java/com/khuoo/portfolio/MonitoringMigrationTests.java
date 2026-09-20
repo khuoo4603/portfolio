@@ -12,12 +12,12 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Monitoring V3 Forward Migration과 기존 상태 보존 검증
+// Monitoring Fresh Baseline 검증
 class MonitoringMigrationTests {
 
-    // V1과 V2 적용 DB의 service_status 보존과 V3 Seed 검증
+    // V1과 V2 적용 Fresh Database Monitoring Seed 검증
     @Test
-    void v3AddsRuntimeConfigWithoutChangingExistingServiceStatus() throws SQLException {
+    void freshBaselineCreatesRuntimeConfigAndServiceStatus() throws SQLException {
         String schema = "monitoring_upgrade_" + UUID.randomUUID().toString().replace("-", "");
         Flyway versionTwo = flyway(schema, "2");
         assertThat(versionTwo.migrate().migrationsExecuted).isEqualTo(2);
@@ -30,7 +30,7 @@ class MonitoringMigrationTests {
                     """);
         }
 
-        assertThat(flyway(schema, null).migrate().migrationsExecuted).isOne();
+        assertThat(flyway(schema, null).migrate().migrationsExecuted).isZero();
 
         try (Connection connection = connection(schema); Statement statement = connection.createStatement()) {
             try (ResultSet settings = statement.executeQuery("""

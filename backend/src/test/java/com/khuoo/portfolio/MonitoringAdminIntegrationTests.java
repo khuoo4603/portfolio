@@ -46,7 +46,7 @@ class MonitoringAdminIntegrationTests extends PostgresIntegrationTest {
                 """);
     }
 
-    // V3 Seed 기반 Monitoring 관리 조회와 ADMIN 권한 경계 검증
+    // Fresh Baseline Seed 기반 Monitoring 관리 조회와 ADMIN 권한 경계 검증
     @Test
     void monitoringSnapshotReturnsSeedSettingsAndTargetsForAdminOnly() throws Exception {
         mockMvc.perform(get(MONITORING_PATH))

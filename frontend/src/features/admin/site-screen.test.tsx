@@ -49,7 +49,6 @@ function siteData(name = "김현우"): SiteData {
       { category: "COMMON", contentCode: "POSITION", contentValue: "BACKEND / INFRA DEVELOPER", updatedAt: UPDATED_AT },
       { category: "COMMON", contentCode: "AFFILIATION", contentValue: "성공회대학교", updatedAt: UPDATED_AT },
       { category: "MAIN", contentCode: "HERO_STATEMENT", contentValue: "문제에 맞는 기술과 설계를 선택하고,\n선택과 집중으로 서비스를 완성하는 개발자", updatedAt: UPDATED_AT },
-      { category: "MAIN", contentCode: "HERO_DESCRIPTION", contentValue: "legacy description", updatedAt: UPDATED_AT },
       { category: "PROFILE", contentCode: "ABOUT_STATEMENT", contentValue: "문제에 맞는 기술 선택", updatedAt: UPDATED_AT },
       { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_1", contentValue: "소개 설명 1", updatedAt: UPDATED_AT },
       { category: "PROFILE", contentCode: "ABOUT_DESCRIPTION_2", contentValue: "소개 설명 2", updatedAt: UPDATED_AT },
@@ -166,12 +165,10 @@ describe("Admin Site 실제 API 관리", () => {
     const surface = screen.getByRole("region", { name: "사이트 관리" });
     expect(within(surface).getByRole("tablist", { name: "사이트 관리 영역" })).toBeInTheDocument();
     expect(within(surface).getByRole("tabpanel")).toContainElement(screen.getByDisplayValue("김현우"));
-    expect(siteData().portfolioContents).toHaveLength(16);
+    expect(siteData().portfolioContents).toHaveLength(15);
     expect(screen.queryByText("COMMON/NAME")).not.toBeInTheDocument();
     expect(screen.queryByText("MAIN/HERO_STATEMENT")).not.toBeInTheDocument();
     expect(screen.getByLabelText("소개 문구")).toHaveValue("문제에 맞는 기술과 설계를 선택하고,\n선택과 집중으로 서비스를 완성하는 개발자");
-    expect(screen.queryByText("MAIN/HERO_DESCRIPTION")).not.toBeInTheDocument();
-    expect(screen.queryByDisplayValue("legacy description")).not.toBeInTheDocument();
     expect(screen.queryByText("CONTACT/EMAIL")).not.toBeInTheDocument();
     expect(screen.getAllByRole("textbox")).toHaveLength(15);
     expect(screen.getAllByRole("tab")).toHaveLength(5);

@@ -100,13 +100,12 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 """, projectId, technologyId);
         jdbcTemplate.update("""
                 INSERT INTO project_contents (
-                    project_id, results_json, background_json, features_json,
+                    project_id, results_json, overview_json,
                     development_json, architecture_json, engineering_json,
                     architecture_image_storage_key
                 )
                 VALUES (?, '[{"title":"Result","description":"Description"}]',
                         '[{"body":"Background"}]',
-                        '[]',
                         '[{"title":"Backend","items":["API"]}]',
                         '{"notes":[{"title":"Infra","body":"Spring"}]}',
                         '[{"title":"Issue","summary":"S","problem":"P","solution":"F","result":"R"}]',

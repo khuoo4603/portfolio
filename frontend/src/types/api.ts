@@ -41,7 +41,6 @@ export type PortfolioContentCode =
   | "POSITION"
   | "AFFILIATION"
   | "HERO_STATEMENT"
-  | "HERO_DESCRIPTION"
   | "ABOUT_STATEMENT"
   | "ABOUT_DESCRIPTION_1"
   | "ABOUT_DESCRIPTION_2"

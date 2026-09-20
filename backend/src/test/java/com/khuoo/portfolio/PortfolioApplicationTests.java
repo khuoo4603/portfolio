@@ -24,7 +24,6 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
             "COMMON/POSITION",
             "COMMON/AFFILIATION",
             "MAIN/HERO_STATEMENT",
-            "MAIN/HERO_DESCRIPTION",
             "PROFILE/ABOUT_STATEMENT",
             "PROFILE/ABOUT_DESCRIPTION_1",
             "PROFILE/ABOUT_DESCRIPTION_2",
@@ -75,8 +74,8 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                   AND table_name <> 'flyway_schema_history'
                 """, Integer.class);
 
-        assertThat(flyway.info().applied()).hasSize(3);
-        assertThat(flyway.info().current().getDescription()).isEqualTo("add monitoring runtime config");
+        assertThat(flyway.info().applied()).hasSize(2);
+        assertThat(flyway.info().current().getDescription()).isEqualTo("seed initial data");
         assertThat(tableCount).isEqualTo(23);
         assertThat(jdbcTemplate.queryForObject("SHOW TIME ZONE", String.class)).isEqualTo("Asia/Seoul");
         assertThat(jdbcTemplate.queryForObject("SHOW server_encoding", String.class)).isEqualTo("UTF8");
@@ -116,7 +115,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                     COUNT(*) FILTER (WHERE category = 'CONTACT') AS contact_count
                 FROM portfolio_contents
                 """)).containsEntry("common_count", 4L)
-                .containsEntry("main_count", 2L)
+                .containsEntry("main_count", 1L)
                 .containsEntry("profile_count", 9L)
                 .containsEntry("contact_count", 1L);
         assertThat(contentValue("COMMON", "NAME")).isEqualTo("김현우");
@@ -241,8 +240,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 """, String.class)).containsExactly(
                 "project_id:NO",
                 "results_json:NO",
-                "background_json:NO",
-                "features_json:NO",
+                "overview_json:NO",
                 "development_json:NO",
                 "architecture_json:NO",
                 "architecture_image_storage_key:YES",
@@ -403,9 +401,8 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 SELECT
                     jsonb_typeof(content.results_json) AS results_type,
                     content.results_json -> 0 ->> 'description' AS result_description,
-                    jsonb_typeof(content.background_json -> 0) AS background_type,
-                    content.background_json -> 0 ->> 'body' AS background_body,
-                    content.features_json -> 0 ->> 'description' AS feature_description,
+                    jsonb_typeof(content.overview_json -> 0) AS overview_type,
+                    content.overview_json -> 0 ->> 'body' AS background_body,
                     jsonb_array_length(content.development_json) AS development_count,
                     jsonb_array_length(content.architecture_json -> 'notes') AS architecture_note_count,
                     content.architecture_json -> 'notes' -> 0 ->> 'title' AS first_architecture_note,
@@ -419,9 +416,8 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
                 """))
                 .containsEntry("results_type", "array")
                 .containsEntry("result_description", "Toss 특별상")
-                .containsEntry("background_type", "object")
+                .containsEntry("overview_type", "object")
                 .containsEntry("background_body", "기존 법인 KYC는 법인 정보와 각종 증빙서류를 제출하고 심사기관이 이를 반복적으로 검토하는 과정이 필요합니다.")
-                .containsEntry("feature_description", null)
                 .containsEntry("development_count", 3)
                 .containsEntry("architecture_note_count", 2)
                 .containsEntry("first_architecture_note", "인프라 / 실행 환경")
@@ -438,7 +434,7 @@ class PortfolioApplicationTests extends PostgresIntegrationTest {
         assertThat(jdbcTemplate.queryForObject("""
                 SELECT COUNT(*)
                 FROM project_contents AS content,
-                     jsonb_array_elements(content.results_json || content.features_json) AS item
+                     jsonb_array_elements(content.results_json) AS item
                 WHERE item ? 'description'
                   AND item ->> 'title' = item ->> 'description'
                 """, Integer.class)).isZero();

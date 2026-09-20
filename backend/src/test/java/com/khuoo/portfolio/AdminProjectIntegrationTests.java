@@ -161,10 +161,6 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
         assertThat(challengeStatus(incomplete.id())).isEqualTo("ACTIVE");
 
         Long projectId = publishableProject("publishable-project");
-        jdbcTemplate.update(
-                "UPDATE project_contents SET features_json = '[]'::jsonb WHERE project_id = ?",
-                projectId
-        );
         ActionChallenge wrongOperation = challenge("PROJECT_DELETE", "PROJECT", projectId.toString());
         changeStatus(projectId, true, wrongOperation).andExpect(status().isForbidden());
         assertThat(projectEnabled(projectId)).isFalse();
@@ -291,14 +287,13 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
                 """, projectId, technologyId);
         jdbcTemplate.update("""
                 INSERT INTO project_contents (
-                    project_id, results_json, background_json, features_json,
+                    project_id, results_json, overview_json,
                     development_json, architecture_json, engineering_json,
                     architecture_image_storage_key
                 ) VALUES (
                     ?,
                     '[{"title":"Result","description":"Description"}]',
                     '[{"body":"Background"}]',
-                    '[]',
                     '[{"title":"Backend","items":["API"]}]',
                     '{"notes":[{"title":"Infra","body":"Backend"}]}',
                     '[{"title":"Issue","problem":"Problem","solution":"Solution","result":"Result"}]',
@@ -309,6 +304,8 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
     }
 
     private void restoreSeedProjects() {
+        jdbcTemplate.update("DELETE FROM monitoring_targets");
+        jdbcTemplate.update("DELETE FROM monitoring_settings");
         jdbcTemplate.update("DELETE FROM tool_links");
         jdbcTemplate.update("DELETE FROM tools");
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator();

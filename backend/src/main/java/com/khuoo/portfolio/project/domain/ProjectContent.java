@@ -29,7 +29,7 @@ public class ProjectContent {
     private JsonNode results;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "background_json", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "overview_json", nullable = false, columnDefinition = "jsonb")
     private JsonNode overview;
 
     @JdbcTypeCode(SqlTypes.JSON)
