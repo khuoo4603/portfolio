@@ -137,6 +137,12 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 .andReturn().getResponse().getContentAsString();
         JsonNode content = objectMapper.readTree(response).get("content");
         assertThat(content.isObject()).isTrue();
+        assertThat(content.size()).isEqualTo(5);
+        assertThat(content.get("results")).isNotNull();
+        assertThat(content.get("overview")).isNotNull();
+        assertThat(content.get("development")).isNotNull();
+        assertThat(content.get("architecture")).isNotNull();
+        assertThat(content.get("engineering")).isNotNull();
         assertThat(content.get("results").isArray()).isTrue();
         assertThat(content.get("results").isString()).isFalse();
 
@@ -145,7 +151,6 @@ class PublicSiteIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(jsonPath("$.id").value(emptyProjectId))
                 .andExpect(jsonPath("$.content.results.length()").value(0))
                 .andExpect(jsonPath("$.content.overview.length()").value(0))
-                .andExpect(jsonPath("$.content.features").doesNotExist())
                 .andExpect(jsonPath("$.content.development.length()").value(0))
                 .andExpect(jsonPath("$.content.architecture").isMap())
                 .andExpect(jsonPath("$.content.engineering.length()").value(0));

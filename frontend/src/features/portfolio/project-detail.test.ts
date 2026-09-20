@@ -41,7 +41,7 @@ describe("Project Detail Mapping", () => {
     ]);
     expect(model.content.results).toEqual([{ title: "Fixture 성과", description: "Fixture 성과 설명" }]);
     expect(model.content.overview).toEqual([{ title: "Fixture 설명 제목", body: "Fixture 프로젝트 설명" }]);
-    expect(model.content).not.toHaveProperty("features");
+    expect(Object.keys(model.content)).not.toContain("features");
     expect(model.content.development[0]).toEqual({ title: "Backend", items: ["Fixture Backend 작업"] });
     expect(model.content.engineering[0].title).toBe("Fixture 문제 해결");
     expect(model.sections.map((section) => section.id)).toEqual([

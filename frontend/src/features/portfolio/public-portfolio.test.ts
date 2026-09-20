@@ -21,7 +21,7 @@ describe("Public Portfolio Mapping", () => {
     expect((content as Record<string, string>).UNKNOWN).toBeUndefined();
   });
 
-  it("Public Fixture가 UI Copy 없이 정확한 16개 관리 Slot만 사용", () => {
+  it("Public Fixture가 UI Copy 없이 정확한 15개 관리 Slot만 사용", () => {
     expect(PUBLIC_PORTFOLIO_FIXTURE.portfolioContents).toHaveLength(15);
     expect(PUBLIC_PORTFOLIO_FIXTURE.portfolioContents.map((item) => item.contentCode)).toEqual([
       "NAME",
@@ -74,7 +74,7 @@ describe("Public Portfolio Mapping", () => {
       "LANGUAGE", "BACKEND", "DATABASE", "FRONTEND", "INFRA", "DEVOPS",
     ]);
     expect(groups.find((group) => group.category === "INFRA")?.technologies.map((item) => item.name))
-      .toEqual(["Docker", "Docker Compose", "Linux", "Kubernetes"]);
+      .toEqual(["Docker", "Docker Compose", "Linux", "Kubernetes", "Nginx", "k3s"]);
   });
 
   it("FRONTEND 없는 Fixture는 5개 Group이며 Docker와 Docker Compose를 합치지 않음", () => {

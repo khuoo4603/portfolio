@@ -53,22 +53,23 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
         String response = mockMvc.perform(get(PROJECTS_PATH).with(admin()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(3))
-                .andExpect(jsonPath("$.items[0].name").value("KYvC"))
-                .andExpect(jsonPath("$.items[0].slug").value("kyvc"))
+                .andExpect(jsonPath("$.items[0].name").value("Portfolio"))
+                .andExpect(jsonPath("$.items[0].slug").value("portfolio"))
                 .andExpect(jsonPath("$.items[0].enabled").value(true))
-                .andExpect(jsonPath("$.items[1].name").value("SHKUTrack"))
-                .andExpect(jsonPath("$.items[1].enabled").value(false))
-                .andExpect(jsonPath("$.items[2].name").value("SHKULoad"))
-                .andExpect(jsonPath("$.items[0].thumbnailUrl")
-                        .value(org.hamcrest.Matchers.startsWith(
-                                "/api/v1/admin/media/projects/")))
+                .andExpect(jsonPath("$.items[1].name").value("KYvC"))
+                .andExpect(jsonPath("$.items[1].slug").value("kyvc"))
+                .andExpect(jsonPath("$.items[1].enabled").value(true))
+                .andExpect(jsonPath("$.items[2].name").value("SKHUTrack"))
+                .andExpect(jsonPath("$.items[2].slug").value("shkutrack"))
+                .andExpect(jsonPath("$.items[2].enabled").value(true))
+                .andExpect(jsonPath("$.items[0].thumbnailUrl").value((Object) null))
                 .andReturn().getResponse().getContentAsString();
-        Long kyvcId = objectMapper.readTree(response).get("items").get(0).get("id").asLong();
-        mockMvc.perform(get(PROJECTS_PATH + "/" + kyvcId).with(admin()))
+        Long portfolioId = objectMapper.readTree(response).get("items").get(0).get("id").asLong();
+        mockMvc.perform(get(PROJECTS_PATH + "/" + portfolioId).with(admin()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.project.name").value("KYvC"))
-                .andExpect(jsonPath("$.technologies.length()").value(16))
-                .andExpect(jsonPath("$.content.engineering.length()").value(4));
+                .andExpect(jsonPath("$.project.name").value("Portfolio"))
+                .andExpect(jsonPath("$.technologies.length()").value(12))
+                .andExpect(jsonPath("$.content.engineering.length()").value(2));
 
         mockMvc.perform(get("/api/v1/admin/site/projects").with(admin()))
                 .andExpect(status().isNotFound());
