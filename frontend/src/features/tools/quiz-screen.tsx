@@ -1,12 +1,16 @@
 "use client";
 
-import { Copy, Eraser, FileJson, PanelLeftClose, PanelLeftOpen, Save, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronRight, Copy, Eraser, FileJson, Folder, FolderOpen, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Save, Trash2, X } from "lucide-react";
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import Button from "@/components/ui/button";
+import DialogFrame from "@/components/ui/dialog-frame";
+import Select from "@/components/ui/select";
+import dropdownStyles from "@/components/ui/select.module.css";
 import { NotificationProvider, useNotification } from "@/components/ui/notification/notification-provider";
 import { formatApiError } from "@/lib/api/client";
-import type { QuizSummary } from "@/types/api";
+import type { QuizSubject, QuizSummary } from "@/types/api";
 import {
   buildAnswerText,
   getTypeLabel,
@@ -21,10 +25,14 @@ import {
 import { QUIZ_PROMPT } from "./quiz-prompt";
 import {
   createQuiz,
+  createQuizSubject,
+  deleteQuizSubject,
   deleteQuiz,
   getQuiz,
   getQuizzes,
+  getQuizSubjects,
   updateQuiz,
+  updateQuizSubject,
 } from "./tools-api";
 import { useToolsSession } from "./tools-shell";
 import styles from "./tools.module.css";
@@ -35,6 +43,15 @@ type QuizConfirmation =
   | { kind: "delete"; quizId: number; title: string };
 
 type SaveStatus = "unsaved" | "saved" | "changes" | "saving" | "error";
+
+type SubjectDialog =
+  | { kind: "create" }
+  | { kind: "rename"; subject: QuizSubject };
+
+type MenuPosition = {
+  top: number;
+  left: number;
+};
 
 // Clipboard API와 기존 비보안 Context Fallback 복사
 async function copyText(text: string) {
@@ -198,32 +215,160 @@ function useViewportMatch(query: string, fallback: boolean) {
 }
 
 // Desktop Sidebar와 Compact Drawer가 함께 사용하는 저장 문제 이력
+// 제목 실제 폭과 Viewport 폭 기준 Overflow 이동 거리 계산
+function QuizTitle({ title }: { title: string }) {
+  const viewportRef = useRef<HTMLSpanElement | null>(null);
+  const titleRef = useRef<HTMLSpanElement | null>(null);
+
+  const updateOverflow = useCallback(() => {
+    const viewport = viewportRef.current;
+    const titleElement = titleRef.current;
+    if (!viewport || !titleElement) return;
+
+    const overflow = Math.max(0, titleElement.scrollWidth - viewport.clientWidth);
+    titleElement.dataset.overflow = overflow > 0 ? "true" : "false";
+    titleElement.style.setProperty("--quiz-title-overflow", `${overflow}px`);
+    titleElement.style.setProperty("--quiz-title-slide-duration", `${Math.max(2500, Math.round(overflow / 40 * 1000))}ms`);
+  }, []);
+
+  useEffect(() => {
+    updateOverflow();
+    const viewport = viewportRef.current;
+    if (!viewport) return undefined;
+
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateOverflow);
+    observer?.observe(viewport);
+    window.addEventListener("resize", updateOverflow);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateOverflow);
+    };
+  }, [title, updateOverflow]);
+
+  return (
+    <span className={styles.savedQuizTitleViewport} ref={viewportRef}>
+      <span className={`${styles.savedQuizTitle} type-small`} ref={titleRef} title={title}>{title}</span>
+    </span>
+  );
+}
+
 function SavedQuizHistory({
   drawer,
   open = true,
   collapsed = false,
   currentQuizId,
   quizzes,
+  subjects,
+  expandedSubjectIds,
   loading,
   loaded,
   actionQuizId,
+  subjectMenuId,
+  quizMenuId,
+  openMenuAnchorRef,
+  openMenuPopoverRef,
   onClose,
   onLoad,
   onDelete,
+  onToggleSubject,
+  onCreateSubject,
+  onOpenSubjectMenu,
+  onRenameSubject,
+  onDeleteSubject,
+  onOpenQuizMenu,
+  onMoveQuiz,
+  onCloseMenus,
 }: {
   drawer: boolean;
   open?: boolean;
   collapsed?: boolean;
   currentQuizId: number | null;
   quizzes: QuizSummary[];
+  subjects: QuizSubject[];
+  expandedSubjectIds: ReadonlySet<number>;
   loading: boolean;
   loaded: boolean;
   actionQuizId: number | null;
+  subjectMenuId: number | null;
+  quizMenuId: number | null;
+  openMenuAnchorRef: RefObject<HTMLLIElement | null>;
+  openMenuPopoverRef: RefObject<HTMLDivElement | null>;
   onClose: () => void;
   onLoad: (quizId: number) => void;
   onDelete: (quizId: number) => void;
+  onToggleSubject: (subjectId: number) => void;
+  onCreateSubject: () => void;
+  onOpenSubjectMenu: (subjectId: number) => void;
+  onRenameSubject: (subject: QuizSubject) => void;
+  onDeleteSubject: (subject: QuizSubject) => void;
+  onOpenQuizMenu: (quizId: number) => void;
+  onMoveQuiz: (quiz: QuizSummary) => void;
+  onCloseMenus: () => void;
 }) {
+  const unassignedQuizzes = quizzes.filter((quiz) => quiz.subjectId === null);
+  const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
+  const activeSubject = subjectMenuId === null ? null : subjects.find((subject) => subject.id === subjectMenuId) ?? null;
+  const activeQuiz = quizMenuId === null ? null : quizzes.find((quiz) => quiz.id === quizMenuId) ?? null;
+
+  // Viewport 안쪽 고정 메뉴 좌표 계산
+  const setMenuAnchor = (button: HTMLButtonElement, menuHeight: number) => {
+    const rect = button.getBoundingClientRect();
+    const menuWidth = 128;
+    setMenuPosition({
+      top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - menuHeight - 8)),
+      left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)),
+    });
+  };
+
+  const renderQuiz = (quiz: QuizSummary, nested = false) => (
+    <li
+      className={`${styles.savedQuizItem} ${nested ? styles.subjectQuizItem : ""} ${currentQuizId === quiz.id ? styles.savedQuizItemActive : ""}`}
+      key={quiz.id}
+      ref={quizMenuId === quiz.id ? openMenuAnchorRef : undefined}
+    >
+      <button
+        className={styles.savedQuizLoad}
+        type="button"
+        onClick={() => onLoad(quiz.id)}
+        disabled={actionQuizId !== null}
+        aria-current={currentQuizId === quiz.id ? "page" : undefined}
+      >
+        <QuizTitle title={quiz.title} />
+      </button>
+      <div className={`${styles.savedQuizActions} ${quizMenuId === quiz.id ? styles.savedQuizActionsOpen : ""}`} role="group" aria-label={`${quiz.title} 작업`}>
+        <button
+          className={styles.savedQuizMenuButton}
+          type="button"
+          aria-haspopup="menu"
+          aria-label={`${quiz.title} 과목 이동 메뉴`}
+          aria-expanded={quizMenuId === quiz.id}
+          onClick={(event) => {
+            event.stopPropagation();
+            setMenuAnchor(event.currentTarget, 48);
+            onOpenQuizMenu(quiz.id);
+          }}
+          disabled={actionQuizId !== null}
+        >
+          <MoreHorizontal aria-hidden="true" />
+        </button>
+        <button
+          className={styles.savedQuizDelete}
+          type="button"
+          aria-label={`${quiz.title} 삭제`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(quiz.id);
+          }}
+          disabled={actionQuizId !== null}
+        >
+          <Trash2 aria-hidden="true" />
+        </button>
+      </div>
+    </li>
+  );
+
   return (
+    <>
     <aside
       aria-label="저장된 문제"
       aria-hidden={collapsed || drawer && !open ? true : undefined}
@@ -232,47 +377,93 @@ function SavedQuizHistory({
       inert={collapsed || drawer && !open}
       tabIndex={-1}
     >
-      <header className={styles.quizHistoryHeader}>
-        <h2 className={`${styles.quizHistoryTitle} type-small`}>저장된 문제</h2>
-        {drawer ? (
-          <button className={styles.quizHistoryClose} type="button" aria-label="저장된 문제 닫기" onClick={onClose}>
-            <X aria-hidden="true" />
-          </button>
-        ) : null}
-      </header>
-      {loading ? <p className="type-body" aria-busy="true">목록을 불러오는 중입니다.</p> : null}
-      {!loading && loaded && quizzes.length === 0 ? (
-        <div className={styles.savedQuizEmpty}>
-          <p className="type-body">저장된 문제가 없습니다.</p>
+      <div className={styles.quizHistoryScroll} onScroll={onCloseMenus}>
+        {loading ? <p className="type-body" aria-busy="true">목록을 불러오는 중입니다.</p> : null}
+        <section className={styles.subjectSection} aria-labelledby="quiz-subjects-title">
+        <div className={styles.subjectSectionHeader}>
+          <h3 className="type-small" id="quiz-subjects-title">과목</h3>
+          <div className={styles.subjectSectionActions}>
+            <button className={styles.subjectAddButton} type="button" aria-label="과목 추가" onClick={onCreateSubject}>
+              <Plus aria-hidden="true" />
+            </button>
+            {drawer ? (
+              <button className={styles.quizHistoryClose} type="button" aria-label="저장된 문제 닫기" onClick={onClose}>
+                <X aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
         </div>
-      ) : null}
-      {quizzes.length > 0 ? (
-        <ol className={styles.savedQuizList} aria-busy={actionQuizId !== null}>
-          {quizzes.map((quiz) => (
-            <li className={styles.savedQuizItem} key={quiz.id}>
-              <button
-                className={styles.savedQuizLoad}
-                type="button"
-                onClick={() => onLoad(quiz.id)}
-                disabled={actionQuizId !== null}
-                aria-current={currentQuizId === quiz.id ? "page" : undefined}
-              >
-                <span className={`${styles.savedQuizTitle} type-small`}>{quiz.title}</span>
-              </button>
-              <button
-                className={styles.savedQuizDelete}
-                type="button"
-                aria-label={`${quiz.title} 삭제`}
-                onClick={() => onDelete(quiz.id)}
-                disabled={actionQuizId !== null}
-              >
-                <Trash2 aria-hidden="true" />
-              </button>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+        <ul className={styles.subjectList} aria-busy={actionQuizId !== null}>
+          {subjects.map((subject) => {
+            const subjectQuizzes = quizzes.filter((quiz) => quiz.subjectId === subject.id);
+            const expanded = expandedSubjectIds.has(subject.id);
+            return (
+              <li className={styles.subjectItem} key={subject.id} ref={subjectMenuId === subject.id ? openMenuAnchorRef : undefined}>
+                <div className={`${styles.subjectRow} ${subjectMenuId === subject.id ? styles.subjectRowMenuOpen : ""}`}>
+                  <button
+                    className={styles.subjectToggle}
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-label={`${subject.name} 과목 ${expanded ? "접기" : "펼치기"}`}
+                    onClick={() => onToggleSubject(subject.id)}
+                  >
+                    {expanded ? <ChevronDown aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+                    {expanded ? <FolderOpen aria-hidden="true" /> : <Folder aria-hidden="true" />}
+                    <span className={`${styles.subjectName} type-small`} title={subject.name}>{subject.name}</span>
+                  </button>
+                  <button
+                    className={styles.subjectMenuButton}
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-label={`${subject.name} 과목 메뉴`}
+                    aria-expanded={subjectMenuId === subject.id}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setMenuAnchor(event.currentTarget, 88);
+                      onOpenSubjectMenu(subject.id);
+                    }}
+                  >
+                    <MoreHorizontal aria-hidden="true" />
+                  </button>
+                </div>
+                {expanded ? (
+                  subjectQuizzes.length > 0 ? (
+                    <ol className={styles.subjectQuizList}>{subjectQuizzes.map((quiz) => renderQuiz(quiz, true))}</ol>
+                  ) : <p className={`${styles.subjectEmpty} type-small`}>저장된 퀴즈가 없습니다.</p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+        </section>
+        <section className={styles.unassignedSection} aria-labelledby="saved-quizzes-title">
+          <h3 className="type-small" id="saved-quizzes-title">저장된 퀴즈</h3>
+          {unassignedQuizzes.length > 0 ? (
+            <ol className={styles.savedQuizList} aria-busy={actionQuizId !== null}>
+              {unassignedQuizzes.map((quiz) => renderQuiz(quiz))}
+            </ol>
+          ) : null}
+          {!loading && loaded && quizzes.length === 0 ? (
+            <div className={styles.savedQuizEmpty}>
+              <p className="type-body">저장된 문제가 없습니다.</p>
+            </div>
+          ) : null}
+        </section>
+      </div>
     </aside>
+    {menuPosition && typeof document !== "undefined" && (activeQuiz || activeSubject) ? createPortal(
+      <div className={`${dropdownStyles.popupSurface} ${dropdownStyles.menuPopup}`} ref={openMenuPopoverRef} role="menu" style={menuPosition}>
+        {activeQuiz ? <button className={dropdownStyles.menuItem} type="button" role="menuitem" onClick={() => onMoveQuiz(activeQuiz)}>과목 이동</button> : null}
+        {activeSubject ? (
+          <>
+            <button className={dropdownStyles.menuItem} type="button" role="menuitem" onClick={() => onRenameSubject(activeSubject)}>이름 변경</button>
+            <button className={`${dropdownStyles.menuItem} ${dropdownStyles.menuItemDanger}`} type="button" role="menuitem" onClick={() => onDeleteSubject(activeSubject)}>과목 삭제</button>
+          </>
+        ) : null}
+      </div>,
+      document.body,
+    ) : null}
+    </>
   );
 }
 
@@ -284,7 +475,7 @@ export default function QuizScreen() {
 }
 
 function QuizScreenContent() {
-  const { hasTool } = useToolsSession();
+  const { hasTool, user } = useToolsSession();
   const { notify } = useNotification();
   const quizEnabled = hasTool("QUIZ");
   const [jsonInput, setJsonInput] = useState("");
@@ -298,37 +489,107 @@ function QuizScreenContent() {
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [savedQuizzes, setSavedQuizzes] = useState<QuizSummary[]>([]);
+  const [subjects, setSubjects] = useState<QuizSubject[]>([]);
+  const [sidebarOwnerId, setSidebarOwnerId] = useState<number | null>(null);
+  const [savedSubjectId, setSavedSubjectId] = useState<number | null>(null);
+  const [expandedSubjectIds, setExpandedSubjectIds] = useState<Set<number>>(() => new Set());
   const [savedLoading, setSavedLoading] = useState(false);
   const [savedListLoaded, setSavedListLoaded] = useState(false);
   const [actionQuizId, setActionQuizId] = useState<number | null>(null);
   const [confirmation, setConfirmation] = useState<QuizConfirmation | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
+  const [subjectDialog, setSubjectDialog] = useState<SubjectDialog | null>(null);
+  const [subjectName, setSubjectName] = useState("");
+  const [subjectError, setSubjectError] = useState("");
+  const [subjectBusy, setSubjectBusy] = useState(false);
+  const [subjectToDelete, setSubjectToDelete] = useState<QuizSubject | null>(null);
+  const [moveQuiz, setMoveQuiz] = useState<QuizSummary | null>(null);
+  const [moveSubjectId, setMoveSubjectId] = useState<number | null>(null);
+  const [moveBusy, setMoveBusy] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveSubjectId, setSaveSubjectId] = useState<number | null>(null);
+  const [subjectMenuId, setSubjectMenuId] = useState<number | null>(null);
+  const [quizMenuId, setQuizMenuId] = useState<number | null>(null);
   const confirmInFlight = useRef(false);
+  const sidebarRequest = useRef(0);
+  const sidebarOwnerRef = useRef<number | null>(null);
+  const currentUserId = useRef(user.id);
+  const openMenuAnchorRef = useRef<HTMLLIElement | null>(null);
+  const openMenuPopoverRef = useRef<HTMLDivElement | null>(null);
   const compactHistoryToggle = useRef<HTMLButtonElement | null>(null);
   const restoreHistoryFocus = useRef(false);
   const isDesktop = useViewportMatch("(min-width: 1024px)", true);
   const preview = useMemo(() => exam ? buildAnswerText(exam, answers) : "", [answers, exam]);
+  const sidebarMatchesUser = sidebarOwnerId === user.id;
 
-  // Quiz 진입과 저장 직후 최근 수정순 이력 갱신
+  // Quiz 진입과 변경 직후 과목과 저장 Quiz 목록 병렬 갱신
   const loadSavedQuizzes = useCallback(async () => {
+    const ownerId = user.id;
+    const requestId = ++sidebarRequest.current;
+    if (sidebarOwnerRef.current !== null && sidebarOwnerRef.current !== ownerId) {
+      setExpandedSubjectIds(new Set());
+      setSubjectMenuId(null);
+      setQuizMenuId(null);
+      setSavedSubjectId(null);
+    }
+    sidebarOwnerRef.current = null;
+    setSidebarOwnerId(null);
     setSavedLoading(true);
     try {
-      const response = await getQuizzes();
-      setSavedQuizzes(response.items);
+      const [quizResponse, subjectResponse] = await Promise.all([getQuizzes(), getQuizSubjects()]);
+      if (requestId !== sidebarRequest.current || ownerId !== currentUserId.current) return;
+      setSavedQuizzes(quizResponse.items);
+      setSubjects(subjectResponse.items);
+      sidebarOwnerRef.current = ownerId;
+      setSidebarOwnerId(ownerId);
       setSavedListLoaded(true);
     } catch (caught) {
+      if (requestId !== sidebarRequest.current || ownerId !== currentUserId.current) return;
+      sidebarOwnerRef.current = ownerId;
+      setSidebarOwnerId(ownerId);
       setSavedListLoaded(false);
       notify({ type: "error", title: "저장 목록 불러오기 실패", message: formatApiError(caught) });
     } finally {
-      setSavedLoading(false);
+      if (requestId === sidebarRequest.current) setSavedLoading(false);
     }
-  }, [notify]);
+  }, [notify, user.id]);
+
+  // 계정 전환 시 이전 목록 요청 무효화
+  useEffect(() => {
+    currentUserId.current = user.id;
+    sidebarRequest.current += 1;
+  }, [user.id]);
 
   useEffect(() => {
     if (quizEnabled) {
       void Promise.resolve().then(loadSavedQuizzes);
     }
-  }, [quizEnabled, loadSavedQuizzes]);
+  }, [quizEnabled, loadSavedQuizzes, user.id]);
+
+  useEffect(() => {
+    if (subjectMenuId === null && quizMenuId === null) return;
+
+    // 메뉴 영역 밖 입력과 Escape 키의 메뉴 닫기
+    const closeMenu = (event: PointerEvent) => {
+      if (event.target instanceof Node && (
+        openMenuAnchorRef.current?.contains(event.target)
+        || openMenuPopoverRef.current?.contains(event.target)
+      )) return;
+      setSubjectMenuId(null);
+      setQuizMenuId(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setSubjectMenuId(null);
+      setQuizMenuId(null);
+    };
+    document.addEventListener("pointerdown", closeMenu);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeMenu);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [quizMenuId, subjectMenuId]);
 
   // Desktop 전환 시 Compact Drawer 종료
   useEffect(() => {
@@ -397,6 +658,7 @@ function QuizScreenContent() {
       setExam(parsedExam);
       setAnswers({});
       setSavedQuizId(null);
+      setSavedSubjectId(null);
       setSavedTitle(parsedExam.title?.trim() ?? "");
       setDirty(true);
       setSaveStatus("unsaved");
@@ -422,13 +684,14 @@ function QuizScreenContent() {
     setExam(null);
     setAnswers({});
     setSavedQuizId(null);
+    setSavedSubjectId(null);
     setSavedTitle("");
     setDirty(false);
     setSaveStatus("unsaved");
   };
 
-  // 신규 POST 또는 기존 ID PATCH 기반 Workspace 저장
-  const handleSave = async () => {
+  // 저장 Dialog 표시 전 Quiz 입력 상태 검증
+  const openSaveDialog = () => {
     if (!exam || quizJson === null) {
       setSaveStatus("error");
       notify({ type: "error", title: "저장할 수 없음", message: "먼저 문제를 불러오세요." });
@@ -440,17 +703,30 @@ function QuizScreenContent() {
       notify({ type: "error", title: "저장할 수 없음", message: "저장 제목을 입력해 주세요." });
       return;
     }
+    setSaveSubjectId(savedSubjectId);
+    setSaveDialogOpen(true);
+  };
 
+  // 신규 POST 또는 기존 ID PATCH 기반 Workspace 저장
+  const handleSave = async () => {
+    if (!exam || quizJson === null) return;
+    const title = savedTitle.trim();
+    if (!title) return;
     setSaveStatus("saving");
     try {
-      const payload = { title, quizJson, responseJson: answers };
+      const payload = { title, quizJson, responseJson: answers, subjectId: saveSubjectId };
       const saved = savedQuizId === null
         ? await createQuiz(payload)
         : await updateQuiz(savedQuizId, payload);
       setSavedQuizId(saved.id);
       setSavedTitle(saved.title);
+      setSavedSubjectId(saved.subjectId);
+      if (saved.subjectId !== null) {
+        setExpandedSubjectIds((current) => new Set(current).add(saved.subjectId!));
+      }
       setDirty(false);
       setSaveStatus("saved");
+      setSaveDialogOpen(false);
       notify({ type: "success", title: "저장 완료", message: `“${saved.title}”을 저장했습니다.` });
       void loadSavedQuizzes();
     } catch (caught) {
@@ -478,6 +754,10 @@ function QuizScreenContent() {
       setAnswers(restoredAnswers);
       setSavedQuizId(saved.id);
       setSavedTitle(saved.title);
+      setSavedSubjectId(saved.subjectId);
+      if (saved.subjectId !== null) {
+        setExpandedSubjectIds((current) => new Set(current).add(saved.subjectId!));
+      }
       setDirty(false);
       setSaveStatus("saved");
       notify({ type: "info", title: "불러오기 완료", message: `“${saved.title}”을 불러왔습니다.` });
@@ -564,6 +844,109 @@ function QuizScreenContent() {
     if (!isDesktop && confirmation.kind !== "replace-json") setHistoryOpen(true);
   };
 
+  // 과목별 다중 펼침 상태 전환
+  const toggleSubject = (subjectId: number) => {
+    setSubjectMenuId(null);
+    setQuizMenuId(null);
+    setExpandedSubjectIds((current) => {
+      const next = new Set(current);
+      if (next.has(subjectId)) next.delete(subjectId);
+      else next.add(subjectId);
+      return next;
+    });
+  };
+
+  // 과목 생성과 이름 변경 Dialog 초기화
+  const openSubjectDialog = (dialog: SubjectDialog) => {
+    setSubjectDialog(dialog);
+    setSubjectName(dialog.kind === "rename" ? dialog.subject.name : "");
+    setSubjectError("");
+    setSubjectMenuId(null);
+  };
+
+  // 과목명 입력 검증 후 생성 또는 변경 요청
+  const submitSubject = async () => {
+    if (!subjectDialog || subjectBusy) return;
+    const name = subjectName.trim();
+    if (!name || name.length > 100) {
+      setSubjectError("과목 이름은 공백 없이 1~100자로 입력해 주세요.");
+      return;
+    }
+
+    setSubjectBusy(true);
+    setSubjectError("");
+    try {
+      const saved = subjectDialog.kind === "create"
+        ? await createQuizSubject(name)
+        : await updateQuizSubject(subjectDialog.subject.id, name);
+      setSubjectDialog(null);
+      if (subjectDialog.kind === "create") {
+        notify({ type: "success", title: "과목 추가 완료", message: `“${saved.name}” 과목을 추가했습니다.` });
+      } else {
+        notify({ type: "success", title: "과목 이름 변경 완료", message: `“${saved.name}”으로 변경했습니다.` });
+      }
+      void loadSavedQuizzes();
+    } catch (caught) {
+      setSubjectError(formatApiError(caught));
+    } finally {
+      setSubjectBusy(false);
+    }
+  };
+
+  // 과목 삭제 후 서버 목록 기준 Quiz 그룹 재동기화
+  const removeSubject = async () => {
+    if (!subjectToDelete || subjectBusy) return;
+    setSubjectBusy(true);
+    try {
+      await deleteQuizSubject(subjectToDelete.id);
+      setExpandedSubjectIds((current) => {
+        const next = new Set(current);
+        next.delete(subjectToDelete.id);
+        return next;
+      });
+      if (savedSubjectId === subjectToDelete.id) setSavedSubjectId(null);
+      setSubjectToDelete(null);
+      notify({ type: "success", title: "과목 삭제 완료", message: "소속 Quiz는 저장된 퀴즈 목록으로 이동했습니다." });
+      await loadSavedQuizzes();
+    } catch (caught) {
+      notify({ type: "error", title: "과목 삭제 실패", message: formatApiError(caught) });
+    } finally {
+      setSubjectBusy(false);
+    }
+  };
+
+  // Quiz 과목 이동 Dialog 초기화
+  const openMoveDialog = (quiz: QuizSummary) => {
+    setMoveQuiz(quiz);
+    setMoveSubjectId(quiz.subjectId);
+    setQuizMenuId(null);
+  };
+
+  // subjectId 단독 PATCH 기반 Quiz 과목 이동
+  const submitMove = async () => {
+    if (!moveQuiz || moveBusy) return;
+    if (moveQuiz.subjectId === moveSubjectId) {
+      setMoveQuiz(null);
+      return;
+    }
+
+    setMoveBusy(true);
+    try {
+      const moved = await updateQuiz(moveQuiz.id, { subjectId: moveSubjectId });
+      if (savedQuizId === moved.id) setSavedSubjectId(moved.subjectId);
+      if (moved.subjectId !== null) {
+        setExpandedSubjectIds((current) => new Set(current).add(moved.subjectId!));
+      }
+      setMoveQuiz(null);
+      notify({ type: "success", title: "과목 이동 완료", message: `“${moved.title}”의 과목을 변경했습니다.` });
+      await loadSavedQuizzes();
+    } catch (caught) {
+      notify({ type: "error", title: "과목 이동 실패", message: formatApiError(caught) });
+    } finally {
+      setMoveBusy(false);
+    }
+  };
+
   const handlePromptCopy = async () => {
     try {
       await copyText(QUIZ_PROMPT);
@@ -594,13 +977,39 @@ function QuizScreenContent() {
               drawer={false}
               collapsed={historyCollapsed}
               currentQuizId={savedQuizId}
-              quizzes={savedQuizzes}
-              loading={savedLoading}
-              loaded={savedListLoaded}
+              quizzes={sidebarMatchesUser ? savedQuizzes : []}
+              subjects={sidebarMatchesUser ? subjects : []}
+              expandedSubjectIds={expandedSubjectIds}
+              loading={savedLoading && (sidebarOwnerId === null || sidebarMatchesUser)}
+              loaded={savedListLoaded && sidebarMatchesUser}
               actionQuizId={actionQuizId}
+              subjectMenuId={subjectMenuId}
+              quizMenuId={quizMenuId}
+              openMenuAnchorRef={openMenuAnchorRef}
+              openMenuPopoverRef={openMenuPopoverRef}
               onClose={() => setHistoryOpen(false)}
               onLoad={requestRestore}
               onDelete={requestDelete}
+              onToggleSubject={toggleSubject}
+              onCreateSubject={() => openSubjectDialog({ kind: "create" })}
+              onOpenSubjectMenu={(subjectId) => {
+                setQuizMenuId(null);
+                setSubjectMenuId((current) => current === subjectId ? null : subjectId);
+              }}
+              onRenameSubject={(subject) => openSubjectDialog({ kind: "rename", subject })}
+              onDeleteSubject={(subject) => {
+                setSubjectMenuId(null);
+                setSubjectToDelete(subject);
+              }}
+              onOpenQuizMenu={(quizId) => {
+                setSubjectMenuId(null);
+                setQuizMenuId((current) => current === quizId ? null : quizId);
+              }}
+              onMoveQuiz={openMoveDialog}
+              onCloseMenus={() => {
+                setSubjectMenuId(null);
+                setQuizMenuId(null);
+              }}
             />
           ) : null}
           {!isDesktop ? (
@@ -617,13 +1026,39 @@ function QuizScreenContent() {
                 drawer
                 open={historyOpen}
                 currentQuizId={savedQuizId}
-                quizzes={savedQuizzes}
-                loading={savedLoading}
-                loaded={savedListLoaded}
+                quizzes={sidebarMatchesUser ? savedQuizzes : []}
+                subjects={sidebarMatchesUser ? subjects : []}
+                expandedSubjectIds={expandedSubjectIds}
+                loading={savedLoading && (sidebarOwnerId === null || sidebarMatchesUser)}
+                loaded={savedListLoaded && sidebarMatchesUser}
                 actionQuizId={actionQuizId}
+                subjectMenuId={subjectMenuId}
+                quizMenuId={quizMenuId}
+                openMenuAnchorRef={openMenuAnchorRef}
+                openMenuPopoverRef={openMenuPopoverRef}
                 onClose={() => setHistoryOpen(false)}
                 onLoad={requestRestore}
                 onDelete={requestDelete}
+                onToggleSubject={toggleSubject}
+                onCreateSubject={() => openSubjectDialog({ kind: "create" })}
+                onOpenSubjectMenu={(subjectId) => {
+                  setQuizMenuId(null);
+                  setSubjectMenuId((current) => current === subjectId ? null : subjectId);
+                }}
+                onRenameSubject={(subject) => openSubjectDialog({ kind: "rename", subject })}
+                onDeleteSubject={(subject) => {
+                  setSubjectMenuId(null);
+                  setSubjectToDelete(subject);
+                }}
+                onOpenQuizMenu={(quizId) => {
+                  setSubjectMenuId(null);
+                  setQuizMenuId((current) => current === quizId ? null : quizId);
+                }}
+                onMoveQuiz={openMoveDialog}
+                onCloseMenus={() => {
+                  setSubjectMenuId(null);
+                  setQuizMenuId(null);
+                }}
               />
             </>
           ) : null}
@@ -693,7 +1128,7 @@ function QuizScreenContent() {
                     <>
                       <Button
                         type="button"
-                        onClick={() => void handleSave()}
+                        onClick={openSaveDialog}
                         disabled={saveStatus === "saving"}
                       >
                         <Save aria-hidden="true" /> 저장
@@ -765,6 +1200,101 @@ function QuizScreenContent() {
           <PanelLeftOpen aria-hidden="true" />
         </button>
       ) : null}
+      <DialogFrame
+        open={subjectDialog !== null}
+        compact
+        title={subjectDialog?.kind === "rename" ? "과목 이름 변경" : "과목 추가"}
+        onClose={subjectBusy ? () => undefined : () => setSubjectDialog(null)}
+        closeOnBackdrop={!subjectBusy}
+        closeOnEscape={!subjectBusy}
+        footer={(
+          <>
+            <Button variant="secondary" type="button" disabled={subjectBusy} onClick={() => setSubjectDialog(null)}>취소</Button>
+            <Button type="submit" form="quiz-subject-form" busy={subjectBusy}>
+              {subjectDialog?.kind === "rename" ? "변경" : "추가"}
+            </Button>
+          </>
+        )}
+      >
+        <form id="quiz-subject-form" className={styles.subjectForm} onSubmit={(event) => {
+          event.preventDefault();
+          void submitSubject();
+        }} noValidate>
+          <label className={styles.quizTitleField}>
+            <span className="type-small">과목 이름</span>
+            <input
+              className="type-body"
+              aria-label="과목 이름"
+              placeholder="과목 이름 입력"
+              value={subjectName}
+              maxLength={100}
+              onChange={(event) => {
+                setSubjectName(event.currentTarget.value);
+                setSubjectError("");
+              }}
+            />
+          </label>
+          {subjectError ? <p className={`${styles.inlineError} type-small`} role="alert">{subjectError}</p> : null}
+        </form>
+      </DialogFrame>
+      <DialogFrame
+        open={moveQuiz !== null}
+        compact
+        title="과목 이동"
+        description={subjects.length === 0 && moveQuiz?.subjectId === null
+          ? "이동할 수 있는 과목이 없습니다."
+          : "이동할 과목을 선택하세요."}
+        onClose={moveBusy ? () => undefined : () => setMoveQuiz(null)}
+        closeOnBackdrop={!moveBusy}
+        closeOnEscape={!moveBusy}
+        footer={(
+          <>
+            <Button variant="secondary" type="button" disabled={moveBusy} onClick={() => setMoveQuiz(null)}>취소</Button>
+            <Button type="button" busy={moveBusy} disabled={moveQuiz?.subjectId === moveSubjectId} onClick={() => void submitMove()}>이동</Button>
+          </>
+        )}
+      >
+        <label className={styles.subjectSelectField}>
+          <span className="type-small">과목</span>
+          <Select
+            aria-label="이동할 과목"
+            value={moveSubjectId === null ? "" : String(moveSubjectId)}
+            disabled={moveBusy}
+            onValueChange={(value) => setMoveSubjectId(value ? Number(value) : null)}
+            options={[{ value: "", label: "과목 없음" }, ...subjects.map((subject) => ({ value: String(subject.id), label: subject.name }))]}
+          />
+        </label>
+      </DialogFrame>
+      <DialogFrame
+        open={saveDialogOpen}
+        compact
+        title="퀴즈 저장"
+        onClose={saveStatus === "saving" ? () => undefined : () => setSaveDialogOpen(false)}
+        closeOnBackdrop={saveStatus !== "saving"}
+        closeOnEscape={saveStatus !== "saving"}
+        footer={(
+          <>
+            <Button variant="secondary" type="button" disabled={saveStatus === "saving"} onClick={() => setSaveDialogOpen(false)}>취소</Button>
+            <Button type="button" busy={saveStatus === "saving"} onClick={() => void handleSave()}>저장</Button>
+          </>
+        )}
+      >
+        <div className={styles.subjectForm}>
+          <label className={styles.quizTitleField}>
+            <span className="type-small">제목</span>
+            <input className="type-body" aria-label="저장 제목" value={savedTitle} onChange={(event) => setSavedTitle(event.currentTarget.value)} />
+          </label>
+          <label className={styles.subjectSelectField}>
+            <span className="type-small">과목</span>
+            <Select
+              aria-label="저장 과목"
+              value={saveSubjectId === null ? "" : String(saveSubjectId)}
+              onValueChange={(value) => setSaveSubjectId(value ? Number(value) : null)}
+              options={[{ value: "", label: "과목 없음" }, ...subjects.map((subject) => ({ value: String(subject.id), label: subject.name }))]}
+            />
+          </label>
+        </div>
+      </DialogFrame>
       <ConfirmDialog
         open={confirmation !== null}
         title={confirmation?.kind === "delete" ? "저장된 문제 삭제" : "문제 교체"}
@@ -779,6 +1309,17 @@ function QuizScreenContent() {
         busy={confirmBusy}
         onCancel={cancelConfirmation}
         onConfirm={confirmAction}
+      />
+      <ConfirmDialog
+        open={subjectToDelete !== null}
+        title="과목 삭제"
+        description={subjectToDelete ? `‘${subjectToDelete.name}’ 과목을 삭제하시겠습니까?` : ""}
+        detail="과목에 포함된 퀴즈는 삭제되지 않으며, 저장된 퀴즈 목록으로 이동합니다."
+        confirmLabel="과목 삭제"
+        danger
+        busy={subjectBusy}
+        onCancel={() => setSubjectToDelete(null)}
+        onConfirm={removeSubject}
       />
     </main>
   );

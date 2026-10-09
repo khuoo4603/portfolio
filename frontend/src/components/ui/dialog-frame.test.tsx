@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ConfirmDialog from "./confirm-dialog";
 import DialogFrame from "./dialog-frame";
@@ -29,6 +30,40 @@ describe("공통 Dialog Frame", () => {
     rerender(<DialogFrame open={false} title="확인" onClose={onClose} />);
     expect(trigger).toHaveFocus();
     trigger.remove();
+  });
+
+  it("부모 재렌더링 중에도 입력 Focus를 유지하고 닫을 때 Trigger로 복귀", async () => {
+    function RerenderingDialog() {
+      const [open, setOpen] = useState(false);
+      const [value, setValue] = useState("");
+
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>열기</button>
+          <DialogFrame open={open} title="과목 추가" onClose={() => setOpen(false)}>
+            <label>과목 이름<input value={value} onChange={(event) => setValue(event.currentTarget.value)} /></label>
+          </DialogFrame>
+        </>
+      );
+    }
+
+    vi.useFakeTimers();
+    render(<RerenderingDialog />);
+    const trigger = screen.getByRole("button", { name: "열기" });
+    trigger.focus();
+    fireEvent.click(trigger);
+    const input = screen.getByLabelText("과목 이름");
+    await act(async () => vi.runAllTimers());
+    expect(input).toHaveFocus();
+
+    fireEvent.change(input, { target: { value: "서버구축" } });
+    expect(screen.getByLabelText("과목 이름")).toBe(input);
+    expect(input).toHaveValue("서버구축");
+    expect(input).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "과목 추가" })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
   it("Confirm 실행 중 취소와 중복 실행을 차단", async () => {

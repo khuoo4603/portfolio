@@ -1,8 +1,10 @@
 "use client";
 
-import { MoreHorizontal, Plus, Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/button";
+import DropdownMenu from "@/components/ui/dropdown-menu";
+import Select from "@/components/ui/select";
 import { useNotification } from "@/components/ui/notification/notification-provider";
 import { formatApiError } from "@/lib/api/client";
 import type { AccountInput, AccountItem, AccountRole } from "./admin-types";
@@ -104,10 +106,7 @@ function AccountCreateDialog({
         <div className={styles.formColumns}>
           <label className={styles.formField}>
             <span className="type-small">권한</span>
-            <select className="type-body" value={role} onChange={(event) => setRole(event.currentTarget.value as AccountRole)}>
-              <option value="USER">USER</option>
-              <option value="ADMIN">ADMIN</option>
-            </select>
+            <Select aria-label="권한" value={role} onValueChange={(value) => setRole(value as AccountRole)} options={[{ value: "USER", label: "USER" }, { value: "ADMIN", label: "ADMIN" }]} />
           </label>
           <label className={styles.checkboxField}>
             <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} />
@@ -182,9 +181,7 @@ export default function AccountsScreen() {
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [passwordAccount, setPasswordAccount] = useState<AccountItem | null>(null);
-  const [menuId, setMenuId] = useState<number | null>(null);
   const requestSequence = useRef(0);
-  const openMenuRef = useRef<HTMLTableCellElement | null>(null);
   const adminAction = useAdminAction();
 
   const loadAccounts = useCallback(async (silent = false) => {
@@ -236,23 +233,6 @@ export default function AccountsScreen() {
     };
   }, [loadAccounts]);
 
-  useEffect(() => {
-    if (menuId === null) {
-      return;
-    }
-
-    // 현재 계정 작업 영역 밖의 Pointer 입력 감지
-    const handlePointerDown = (event: PointerEvent) => {
-      if (event.target instanceof Node && openMenuRef.current?.contains(event.target)) {
-        return;
-      }
-      setMenuId(null);
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [menuId]);
-
   const handleFilter = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAppliedFilters({ ...filters });
@@ -260,7 +240,6 @@ export default function AccountsScreen() {
 
   const completeMutation = (message: string) => {
     notify({ type: "success", title: "계정 변경 완료", message });
-    setMenuId(null);
     void loadAccounts(true);
   };
 
@@ -275,7 +254,6 @@ export default function AccountsScreen() {
   };
 
   const queueStatus = (account: AccountItem) => {
-    setMenuId(null);
     void adminAction.start({
       ...accountActionBindings.status(account.id),
       actionLabel: `${account.email} 계정 ${account.enabled ? "비활성화" : "활성화"}`,
@@ -286,7 +264,6 @@ export default function AccountsScreen() {
 
   const queueRole = (account: AccountItem) => {
     const nextRole: AccountRole = account.role === "ADMIN" ? "USER" : "ADMIN";
-    setMenuId(null);
     void adminAction.start({
       ...accountActionBindings.role(account.id),
       actionLabel: `${account.email} 권한을 ${nextRole}로 변경`,
@@ -326,19 +303,11 @@ export default function AccountsScreen() {
         </label>
         <label>
           <span className="type-small">권한</span>
-          <select className="type-body" value={filters.role} onChange={(event) => setFilters({ ...filters, role: event.currentTarget.value as AccountFilters["role"] })}>
-            <option value="">전체</option>
-            <option value="ADMIN">ADMIN</option>
-            <option value="USER">USER</option>
-          </select>
+          <Select aria-label="권한 필터" value={filters.role} onValueChange={(value) => setFilters({ ...filters, role: value as AccountFilters["role"] })} options={[{ value: "", label: "전체" }, { value: "ADMIN", label: "ADMIN" }, { value: "USER", label: "USER" }]} />
         </label>
         <label>
           <span className="type-small">활성 상태</span>
-          <select className="type-body" value={filters.enabled} onChange={(event) => setFilters({ ...filters, enabled: event.currentTarget.value as AccountFilters["enabled"] })}>
-            <option value="">전체</option>
-            <option value="true">활성</option>
-            <option value="false">비활성</option>
-          </select>
+          <Select aria-label="활성 상태 필터" value={filters.enabled} onValueChange={(value) => setFilters({ ...filters, enabled: value as AccountFilters["enabled"] })} options={[{ value: "", label: "전체" }, { value: "true", label: "활성" }, { value: "false", label: "비활성" }]} />
         </label>
           <Button variant="secondary" type="submit">조회</Button>
           <Button type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />계정 생성</Button>
@@ -363,9 +332,16 @@ export default function AccountsScreen() {
                   <td data-label="권한"><span className={styles.roleBadge}>{account.role}</span></td>
                   <td data-label="상태"><StatusLabel tone={account.enabled ? "success" : "neutral"}>{account.enabled ? "활성" : "비활성"}</StatusLabel></td>
                   <td data-label="최근 로그인"><time>{formatDateTime(account.recentLoginAt)}</time></td>
-                  <td className={styles.actionCell} ref={menuId === account.id ? openMenuRef : undefined}>
-                    <button className={styles.iconButton} type="button" onClick={() => setMenuId((current) => current === account.id ? null : account.id)} aria-label={`${account.email} 계정 작업`} aria-expanded={menuId === account.id}><MoreHorizontal aria-hidden="true" /></button>
-                    {menuId === account.id && <div className={styles.rowMenu}><button type="button" onClick={() => queueStatus(account)}>{account.enabled ? "비활성화" : "활성화"}</button><button type="button" onClick={() => queueRole(account)}>{account.role === "ADMIN" ? "USER로 변경" : "ADMIN으로 변경"}</button><button type="button" onClick={() => { setMenuId(null); setPasswordAccount(account); }}>비밀번호 초기화</button></div>}
+                  <td className={styles.actionCell}>
+                    <DropdownMenu
+                      triggerClassName={styles.iconButton}
+                      triggerLabel={`${account.email} 계정 작업`}
+                      items={[
+                        { label: account.enabled ? "비활성화" : "활성화", onSelect: () => queueStatus(account) },
+                        { label: account.role === "ADMIN" ? "USER로 변경" : "ADMIN으로 변경", onSelect: () => queueRole(account) },
+                        { label: "비밀번호 초기화", onSelect: () => setPasswordAccount(account) },
+                      ]}
+                    />
                   </td>
                 </tr>
               ))}

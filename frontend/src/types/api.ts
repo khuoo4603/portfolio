@@ -188,6 +188,7 @@ export type ToolLinkListResponse = {
 export type QuizSummary = {
   id: number;
   title: string;
+  subjectId: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -199,6 +200,17 @@ export type QuizListResponse = {
 export type SavedQuiz = QuizSummary & {
   quizJson: unknown;
   responseJson: unknown | null;
+};
+
+export type QuizSubject = {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type QuizSubjectListResponse = {
+  items: QuizSubject[];
 };
 
 export type ExternalLink = {

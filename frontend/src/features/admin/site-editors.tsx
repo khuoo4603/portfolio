@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Button from "@/components/ui/button";
+import Select from "@/components/ui/select";
 import type {
   ExternalLink,
   ExternalLinkInput,
@@ -81,9 +82,7 @@ export function ProfileEditor({
         <EditorSection title="기본 정보">
           <label className={styles.formField}>
             <span className="type-small">유형</span>
-            <select className="type-body" value={entryType} onChange={(event) => setEntryType(event.currentTarget.value as ProfileEntryType)}>
-              <option value="EDUCATION">학력</option><option value="EXPERIENCE">경력</option><option value="ACTIVITY">활동</option><option value="AWARD">수상</option><option value="CERTIFICATE">자격·교육</option>
-            </select>
+            <Select aria-label="이력 유형" value={entryType} onValueChange={(value) => setEntryType(value as ProfileEntryType)} options={[{ value: "EDUCATION", label: "학력" }, { value: "EXPERIENCE", label: "경력" }, { value: "ACTIVITY", label: "활동" }, { value: "AWARD", label: "수상" }, { value: "CERTIFICATE", label: "자격·교육" }]} />
           </label>
           <label className={styles.formField}><span className="type-small">제목</span><input className="type-body" value={title} onChange={(event) => setTitle(event.currentTarget.value)} required /></label>
           <label className={styles.formField}><span className="type-small">기관</span><input className="type-body" value={organization} onChange={(event) => setOrganization(event.currentTarget.value)} /></label>
@@ -146,7 +145,7 @@ export function TechnologyEditor({
       <form id="technology-form" className={styles.editorForm} onSubmit={handleSubmit}>
         <EditorSection title="기본 정보">
           <label className={styles.formField}><span className="type-small">기술명</span><input className="type-body" value={name} onChange={(event) => setName(event.currentTarget.value)} required /></label>
-          <label className={styles.formField}><span className="type-small">분류</span><select className="type-body" value={category} onChange={(event) => setCategory(event.currentTarget.value as TechnologyCategory)}><option value="LANGUAGE">LANGUAGE</option><option value="BACKEND">BACKEND</option><option value="DATABASE">DATABASE</option><option value="FRONTEND">FRONTEND</option><option value="INFRA">INFRA</option><option value="DEVOPS">DEVOPS</option></select></label>
+          <label className={styles.formField}><span className="type-small">분류</span><Select aria-label="기술 분류" value={category} onValueChange={(value) => setCategory(value as TechnologyCategory)} options={[{ value: "LANGUAGE", label: "LANGUAGE" }, { value: "BACKEND", label: "BACKEND" }, { value: "DATABASE", label: "DATABASE" }, { value: "FRONTEND", label: "FRONTEND" }, { value: "INFRA", label: "INFRA" }, { value: "DEVOPS", label: "DEVOPS" }]} /></label>
           <label className={`${styles.formField} ${styles.wideField}`}><span className="type-small">Icon URL</span><input className="type-body" value={iconUrl} onChange={(event) => setIconUrl(event.currentTarget.value)} placeholder="/icons/tech/example.svg" /></label>
         </EditorSection>
         <EditorSection title="노출 설정"><label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">신규 연결 가능</span></label></EditorSection>
