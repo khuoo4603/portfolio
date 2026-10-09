@@ -14,6 +14,9 @@ public record QuizSummaryResponse(
         @Schema(description = "저장 Quiz 표시 제목", example = "Java 기초 문제")
         String title,
 
+        @Schema(description = "연결 과목 식별자", nullable = true, example = "1")
+        Long subjectId,
+
         @Schema(description = "최초 저장 시각")
         OffsetDateTime createdAt,
 
@@ -28,6 +31,7 @@ public record QuizSummaryResponse(
         return new QuizSummaryResponse(
                 quiz.id(),
                 quiz.title(),
+                quiz.subjectId(),
                 kst(quiz.createdAt()),
                 kst(quiz.updatedAt())
         );

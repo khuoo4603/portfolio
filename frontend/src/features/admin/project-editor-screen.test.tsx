@@ -154,9 +154,11 @@ describe("Preview-first Project Editor", () => {
     expect(within(technologyPanel).queryByText("Card 노출")).not.toBeInTheDocument();
     expect(within(technologyPanel).queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.getByText("기존 비활성 연결", { exact: false })).toBeInTheDocument();
-    const select = screen.getByLabelText("프로젝트 기술 선택");
-    expect(within(select).getByRole("option", { name: "React" })).toBeEnabled();
-    expect(within(select).getByRole("option", { name: "Legacy · 비활성" })).toBeDisabled();
+    const select = screen.getByRole("combobox", { name: "프로젝트 기술 선택" });
+    fireEvent.click(select);
+    expect(screen.getByRole("option", { name: "React" })).toBeEnabled();
+    expect(screen.getByRole("option", { name: "Legacy · 비활성" })).toBeDisabled();
+    fireEvent.keyDown(select, { key: "Escape" });
     const technologyTable = within(technologyPanel).getByRole("table");
     expect(within(technologyTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["기술", "분류", "강조", "표시 순서", "작업"]);
     expect(within(technologyTable).getByText("Java")).toBeInTheDocument();

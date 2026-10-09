@@ -5,6 +5,11 @@ import type { ErrorLogPage, LoginLogPage } from "./admin-types";
 import { getErrorLogs, getLoginLogs } from "./admin-read-api";
 import LogsScreen from "./logs-screen";
 
+function selectOption(label: string, option: string) {
+  fireEvent.click(screen.getByRole("combobox", { name: label }));
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -101,7 +106,7 @@ describe("Admin 운영 로그 실제 API 상태", () => {
     fireEvent.change(screen.getByLabelText("시작일"), { target: { value: "2026-08-01" } });
     fireEvent.change(screen.getByLabelText("종료일"), { target: { value: "2026-08-31" } });
     fireEvent.change(screen.getByLabelText("계정 이메일"), { target: { value: " admin@example.com " } });
-    fireEvent.change(screen.getByLabelText("결과"), { target: { value: "FAILURE" } });
+    selectOption("로그인 결과", "FAILURE");
     fireEvent.click(screen.getByRole("button", { name: "조회" }));
 
     await waitFor(() => expect(getLoginLogs).toHaveBeenLastCalledWith({
@@ -142,7 +147,7 @@ describe("Admin 운영 로그 실제 API 상태", () => {
 
     fireEvent.change(screen.getByLabelText("시작일"), { target: { value: "2026-09-01" } });
     fireEvent.change(screen.getByLabelText("종료일"), { target: { value: "2026-09-02" } });
-    fireEvent.change(screen.getByLabelText("서비스"), { target: { value: "BACKEND" } });
+    selectOption("오류 서비스", "BACKEND");
     fireEvent.change(screen.getByLabelText("5xx 상태"), { target: { value: "503" } });
     fireEvent.click(screen.getByRole("button", { name: "조회" }));
 

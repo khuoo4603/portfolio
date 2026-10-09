@@ -35,6 +35,8 @@ public enum ErrorCode {
     TOOL_NOT_FOUND(HttpStatus.NOT_FOUND, "Tool을 찾을 수 없습니다."),
     TOOL_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "Tool Link를 찾을 수 없습니다."),
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "Quiz를 찾을 수 없습니다."),
+    QUIZ_SUBJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "Quiz 과목을 찾을 수 없습니다."),
+    QUIZ_SUBJECT_NAME_CONFLICT(HttpStatus.CONFLICT, "이미 사용 중인 Quiz 과목명입니다."),
     MONITORING_SETTINGS_NOT_FOUND(HttpStatus.NOT_FOUND, "Monitoring 설정을 찾을 수 없습니다."),
     MONITORING_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "Monitoring 대상을 찾을 수 없습니다."),
     MONITORING_TARGET_KEY_CONFLICT(HttpStatus.CONFLICT, "이미 사용 중인 Monitoring 서비스 Key입니다."),

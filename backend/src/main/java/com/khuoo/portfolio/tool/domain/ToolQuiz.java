@@ -40,29 +40,46 @@ public class ToolQuiz {
     @Column(name = "response_json", columnDefinition = "jsonb")
     private JsonNode responseJson;
 
+    @Column(name = "subject_id")
+    private Long subjectId;
+
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false, insertable = false)
     private OffsetDateTime updatedAt;
 
-    private ToolQuiz(Long accountId, String title, JsonNode quizJson, JsonNode responseJson) {
+    private ToolQuiz(Long accountId, String title, JsonNode quizJson, JsonNode responseJson, Long subjectId) {
         this.accountId = accountId;
         this.title = title;
         this.quizJson = quizJson;
         this.responseJson = responseJson;
+        this.subjectId = subjectId;
     }
 
     // 현재 계정 소유 Quiz 최초 생성
-    public static ToolQuiz create(Long accountId, String title, JsonNode quizJson, JsonNode responseJson) {
-        return new ToolQuiz(accountId, title, quizJson, responseJson);
+    public static ToolQuiz create(
+            Long accountId,
+            String title,
+            JsonNode quizJson,
+            JsonNode responseJson,
+            Long subjectId
+    ) {
+        return new ToolQuiz(accountId, title, quizJson, responseJson, subjectId);
     }
 
     // 전달 필드가 반영된 Quiz 최신 상태 교체
-    public void update(String newTitle, JsonNode newQuizJson, JsonNode newResponseJson, OffsetDateTime changedAt) {
+    public void update(
+            String newTitle,
+            JsonNode newQuizJson,
+            JsonNode newResponseJson,
+            Long newSubjectId,
+            OffsetDateTime changedAt
+    ) {
         title = newTitle;
         quizJson = newQuizJson;
         responseJson = newResponseJson;
+        subjectId = newSubjectId;
         updatedAt = changedAt;
     }
 }

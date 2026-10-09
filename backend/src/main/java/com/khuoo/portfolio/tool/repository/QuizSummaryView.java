@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 public record QuizSummaryView(
         Long id,
         String title,
+        Long subjectId,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {

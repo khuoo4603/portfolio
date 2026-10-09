@@ -18,6 +18,9 @@ public record QuizCreateRequest(
         JsonNode quizJson,
 
         @Schema(description = "현재 사용자 풀이 JSON", implementation = Object.class, nullable = true)
-        JsonNode responseJson
+        JsonNode responseJson,
+
+        @Schema(description = "연결 과목 식별자", nullable = true, example = "1")
+        Long subjectId
 ) {
 }

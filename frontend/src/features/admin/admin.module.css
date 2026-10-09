@@ -295,7 +295,6 @@
 .textButton,
 .iconButton,
 .lineTabs button,
-.rowMenu button,
 .drawerClose,
 .mobileMenuButton {
   font-family: var(--font-family-primary);
@@ -1184,38 +1183,6 @@
   text-align: right;
 }
 
-.rowMenu {
-  width: 190px;
-  position: absolute;
-  z-index: 12;
-  top: calc(50% + 18px);
-  right: var(--space-8);
-  display: grid;
-  padding: var(--space-4);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-value-sm);
-  background: var(--bg-surface);
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--ink-950) 16%, transparent);
-}
-
-.rowMenu button {
-  min-height: 36px;
-  padding: var(--space-8) var(--space-12);
-  border: 0;
-  border-radius: var(--radius-value-xs);
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
-  text-align: left;
-}
-
-.rowMenu button:hover,
-.rowMenu button:focus-visible {
-  background: var(--bg-elevated);
-}
-
 .roleBadge {
   display: inline-block;
   padding: 2px var(--space-8);
@@ -1735,23 +1702,10 @@
 
 .portfolioTechnologySelect {
   width: min(100%, calc(var(--space-160) * 2));
+}
+
+.portfolioTechnologySelect > button {
   min-height: 42px;
-  padding: var(--space-8) var(--space-12);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-value-sm);
-  background: var(--bg-input);
-  color: var(--text-primary);
-  font-family: var(--font-family-primary);
-}
-
-.portfolioTechnologySelect:hover {
-  border-color: var(--border-strong);
-}
-
-.portfolioTechnologySelect:focus {
-  border-color: var(--border-accent);
-  outline: 2px solid color-mix(in srgb, var(--focus-ring) 22%, transparent);
-  outline-offset: 0;
 }
 
 .portfolioTechnologyList {
@@ -2868,11 +2822,6 @@
 
   .dataTable .actionCell::before {
     display: none;
-  }
-
-  .rowMenu {
-    top: 38px;
-    right: 0;
   }
 
   .dataTable .tableRowActions {

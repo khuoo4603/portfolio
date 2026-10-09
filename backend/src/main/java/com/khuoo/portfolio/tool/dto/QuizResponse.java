@@ -13,6 +13,9 @@ public record QuizResponse(
         @Schema(description = "저장 Quiz 표시 제목", example = "Java 기초 문제")
         String title,
 
+        @Schema(description = "연결 과목 식별자", nullable = true, example = "1")
+        Long subjectId,
+
         @Schema(description = "Quiz 문제 원본 JSON", implementation = Object.class)
         JsonNode quizJson,
 
