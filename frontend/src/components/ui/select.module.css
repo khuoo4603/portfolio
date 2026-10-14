@@ -1,0 +1,36 @@
+.selectRoot { display: inline-block; width: 100%; min-width: 0; }
+.selectTrigger { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: var(--space-40); gap: var(--space-12); padding: var(--space-8) var(--space-12); border: 1px solid var(--border-default); border-radius: var(--radius-value-sm); background: var(--bg-input); color: var(--text-primary); text-align: left; cursor: pointer; }
+.selectTrigger:hover { border-color: var(--border-strong); }
+.selectTrigger:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.selectTrigger:disabled { cursor: not-allowed; opacity: .52; }
+.selectTrigger svg { width: var(--space-16); height: var(--space-16); flex: 0 0 auto; color: var(--text-secondary); transition: transform var(--motion-duration-160) var(--motion-easing-default); }
+.chevronOpen { transform: rotate(180deg); }
+.selectedValue, .placeholder { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.placeholder { color: var(--text-secondary); }
+
+.popupSurface { position: fixed; z-index: 110; display: grid; min-width: 160px; max-width: min(360px, calc(100vw - var(--space-16))); max-height: min(280px, calc(100dvh - var(--space-16))); padding: var(--space-4); overflow-y: auto; border: 1px solid var(--border-default); border-radius: var(--radius-value-md); background: var(--bg-surface); box-shadow: 0 12px 28px color-mix(in srgb, var(--ink-950) 20%, transparent); }
+.selectPopup { gap: var(--space-4); }
+.selectOption { display: flex; align-items: center; justify-content: space-between; min-width: 0; min-height: var(--space-36); gap: var(--space-12); padding: var(--space-8) var(--space-12); border: 0; border-radius: var(--radius-value-sm); background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; }
+.selectOption > span { display: grid; min-width: 0; }
+.selectOption > span > span, .selectOption small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.selectOption small { color: var(--text-secondary); }
+.selectOption svg { width: var(--space-16); height: var(--space-16); flex: 0 0 auto; color: var(--text-primary); }
+.selectOption:hover, .selectOptionActive { background: var(--bg-elevated); }
+.selectOptionSelected { background: var(--accent-soft); }
+.selectOption:disabled { cursor: not-allowed; color: var(--text-secondary); opacity: .52; }
+.selectOption:disabled:hover { background: transparent; }
+.emptyOption { margin: 0; padding: var(--space-12); color: var(--text-secondary); text-align: center; }
+
+.menuTrigger { display: inline-grid; width: var(--space-32); height: var(--space-32); padding: 0; border: 0; border-radius: var(--radius-value-sm); background: transparent; color: var(--text-secondary); cursor: pointer; place-items: center; }
+.menuTrigger:hover, .menuTrigger:focus-visible { background: var(--bg-elevated); color: var(--text-primary); }
+.menuTrigger:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.menuTrigger svg { width: var(--space-16); height: var(--space-16); }
+.menuPopup { gap: var(--space-4); }
+.menuItem { display: flex; align-items: center; width: 100%; min-height: var(--space-36); gap: var(--space-8); padding: var(--space-8) var(--space-12); border: 0; border-radius: var(--radius-value-sm); background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; }
+.menuItem:hover, .menuItem:focus-visible { background: var(--bg-elevated); }
+.menuItem:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.menuItem:disabled { cursor: not-allowed; color: var(--text-secondary); opacity: .52; }
+.menuItemDanger { color: var(--status-error); }
+.menuSeparator { height: 1px; margin: var(--space-4); background: var(--border-default); }
+
+@media (prefers-reduced-motion: reduce) { .selectTrigger svg { transition: none; } }

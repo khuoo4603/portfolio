@@ -12,6 +12,11 @@ import {
 } from "./admin-tool-api";
 import ToolsScreen from "./tools-screen";
 
+function selectOption(label: string, option: string) {
+  fireEvent.click(screen.getByRole("combobox", { name: label }));
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("./admin-tool-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-tool-api")>();
@@ -95,9 +100,11 @@ describe("Admin Tools 실제 API 관리", () => {
     expect(screen.getByRole("button", { name: "Spring Docs Link 삭제" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Link 추가" }));
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByRole("option", { name: "REFERENCE" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("option", { name: "MY_SERVICES" })).toBeInTheDocument();
-    expect(within(dialog).queryByRole("option", { name: "DEVELOPMENT" })).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("combobox", { name: "링크 분류" }));
+    expect(screen.getByRole("option", { name: "REFERENCE" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "MY_SERVICES" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "DEVELOPMENT" })).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("combobox", { name: "링크 분류" }));
     expect(within(dialog).queryByRole("option", { name: "PERSONAL" })).not.toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: /기본 Preview/ })).toHaveAttribute("aria-pressed", "true");
     expect(within(dialog).getByLabelText("이미지 첨부")).toHaveAttribute("type", "file");
@@ -119,7 +126,7 @@ describe("Admin Tools 실제 API 관리", () => {
     fireEvent.click(screen.getByRole("button", { name: "Link 추가" }));
     const dialog = screen.getByRole("dialog");
     fillRequiredFields(dialog);
-    fireEvent.change(within(dialog).getByLabelText("분류"), { target: { value: "MY_SERVICES" } });
+    selectOption("링크 분류", "MY_SERVICES");
     fireEvent.click(within(dialog).getByRole("button", { name: "저장" }));
     await waitFor(() => expect(createToolLink).toHaveBeenCalledWith({
       metadata: expect.objectContaining({

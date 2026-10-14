@@ -70,6 +70,7 @@ public class ToolQueryRepositoryImpl implements ToolQueryRepository {
                         SELECT new com.khuoo.portfolio.tool.repository.QuizSummaryView(
                             quiz.id,
                             quiz.title,
+                            quiz.subjectId,
                             quiz.createdAt,
                             quiz.updatedAt
                         )

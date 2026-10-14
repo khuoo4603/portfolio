@@ -3,6 +3,7 @@
 import { ArrowDown, ArrowUp, ImagePlus, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import Button, { buttonClassName } from "@/components/ui/button";
+import Select from "@/components/ui/select";
 import AdminImagePreview from "./admin-image-preview";
 import type { Technology } from "./admin-types";
 import { StateSwitch } from "./admin-ui";
@@ -233,7 +234,7 @@ function TechnologyPanel({ draft, setDraft, technologyMaster }: Pick<PanelProps,
     <section className={styles.projectEditorPanel} aria-label="기술 편집">
       <PanelHeading title="기술" />
       <div className={styles.technologyPicker}>
-        <label className={styles.formField}><span className="type-small">프로젝트 기술 선택</span><select className="type-body" value={selectedId} onChange={(event) => setSelectedId(event.currentTarget.value)}><option value="">기술 선택</option>{technologyMaster.filter((item) => !selected.has(item.id)).map((item) => <option key={item.id} value={item.id} disabled={!item.enabled}>{item.name}{item.enabled ? "" : " · 비활성"}</option>)}</select></label>
+        <label className={styles.formField}><span className="type-small">프로젝트 기술 선택</span><Select aria-label="프로젝트 기술 선택" value={selectedId} onValueChange={setSelectedId} options={[{ value: "", label: "기술 선택" }, ...technologyMaster.filter((item) => !selected.has(item.id)).map((item) => ({ value: String(item.id), label: `${item.name}${item.enabled ? "" : " · 비활성"}`, disabled: !item.enabled }))]} /></label>
         <Button variant="secondary" type="button" disabled={!selectedId} onClick={() => { const id = Number(selectedId); setItems([...draft.technologies, { technologyId: id, showOnCard: false, highlighted: false, displayOrder: draft.technologies.length }]); setSelectedId(""); }}><Plus aria-hidden="true" />추가</Button>
       </div>
       <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.projectTechnologyTable}`}><thead><tr><th>기술</th><th>분류</th><th>강조</th><th>표시 순서</th><th>작업</th></tr></thead><tbody>{draft.technologies.map((item, index) => {

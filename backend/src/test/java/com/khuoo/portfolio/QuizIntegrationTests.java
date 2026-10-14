@@ -30,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class QuizIntegrationTests extends SiteIntegrationTestSupport {
 
     private static final String QUIZZES_PATH = "/api/v1/tools/quizzes";
+    private static final String SUBJECTS_PATH = "/api/v1/tools/quiz-subjects";
     private static final String VALID_QUIZ_JSON = """
             {
               "title":"Java 기본","description":"테스트",
@@ -56,6 +57,7 @@ class QuizIntegrationTests extends SiteIntegrationTestSupport {
         MvcResult created = createQuiz(body, user(), true)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Java Quiz"))
+                .andExpect(jsonPath("$.subjectId").value((Object) null))
                 .andExpect(jsonPath("$.quizJson.title").value("Java 기본"))
                 .andExpect(jsonPath("$.responseJson.1").value("2"))
                 .andExpect(jsonPath("$.createdAt", endsWith("+09:00")))
@@ -290,6 +292,127 @@ class QuizIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(status().isBadRequest());
     }
 
+    // 세션 소유 과목 CRUD와 이름 정규화, Quiz 보존 검증
+    @Test
+    void quizSubjectsSupportOwnerScopedCrudAndPreserveQuizzesOnDelete() throws Exception {
+        MvcResult created = mockMvc.perform(post(SUBJECTS_PATH).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"  자료구조  \"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("자료구조"))
+                .andExpect(jsonPath("$.createdAt", endsWith("+09:00")))
+                .andReturn();
+        Long subjectId = responseId(created);
+
+        mockMvc.perform(post(SUBJECTS_PATH).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"자료구조\"}"))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post(SUBJECTS_PATH).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"   \"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post(SUBJECTS_PATH).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"%s\"}".formatted("A".repeat(101))))
+                .andExpect(status().isBadRequest());
+
+        Long secondSubjectId = insertSubject(userPrincipal.id(), "알고리즘");
+        mockMvc.perform(get(SUBJECTS_PATH).with(user()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(subjectId))
+                .andExpect(jsonPath("$.items[1].id").value(secondSubjectId));
+        mockMvc.perform(patch(SUBJECTS_PATH + "/" + subjectId).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"자료구조 및 알고리즘\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("자료구조 및 알고리즘"));
+        mockMvc.perform(patch(SUBJECTS_PATH + "/" + subjectId).with(admin()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"다른 계정 변경\"}"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(patch(SUBJECTS_PATH + "/" + secondSubjectId).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"자료구조 및 알고리즘\"}"))
+                .andExpect(status().isConflict());
+
+        Long quizId = insertQuiz(userPrincipal.id(), "Subject Quiz", VALID_QUIZ_JSON, "{\"1\":\"A\"}",
+                OffsetDateTime.now(), subjectId);
+        OffsetDateTime quizUpdatedAt = quizTime(quizId, "updated_at");
+        OffsetDateTime foreignQuizUpdatedAt = OffsetDateTime.of(
+                2026, 10, 1, 12, 0, 0, 0, ZoneOffset.ofHours(9)
+        );
+        Long foreignQuizId = insertQuiz(
+                adminPrincipal.id(), "Foreign Subject Quiz", VALID_QUIZ_JSON, "{\"1\":\"B\"}",
+                foreignQuizUpdatedAt, subjectId
+        );
+        mockMvc.perform(delete(SUBJECTS_PATH + "/" + subjectId).with(admin()).with(csrf()))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete(SUBJECTS_PATH + "/" + subjectId).with(user()).with(csrf()))
+                .andExpect(status().isNoContent());
+        assertThat(subjectCount(subjectId)).isZero();
+        assertThat(quizCount(quizId)).isOne();
+        assertThat(quizSubjectId(quizId)).isNull();
+        assertThat(quizTime(quizId, "updated_at").toInstant()).isAfterOrEqualTo(quizUpdatedAt.toInstant());
+        assertThat(quizJsonTitle(quizId)).isEqualTo("Java 기본");
+        assertThat(responseValue(quizId)).isEqualTo("A");
+        assertThat(quizSubjectId(foreignQuizId)).isNull();
+        assertThat(quizTime(foreignQuizId, "updated_at").toInstant())
+                .isEqualTo(foreignQuizUpdatedAt.toInstant());
+    }
+
+    // Quiz 과목 연결과 PATCH 누락, 명시적 null, 소유권 경계 검증
+    @Test
+    void quizzesSupportOptionalOwnerSubjectWithoutChangingQuizData() throws Exception {
+        Long subjectId = insertSubject(userPrincipal.id(), "자료구조");
+        Long otherSubjectId = insertSubject(adminPrincipal.id(), "관리자 과목");
+        MvcResult created = createQuiz(
+                createBody("Subject Quiz", VALID_QUIZ_JSON, "{\"1\":\"B\"}", String.valueOf(subjectId)),
+                user(),
+                true
+        ).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.subjectId").value(subjectId))
+                .andReturn();
+        Long quizId = responseId(created);
+
+        mockMvc.perform(get(QUIZZES_PATH).with(user()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].subjectId").value(subjectId));
+        mockMvc.perform(get(QUIZZES_PATH + "/" + quizId).with(user()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subjectId").value(subjectId));
+
+        mockMvc.perform(patch(QUIZZES_PATH + "/" + quizId).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Renamed\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subjectId").value(subjectId));
+        mockMvc.perform(patch(QUIZZES_PATH + "/" + quizId).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subjectId\":null}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subjectId").value((Object) null))
+                .andExpect(jsonPath("$.quizJson.title").value("Java 기본"))
+                .andExpect(jsonPath("$.responseJson.1").value("B"));
+        mockMvc.perform(patch(QUIZZES_PATH + "/" + quizId).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subjectId\":" + subjectId + "}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subjectId").value(subjectId));
+        mockMvc.perform(patch(QUIZZES_PATH + "/" + quizId).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subjectId\":" + otherSubjectId + "}"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(patch(QUIZZES_PATH + "/" + quizId).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subjectId\":999999}"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post(QUIZZES_PATH).with(user()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody("Rejected", VALID_QUIZ_JSON, null, String.valueOf(otherSubjectId))))
+                .andExpect(status().isNotFound());
+    }
+
     private ResultActions createQuiz(String body, RequestPostProcessor principal, boolean withCsrf)
             throws Exception {
         var request = post(QUIZZES_PATH).with(principal)
@@ -301,8 +424,13 @@ class QuizIntegrationTests extends SiteIntegrationTestSupport {
     }
 
     private String createBody(String title, String quizJson, String responseJson) {
+        return createBody(title, quizJson, responseJson, null);
+    }
+
+    private String createBody(String title, String quizJson, String responseJson, String subjectId) {
         String response = responseJson == null ? "" : ",\"responseJson\":" + responseJson;
-        return "{\"title\":\"%s\",\"quizJson\":%s%s}".formatted(title, quizJson, response);
+        String subject = subjectId == null ? "" : ",\"subjectId\":" + subjectId;
+        return "{\"title\":\"%s\",\"quizJson\":%s%s%s}".formatted(title, quizJson, response, subject);
     }
 
     // 명시 시각과 JSONB를 가진 Quiz Fixture 추가
@@ -313,13 +441,24 @@ class QuizIntegrationTests extends SiteIntegrationTestSupport {
             String responseJson,
             OffsetDateTime updatedAt
     ) {
+        return insertQuiz(accountId, title, quizJson, responseJson, updatedAt, null);
+    }
+
+    private Long insertQuiz(
+            Long accountId,
+            String title,
+            String quizJson,
+            String responseJson,
+            OffsetDateTime updatedAt,
+            Long subjectId
+    ) {
         return jdbcTemplate.queryForObject("""
                 INSERT INTO tool_quizzes (
-                    account_id, title, quiz_json, response_json, created_at, updated_at
+                    account_id, title, quiz_json, response_json, created_at, updated_at, subject_id
                 )
-                VALUES (?, ?, CAST(? AS JSONB), CAST(? AS JSONB), ?, ?)
+                VALUES (?, ?, CAST(? AS JSONB), CAST(? AS JSONB), ?, ?, ?)
                 RETURNING id
-                """, Long.class, accountId, title, quizJson, responseJson, updatedAt, updatedAt);
+                """, Long.class, accountId, title, quizJson, responseJson, updatedAt, updatedAt, subjectId);
     }
 
     private Long responseId(MvcResult result) throws Exception {
@@ -347,6 +486,38 @@ class QuizIntegrationTests extends SiteIntegrationTestSupport {
     private int quizCount(Long quizId) {
         return jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM tool_quizzes WHERE id = ?", Integer.class, quizId
+        );
+    }
+
+    private Long insertSubject(Long accountId, String name) {
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO tool_quiz_subjects (account_id, name)
+                VALUES (?, ?)
+                RETURNING id
+                """, Long.class, accountId, name);
+    }
+
+    private Long quizSubjectId(Long quizId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT subject_id FROM tool_quizzes WHERE id = ?", Long.class, quizId
+        );
+    }
+
+    private int subjectCount(Long subjectId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM tool_quiz_subjects WHERE id = ?", Integer.class, subjectId
+        );
+    }
+
+    private String quizJsonTitle(Long quizId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT quiz_json->>'title' FROM tool_quizzes WHERE id = ?", String.class, quizId
+        );
+    }
+
+    private String responseValue(Long quizId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT response_json->>'1' FROM tool_quizzes WHERE id = ?", String.class, quizId
         );
     }
 }

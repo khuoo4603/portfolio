@@ -4,6 +4,7 @@ import NextImage from "next/image";
 import { Edit3, ExternalLink as ExternalLinkIcon, Image as ImageIcon, Plus, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Button, { buttonClassName } from "@/components/ui/button";
+import Select from "@/components/ui/select";
 import { useNotification } from "@/components/ui/notification/notification-provider";
 import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
@@ -169,7 +170,7 @@ function LinkEditor({ state, onClose, onSubmit }: {
           </div>
         </div>
         <div className={styles.formColumns}>
-          <label className={styles.formField}><span className="type-small">분류</span><select className="type-body" value={category} onChange={(event) => setCategory(event.currentTarget.value as ToolLinkCategory)}><option value="REFERENCE">REFERENCE</option><option value="MY_SERVICES">MY_SERVICES</option></select></label>
+          <label className={styles.formField}><span className="type-small">분류</span><Select aria-label="링크 분류" value={category} onValueChange={(value) => setCategory(value as ToolLinkCategory)} options={[{ value: "REFERENCE", label: "REFERENCE" }, { value: "MY_SERVICES", label: "MY_SERVICES" }]} /></label>
           <label className={styles.formField}><span className="type-small">표시 순서</span><input className="type-body" type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(Number(event.currentTarget.value))} /></label>
         </div>
         <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">노출 ON</span></label>

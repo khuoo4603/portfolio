@@ -30,7 +30,7 @@ class MonitoringMigrationTests {
                     """);
         }
 
-        assertThat(flyway(schema, null).migrate().migrationsExecuted).isZero();
+        assertThat(flyway(schema, null).migrate().migrationsExecuted).isOne();
 
         try (Connection connection = connection(schema); Statement statement = connection.createStatement()) {
             try (ResultSet settings = statement.executeQuery("""
@@ -85,6 +85,8 @@ class MonitoringMigrationTests {
                 assertThat(status.getInt("http_status")).isEqualTo(200);
             }
         }
+
+        assertThat(flyway(schema, null).migrate().migrationsExecuted).isZero();
     }
 
     private Flyway flyway(String schema, String target) {

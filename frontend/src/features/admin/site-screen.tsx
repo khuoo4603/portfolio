@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/button";
+import Select from "@/components/ui/select";
 import { useNotification } from "@/components/ui/notification/notification-provider";
 import SegmentedControl from "@/components/ui/segmented-control";
 import { formatApiError } from "@/lib/api/client";
@@ -572,10 +573,7 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, onCreate, o
         )
       ) : <>
         <div className={styles.portfolioTechnologyToolbar} role="group" aria-label="기술 추가">
-          <select className={`${styles.portfolioTechnologySelect} type-body`} aria-label="보유 기술 선택" value={selectedTechnologyId} onChange={(event) => setSelectedTechnologyId(event.currentTarget.value)}>
-            <option value="">기술 선택</option>
-            {available.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-          </select>
+          <Select className={styles.portfolioTechnologySelect} aria-label="보유 기술 선택" value={selectedTechnologyId} onValueChange={setSelectedTechnologyId} options={[{ value: "", label: "기술 선택" }, ...available.map((item) => ({ value: String(item.id), label: item.name }))]} />
           <Button variant="secondary" type="button" disabled={!selectedTechnologyId} onClick={add}><Plus aria-hidden="true" />추가</Button>
         </div>
         {draft.length === 0 ? <EmptyState title="보유 기술 없음" description="포트폴리오에 노출할 기술을 추가해 주세요." /> : (

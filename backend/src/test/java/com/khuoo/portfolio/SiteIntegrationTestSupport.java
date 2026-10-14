@@ -151,6 +151,7 @@ abstract class SiteIntegrationTestSupport extends PostgresIntegrationTest {
         jdbcTemplate.update("DELETE FROM login_logs");
         jdbcTemplate.update("DELETE FROM verification_challenges");
         jdbcTemplate.update("DELETE FROM tool_quizzes");
+        jdbcTemplate.update("DELETE FROM tool_quiz_subjects");
         jdbcTemplate.update("DELETE FROM project_media");
         jdbcTemplate.update("DELETE FROM project_contents");
         jdbcTemplate.update("DELETE FROM project_technologies");

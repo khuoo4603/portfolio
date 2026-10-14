@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/button";
+import Select from "@/components/ui/select";
 import { formatApiError } from "@/lib/api/client";
 import type { ErrorLog, ErrorLogPage, LoginLog, LoginLogPage } from "./admin-types";
 import {
@@ -239,22 +240,14 @@ export default function LogsScreen() {
             </label>
             <label className={styles.compactField}>
               <span className="type-small">결과</span>
-              <select className="type-body" value={loginDraft.result} onChange={(event) => setLoginDraft({ ...loginDraft, result: event.currentTarget.value as LoginFilters["result"] })}>
-                <option value="">전체</option>
-                <option value="SUCCESS">SUCCESS</option>
-                <option value="FAILURE">FAILURE</option>
-              </select>
+              <Select aria-label="로그인 결과" value={loginDraft.result} onValueChange={(value) => setLoginDraft({ ...loginDraft, result: value as LoginFilters["result"] })} options={[{ value: "", label: "전체" }, { value: "SUCCESS", label: "SUCCESS" }, { value: "FAILURE", label: "FAILURE" }]} />
             </label>
           </>
         ) : (
           <>
             <label className={styles.compactField}>
               <span className="type-small">서비스</span>
-              <select className="type-body" value={errorDraft.service} onChange={(event) => setErrorDraft({ ...errorDraft, service: event.currentTarget.value as ErrorFilters["service"] })}>
-                <option value="">전체</option>
-                <option value="FRONTEND">FRONTEND</option>
-                <option value="BACKEND">BACKEND</option>
-              </select>
+              <Select aria-label="오류 서비스" value={errorDraft.service} onValueChange={(value) => setErrorDraft({ ...errorDraft, service: value as ErrorFilters["service"] })} options={[{ value: "", label: "전체" }, { value: "FRONTEND", label: "FRONTEND" }, { value: "BACKEND", label: "BACKEND" }]} />
             </label>
             <label className={styles.compactField}>
               <span className="type-small">5xx 상태</span>

@@ -11,6 +11,7 @@ import com.khuoo.portfolio.tool.dto.QuizListResponse;
 import com.khuoo.portfolio.tool.dto.QuizResponse;
 import com.khuoo.portfolio.tool.dto.QuizSummaryResponse;
 import com.khuoo.portfolio.tool.dto.QuizUpdateRequest;
+import com.khuoo.portfolio.tool.repository.QuizSubjectRepository;
 import com.khuoo.portfolio.tool.repository.ToolQueryRepository;
 import com.khuoo.portfolio.tool.repository.ToolRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class QuizService {
     private final ToolService toolService;
     private final ToolRepository toolRepository;
     private final ToolQueryRepository toolQueryRepository;
+    private final QuizSubjectRepository quizSubjectRepository;
     private final QuizJsonValidator quizJsonValidator;
     private final ObjectMapper objectMapper;
 
@@ -59,7 +61,8 @@ public class QuizService {
                 currentAccount.id(),
                 request.title(),
                 storedJson(request.quizJson()),
-                storedNullableJson(request.responseJson())
+                storedNullableJson(request.responseJson()),
+                subjectId(request.subjectId(), currentAccount.id())
         );
         return response(toolRepository.saveQuiz(quiz));
     }
@@ -75,7 +78,7 @@ public class QuizService {
     public QuizResponse update(Long quizId, QuizUpdateRequest request, AccountPrincipal currentAccount) {
         toolService.requireEnabled(PortfolioConstants.ToolKey.QUIZ);
         ToolQuiz quiz = requireOwnedQuiz(quizId, currentAccount.id());
-        PatchValues.requireAny(request.title(), request.quizJson(), request.responseJson());
+        PatchValues.requireAny(request.title(), request.quizJson(), request.responseJson(), request.subjectId());
 
         String title = PatchValues.present(request.title())
                 ? PatchValues.requiredString(request.title(), 200)
@@ -88,8 +91,11 @@ public class QuizService {
         com.fasterxml.jackson.databind.JsonNode responseJson = PatchValues.present(request.responseJson())
                 ? storedNullableJson(request.responseJson())
                 : quiz.getResponseJson();
+        Long subjectId = PatchValues.present(request.subjectId())
+                ? subjectId(request.subjectId(), currentAccount.id())
+                : quiz.getSubjectId();
 
-        quiz.update(title, quizJson, responseJson, now());
+        quiz.update(title, quizJson, responseJson, subjectId, now());
         toolRepository.flush();
         return response(quiz);
     }
@@ -135,6 +141,7 @@ public class QuizService {
         return new QuizResponse(
                 quiz.getId(),
                 quiz.getTitle(),
+                quiz.getSubjectId(),
                 apiJson(quiz.getQuizJson()),
                 apiJson(quiz.getResponseJson()),
                 kst(quiz.getCreatedAt()),
@@ -144,6 +151,25 @@ public class QuizService {
 
     private OffsetDateTime now() {
         return OffsetDateTime.now(SERVICE_ZONE);
+    }
+
+    private Long subjectId(Long subjectId, Long accountId) {
+        if (subjectId == null) {
+            return null;
+        }
+        return quizSubjectRepository.findOwned(subjectId, accountId)
+                .map(subject -> subject.getId())
+                .orElseThrow(() -> new ApiException(ErrorCode.QUIZ_SUBJECT_NOT_FOUND));
+    }
+
+    private Long subjectId(JsonNode value, Long accountId) {
+        if (value.isNull()) {
+            return null;
+        }
+        if (!value.isIntegralNumber() || !value.canConvertToLong() || value.longValue() <= 0) {
+            throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
+        }
+        return subjectId(value.longValue(), accountId);
     }
 
     private OffsetDateTime kst(OffsetDateTime value) {

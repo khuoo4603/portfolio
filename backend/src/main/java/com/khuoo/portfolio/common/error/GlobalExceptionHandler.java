@@ -144,6 +144,11 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(errorCode.status())
                     .body(ErrorResponse.from(errorCode, TraceContext.get(request)));
         }
+        if (hasConstraint(exception, "uq_tool_quiz_subjects_account_name")) {
+            ErrorCode errorCode = ErrorCode.QUIZ_SUBJECT_NAME_CONFLICT;
+            return ResponseEntity.status(errorCode.status())
+                    .body(ErrorResponse.from(errorCode, TraceContext.get(request)));
+        }
         return handleUnexpected(exception, request);
     }
 

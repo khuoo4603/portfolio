@@ -54,6 +54,11 @@ function submitOtp(code = "123456") {
   fireEvent.click(screen.getByRole("button", { name: "변경 실행" }));
 }
 
+function selectOption(label: string, option: string) {
+  fireEvent.click(screen.getByRole("combobox", { name: label }));
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 describe("Admin Accounts 실제 API 관리", () => {
   beforeEach(() => {
     vi.mocked(getAdminAccounts).mockReset().mockResolvedValue({ items: [account] });
@@ -74,8 +79,8 @@ describe("Admin Accounts 실제 API 관리", () => {
     expect(getAdminAccounts).toHaveBeenCalledWith({ keyword: undefined, role: undefined, enabled: undefined });
 
     fireEvent.change(screen.getByPlaceholderText("이메일 또는 이름"), { target: { value: "kim" } });
-    fireEvent.change(screen.getByLabelText("권한"), { target: { value: "ADMIN" } });
-    fireEvent.change(screen.getByLabelText("활성 상태"), { target: { value: "false" } });
+    selectOption("권한 필터", "ADMIN");
+    selectOption("활성 상태 필터", "비활성");
     fireEvent.click(screen.getByRole("button", { name: "조회" }));
 
     await waitFor(() => expect(getAdminAccounts).toHaveBeenLastCalledWith({ keyword: "kim", role: "ADMIN", enabled: false }));
@@ -87,15 +92,15 @@ describe("Admin Accounts 실제 API 관리", () => {
 
     const trigger = screen.getByRole("button", { name: "admin@example.com 계정 작업" });
     fireEvent.click(trigger);
-    const statusAction = screen.getByRole("button", { name: "비활성화" });
+    const statusAction = screen.getByRole("menuitem", { name: "비활성화" });
     fireEvent.pointerDown(statusAction);
     expect(statusAction).toBeInTheDocument();
 
     fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole("button", { name: "비활성화" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "비활성화" })).not.toBeInTheDocument();
 
     fireEvent.click(trigger);
-    const reopenedAction = screen.getByRole("button", { name: "비활성화" });
+    const reopenedAction = screen.getByRole("menuitem", { name: "비활성화" });
     fireEvent.pointerDown(reopenedAction);
     fireEvent.click(reopenedAction);
     await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
@@ -117,7 +122,7 @@ describe("Admin Accounts 실제 API 관리", () => {
     await screen.findByText("admin@example.com");
 
     fireEvent.click(screen.getByRole("button", { name: "admin@example.com 계정 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "비활성화" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "비활성화" }));
 
     expect(await screen.findByRole("heading", { name: "관리자 이메일 재인증" })).toBeInTheDocument();
     expect(document.querySelector('[data-admin-action-phase="SENDING"]')).toBeInTheDocument();
@@ -158,7 +163,7 @@ describe("Admin Accounts 실제 API 관리", () => {
     fireEvent.click(secondTrigger);
     expect(firstTrigger).toHaveAttribute("aria-expanded", "false");
     expect(secondTrigger).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getAllByRole("button", { name: "활성화" })).toHaveLength(1);
+    expect(screen.getAllByRole("menuitem", { name: "활성화" })).toHaveLength(1);
   });
 
   it("계정 생성 Password를 ADMIN_ACTION Mutation까지 전달하고 성공 후 재조회", async () => {
@@ -195,7 +200,7 @@ describe("Admin Accounts 실제 API 관리", () => {
     await screen.findByText("admin@example.com");
 
     fireEvent.click(screen.getByRole("button", { name: "admin@example.com 계정 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "비활성화" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "비활성화" }));
     await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
       operation: "ACCOUNT_STATUS_UPDATE",
       targetType: "ACCOUNT",
@@ -204,7 +209,7 @@ describe("Admin Accounts 실제 API 관리", () => {
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
 
     fireEvent.click(screen.getByRole("button", { name: "admin@example.com 계정 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "USER로 변경" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "USER로 변경" }));
     await waitFor(() => expect(createAdminChallenge).toHaveBeenLastCalledWith(expect.objectContaining({
       operation: "ACCOUNT_ROLE_UPDATE",
       targetType: "ACCOUNT",
@@ -216,7 +221,7 @@ describe("Admin Accounts 실제 API 관리", () => {
     render(<AccountsScreen />);
     await screen.findByText("admin@example.com");
     fireEvent.click(screen.getByRole("button", { name: "admin@example.com 계정 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "비밀번호 초기화" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "비밀번호 초기화" }));
     const passwordDialog = screen.getByRole("dialog");
 
     fireEvent.change(within(passwordDialog).getByLabelText("새 비밀번호"), { target: { value: "new-password" } });
@@ -245,7 +250,7 @@ describe("Admin Accounts 실제 API 관리", () => {
     render(<AccountsScreen />);
     await screen.findByText("admin@example.com");
     fireEvent.click(screen.getByRole("button", { name: "admin@example.com 계정 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "비활성화" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "비활성화" }));
     await screen.findByRole("heading", { name: "관리자 이메일 재인증" });
     submitOtp();
 
@@ -278,7 +283,7 @@ describe("Admin Accounts 실제 API 관리", () => {
 
     await screen.findByText("admin@example.com");
     fireEvent.click(screen.getByRole("button", { name: "admin@example.com 계정 작업" }));
-    fireEvent.click(screen.getByRole("button", { name: "비활성화" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "비활성화" }));
     await screen.findByRole("heading", { name: "관리자 이메일 재인증" });
     submitOtp();
 

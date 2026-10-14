@@ -14,6 +14,11 @@ import {
 } from "./admin-site-api";
 import SiteScreen from "./site-screen";
 
+function selectOption(label: string, option: string) {
+  fireEvent.click(screen.getByRole("combobox", { name: label }));
+  fireEvent.click(screen.getByRole("option", { name: option }));
+}
+
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
@@ -295,15 +300,17 @@ describe("Admin Site 실제 API 관리", () => {
     fireEvent.click(screen.getByRole("button", { name: "항목 추가" }));
     const dialog = screen.getByRole("dialog");
 
-    expect(within(dialog).getByRole("option", { name: "학력" })).toHaveValue("EDUCATION");
-    expect(within(dialog).getByRole("option", { name: "자격·교육" })).toHaveValue("CERTIFICATE");
+    fireEvent.click(within(dialog).getByRole("combobox", { name: "이력 유형" }));
+    expect(screen.getByRole("option", { name: "학력" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "자격·교육" })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("combobox", { name: "이력 유형" }));
     expect(within(dialog).getByRole("heading", { name: "기본 정보" })).toBeInTheDocument();
     expect(within(dialog).getByRole("heading", { name: "기간" })).toBeInTheDocument();
     expect(within(dialog).getByRole("heading", { name: "상세 설명" })).toBeInTheDocument();
     expect(within(dialog).getByRole("heading", { name: "노출 설정" })).toBeInTheDocument();
     expect(within(dialog).getByLabelText("노출 ON")).toBeChecked();
     expect(within(dialog).queryByLabelText("대표/강조")).not.toBeInTheDocument();
-    fireEvent.change(within(dialog).getByLabelText("유형"), { target: { value: "CERTIFICATE" } });
+    selectOption("이력 유형", "자격·교육");
     fireEvent.change(within(dialog).getByLabelText("제목"), { target: { value: "새 자격·교육" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "저장" }));
 
@@ -358,9 +365,11 @@ describe("Admin Site 실제 API 관리", () => {
     fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
     const dialog = screen.getByRole("dialog");
 
-    expect(within(dialog).getAllByRole("option")).toHaveLength(6);
-    expect(within(dialog).getByRole("option", { name: "DATABASE" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("option", { name: "FRONTEND" })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("combobox", { name: "기술 분류" }));
+    expect(screen.getAllByRole("option")).toHaveLength(6);
+    expect(screen.getByRole("option", { name: "DATABASE" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "FRONTEND" })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("combobox", { name: "기술 분류" }));
     expect(within(dialog).getByLabelText("Icon URL")).toBeInTheDocument();
     expect(within(dialog).queryByLabelText("Icon Key")).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText("표시 순서")).not.toBeInTheDocument();
@@ -383,7 +392,7 @@ describe("Admin Site 실제 API 관리", () => {
     expect(within(section).getByRole("group", { name: "기술 추가" })).toContainElement(screen.getByLabelText("보유 기술 선택"));
     const list = within(section).getByRole("list", { name: "선택된 보유 기술" });
     expect(within(list).getByRole("listitem")).toHaveTextContent("표시 순서 1");
-    fireEvent.change(screen.getByLabelText("보유 기술 선택"), { target: { value: "8" } });
+    selectOption("보유 기술 선택", "Next.js");
     fireEvent.click(screen.getByRole("button", { name: "추가" }));
     fireEvent.click(screen.getByRole("button", { name: "전체 기술 스택" }));
     fireEvent.click(screen.getByRole("button", { name: "보유 기술 스택" }));

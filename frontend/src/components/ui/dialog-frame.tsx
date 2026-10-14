@@ -33,8 +33,15 @@ export default function DialogFrame({
   closeOnEscape = true,
 }: DialogFrameProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const closeOnEscapeRef = useRef(closeOnEscape);
   const titleId = useId();
   const descriptionId = useId();
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    closeOnEscapeRef.current = closeOnEscape;
+  }, [closeOnEscape, onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -50,9 +57,9 @@ export default function DialogFrame({
     }, 0);
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && closeOnEscape) {
+      if (event.key === "Escape" && closeOnEscapeRef.current) {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -80,7 +87,7 @@ export default function DialogFrame({
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus();
     };
-  }, [closeOnEscape, onClose, open]);
+  }, [open]);
 
   if (!open) return null;
 
