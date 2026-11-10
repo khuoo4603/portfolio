@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
+import { getPerformanceSnapshot } from "@/lib/performance/performance-mode";
 
 type PortfolioTheme = "light" | "dark";
 
@@ -58,8 +59,10 @@ export default function ThemeToggle({
     const nextTheme: PortfolioTheme = root.dataset.theme === "dark" ? "light" : "dark";
     const button = themeToggleRef.current;
     const isReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const performanceMode = getPerformanceSnapshot().effectiveMode;
 
     if (
+      performanceMode === "lite" ||
       typeof document.startViewTransition !== "function" ||
       isReducedMotion ||
       !button ||

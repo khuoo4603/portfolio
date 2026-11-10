@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createPerformanceMonitor,
+  getPerformanceDiagnostics,
   getPerformanceSnapshot,
   resetPerformanceModeForTests,
   startPerformanceRuntime,
@@ -53,6 +54,20 @@ function flushWindow(
   return timestamp;
 }
 
+function flushIntervals(
+  driver: ReturnType<typeof createFrameDriver>,
+  start: number,
+  intervals: number[],
+) {
+  let timestamp = start;
+  driver.flush(timestamp);
+  for (const interval of intervals) {
+    timestamp += interval;
+    driver.flush(timestamp);
+  }
+  return timestamp;
+}
+
 function createMonitorOptions(driver: ReturnType<typeof createFrameDriver>, visibility: () => DocumentVisibilityState = () => "visible") {
   return {
     requestAnimationFrame: driver.requestAnimationFrame,
@@ -60,8 +75,9 @@ function createMonitorOptions(driver: ReturnType<typeof createFrameDriver>, visi
     getVisibility: visibility,
     measurementFrames: 4,
     lowWindowStreak: 2,
-    highWindowStreak: 2,
+    highWindowStreak: 3,
     cooldownMs: 0,
+    windowGapMs: 0,
   };
 }
 
@@ -122,7 +138,7 @@ describe("performance mode store", () => {
     expect(changes).toEqual([]);
   });
 
-  it("returns to high only after two consecutive healthy windows", () => {
+  it("returns to high only after three consecutive healthy windows", () => {
     const driver = createFrameDriver();
     const changes: EffectivePerformanceMode[] = [];
     const monitor = createPerformanceMonitor((mode) => changes.push(mode), createMonitorOptions(driver));
@@ -130,6 +146,8 @@ describe("performance mode store", () => {
     monitor.start();
     let timestamp = flushWindow(driver, 0, 40, 4);
     timestamp = flushWindow(driver, timestamp, 40, 4);
+    expect(changes).toEqual(["lite"]);
+    timestamp = flushWindow(driver, timestamp, 16, 4);
     expect(changes).toEqual(["lite"]);
     timestamp = flushWindow(driver, timestamp, 16, 4);
     expect(changes).toEqual(["lite"]);
@@ -160,7 +178,7 @@ describe("performance mode store", () => {
     expect(changes).toEqual(["lite"]);
   });
 
-  it("does not downgrade a 40 FPS window only because Long Tasks were observed", () => {
+  it("does not downgrade a stable 60 FPS window only because Long Tasks were observed", () => {
     const driver = createFrameDriver();
     const changes: EffectivePerformanceMode[] = [];
     let emitLongTasks: (() => void) | undefined;
@@ -181,9 +199,9 @@ describe("performance mode store", () => {
       monitor.start();
       expect(emitLongTasks).toBeDefined();
       emitLongTasks?.();
-      const timestamp = flushWindow(driver, 0, 25, 4);
+      const timestamp = flushWindow(driver, 0, 16, 4);
       emitLongTasks?.();
-      flushWindow(driver, timestamp, 25, 4);
+      flushWindow(driver, timestamp, 16, 4);
 
       expect(changes).toEqual([]);
     } finally {
@@ -193,6 +211,62 @@ describe("performance mode store", () => {
         Reflect.deleteProperty(window, "PerformanceObserver");
       }
     }
+  });
+
+  it("uses frame delay distribution and Long Tasks as sustained low-performance evidence", () => {
+    const driver = createFrameDriver();
+    const changes: EffectivePerformanceMode[] = [];
+    let emitLongTasks: (() => void) | undefined;
+    class MockPerformanceObserver {
+      static supportedEntryTypes = ["longtask"];
+      observe = vi.fn();
+      disconnect = vi.fn();
+      takeRecords = vi.fn(() => [] as PerformanceEntryList);
+      constructor(callback: PerformanceObserverCallback) {
+        emitLongTasks = () => callback({ getEntries: () => [{}] } as PerformanceObserverEntryList, this);
+      }
+    }
+    const originalObserver = Object.getOwnPropertyDescriptor(window, "PerformanceObserver");
+    Object.defineProperty(window, "PerformanceObserver", { configurable: true, value: MockPerformanceObserver });
+
+    try {
+      const monitor = createPerformanceMonitor((mode) => changes.push(mode), createMonitorOptions(driver));
+      monitor.start();
+      const delayedIntervals = [16, 32, 16, 32];
+      emitLongTasks?.();
+      const timestamp = flushIntervals(driver, 0, delayedIntervals);
+      emitLongTasks?.();
+      flushIntervals(driver, timestamp, delayedIntervals);
+
+      expect(changes).toEqual(["lite"]);
+      expect(getPerformanceDiagnostics()).toMatchObject({
+        effectiveMode: "lite",
+        longFrameCount: 2,
+        longTaskCount: 1,
+        lastModeChangeReason: "frame-delay-distribution",
+      });
+    } finally {
+      if (originalObserver) {
+        Object.defineProperty(window, "PerformanceObserver", originalObserver);
+      } else {
+        Reflect.deleteProperty(window, "PerformanceObserver");
+      }
+    }
+  });
+
+  it("uses interaction activity to qualify a single delayed frame", () => {
+    const driver = createFrameDriver();
+    const changes: EffectivePerformanceMode[] = [];
+    const monitor = createPerformanceMonitor((mode) => changes.push(mode), createMonitorOptions(driver));
+
+    monitor.start();
+    document.dispatchEvent(new Event("scroll"));
+    const delayedIntervals = [16, 32, 16, 16];
+    const timestamp = flushIntervals(driver, 0, delayedIntervals);
+    document.dispatchEvent(new Event("scroll"));
+    flushIntervals(driver, timestamp, delayedIntervals);
+
+    expect(changes).toEqual(["lite"]);
   });
 
   it("works when PerformanceObserver does not support Long Task entries", () => {
@@ -225,6 +299,23 @@ describe("performance mode store", () => {
     flushWindow(driver, timestamp, 40, 30);
 
     expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
+  });
+
+  it("recovers after restarting the runtime from the current lite mode", () => {
+    const lowDriver = createFrameDriver();
+    startPerformanceRuntime(createMonitorOptions(lowDriver));
+    let timestamp = flushWindow(lowDriver, 0, 40, 4);
+    flushWindow(lowDriver, timestamp, 40, 4);
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
+
+    stopPerformanceRuntime();
+    const healthyDriver = createFrameDriver();
+    startPerformanceRuntime(createMonitorOptions(healthyDriver));
+    timestamp = flushWindow(healthyDriver, 0, 16, 4);
+    timestamp = flushWindow(healthyDriver, timestamp, 16, 4);
+    flushWindow(healthyDriver, timestamp, 16, 4);
+
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "high" });
   });
 
   it("cancels pending measurements and disconnects the observer on stop", () => {
