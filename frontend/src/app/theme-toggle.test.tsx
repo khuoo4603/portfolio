@@ -63,6 +63,17 @@ function startTestPerformanceRuntime(driver: ReturnType<typeof createFrameDriver
   });
 }
 
+function installHardwareRenderer() {
+  const context = {
+    getExtension: vi.fn((name: string) => name === "WEBGL_debug_renderer_info"
+      ? { UNMASKED_RENDERER_WEBGL: 0x9246 }
+      : name === "WEBGL_lose_context" ? { loseContext: vi.fn() } : null),
+    getParameter: vi.fn(() => "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060, D3D11)"),
+  } as unknown as WebGLRenderingContext;
+
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context);
+}
+
 function setReducedMotion(reduced: boolean) {
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
@@ -167,6 +178,7 @@ describe("ThemeToggle", () => {
 
   it("reads the latest automatic mode for each theme transition", async () => {
     const driver = createFrameDriver();
+    installHardwareRenderer();
     startTestPerformanceRuntime(driver);
     setReducedMotion(false);
     const startViewTransition = vi.fn((update: () => void) => {
@@ -197,6 +209,9 @@ describe("ThemeToggle", () => {
   });
 
   it("reveals the next theme from the toggle with a root View Transition", async () => {
+    const driver = createFrameDriver();
+    installHardwareRenderer();
+    startTestPerformanceRuntime(driver);
     setReducedMotion(false);
     const startViewTransition = vi.fn((update: () => void) => {
       update();
@@ -237,6 +252,9 @@ describe("ThemeToggle", () => {
   });
 
   it("ignores clicks while the reveal animation is running", async () => {
+    const driver = createFrameDriver();
+    installHardwareRenderer();
+    startTestPerformanceRuntime(driver);
     setReducedMotion(false);
     let finishAnimation: (() => void) | undefined;
     const startViewTransition = vi.fn((update: () => void) => {

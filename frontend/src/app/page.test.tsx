@@ -1,4 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PUBLIC_COPY, mapPublicPortfolio } from "@/features/portfolio/public-portfolio";
 import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
@@ -26,6 +28,7 @@ import {
   calculatePortraitKoreaViewBox,
   expandViewBoxAroundFocus,
   formatMapViewBox,
+  getLiteMapAsset,
   projectPoint,
 } from "./hero-world-map";
 import {
@@ -34,6 +37,9 @@ import {
   FOCUS_HANDOFF_START_SCALE,
   KOREA_ZOOM_DISTANCE_MULTIPLIER,
   KOREA_ZOOM_SCALE_MULTIPLIER,
+  LITE_FINAL_FOCUS_SCALE,
+  LITE_KOREA_MID_CROSSFADE_END,
+  LITE_KOREA_MID_CROSSFADE_START,
   MAP_DOT_SCREEN_WIDTH,
   MAP_LAYER_VISIBILITY_EPSILON,
   MOBILE_FOCUS_START_OVERVIEW_RATIO,
@@ -55,18 +61,28 @@ import {
   calculateHeroScrollMetrics,
   calculateMapZoomState,
   calculateMapNarrativeTarget,
+  calculateLiteMapCameraTransform,
+  calculateLiteKoreaMidProgress,
+  getHeroMapDensity,
   calculateMobileFocusFinalScale,
   calculateTabletPortraitWorldPresentation,
   calculatePortraitWorldPresentationSurface,
   calculatePortraitWorldOffsetX,
   calculateVirtualZoomScale,
   dampGalleryValue,
+  getHeroScenePhase,
   getMapNarrativeMode,
   getMapDotWidths,
   isTabletLandscapeProfile,
+  shouldUpdateLiteMapCamera,
   shouldUpdateMapTransform,
 } from "./hero-system-card";
 import { HomeView } from "./home-view";
+import {
+  resetPerformanceModeForTests,
+  startPerformanceRuntime,
+  stopPerformanceRuntime,
+} from "@/lib/performance/performance-mode";
 
 const PUBLIC_MODEL = mapPublicPortfolio(PUBLIC_PORTFOLIO_FIXTURE);
 
@@ -74,8 +90,112 @@ function Home() {
   return <HomeView model={PUBLIC_MODEL} />;
 }
 
+function readMapPoints(fileName: string) {
+  const source = readFileSync(resolve(process.cwd(), "public/maps", fileName), "utf8");
+  const header = source.match(/<svg[^>]*>/)?.[0] ?? "";
+  const points = [...source.matchAll(/M(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)h0/g)]
+    .map((match) => ({ x: Number(match[1]), y: Number(match[2]) }));
+
+  return {
+    points,
+    viewBox: header.match(/viewBox="([^"]+)"/)?.[1],
+    declaredCount: Number(header.match(/data-dot-count="(\d+)"/)?.[1]),
+  };
+}
+
+function readWebpCanvasSize(bytes: Buffer) {
+  return {
+    width: 1 + bytes[24] + (bytes[25] << 8) + (bytes[26] << 16),
+    height: 1 + bytes[27] + (bytes[28] << 8) + (bytes[29] << 16),
+  };
+}
+
+function groupMapRows(points: Array<{ x: number; y: number }>) {
+  const rows = new Map<number, Array<{ x: number; y: number }>>();
+
+  points.forEach((point) => {
+    const row = rows.get(point.y) ?? [];
+
+    row.push(point);
+    rows.set(point.y, row);
+  });
+
+  return new Map([...rows.entries()].map(([y, row]) => [
+    y,
+    [...row].sort((left, right) => left.x - right.x),
+  ]));
+}
+
+function median(values: number[]) {
+  return [...values].sort((left, right) => left - right)[Math.floor(values.length / 2)];
+}
+
+function getMapGridSteps(points: Array<{ x: number; y: number }>) {
+  const rows = groupMapRows(points);
+  const stepX = median([...rows.values()]
+    .map((row) => row.slice(1)
+      .map((point, index) => point.x - row[index].x)
+      .filter((gap) => gap > 0))
+    .flat());
+  const stepY = median([...rows.keys()]
+    .sort((left, right) => left - right)
+    .slice(1)
+    .map((y, index, values) => y - values[index])
+    .filter((gap) => gap > 0));
+
+  return { stepX, stepY };
+}
+
+function createMapSpatialHash(points: Array<{ x: number; y: number }>, bucketSize: number) {
+  const buckets = new Map<string, Array<{ x: number; y: number }>>();
+
+  points.forEach((point) => {
+    const key = `${Math.floor(point.x / bucketSize)}:${Math.floor(point.y / bucketSize)}`;
+    const bucket = buckets.get(key) ?? [];
+
+    bucket.push(point);
+    buckets.set(key, bucket);
+  });
+
+  return buckets;
+}
+
+function isNearSourceLand(
+  point: { x: number; y: number },
+  buckets: Map<string, Array<{ x: number; y: number }>>,
+  distance: number,
+) {
+  const bucketX = Math.floor(point.x / distance);
+  const bucketY = Math.floor(point.y / distance);
+
+  for (let y = bucketY - 1; y <= bucketY + 1; y += 1) {
+    for (let x = bucketX - 1; x <= bucketX + 1; x += 1) {
+      if (buckets.get(`${x}:${y}`)?.some((source) => (
+        Math.hypot(source.x - point.x, source.y - point.y) <= distance + 0.001
+      ))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function installHardwareRenderer() {
+  const context = {
+    getExtension: vi.fn((name: string) => name === "WEBGL_debug_renderer_info"
+      ? { UNMASKED_RENDERER_WEBGL: 0x9246 }
+      : name === "WEBGL_lose_context" ? { loseContext: vi.fn() } : null),
+    getParameter: vi.fn(() => "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060, D3D11)"),
+  } as unknown as WebGLRenderingContext;
+
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context);
+}
+
 describe("포트폴리오 메인", () => {
   afterEach(() => {
+    stopPerformanceRuntime();
+    resetPerformanceModeForTests();
     cleanup();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -94,6 +214,172 @@ describe("포트폴리오 메인", () => {
     })));
     document.documentElement.dataset.theme = "dark";
     window.localStorage.clear();
+  });
+
+  it("Lite WebP LOD returns the expected asset for every stage and theme", () => {
+    expect([
+      getLiteMapAsset("world", "dark"),
+      getLiteMapAsset("world", "light"),
+      getLiteMapAsset("eastAsia", "dark"),
+      getLiteMapAsset("eastAsia", "light"),
+      getLiteMapAsset("koreaMid", "dark"),
+      getLiteMapAsset("koreaMid", "light"),
+    ]).toEqual([
+      "/maps/lite/world-dark.webp",
+      "/maps/lite/world-light.webp",
+      "/maps/lite/east-asia-dark.webp",
+      "/maps/lite/east-asia-light.webp",
+      "/maps/lite/korea-mid-dark.webp",
+      "/maps/lite/korea-mid-light.webp",
+    ]);
+  });
+
+  it("Lite WebP LOD files are non-empty WebP assets", () => {
+    [
+      "world-dark.webp",
+      "world-light.webp",
+      "east-asia-dark.webp",
+      "east-asia-light.webp",
+      "korea-mid-dark.webp",
+      "korea-mid-light.webp",
+    ].forEach((fileName) => {
+      const bytes = readFileSync(resolve(process.cwd(), "public/maps/lite", fileName));
+
+      expect(bytes.length).toBeGreaterThan(0);
+      expect(bytes.subarray(0, 4).toString("ascii")).toBe("RIFF");
+      expect(bytes.subarray(8, 12).toString("ascii")).toBe("WEBP");
+    });
+
+    expect(readWebpCanvasSize(readFileSync(resolve(
+      process.cwd(),
+      "public/maps/lite/korea-mid-dark.webp",
+    )))).toEqual({ width: 2560, height: 1440 });
+    expect(readWebpCanvasSize(readFileSync(resolve(
+      process.cwd(),
+      "public/maps/lite/korea-mid-light.webp",
+    )))).toEqual({ width: 2560, height: 1440 });
+  });
+
+  it("Hero map density preserves SVG profiles outside Desktop Lite", () => {
+    expect(getHeroMapDensity("lite", true, false)).toBe("mobile");
+    expect(getHeroMapDensity("lite", false, true)).toBe("full");
+    expect(getHeroMapDensity("lite", false, false)).toBe("lite");
+    expect(getHeroMapDensity("high", true, false)).toBe("mobile");
+    expect(getHeroMapDensity("high", false, true)).toBe("full");
+  });
+
+  it("Lite map renders the three WebP LOD layers instead of dot paths", () => {
+    render(<Home />);
+
+    expect(document.querySelector(".topology-narrative-world-map-raster"))
+      .toHaveAttribute("href", "/maps/lite/world-dark.webp");
+    expect(document.querySelector(".topology-focus-map-east-asia-raster"))
+      .toHaveAttribute("href", "/maps/lite/east-asia-dark.webp");
+    expect(document.querySelector(".topology-focus-map-korea-mid-raster"))
+      .toHaveAttribute("href", "/maps/lite/korea-mid-dark.webp");
+    expect(document.querySelector(".topology-narrative-world-map-dots")).not.toBeInTheDocument();
+    expect(document.querySelector(".topology-focus-map-dots")).not.toBeInTheDocument();
+  });
+
+  it("Lite map selects the Light WebP assets from the document theme", () => {
+    document.documentElement.dataset.theme = "light";
+    render(<Home />);
+
+    expect(document.querySelector(".topology-narrative-world-map-raster"))
+      .toHaveAttribute("href", "/maps/lite/world-light.webp");
+    expect(document.querySelector(".topology-focus-map-east-asia-raster"))
+      .toHaveAttribute("href", "/maps/lite/east-asia-light.webp");
+    expect(document.querySelector(".topology-focus-map-korea-mid-raster"))
+      .toHaveAttribute("href", "/maps/lite/korea-mid-light.webp");
+  });
+
+  it("Lite Korea Mid LOD follows the final zoom-progress window", () => {
+    expect(LITE_FINAL_FOCUS_SCALE).toBe(1.35);
+    expect(LITE_KOREA_MID_CROSSFADE_START).toBe(0.82);
+    expect(LITE_KOREA_MID_CROSSFADE_END).toBe(0.92);
+    expect(calculateLiteKoreaMidProgress(0.81)).toBe(0);
+    expect(calculateLiteKoreaMidProgress(0.87)).toBeGreaterThan(0);
+    expect(calculateLiteKoreaMidProgress(0.92)).toBe(1);
+  });
+
+  it("Lite Gallery starts with the existing High state instead of a Lite-specific scale", () => {
+    render(<Home />);
+
+    const frame = document.querySelector<HTMLElement>('[data-gallery-index="1"]');
+    const highState = calculateGalleryFrameState(0, 0, "desktop");
+
+    expect(frame).not.toBeNull();
+    expect(frame?.style.getPropertyValue("--gallery-scale")).toBe(String(highState.scale));
+    expect(frame?.style.getPropertyValue("--gallery-blur")).toBe(String(highState.blur) + "px");
+    expect(frame?.style.getPropertyValue("--gallery-z")).toBe(String(highState.z) + "px");
+  });
+
+  it("Full 육지 윤곽 위에 전역 삼각 격자를 생성한 Lite 지도를 제공", () => {
+    const maps = [
+      ["world-map-dots.svg", "world-map-dots-lite.svg", "0 0 800 400"],
+      ["east-asia-map-dots.svg", "east-asia-map-dots-lite.svg", "0 0 1600 900"],
+    ] as const;
+
+    maps.forEach(([fullFile, liteFile, viewBox]) => {
+      const full = readMapPoints(fullFile);
+      const lite = readMapPoints(liteFile);
+      const sourceGrid = getMapGridSteps(full.points);
+      const targetStepX = sourceGrid.stepX * Math.SQRT2;
+      const targetStepY = targetStepX * Math.sqrt(3) / 2;
+      const sourceLandDistance = sourceGrid.stepX * 0.6;
+      const sourceLandHash = createMapSpatialHash(full.points, sourceLandDistance);
+
+      expect(lite.declaredCount).toBe(lite.points.length);
+      expect(lite.points.length).toBeGreaterThan(full.points.length * 0.45);
+      expect(lite.points.length).toBeLessThan(full.points.length * 0.55);
+      expect(lite.viewBox).toBe(viewBox);
+      const liteRows = groupMapRows(lite.points);
+
+      lite.points.forEach((point) => {
+        const row = Math.round(point.y / targetStepY);
+        const phase = (row % 2) * targetStepX / 2;
+        const column = Math.round((point.x - phase) / targetStepX);
+
+        expect(point.y).toBeCloseTo(row * targetStepY, 2);
+        expect(point.x).toBeCloseTo(column * targetStepX + phase, 2);
+        expect(isNearSourceLand(point, sourceLandHash, sourceLandDistance)).toBe(true);
+      });
+      liteRows.forEach((row) => {
+        row.slice(1).forEach((point, index) => {
+          expect(point.x - row[index].x).toBeGreaterThanOrEqual(targetStepX * 0.99);
+        });
+      });
+    });
+  });
+
+  it("한국 중심 Narrative Lite 지도는 기존 Lite 점을 수평 순환 이동한 동일한 리소스", () => {
+    const original = readMapPoints("world-map-dots-lite.svg");
+    const centered = readMapPoints("world-map-dots-lite-korea-centered.svg");
+    const koreaX = ((KOREA_ANCHOR.lng + 180) / 360) * WORLD_MAP_SIZE.width;
+    const offsetX = WORLD_MAP_SIZE.width / 2 - koreaX;
+
+    expect(centered.declaredCount).toBe(original.points.length);
+    expect(centered.points).toHaveLength(original.points.length);
+    expect(centered.viewBox).toBe("0 0 800 400");
+    expect(new Set(centered.points.map((point) => `${point.x}:${point.y}`)).size)
+      .toBe(centered.points.length);
+    centered.points.forEach((point, index) => {
+      const sourcePoint = original.points[index];
+      const expectedX = ((sourcePoint.x + offsetX) % WORLD_MAP_SIZE.width + WORLD_MAP_SIZE.width)
+        % WORLD_MAP_SIZE.width;
+
+      expect(point.x).toBeCloseTo(expectedX, 3);
+      expect(point.y).toBe(sourcePoint.y);
+    });
+  });
+
+  it("Lite Camera는 확대 진행도와 무관하게 한국 Anchor를 동일한 화면 중앙에 배치", () => {
+    const center = { x: 480, y: 320 };
+    const anchor = { x: 180, y: 120 };
+    const camera = calculateLiteMapCameraTransform(center, anchor, 2.4);
+
+    expect(camera.translateX + camera.scale * anchor.x).toBeCloseTo(center.x);
+    expect(camera.translateY + camera.scale * anchor.y).toBeCloseTo(center.y);
   });
 
   it("이름, 포지션, 한글 Navigation, Server Topology를 표시", () => {
@@ -125,7 +411,7 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".topology-card-frame")).toBeInTheDocument();
     expect(document.querySelector(".topology-map-svg")).toBeInTheDocument();
     expect(document.querySelectorAll(".topology-map-svg")).toHaveLength(1);
-    expect(document.querySelector(".topology-map-dots")).toBeInTheDocument();
+    expect(document.querySelector(".topology-map-raster")).toBeInTheDocument();
     expect(document.querySelectorAll(".topology-map-zoom")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-svg")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(0);
@@ -143,9 +429,9 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".topology-project-gallery-caption")).toHaveTextContent("특성화고 진로 특강");
     expect(document.querySelectorAll(".topology-project-gallery-caption")[1]).toHaveTextContent("KFIP Toss특별상 수상");
     expect(document.querySelectorAll(".topology-project-gallery-caption")[2]).toHaveTextContent("Hello New() World 해커톤 대상 수상");
-    expect(document.querySelector(".topology-map-dots")).toHaveAttribute(
+    expect(document.querySelector(".topology-map-raster")).toHaveAttribute(
       "href",
-      "/maps/world-map-dots.svg#world-map-dots",
+      "/maps/lite/world-dark.webp",
     );
     const koreaAnchor = screen.getByTestId("korea-anchor");
     const koreaMarker = screen.getByTestId("korea-marker");
@@ -202,7 +488,7 @@ describe("포트폴리오 메인", () => {
     expect(menuButton).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("Browser Idle 이후 후반 지도 Geometry를 기존 Asset과 Dot 수로 활성화", async () => {
+  it("초기 Lite 모드에서 Browser Idle 이후에도 Low 지도 Asset을 유지", async () => {
     const idleCallbacks: IdleRequestCallback[] = [];
     vi.stubGlobal("requestIdleCallback", vi.fn((callback: IdleRequestCallback) => {
       idleCallbacks.push(callback);
@@ -221,14 +507,33 @@ describe("포트폴리오 메인", () => {
       }));
     });
 
-    expect(document.querySelector(".topology-narrative-world-map-dots"))
-      .toHaveAttribute("href", "/maps/world-map-dots.svg#world-map-dots");
-    expect(document.querySelector(".topology-narrative-world-map-dots"))
-      .toHaveAttribute("data-dot-count", String(WORLD_MAP_DOT_COUNT));
-    expect(document.querySelector(".topology-focus-map-dots"))
-      .toHaveAttribute("href", "/maps/east-asia-map-dots.svg#east-asia-map-dots");
-    expect(document.querySelector(".topology-focus-map-dots"))
-      .toHaveAttribute("data-dot-count", String(EAST_ASIA_DOT_COUNT));
+    expect(document.querySelector(".topology-narrative-world-map-raster"))
+      .toHaveAttribute("href", "/maps/lite/world-dark.webp");
+    expect(document.querySelector(".topology-focus-map-east-asia-raster"))
+      .toHaveAttribute("href", "/maps/lite/east-asia-dark.webp");
+    expect(document.querySelector(".topology-focus-map-korea-mid-raster"))
+      .toHaveAttribute("href", "/maps/lite/korea-mid-dark.webp");
+  });
+
+  it("hardware renderer 확인 이후에만 Full 지도 Asset으로 승격", async () => {
+    installHardwareRenderer();
+
+    startPerformanceRuntime({
+      requestAnimationFrame: vi.fn(() => 1),
+      cancelAnimationFrame: vi.fn(),
+    });
+    render(<Home />);
+
+    await waitFor(() => {
+      expect(document.querySelector(".topology-map-dots")).toHaveAttribute(
+        "href",
+        "/maps/world-map-dots.svg#world-map-dots",
+      );
+    });
+    await waitFor(() => {
+      expect(document.querySelector(".topology-focus-map-dots"))
+        .toHaveAttribute("href", "/maps/east-asia-map-dots.svg#east-asia-map-dots");
+    });
   });
 
   it("Mobile Performance Profile uses low-density map assets only", async () => {
@@ -248,6 +553,14 @@ describe("포트폴리오 메인", () => {
       return idleCallbacks.length;
     }));
     vi.stubGlobal("cancelIdleCallback", vi.fn());
+    const context = {
+      getExtension: vi.fn((name: string) => name === "WEBGL_debug_renderer_info"
+        ? { UNMASKED_RENDERER_WEBGL: 0x9246 }
+        : name === "WEBGL_lose_context" ? { loseContext: vi.fn() } : null),
+      getParameter: vi.fn(() => "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060, D3D11)"),
+    } as unknown as WebGLRenderingContext;
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context);
+    startPerformanceRuntime({ requestAnimationFrame: vi.fn(() => 1), cancelAnimationFrame: vi.fn() });
 
     render(<Home />);
 
@@ -392,9 +705,13 @@ describe("포트폴리오 메인", () => {
     expect(MAP_DOT_SCREEN_WIDTH.worldStart).toBeCloseTo(1.65);
     expect(MAP_DOT_SCREEN_WIDTH.worldHandoff).toBeCloseTo(2.05);
     expect(MAP_DOT_SCREEN_WIDTH.focusFinal).toBeCloseTo(3.6);
+    expect(getMapDotWidths(calculateMapZoomState(0.5), false, false, true)).toEqual({
+      worldMapDotWidth: 2.4,
+      focusMapDotWidth: 3,
+    });
     expect(document.querySelectorAll(".topology-map-svg")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-map-zoom")).toHaveLength(1);
-    expect(document.querySelectorAll(".topology-map-dots")).toHaveLength(1);
+    expect(document.querySelectorAll(".topology-map-raster")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-svg")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-zoom")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(0);
@@ -405,17 +722,23 @@ describe("포트폴리오 메인", () => {
     expect(focusMapPlane?.parentElement).toBe(stage);
     expect(galleryPlane?.parentElement).toBe(stage);
     expect(galleryPlane).toHaveAttribute("aria-hidden", "true");
+    expect(stage?.style.getPropertyValue("--world-map-dot-width")).toBe("1.25");
+    expect(stage?.style.getPropertyValue("--focus-map-dot-width")).toBe("1.25");
     expect(stage?.style.getPropertyValue("--gallery-plane-left")).not.toBe("");
     expect(stage?.style.getPropertyValue("--gallery-origin-x")).not.toBe("");
     expect(stage?.style.getPropertyValue("--gallery-origin-y")).not.toBe("");
     expect(galleryFrames).toHaveLength(3);
     expect(galleryPlane?.querySelectorAll(".topology-project-gallery-image")).toHaveLength(0);
     galleryFrames?.forEach((frame) => {
+      const index = Number(frame.dataset.galleryIndex ?? "1") - 1;
+      const initialFrameState = calculateGalleryFrameState(0, index, "desktop");
+
       expect(frame.style.aspectRatio).not.toBe("");
-      expect(frame.style.getPropertyValue("--gallery-blur")).not.toBe("");
-      expect(frame.style.getPropertyValue("--gallery-x")).not.toBe("");
-      expect(frame.style.getPropertyValue("--gallery-y")).not.toBe("");
-      expect(frame.style.getPropertyValue("--gallery-z")).not.toBe("");
+      expect(frame.style.getPropertyValue("--gallery-blur")).toBe(`${initialFrameState.blur}px`);
+      expect(frame.style.getPropertyValue("--gallery-scale")).toBe(String(initialFrameState.scale));
+      expect(frame.style.getPropertyValue("--gallery-x")).toBe("0px");
+      expect(frame.style.getPropertyValue("--gallery-y")).toBe("0px");
+      expect(frame.style.getPropertyValue("--gallery-z")).toBe(`${initialFrameState.z}px`);
       expect(frame.style.getPropertyValue("--gallery-translate-x")).toBe("");
       expect(frame.style.getPropertyValue("--gallery-translate-y")).toBe("");
       expect(frame.style.getPropertyValue("--gallery-rotate")).toBe("");
@@ -1055,6 +1378,25 @@ describe("포트폴리오 메인", () => {
     expect(metrics.sceneExitStart).toBeLessThan(metrics.sceneExitEnd);
   });
 
+  it("Lite 최종 확대 이후에는 Scene·Layout 경계에서만 Camera를 재적용", () => {
+    const metrics = calculateHeroScrollMetrics(1000);
+
+    expect(shouldUpdateLiteMapCamera(true, metrics.zoomEnd - 1, metrics, false)).toBe(true);
+    expect(shouldUpdateLiteMapCamera(true, metrics.zoomEnd, metrics, false)).toBe(false);
+    expect(shouldUpdateLiteMapCamera(true, metrics.zoomEnd, metrics, true)).toBe(true);
+    expect(shouldUpdateLiteMapCamera(false, metrics.zoomEnd, metrics, false)).toBe(true);
+  });
+
+  it("Scroll phase 경계에서 지도와 Gallery 갱신 구간을 구분", () => {
+    const metrics = calculateHeroScrollMetrics(1000);
+
+    expect(getHeroScenePhase(0, metrics)).toBe("topology");
+    expect(getHeroScenePhase(metrics.mapCenterStart, metrics)).toBe("world");
+    expect(getHeroScenePhase(metrics.zoomStart, metrics)).toBe("gallery");
+    expect(getHeroScenePhase(metrics.zoomEnd, metrics)).toBe("exit");
+    expect(getHeroScenePhase(metrics.sceneExitEnd, metrics)).toBe("complete");
+  });
+
   it("Portrait에서는 Center와 Zoom을 겹치며 초기 대기 구간을 제거", () => {
     const metrics = calculateHeroScrollMetrics(1000, "portrait");
 
@@ -1667,6 +2009,8 @@ describe("포트폴리오 메인", () => {
       removeListener: vi.fn(),
       dispatchEvent: vi.fn(),
     })));
+    installHardwareRenderer();
+    startPerformanceRuntime({ requestAnimationFrame: vi.fn(() => 1), cancelAnimationFrame: vi.fn() });
     render(<Home />);
 
     const card = document.querySelector<HTMLElement>(".service-graph");
@@ -1708,6 +2052,8 @@ describe("포트폴리오 메인", () => {
       removeListener: vi.fn(),
       dispatchEvent: vi.fn(),
     })));
+    installHardwareRenderer();
+    startPerformanceRuntime({ requestAnimationFrame: vi.fn(() => 1), cancelAnimationFrame: vi.fn() });
     render(<Home />);
 
     const hero = document.querySelector<HTMLElement>(".hero")!;
@@ -1747,6 +2093,48 @@ describe("포트폴리오 메인", () => {
     expect(stage.style.getPropertyValue("--marker-pointer-y")).toBe("0px");
   });
 
+  it("Lite에서는 Pointer Tilt·Marker 시각 효과를 적용하지 않음", async () => {
+    vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+      matches: query.includes("min-width: 1024px") || query.includes("hover: hover"),
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })));
+    render(<Home />);
+
+    const card = document.querySelector<HTMLElement>(".service-graph")!;
+    const hero = document.querySelector<HTMLElement>(".hero")!;
+    const stage = document.querySelector<HTMLElement>(".hero-visual-stage")!;
+    vi.spyOn(card, "getBoundingClientRect").mockReturnValue({
+      bottom: 300,
+      height: 300,
+      left: 0,
+      right: 400,
+      top: 0,
+      width: 400,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    fireEvent.resize(window);
+    fireEvent.pointerMove(card, { clientX: 300, clientY: 75, pointerType: "mouse" });
+    fireEvent.pointerMove(hero, { clientX: 400, clientY: 0, pointerType: "mouse" });
+
+    await waitFor(() => {
+      expect(card.style.getPropertyValue("--card-rotate-x")).toBe("0deg");
+      expect(card.style.getPropertyValue("--card-rotate-y")).toBe("0deg");
+      expect(stage.style.getPropertyValue("--marker-pointer-x")).toBe("0px");
+      expect(stage.style.getPropertyValue("--marker-pointer-y")).toBe("0px");
+      expect(stage.style.getPropertyValue("--marker-opacity")).toBe("1");
+      expect(stage.style.getPropertyValue("--korea-x")).toBe(`${projectPoint(KOREA_ANCHOR).x / WORLD_MAP_SIZE.width * 100}%`);
+      expect(stage.style.getPropertyValue("--korea-y")).toBe(`${projectPoint(KOREA_ANCHOR).y / WORLD_MAP_SIZE.height * 100}%`);
+    });
+  });
+
   it("Reduced Motion에서는 System Card Pointer Tilt를 적용하지 않음", () => {
     vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
       matches: true,
@@ -1770,6 +2158,13 @@ describe("포트폴리오 메인", () => {
     expect(card!.style.getPropertyValue("--card-rotate-y")).toBe("0deg");
     expect(stage!.style.getPropertyValue("--marker-pointer-x")).toBe("0px");
     expect(stage!.style.getPropertyValue("--marker-pointer-y")).toBe("0px");
+    const currentMobileViewBox = calculatePortraitKoreaViewBox(0, 0);
+    const mobileStartViewBox = expandViewBoxAroundFocus(
+      currentMobileViewBox,
+      EAST_ASIA_FOCUS_POINT,
+      MOBILE_FOCUS_START_OVERVIEW_RATIO,
+      EAST_ASIA_VIEWBOX,
+    );
     expect(stage).toHaveStyle({
       "--card-map-opacity": "0",
       "--focus-map-dot-width": String(MAP_DOT_SCREEN_WIDTH.focusFinal),
@@ -1784,21 +2179,10 @@ describe("포트폴리오 메인", () => {
     document.querySelectorAll<HTMLElement>(".topology-project-gallery-frame").forEach((frame) => {
       expect(frame.style.getPropertyValue("--gallery-opacity")).toBe("0");
     });
-    expect(document.querySelector(".topology-narrative-world-map-zoom")).toHaveAttribute(
-      "transform",
-      expect.stringContaining(`scale(${FOCUS_HANDOFF_END_SCALE})`),
-    );
-    const currentMobileViewBox = calculatePortraitKoreaViewBox(0, 0);
-    const mobileStartViewBox = expandViewBoxAroundFocus(
-      currentMobileViewBox,
-      EAST_ASIA_FOCUS_POINT,
-      MOBILE_FOCUS_START_OVERVIEW_RATIO,
-      EAST_ASIA_VIEWBOX,
-    );
-    expect(document.querySelector(".topology-focus-map-zoom")).toHaveAttribute(
-      "transform",
-      expect.stringContaining(`scale(${calculateMobileFocusFinalScale(currentMobileViewBox, mobileStartViewBox)})`),
-    );
+    expect(document.querySelector<SVGGElement>(".topology-narrative-world-map-zoom")?.getAttribute("transform"))
+      .toContain(`scale(${FOCUS_HANDOFF_END_SCALE})`);
+    expect(document.querySelector<SVGGElement>(".topology-focus-map-zoom")?.getAttribute("transform"))
+      .toContain(`scale(${calculateMobileFocusFinalScale(currentMobileViewBox, mobileStartViewBox)})`);
     expect(document.querySelector<HTMLElement>(".about-section")).toHaveStyle({
       "--about-opacity": "1",
       "--about-anchor-offset": "0px",

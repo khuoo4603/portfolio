@@ -101,10 +101,10 @@ describe("Initial Theme", () => {
     expect(typeof script.props.dangerouslySetInnerHTML?.__html).toBe("string");
   });
 
-  it("SSR HTML을 High Performance Mode로 전달", () => {
+  it("SSR HTML을 Lite Performance Mode로 전달", () => {
     const layout = RootLayout({ children: null, params: Promise.resolve({}) });
 
-    expect(layout.props["data-performance"]).toBe("high");
+    expect(layout.props["data-performance"]).toBe("lite");
   });
 
   it("Root Layout Performance Script를 beforeInteractive로 설정", () => {
@@ -117,7 +117,7 @@ describe("Initial Theme", () => {
     expect(script.props.dangerouslySetInnerHTML.__html).not.toContain("localStorage");
   });
 
-  it("Performance Script는 기존 저장값을 무시하고 항상 High로 초기화", () => {
+  it("Performance Script는 기존 저장값을 무시하고 항상 Lite로 초기화", () => {
     const legacyStorageKey = ["portfolio", "performance", "mode"].join("-");
     window.localStorage.setItem(legacyStorageKey, "lite");
     const getItem = vi.spyOn(Storage.prototype, "getItem");
@@ -125,7 +125,7 @@ describe("Initial Theme", () => {
     new Function(getPerformanceScript().props.dangerouslySetInnerHTML.__html)();
 
     expect(getItem).not.toHaveBeenCalled();
-    expect(document.documentElement.dataset.performance).toBe("high");
+    expect(document.documentElement.dataset.performance).toBe("lite");
   });
 
   it.each([

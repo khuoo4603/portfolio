@@ -44,7 +44,7 @@ const themeInitScript = `
 
 const performanceInitScript = `
 (() => {
-  document.documentElement.dataset.performance = "high";
+  document.documentElement.dataset.performance = "lite";
 })();
 `;
 
@@ -68,7 +68,7 @@ export function generateMetadata(): Metadata {
 // 전체 페이지 Theme과 Font Foundation 적용
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" data-theme="dark" data-performance="high" suppressHydrationWarning className="h-full antialiased">
+    <html lang="ko" data-theme="dark" data-performance="lite" suppressHydrationWarning className="h-full antialiased">
       <body className={`${instrumentSans.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable} min-h-full flex flex-col`}>
         <Script
           id="theme-init"

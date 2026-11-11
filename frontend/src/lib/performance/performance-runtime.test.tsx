@@ -77,9 +77,10 @@ describe("Performance Runtime", () => {
 
     startPerformanceRuntime();
 
-    expect(window.__PORTFOLIO_PERFORMANCE__?.getSnapshot()).toEqual({ effectiveMode: "high" });
+    expect(window.__PORTFOLIO_PERFORMANCE__?.getSnapshot()).toEqual({ effectiveMode: "lite" });
     expect(window.__PORTFOLIO_PERFORMANCE__?.getDiagnostics()).toMatchObject({
-      effectiveMode: "high",
+      effectiveMode: "lite",
+      gpuCapability: "unknown",
       frameCount: 0,
       lastModeChangeReason: null,
     });

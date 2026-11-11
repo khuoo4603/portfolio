@@ -1,4 +1,10 @@
 export type EffectivePerformanceMode = "high" | "lite";
+export type GraphicsCapability = "hardware" | "software" | "unknown";
+
+export type GraphicsDetection = {
+  capability: GraphicsCapability;
+  renderer: string | null;
+};
 
 export type PerformanceState = {
   effectiveMode: EffectivePerformanceMode;
@@ -9,6 +15,7 @@ export type PerformanceTransitionReason =
   | "frame-delay-distribution"
   | "interactive-frame-delay"
   | "long-task-with-frame-delay"
+  | "gpu-hardware-confirmed"
   | "healthy-recovery";
 
 export type PerformanceDiagnostics = {
@@ -28,6 +35,8 @@ export type PerformanceDiagnostics = {
   lastWindowAt: number | null;
   lastModeChangeAt: number | null;
   lastModeChangeReason: PerformanceTransitionReason | null;
+  gpuCapability: GraphicsCapability;
+  gpuRenderer: string | null;
 };
 
 type FrameCallback = (timestamp: number) => void;
@@ -41,6 +50,8 @@ export type PerformanceMonitorOptions = {
   highWindowStreak?: number;
   cooldownMs?: number;
   windowGapMs?: number;
+  canRecoverToHigh?: () => boolean;
+  initialMode?: EffectivePerformanceMode;
 };
 
 type PerformanceMonitor = {
@@ -56,15 +67,15 @@ export const PERFORMANCE_HIGH_WINDOW_STREAK = 3;
 export const PERFORMANCE_COOLDOWN_MS = 2_000;
 export const PERFORMANCE_WINDOW_GAP_MS = 500;
 
-const INITIAL_STATE: PerformanceState = { effectiveMode: "high" };
-const SERVER_STATE: PerformanceState = { effectiveMode: "high" };
+const INITIAL_STATE: PerformanceState = { effectiveMode: "lite" };
+const SERVER_STATE: PerformanceState = { effectiveMode: "lite" };
 const LONG_TASK_COUNT_THRESHOLD = 2;
 const LONG_FRAME_INTERVAL_MS = 32;
 const LONG_FRAME_COUNT_THRESHOLD = 2;
 const LONG_FRAME_RATIO_THRESHOLD = 0.1;
 
 const INITIAL_DIAGNOSTICS: PerformanceDiagnostics = {
-  effectiveMode: "high",
+  effectiveMode: "lite",
   fps: null,
   averageFrameInterval: null,
   p95FrameInterval: null,
@@ -80,6 +91,8 @@ const INITIAL_DIAGNOSTICS: PerformanceDiagnostics = {
   lastWindowAt: null,
   lastModeChangeAt: null,
   lastModeChangeReason: null,
+  gpuCapability: "unknown",
+  gpuRenderer: null,
 };
 
 declare global {
@@ -95,6 +108,9 @@ let state = INITIAL_STATE;
 let runtimeStarted = false;
 let monitor: PerformanceMonitor | null = null;
 let diagnostics = INITIAL_DIAGNOSTICS;
+let graphicsCapability: GraphicsCapability = "unknown";
+let graphicsRenderer: string | null = null;
+let graphicsCheckCompleted = false;
 const listeners = new Set<() => void>();
 
 function notify() {
@@ -109,15 +125,88 @@ function applyEffectiveMode(mode: EffectivePerformanceMode) {
   }
 }
 
-function applyAutomaticMode(mode: EffectivePerformanceMode) {
+function applyAutomaticMode(
+  mode: EffectivePerformanceMode,
+  reason: PerformanceTransitionReason = mode === "high" ? "healthy-recovery" : "low-fps",
+) {
   if (!runtimeStarted || state.effectiveMode === mode) {
     return;
   }
 
   state = { ...state, effectiveMode: mode };
-  diagnostics = { ...diagnostics, effectiveMode: mode };
+  diagnostics = {
+    ...diagnostics,
+    effectiveMode: mode,
+    lastModeChangeReason: reason,
+  };
   applyEffectiveMode(mode);
   notify();
+}
+
+function isSoftwareRenderer(renderer: string) {
+  return /swiftshader|llvmpipe|softpipe|warp|software rasterizer|basic render/i.test(renderer);
+}
+
+function isKnownHardwareRenderer(renderer: string) {
+  return /nvidia|geforce|amd|radeon|intel|iris|uhd graphics|apple gpu|apple m|adreno|mali|powervr|qualcomm/i.test(renderer);
+}
+
+// WebGL Renderer 정보 기반 초기 그래픽 환경 판정
+export function detectGraphicsCapability(): GraphicsDetection {
+  if (typeof document === "undefined") {
+    return { capability: "unknown", renderer: null };
+  }
+
+  const canvas = document.createElement("canvas");
+  let context: WebGLRenderingContext | WebGL2RenderingContext | null = null;
+  let renderer: string | null = null;
+  let loseContext: { loseContext?: () => void } | null = null;
+
+  try {
+    const contextOptions: WebGLContextAttributes = {
+      alpha: false,
+      antialias: false,
+      preserveDrawingBuffer: false,
+    };
+    context = canvas.getContext("webgl2", contextOptions) as WebGL2RenderingContext | null;
+    if (!context) {
+      context = canvas.getContext("webgl", contextOptions) as WebGLRenderingContext | null;
+    }
+    if (!context) {
+      return { capability: "unknown", renderer: null };
+    }
+
+    const debugInfo = context.getExtension("WEBGL_debug_renderer_info") as {
+      UNMASKED_RENDERER_WEBGL: number;
+    } | null;
+    if (!debugInfo) {
+      return { capability: "unknown", renderer: null };
+    }
+
+    const rawRenderer = context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+    renderer = typeof rawRenderer === "string" && rawRenderer.trim() ? rawRenderer.trim() : null;
+    if (!renderer) {
+      return { capability: "unknown", renderer: null };
+    }
+
+    return {
+      capability: isSoftwareRenderer(renderer)
+        ? "software"
+        : isKnownHardwareRenderer(renderer) ? "hardware" : "unknown",
+      renderer,
+    };
+  } catch {
+    return { capability: "unknown", renderer };
+  } finally {
+    try {
+      loseContext = context?.getExtension("WEBGL_lose_context") as {
+        loseContext?: () => void;
+      } | null;
+      loseContext?.loseContext?.();
+    } catch {
+      // Context 정리 실패 시에도 측정 런타임 지속
+    }
+  }
 }
 
 function startMonitor(options?: PerformanceMonitorOptions) {
@@ -125,7 +214,11 @@ function startMonitor(options?: PerformanceMonitorOptions) {
     return;
   }
 
-  monitor = createPerformanceMonitor(applyAutomaticMode, options);
+  monitor = createPerformanceMonitor(applyAutomaticMode, {
+    ...options,
+    canRecoverToHigh: () => graphicsCapability === "hardware",
+    initialMode: state.effectiveMode,
+  });
   monitor.start();
 }
 
@@ -144,6 +237,8 @@ export function createPerformanceMonitor(
   const highWindowStreakLimit = options.highWindowStreak ?? PERFORMANCE_HIGH_WINDOW_STREAK;
   const modeCooldownMs = options.cooldownMs ?? PERFORMANCE_COOLDOWN_MS;
   const windowGapMs = options.windowGapMs ?? PERFORMANCE_WINDOW_GAP_MS;
+  const canRecoverToHigh = options.canRecoverToHigh
+    ?? (() => graphicsCapability === "hardware");
 
   let active = false;
   let frameId: number | null = null;
@@ -157,7 +252,7 @@ export function createPerformanceMonitor(
   let activityObserved = false;
   let lastModeChangeAt = Number.NEGATIVE_INFINITY;
   let lastModeChangeReason: PerformanceTransitionReason | null = null;
-  let currentMode: EffectivePerformanceMode = state.effectiveMode;
+  let currentMode: EffectivePerformanceMode = options.initialMode ?? "high";
   let longTaskObserver: PerformanceObserver | null = null;
   let latestDiagnostics = INITIAL_DIAGNOSTICS;
 
@@ -246,7 +341,9 @@ export function createPerformanceMonitor(
 
     const nextMode = isLowPerformance
       ? lowWindowStreak >= lowWindowStreakLimit ? "lite" : null
-      : !hasLongTaskInstability && highWindowStreak >= highWindowStreakLimit ? "high" : null;
+      : canRecoverToHigh()
+        && !hasLongTaskInstability
+        && highWindowStreak >= highWindowStreakLimit ? "high" : null;
 
     const shouldChangeMode = nextMode
       && nextMode !== currentMode
@@ -275,6 +372,8 @@ export function createPerformanceMonitor(
       lastWindowAt: timestamp,
       lastModeChangeAt: Number.isFinite(lastModeChangeAt) ? lastModeChangeAt : null,
       lastModeChangeReason,
+      gpuCapability: graphicsCapability,
+      gpuRenderer: graphicsRenderer,
     };
     diagnostics = latestDiagnostics;
   };
@@ -406,6 +505,22 @@ export function startPerformanceRuntime(options?: PerformanceMonitorOptions) {
       getDiagnostics: getPerformanceDiagnostics,
     };
   }
+
+  if (!graphicsCheckCompleted) {
+    graphicsCheckCompleted = true;
+    const detection = detectGraphicsCapability();
+    graphicsCapability = detection.capability;
+    graphicsRenderer = detection.renderer;
+    diagnostics = {
+      ...diagnostics,
+      gpuCapability: graphicsCapability,
+      gpuRenderer: graphicsRenderer,
+    };
+    if (graphicsCapability === "hardware") {
+      applyAutomaticMode("high", "gpu-hardware-confirmed");
+    }
+  }
+
   startMonitor(options);
 }
 
@@ -420,4 +535,7 @@ export function resetPerformanceModeForTests() {
   stopPerformanceRuntime();
   state = INITIAL_STATE;
   diagnostics = INITIAL_DIAGNOSTICS;
+  graphicsCapability = "unknown";
+  graphicsRenderer = null;
+  graphicsCheckCompleted = false;
 }

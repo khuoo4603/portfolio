@@ -1,0 +1,24 @@
+{
+  "eastAsia": {
+    "sourceX": 0,
+    "sourceY": 0,
+    "sourceWidth": 1600,
+    "sourceHeight": 900,
+    "referenceZoomProgress": 0.78,
+    "targetScreenDotDiameter": 3,
+    "targetScreenDotSpacing": 11,
+    "outputWidth": 2560,
+    "outputHeight": 1440
+  },
+  "koreaMid": {
+    "sourceX": 180.99692307692308,
+    "sourceY": 101.45131578947369,
+    "sourceWidth": 1360,
+    "sourceHeight": 765,
+    "referenceZoomProgress": 0.88,
+    "targetScreenDotDiameter": 3,
+    "targetScreenDotSpacing": 10,
+    "outputWidth": 2560,
+    "outputHeight": 1440
+  }
+}

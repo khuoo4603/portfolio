@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createPerformanceMonitor,
+  detectGraphicsCapability,
   getPerformanceDiagnostics,
   getPerformanceSnapshot,
   resetPerformanceModeForTests,
@@ -78,6 +79,8 @@ function createMonitorOptions(driver: ReturnType<typeof createFrameDriver>, visi
     highWindowStreak: 3,
     cooldownMs: 0,
     windowGapMs: 0,
+    canRecoverToHigh: () => true,
+    initialMode: "high" as const,
   };
 }
 
@@ -95,8 +98,8 @@ describe("performance mode store", () => {
     delete document.documentElement.dataset.performance;
   });
 
-  it("uses high as the initial effective mode", () => {
-    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "high" });
+  it("uses lite as the initial effective mode before the GPU check", () => {
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
   });
 
   it.each(["high", "lite"] as const)("ignores legacy stored %s preference", (stored) => {
@@ -108,7 +111,7 @@ describe("performance mode store", () => {
     startPerformanceRuntime(createMonitorOptions(driver));
 
     expect(getItem).not.toHaveBeenCalled();
-    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "high" });
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
   });
 
   it("switches to lite only after two consecutive low-performance windows", () => {
@@ -290,10 +293,10 @@ describe("performance mode store", () => {
     }
   });
 
-  it("starts automatic measurements from high and applies detected lite mode", () => {
+  it("starts automatic measurements from lite and keeps lite after low-performance detection", () => {
     const driver = createFrameDriver();
     startPerformanceRuntime(createMonitorOptions(driver));
-    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "high" });
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
 
     const timestamp = flushWindow(driver, 0, 40, 30);
     flushWindow(driver, timestamp, 40, 30);
@@ -301,7 +304,110 @@ describe("performance mode store", () => {
     expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
   });
 
-  it("recovers after restarting the runtime from the current lite mode", () => {
+  it.each([
+    ["hardware", "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060, D3D11)"],
+    ["software", "Google SwiftShader"],
+    ["unknown", "Generic WebGL Renderer"],
+  ] as const)("classifies %s renderer evidence conservatively", (expected, renderer) => {
+    const getExtension = vi.fn((name: string) => {
+      if (name === "WEBGL_debug_renderer_info") {
+        return { UNMASKED_RENDERER_WEBGL: 0x9246 };
+      }
+      if (name === "WEBGL_lose_context") {
+        return { loseContext: vi.fn() };
+      }
+      return null;
+    });
+    const context = {
+      RENDERER: 0x1f01,
+      getExtension,
+      getParameter: vi.fn(() => renderer),
+    } as unknown as WebGLRenderingContext;
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue(context);
+
+    expect(detectGraphicsCapability()).toMatchObject({
+      capability: expected,
+      renderer,
+    });
+    expect(getContext).toHaveBeenCalledWith("webgl2", expect.any(Object));
+    expect(getExtension).toHaveBeenCalledWith("WEBGL_lose_context");
+  });
+
+  it("promotes to high only after a confirmed hardware renderer and checks GPU once", () => {
+    const context = {
+      getExtension: vi.fn((name: string) => name === "WEBGL_debug_renderer_info"
+        ? { UNMASKED_RENDERER_WEBGL: 0x9246 }
+        : name === "WEBGL_lose_context" ? { loseContext: vi.fn() } : null),
+      getParameter: vi.fn(() => "ANGLE (Intel, Intel(R) UHD Graphics, D3D11)"),
+    } as unknown as WebGLRenderingContext;
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue(context);
+
+    startPerformanceRuntime(createMonitorOptions(createFrameDriver()));
+    startPerformanceRuntime(createMonitorOptions(createFrameDriver()));
+
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "high" });
+    expect(getPerformanceDiagnostics()).toMatchObject({
+      effectiveMode: "high",
+      gpuCapability: "hardware",
+      gpuRenderer: "ANGLE (Intel, Intel(R) UHD Graphics, D3D11)",
+      lastModeChangeReason: "gpu-hardware-confirmed",
+    });
+    expect(getContext).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    "Google SwiftShader",
+    "Generic WebGL Renderer",
+  ])("keeps %s environments in lite mode after healthy RAF windows", (renderer) => {
+    const context = {
+      getExtension: vi.fn((name: string) => name === "WEBGL_debug_renderer_info"
+        ? { UNMASKED_RENDERER_WEBGL: 0x9246 }
+        : name === "WEBGL_lose_context" ? { loseContext: vi.fn() } : null),
+      getParameter: vi.fn(() => renderer),
+    } as unknown as WebGLRenderingContext;
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context);
+    const driver = createFrameDriver();
+
+    startPerformanceRuntime(createMonitorOptions(driver));
+    let timestamp = flushWindow(driver, 0, 16, 4);
+    timestamp = flushWindow(driver, timestamp, 16, 4);
+    flushWindow(driver, timestamp, 16, 4);
+
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
+  });
+
+  it("recovers to high only after stable RAF windows on confirmed hardware", () => {
+    const context = {
+      getExtension: vi.fn((name: string) => name === "WEBGL_debug_renderer_info"
+        ? { UNMASKED_RENDERER_WEBGL: 0x9246 }
+        : name === "WEBGL_lose_context" ? { loseContext: vi.fn() } : null),
+      getParameter: vi.fn(() => "ANGLE (AMD, Radeon RX 6800, D3D11)"),
+    } as unknown as WebGLRenderingContext;
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context);
+    const driver = createFrameDriver();
+
+    startPerformanceRuntime(createMonitorOptions(driver));
+    let timestamp = flushWindow(driver, 0, 40, 4);
+    timestamp = flushWindow(driver, timestamp, 40, 4);
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
+    timestamp = flushWindow(driver, timestamp, 16, 4);
+    timestamp = flushWindow(driver, timestamp, 16, 4);
+    flushWindow(driver, timestamp, 16, 4);
+
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "high" });
+  });
+
+  it("keeps lite when WebGL context creation fails", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() => {
+      throw new Error("context unavailable");
+    });
+
+    expect(detectGraphicsCapability()).toEqual({ capability: "unknown", renderer: null });
+  });
+
+  it("does not recover to high without confirmed hardware evidence", () => {
     const lowDriver = createFrameDriver();
     startPerformanceRuntime(createMonitorOptions(lowDriver));
     let timestamp = flushWindow(lowDriver, 0, 40, 4);
@@ -315,7 +421,7 @@ describe("performance mode store", () => {
     timestamp = flushWindow(healthyDriver, timestamp, 16, 4);
     flushWindow(healthyDriver, timestamp, 16, 4);
 
-    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "high" });
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
   });
 
   it("cancels pending measurements and disconnects the observer on stop", () => {

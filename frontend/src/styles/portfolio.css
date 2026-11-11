@@ -1995,6 +1995,22 @@ a.project-thumbnail {
   stroke-width: var(--focus-map-dot-width);
 }
 
+/* Lite WebP LOD의 고정 테마 이미지와 East Asia·Korea Focus Crossfade */
+.topology-narrative-world-map-raster,
+.topology-focus-map-east-asia-raster,
+.topology-focus-map-korea-mid-raster {
+  pointer-events: none;
+  user-select: none;
+}
+
+.topology-focus-map-east-asia-raster {
+  opacity: var(--east-asia-map-opacity, 1);
+}
+
+.topology-focus-map-korea-mid-raster {
+  opacity: var(--korea-mid-map-opacity, 0);
+}
+
 .service-graph,
 .topology-marker-plane {
   position: absolute;
@@ -2018,6 +2034,7 @@ a.project-thumbnail {
   pointer-events: none;
 }
 
+/* Desktop Lite WebP 지도 전용 중앙 Marker Overlay */
 .topology-card-frame,
 .topology-map-clip,
 .topology-map-layer,
@@ -2057,6 +2074,10 @@ a.project-thumbnail {
   will-change: clip-path;
 }
 
+[data-performance="lite"] .topology-map-clip {
+  will-change: auto;
+}
+
 .topology-map-layer {
   top: 10%;
   right: 0;
@@ -2076,6 +2097,12 @@ a.project-thumbnail {
   will-change: opacity;
 }
 
+[data-performance="lite"] .topology-map-layer,
+[data-performance="lite"] .topology-narrative-world-map-plane,
+[data-performance="lite"] .topology-focus-map-plane {
+  will-change: auto;
+}
+
 .topology-map-svg {
   position: absolute;
   inset: 0;
@@ -2089,7 +2116,7 @@ a.project-thumbnail {
   fill: none;
   stroke: color-mix(in srgb, var(--accent-soft) 76%, var(--text-muted));
   stroke-linecap: round;
-  stroke-width: var(--world-map-dot-width);
+  stroke-width: var(--topology-map-dot-width, 1.65);
   vector-effect: non-scaling-stroke;
 }
 
