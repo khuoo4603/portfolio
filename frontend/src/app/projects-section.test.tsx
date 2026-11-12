@@ -7,14 +7,16 @@ describe("동적 Project Timeline Guard", () => {
   afterEach(cleanup);
 
   it("Project 0개에서 빈 Timeline을 안전하게 유지", () => {
-    render(<ProjectsSection projects={[]} sectionLabel="PROJECTS" sectionTitle="프로젝트" detailLabel="자세히 보기" />);
+    render(<ProjectsSection projects={[]} sectionTitle="프로젝트" detailLabel="자세히 보기" />);
+    expect(document.querySelector(".section-meta")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "프로젝트" })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "연도별 프로젝트" })).toBeEmptyDOMElement();
     expect(document.querySelector(".project-history-row")).not.toBeInTheDocument();
   });
 
   it("Project 1개에서 Hover 진행도와 내부 slug Link를 유지", () => {
     const project = PUBLIC_PORTFOLIO_FIXTURE.projects[0];
-    render(<ProjectsSection projects={[project]} sectionLabel="PROJECTS" sectionTitle="프로젝트" detailLabel="자세히 보기" />);
+    render(<ProjectsSection projects={[project]} sectionTitle="프로젝트" detailLabel="자세히 보기" />);
 
     const history = screen.getByRole("list", { name: "연도별 프로젝트" });
     fireEvent.mouseEnter(history.querySelector(".project-history-row")!);
@@ -26,7 +28,7 @@ describe("동적 Project Timeline Guard", () => {
 
   it("API 배열 증가에 따라 Row와 Timeline Node를 같은 수로 렌더링", () => {
     const projects = PUBLIC_PORTFOLIO_FIXTURE.projects;
-    render(<ProjectsSection projects={projects} sectionLabel="PROJECTS" sectionTitle="프로젝트" detailLabel="자세히 보기" />);
+    render(<ProjectsSection projects={projects} sectionTitle="프로젝트" detailLabel="자세히 보기" />);
     expect(document.querySelectorAll(".project-history-row")).toHaveLength(projects.length);
     expect(document.querySelectorAll(".project-node")).toHaveLength(projects.length);
   });

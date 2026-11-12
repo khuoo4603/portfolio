@@ -309,7 +309,6 @@
   scroll-margin-top: var(--space-64);
 }
 
-.section-meta,
 .footer-bottom {
   font-family: var(--font-family-mono);
   letter-spacing: 0.02em;
@@ -318,12 +317,98 @@
 .section-title {
   margin: 0;
   color: var(--text-heading);
+  font-size: 34px;
   font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
-.section-meta {
-  margin: 0 0 var(--space-12);
-  color: var(--text-muted);
+/* Public 텍스트와 목록의 실제 콘텐츠 단위 Motion 상태 */
+.public-motion-reveal--blur {
+  display: block;
+  transition:
+    opacity 1100ms var(--motion-easing-default),
+    filter 1100ms var(--motion-easing-default);
+}
+
+.public-motion-reveal--blur:not(.is-visible) {
+  opacity: 0;
+  filter: blur(10px);
+}
+
+.public-motion-reveal--blur.public-motion-reveal--exiting:not(.is-visible) {
+  filter: blur(0);
+}
+
+.public-motion-reveal--blur.public-motion-reveal--exiting {
+  transition-duration: 800ms;
+}
+
+.public-motion-reveal--blur.is-visible {
+  opacity: 1;
+  filter: blur(0);
+}
+
+.public-motion-reveal--opacity {
+  transition: opacity 800ms var(--motion-easing-default);
+}
+
+.public-motion-reveal--opacity:not(.is-visible) {
+  opacity: 0;
+}
+
+.public-motion-reveal--opacity.public-motion-reveal--exiting {
+  transition-duration: 650ms;
+}
+
+.public-motion-reveal--opacity.is-visible {
+  opacity: 1;
+}
+
+.typing-text {
+  display: contents;
+}
+
+.typing-text--viewport {
+  display: block;
+}
+
+.typing-text-line {
+  position: relative;
+  display: block;
+}
+
+.typing-text-measure {
+  display: block;
+  visibility: hidden;
+  white-space: pre;
+}
+
+.typing-text-visual {
+  position: absolute;
+  inset: 0 auto auto 0;
+  white-space: pre;
+}
+
+.typing-cursor {
+  display: inline-block;
+  height: 0.84em;
+  margin-left: var(--space-4);
+  border-right: 2px solid currentColor;
+  vertical-align: -0.08em;
+  animation: typing-cursor-blink var(--motion-duration-720) steps(1, end) infinite;
+}
+
+@keyframes typing-cursor-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* About 인물과 개발 여정 중심 편집형 구성 */
@@ -344,7 +429,6 @@
   grid-column: 1 / 8;
   grid-row: 1;
   padding-top: var(--space-16);
-  border-top: 1px solid var(--border-default);
 }
 
 .about-statement {
@@ -353,8 +437,7 @@
   font-weight: 500;
 }
 
-.about-statement span {
-  color: inherit;
+.about-statement-accent {
   font-weight: 600;
 }
 
@@ -385,6 +468,12 @@
   grid-row: 2;
   margin-top: var(--space-48);
   color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 1100ms var(--motion-easing-default);
+}
+
+.about-introduction.is-visible {
+  opacity: 1;
 }
 
 .about-introduction p {
@@ -426,8 +515,7 @@
   display: grid;
   grid-column: 1 / 13;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: stretch;
-  gap: var(--space-24);
+  gap: var(--space-32);
   margin: var(--space-32) 0 0;
   padding: 0;
   list-style: none;
@@ -437,22 +525,55 @@
   min-width: 0;
 }
 
-.value-card {
+.value-editorial {
   height: 100%;
+  padding-block: var(--space-32);
 }
 
-.value-card-content {
-  height: 100%;
-  padding: var(--space-32);
+.value-index-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-20);
 }
 
-.value-card-content strong {
-  color: var(--text-primary);
+.value-index {
+  flex: 0 0 auto;
+  background: linear-gradient(110deg, var(--steel-700) 0%, var(--sage-600) 100%);
+  background-clip: text;
+  color: transparent;
   font-weight: 500;
+  -webkit-background-clip: text;
 }
 
-.value-card-content p {
-  margin: var(--space-20) 0 0;
+.value-divider {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, var(--steel-300) 0%, var(--sage-500) 40%, transparent 100%);
+}
+
+.value-editorial-content {
+  margin-top: var(--space-24);
+}
+
+.value-title {
+  display: block;
+  background: linear-gradient(110deg, var(--steel-700) 0%, var(--sage-600) 100%);
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html[data-theme="dark"] .value-index,
+html[data-theme="dark"] .value-title {
+  background: linear-gradient(110deg, var(--steel-200) 0%, var(--sage-600) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.value-editorial-content p {
+  margin: var(--space-12) 0 0;
   color: var(--text-secondary);
 }
 
@@ -460,6 +581,11 @@
 .tech-section {
   overflow: hidden;
   background: var(--bg-surface);
+}
+
+html[data-theme="dark"] .tech-section,
+html[data-theme="dark"] .education-section {
+  background: #000000;
 }
 
 .tech-inner {
@@ -575,10 +701,6 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   align-items: end;
   column-gap: var(--grid-gutter);
-}
-
-.projects-heading .section-meta {
-  grid-column: 1 / 5;
 }
 
 .projects-heading h2 {
@@ -1006,7 +1128,7 @@ a.project-thumbnail {
 .portfolio-footer {
   position: relative;
   overflow: hidden;
-  background: color-mix(in srgb, var(--bg-base) 78%, var(--border-accent));
+  background: var(--bg-base);
   color: var(--text-primary);
 }
 
@@ -1145,6 +1267,18 @@ a.project-thumbnail {
   }
 }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  .section-title {
+    font-size: 40px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-title {
+    font-size: 46px;
+  }
+}
+
 @media (max-width: 1023px) {
   .main-section {
     scroll-margin-top: var(--space-112);
@@ -1188,6 +1322,10 @@ a.project-thumbnail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .value-editorial {
+    padding-block: var(--space-24);
+  }
+
   .tech-heading {
     grid-column: 1 / 4;
   }
@@ -1207,10 +1345,6 @@ a.project-thumbnail {
 
   .projects-heading {
     grid-template-columns: repeat(8, minmax(0, 1fr));
-  }
-
-  .projects-heading .section-meta {
-    grid-column: 1 / 4;
   }
 
   .projects-heading h2 {
@@ -1546,12 +1680,20 @@ a.project-thumbnail {
   }
 
   .value-list {
-    grid-template-columns: minmax(0, 1fr);
     margin-top: var(--space-32);
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .value-card-content {
-    padding: var(--space-24);
+  .section-title {
+    font-size: 34px;
+  }
+
+  .value-index-row {
+    gap: var(--space-12);
+  }
+
+  .value-editorial-content {
+    margin-top: var(--space-16);
   }
 
   .tech-inner {
@@ -1713,6 +1855,23 @@ a.project-thumbnail {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .public-motion-reveal--blur,
+  .public-motion-reveal--opacity {
+    opacity: 1;
+    filter: none;
+    transition: none;
+  }
+
+  .about-introduction {
+    opacity: 1;
+    transition: none;
+  }
+
+  .typing-cursor {
+    display: none;
+    animation: none;
+  }
+
   .navigation-link,
   .navigation-link::after,
   .theme-toggle,

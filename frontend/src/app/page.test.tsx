@@ -1619,12 +1619,13 @@ describe("포트폴리오 메인", () => {
     render(<Home />);
 
     const aboutValues = document.querySelector<HTMLElement>(".about-values")!;
-    const valueCards = aboutValues.querySelectorAll<HTMLElement>("[data-value-card]");
+    const valueItems = aboutValues.querySelectorAll<HTMLElement>("[data-value-item]");
 
     expect(document.querySelectorAll("#about")).toHaveLength(1);
     expect(document.querySelector("#about")).toHaveClass("about-anchor");
     expect(document.querySelector(".about-section")).not.toHaveAttribute("id");
     expect(document.querySelectorAll(".about-introduction")).toHaveLength(1);
+    expect(document.querySelectorAll(".section-meta")).toHaveLength(0);
     expect(document.querySelectorAll(".about-transition-window")).toHaveLength(1);
     expect(document.querySelectorAll(".about-viewport")).toHaveLength(1);
     expect(document.querySelectorAll(".about-details")).toHaveLength(0);
@@ -1634,18 +1635,26 @@ describe("포트폴리오 메인", () => {
       expect.stringContaining("kim-hyunwoo-profile.webp"),
     );
     const introduction = document.querySelector<HTMLElement>(".about-introduction")!;
+    expect(document.querySelector(".about-statement [data-typing-text]")).toBeInTheDocument();
+    expect(document.querySelector(".about-statement[data-motion-effect='blur']")).not.toBeInTheDocument();
     expect(within(introduction).getByText("BACKEND / INFRA DEVELOPER")).toHaveClass("type-title");
     expect(introduction.querySelectorAll("p:not(.about-position)")).toHaveLength(2);
     expect(introduction).toHaveTextContent(/현재 성공회대학교에서 Backend와 시스템 설계를 공부하고 있습니다/);
     expect(introduction).toHaveTextContent(/인증·권한, 로그, 모니터링, 백업과 장애 복구 방법을 확인/);
     expect(within(aboutValues).getByRole("heading", { name: "개발 철학" })).toBeInTheDocument();
-    expect(valueCards).toHaveLength(3);
-    valueCards.forEach((card) => {
-      expect(card.querySelector("[data-border-glow]")).toBeInTheDocument();
+    expect(valueItems).toHaveLength(3);
+    valueItems.forEach((item, index) => {
+      expect(item.querySelector("[data-border-glow]")).not.toBeInTheDocument();
+      expect(item.querySelector(".value-index")).toHaveTextContent(`0${index + 1}`);
+      expect(item.querySelector(".value-divider")).toBeInTheDocument();
+      expect(item.querySelector("[data-motion-effect='blur']")).toBeInTheDocument();
     });
     expect(within(aboutValues).getByText("문서화의 가치")).toBeInTheDocument();
     expect(within(aboutValues).getByText("덜어냄의 미학")).toBeInTheDocument();
     expect(within(aboutValues).getByText("운영까지")).toBeInTheDocument();
+    expect(document.querySelectorAll(".tech-row[data-motion-effect='opacity']")).toHaveLength(6);
+    expect(document.querySelectorAll(".education-info-row[data-motion-effect='opacity']")).toHaveLength(11);
+    expect(document.querySelectorAll("[data-motion-effect='blur']")).toHaveLength(6);
     expect(screen.queryByText("끝까지 완성")).not.toBeInTheDocument();
     expect(screen.queryByText("필요한 만큼만")).not.toBeInTheDocument();
     expect(screen.queryByText("운영까지 고려")).not.toBeInTheDocument();

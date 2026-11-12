@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { Fragment } from "react";
-import BorderGlow from "../components/ui/border-glow";
 import {
   PUBLIC_COPY,
   type ContentMap,
@@ -10,6 +9,7 @@ import {
 } from "@/features/portfolio/public-portfolio";
 import HeroNetworkBackground from "./hero-network-background";
 import HeroSystemCard from "./hero-system-card";
+import { AboutSequence, ScrollReveal, TypingText } from "./public-motion";
 import { PortfolioFooter, SiteHeader } from "./portfolio-chrome";
 import ProjectsSection from "./projects-section";
 import TechnologyIcon from "./technology-icon";
@@ -28,6 +28,12 @@ function Hero({ content }: { content: ContentMap }) {
   const englishName = content.ENGLISH_NAME?.split(/\s+/).filter(Boolean) ?? [];
   const firstNameLine = englishName[0];
   const secondNameLine = englishName.slice(1).join(" ");
+  const nameLines = firstNameLine
+    ? [
+        { text: firstNameLine },
+        ...(secondNameLine ? [{ text: secondNameLine, className: "hero-name-second" }] : []),
+      ]
+    : [];
 
   return (
     <section className="hero" id="home" aria-labelledby="hero-title">
@@ -41,10 +47,7 @@ function Hero({ content }: { content: ContentMap }) {
             {content.NAME || firstNameLine ? (
               <h1 className="hero-name type-display-xl" id="hero-title">
                 {content.NAME ? <span className="sr-only">{content.NAME}</span> : null}
-                {firstNameLine ? <span aria-hidden="true">{firstNameLine}</span> : null}
-                {secondNameLine ? (
-                  <span className="hero-name-second" aria-hidden="true">{secondNameLine}</span>
-                ) : null}
+                <TypingText lines={nameLines} />
               </h1>
             ) : null}
           </div>
@@ -73,10 +76,10 @@ function AboutSection({ content }: { content: ContentMap }) {
     ["DEVELOPMENT_VALUE_2_TITLE", "DEVELOPMENT_VALUE_2_DESCRIPTION"],
     ["DEVELOPMENT_VALUE_3_TITLE", "DEVELOPMENT_VALUE_3_DESCRIPTION"],
   ] as const;
-  const visibleValues = developmentValues.flatMap(([titleCode, descriptionCode]) => {
+  const visibleValues = developmentValues.flatMap(([titleCode, descriptionCode], index) => {
     const title = content[titleCode];
     const description = content[descriptionCode];
-    return title && description ? [{ title, description }] : [];
+    return title && description ? [{ number: String(index + 1).padStart(2, "0"), title, description }] : [];
   });
 
   return (
@@ -88,13 +91,12 @@ function AboutSection({ content }: { content: ContentMap }) {
       <div className="about-transition-window">
         <div className="about-viewport">
           <div className="content-container about-inner about-primary">
-            <div className="about-heading">
-              <p className="section-meta type-small">{PUBLIC_COPY.about.label}</p>
-              <h2 className="section-title type-heading" id="about-title">{PUBLIC_COPY.about.title}</h2>
-              {content.ABOUT_STATEMENT ? (
-                <p className="about-statement type-statement">{lines(content.ABOUT_STATEMENT, 1)}</p>
-              ) : null}
-            </div>
+            <AboutSequence
+              statement={content.ABOUT_STATEMENT}
+              position={content.POSITION}
+              description1={content.ABOUT_DESCRIPTION_1}
+              description2={content.ABOUT_DESCRIPTION_2}
+            />
 
             <figure className="profile-portrait">
               <Image
@@ -107,12 +109,6 @@ function AboutSection({ content }: { content: ContentMap }) {
               />
             </figure>
 
-            <div className="about-introduction type-body-lg">
-              {content.POSITION ? <p className="about-position type-title">{content.POSITION}</p> : null}
-              {content.ABOUT_DESCRIPTION_1 ? <p>{content.ABOUT_DESCRIPTION_1}</p> : null}
-              {content.ABOUT_DESCRIPTION_2 ? <p>{content.ABOUT_DESCRIPTION_2}</p> : null}
-            </div>
-
             {visibleValues.length > 0 ? (
               <div
                 className="about-values"
@@ -121,13 +117,19 @@ function AboutSection({ content }: { content: ContentMap }) {
                 <h3 className="type-title" id="values-title">{PUBLIC_COPY.about.valuesTitle}</h3>
                 <ol className="value-list">
                   {visibleValues.map((item) => (
-                    <li className="value-item" data-value-card key={item.title}>
-                      <BorderGlow className="value-card">
-                        <div className="value-card-content">
-                          <strong className="type-title">{item.title}</strong>
+                    <li className="value-item" data-value-item key={item.title}>
+                      <div className="value-editorial">
+                        <div className="value-index-row" aria-hidden="true">
+                          <span className="value-index type-display-lg">{item.number}</span>
+                          <span className="value-divider" />
+                        </div>
+                        <div className="value-editorial-content">
+                          <ScrollReveal as="strong" className="value-title type-title" effect="blur">
+                            {item.title}
+                          </ScrollReveal>
                           <p className="type-body">{item.description}</p>
                         </div>
-                      </BorderGlow>
+                      </div>
                     </li>
                   ))}
                 </ol>
@@ -150,13 +152,14 @@ function TechStackSection({ groups }: { groups: TechnologyGroup[] }) {
     >
       <div className="content-container tech-inner">
         <header className="tech-heading">
-          <p className="section-meta type-small">{PUBLIC_COPY.technology.label}</p>
-          <h2 className="section-title type-heading" id="tech-title">{PUBLIC_COPY.technology.title}</h2>
+          <h2 className="section-title type-heading" id="tech-title">
+            <ScrollReveal as="span" effect="blur">{PUBLIC_COPY.technology.title}</ScrollReveal>
+          </h2>
         </header>
 
         <ol className="tech-list">
           {groups.map((group) => (
-            <li className="tech-row" key={group.category}>
+            <ScrollReveal as="li" className="tech-row" effect="opacity" key={group.category}>
               <span className="tech-category type-small">{group.label}</span>
               <ul className="tech-items" aria-label={`${group.label} 기술`}>
                 {group.technologies.map((technology) => (
@@ -175,7 +178,7 @@ function TechStackSection({ groups }: { groups: TechnologyGroup[] }) {
                   </li>
                 ))}
               </ul>
-            </li>
+            </ScrollReveal>
           ))}
         </ol>
       </div>
@@ -198,8 +201,9 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
     >
       <div className="content-container education-inner">
         <header className="education-heading">
-          <p className="section-meta type-small">{PUBLIC_COPY.education.label}</p>
-          <h2 className="section-title type-heading" id="education-title">{PUBLIC_COPY.education.title}</h2>
+          <h2 className="section-title type-heading" id="education-title">
+            <ScrollReveal as="span" effect="blur">{PUBLIC_COPY.education.title}</ScrollReveal>
+          </h2>
         </header>
 
         <div className="education-groups">
@@ -208,12 +212,12 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
               <h3 className="type-title" id="education-group-title">{PUBLIC_COPY.education.educationGroup}</h3>
               <ol className="education-list education-info-list">
                 {groups.education.map((item) => (
-                  <li className="education-row education-info-row" key={item.id}>
+                  <ScrollReveal as="li" className="education-row education-info-row" effect="opacity" key={item.id}>
                     {item.period ? <span className="education-period education-info-period type-small">{item.period}</span> : null}
                     <strong className="education-info-title type-body-lg">{item.title}</strong>
                     {item.detail ? <span className="education-program education-info-detail type-small">{item.detail}</span> : null}
                     {item.outcome ? <span className="education-status education-info-outcome type-small">{item.outcome}</span> : null}
-                  </li>
+                  </ScrollReveal>
                 ))}
               </ol>
             </section>
@@ -224,12 +228,12 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
               <h3 className="type-title" id="activities-title">{PUBLIC_COPY.education.activityGroup}</h3>
               <ol className="activities-list education-info-list">
                 {groups.activity.map((activity) => (
-                  <li className="activity-row education-info-row" key={activity.id}>
+                  <ScrollReveal as="li" className="activity-row education-info-row" effect="opacity" key={activity.id}>
                     {activity.period ? <span className="activity-period education-info-period type-small">{activity.period}</span> : null}
                     <strong className="education-info-title type-body-lg">{activity.title}</strong>
                     {activity.detail ? <span className="activity-description education-info-detail type-small">{activity.detail}</span> : null}
                     {activity.outcome ? <span className="education-info-outcome type-small">{activity.outcome}</span> : null}
-                  </li>
+                  </ScrollReveal>
                 ))}
               </ol>
             </section>
@@ -240,12 +244,12 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
               <h3 className="type-title" id="awards-title">{PUBLIC_COPY.education.awardGroup}</h3>
               <ol className="awards-list education-info-list">
                 {groups.award.map((award) => (
-                  <li className="award-row education-info-row" key={award.id}>
+                  <ScrollReveal as="li" className="award-row education-info-row" effect="opacity" key={award.id}>
                     {award.period ? <span className="award-year education-info-period type-small">{award.period}</span> : null}
                     <strong className="education-info-title type-body-lg">{award.title}</strong>
                     {award.detail ? <span className="award-project education-info-detail type-small">{award.detail}</span> : null}
                     {award.outcome ? <span className="award-result education-info-outcome type-small">{award.outcome}</span> : null}
-                  </li>
+                  </ScrollReveal>
                 ))}
               </ol>
             </section>
@@ -256,12 +260,12 @@ function EducationSection({ groups }: { groups: ProfileGroups }) {
               <h3 className="type-title" id="certificates-title">{PUBLIC_COPY.education.certificateGroup}</h3>
               <ol className="certificates-list education-info-list">
                 {groups.certificate.map((certificate) => (
-                  <li className="certificate-row education-info-row" key={certificate.id}>
+                  <ScrollReveal as="li" className="certificate-row education-info-row" effect="opacity" key={certificate.id}>
                     {certificate.period ? <span className="certificate-period education-info-period type-small">{certificate.period}</span> : null}
                     <strong className="education-info-title type-body-lg">{certificate.title}</strong>
                     {certificate.detail ? <span className="certificate-organization education-info-detail type-small">{certificate.detail}</span> : null}
                     {certificate.outcome ? <span className="certificate-result education-info-outcome type-small">{certificate.outcome}</span> : null}
-                  </li>
+                  </ScrollReveal>
                 ))}
               </ol>
             </section>
@@ -302,7 +306,6 @@ export function HomeView({ model }: { model: PublicViewModel }) {
         <TechStackSection groups={model.technologies} />
         <ProjectsSection
           projects={model.projects}
-          sectionLabel={PUBLIC_COPY.projects.label}
           sectionTitle={PUBLIC_COPY.projects.title}
           detailLabel={PUBLIC_COPY.projects.detail}
         />
