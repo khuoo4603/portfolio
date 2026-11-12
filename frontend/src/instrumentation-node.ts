@@ -25,7 +25,8 @@ export async function onNodeRequestError(
     errorCode: "FRONTEND_INTERNAL_ERROR",
     stack: error instanceof Error ? error.stack : new Error("Frontend Server 오류").stack,
   });
-  await recordFrontendError({
+  // ?ㅻ쪟 湲곕줉 ?ㅽ뙣媛 ?ㅻ쪟 ?붾㈃ ?뚮뜑留곸쓣 李⑤떒?섏? ?딄뒗 best-effort 泥섎━
+  void recordFrontendError({
     method: request.method,
     path: request.path,
     statusCode: 500,

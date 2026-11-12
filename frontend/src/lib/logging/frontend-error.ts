@@ -12,6 +12,7 @@ export type FrontendError = {
 
 const TRACE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const HEALTH_PATHS = ["/healthz", "/actuator/health", "/liveness", "/readiness"];
+const FRONTEND_ERROR_LOG_TIMEOUT_MS = 1000;
 
 export function shouldRecordFrontendError(path: string) {
   const pathname = path.split(/[?#]/, 1)[0];
@@ -43,6 +44,7 @@ export async function recordFrontendError(error: FrontendError) {
         "Content-Type": "application/json",
         "X-Request-Id": error.traceId,
       },
+      signal: AbortSignal.timeout(FRONTEND_ERROR_LOG_TIMEOUT_MS),
       body: JSON.stringify({
         service: "FRONTEND",
         method,

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { PublicProjectCard } from "@/types/api";
+import { ScrollReveal } from "./public-motion";
 
 type TimelineGeometry = {
   rowCenters: number[];
@@ -10,7 +11,6 @@ type TimelineGeometry = {
 
 type ProjectsSectionProps = {
   projects: PublicProjectCard[];
-  sectionLabel?: string;
   sectionTitle?: string;
   detailLabel?: string;
 };
@@ -18,7 +18,6 @@ type ProjectsSectionProps = {
 // 연도별 Project History와 근접 Viewport 전용 Scroll Timeline 구성
 export default function ProjectsSection({
   projects,
-  sectionLabel,
   sectionTitle,
   detailLabel,
 }: ProjectsSectionProps) {
@@ -189,8 +188,11 @@ export default function ProjectsSection({
     >
       <div className="content-container projects-inner">
         <header className="projects-heading">
-          {sectionLabel ? <p className="section-meta type-small">{sectionLabel}</p> : null}
-          {sectionTitle ? <h2 className="section-title type-heading" id="projects-title">{sectionTitle}</h2> : null}
+          {sectionTitle ? (
+            <h2 className="section-title type-heading" id="projects-title">
+              <ScrollReveal as="span" effect="blur">{sectionTitle}</ScrollReveal>
+            </h2>
+          ) : null}
         </header>
 
         <div className="project-stage">

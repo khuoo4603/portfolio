@@ -1,5 +1,10 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  getPerformanceSnapshot,
+  resetPerformanceModeForTests,
+  startPerformanceRuntime,
+} from "@/lib/performance/performance-mode";
 
 import ThemeToggle, { calculateThemeReveal } from "./theme-toggle";
 
@@ -7,6 +12,67 @@ const root = document.documentElement;
 const originalMatchMedia = Object.getOwnPropertyDescriptor(window, "matchMedia");
 const originalStartViewTransition = Object.getOwnPropertyDescriptor(document, "startViewTransition");
 const originalRootAnimate = Object.getOwnPropertyDescriptor(root, "animate");
+type FrameCallback = (timestamp: number) => void;
+
+function createFrameDriver() {
+  let nextId = 0;
+  const callbacks = new Map<number, FrameCallback>();
+
+  return {
+    requestAnimationFrame(callback: FrameCallback) {
+      const id = ++nextId;
+      callbacks.set(id, callback);
+      return id;
+    },
+    cancelAnimationFrame(id: number) {
+      callbacks.delete(id);
+    },
+    flush(timestamp: number) {
+      const callback = callbacks.entries().next().value as [number, FrameCallback] | undefined;
+      if (!callback) return;
+      callbacks.delete(callback[0]);
+      callback[1](timestamp);
+    },
+  };
+}
+
+function flushPerformanceWindow(
+  driver: ReturnType<typeof createFrameDriver>,
+  start: number,
+  interval: number,
+) {
+  let timestamp = start;
+  driver.flush(timestamp);
+  for (let index = 0; index < 4; index += 1) {
+    timestamp += interval;
+    driver.flush(timestamp);
+  }
+  return timestamp;
+}
+
+function startTestPerformanceRuntime(driver: ReturnType<typeof createFrameDriver>) {
+  startPerformanceRuntime({
+    requestAnimationFrame: driver.requestAnimationFrame,
+    cancelAnimationFrame: driver.cancelAnimationFrame,
+    getVisibility: () => "visible",
+    measurementFrames: 4,
+    lowWindowStreak: 2,
+    highWindowStreak: 2,
+    cooldownMs: 0,
+    windowGapMs: 0,
+  });
+}
+
+function installHardwareRenderer() {
+  const context = {
+    getExtension: vi.fn((name: string) => name === "WEBGL_debug_renderer_info"
+      ? { UNMASKED_RENDERER_WEBGL: 0x9246 }
+      : name === "WEBGL_lose_context" ? { loseContext: vi.fn() } : null),
+    getParameter: vi.fn(() => "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060, D3D11)"),
+  } as unknown as WebGLRenderingContext;
+
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context);
+}
 
 function setReducedMotion(reduced: boolean) {
   Object.defineProperty(window, "matchMedia", {
@@ -31,8 +97,13 @@ function restoreProperty(target: object, key: string, descriptor?: PropertyDescr
   Reflect.deleteProperty(target, key);
 }
 
+beforeEach(() => {
+  resetPerformanceModeForTests();
+});
+
 afterEach(() => {
   cleanup();
+  resetPerformanceModeForTests();
   document.documentElement.removeAttribute("data-theme");
   window.localStorage.removeItem("portfolio-theme");
   restoreProperty(window, "matchMedia", originalMatchMedia);
@@ -78,7 +149,69 @@ describe("ThemeToggle", () => {
     expect(startViewTransition).not.toHaveBeenCalled();
   });
 
+  it("applies Lite themes immediately, persists them, and accepts repeated clicks", () => {
+    const driver = createFrameDriver();
+    startTestPerformanceRuntime(driver);
+    const timestamp = flushPerformanceWindow(driver, 0, 40);
+    flushPerformanceWindow(driver, timestamp, 40);
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
+
+    setReducedMotion(false);
+    const startViewTransition = vi.fn((update: () => void) => {
+      update();
+      return { ready: Promise.resolve(), finished: Promise.resolve() };
+    });
+    const animate = vi.fn();
+    setViewTransition(startViewTransition);
+    Object.defineProperty(root, "animate", { configurable: true, value: animate });
+    render(<ThemeToggle />);
+
+    const button = screen.getByRole("button", { name: "색상 테마 전환" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(root.dataset.theme).toBe("light");
+    expect(window.localStorage.getItem("portfolio-theme")).toBe("light");
+    expect(startViewTransition).not.toHaveBeenCalled();
+    expect(animate).not.toHaveBeenCalled();
+  });
+
+  it("reads the latest automatic mode for each theme transition", async () => {
+    const driver = createFrameDriver();
+    installHardwareRenderer();
+    startTestPerformanceRuntime(driver);
+    setReducedMotion(false);
+    const startViewTransition = vi.fn((update: () => void) => {
+      update();
+      return { ready: Promise.resolve(), finished: Promise.resolve() };
+    });
+    const animate = vi.fn().mockReturnValue({ finished: Promise.resolve() });
+    setViewTransition(startViewTransition);
+    Object.defineProperty(root, "animate", { configurable: true, value: animate });
+    render(<ThemeToggle />);
+
+    const button = screen.getByRole("button", { name: "색상 테마 전환" });
+    fireEvent.click(button);
+    await waitFor(() => expect(animate).toHaveBeenCalledTimes(1));
+
+    let timestamp = flushPerformanceWindow(driver, 0, 40);
+    timestamp = flushPerformanceWindow(driver, timestamp, 40);
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "lite" });
+    fireEvent.click(button);
+    expect(startViewTransition).toHaveBeenCalledTimes(1);
+    expect(root.dataset.theme).toBe("light");
+
+    timestamp = flushPerformanceWindow(driver, timestamp, 16);
+    flushPerformanceWindow(driver, timestamp, 16);
+    expect(getPerformanceSnapshot()).toEqual({ effectiveMode: "high" });
+    fireEvent.click(button);
+    await waitFor(() => expect(startViewTransition).toHaveBeenCalledTimes(2));
+  });
+
   it("reveals the next theme from the toggle with a root View Transition", async () => {
+    const driver = createFrameDriver();
+    installHardwareRenderer();
+    startTestPerformanceRuntime(driver);
     setReducedMotion(false);
     const startViewTransition = vi.fn((update: () => void) => {
       update();
@@ -119,6 +252,9 @@ describe("ThemeToggle", () => {
   });
 
   it("ignores clicks while the reveal animation is running", async () => {
+    const driver = createFrameDriver();
+    installHardwareRenderer();
+    startTestPerformanceRuntime(driver);
     setReducedMotion(false);
     let finishAnimation: (() => void) | undefined;
     const startViewTransition = vi.fn((update: () => void) => {

@@ -21,10 +21,14 @@ describe("Public Server API", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(fetchPublicPortfolio()).resolves.toEqual(PUBLIC_PORTFOLIO_FIXTURE);
-    expect(fetchMock).toHaveBeenCalledWith("http://backend:8080/api/v1/public/portfolio", {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://backend:8080/api/v1/public/portfolio",
+      expect.objectContaining({
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+        signal: expect.any(AbortSignal),
+      }),
+    );
   });
 
   it("Backend ErrorResponse의 Status·traceId를 보존", async () => {
@@ -48,10 +52,11 @@ describe("Public Server API", () => {
     await expect(fetchPublicProject("kyvc fixture")).resolves.toEqual(KYVC_PROJECT_FIXTURE);
     expect(fetchMock).toHaveBeenCalledWith(
       "http://backend:8080/api/v1/public/projects/kyvc%20fixture",
-      {
+      expect.objectContaining({
         cache: "no-store",
         headers: { Accept: "application/json" },
-      },
+        signal: expect.any(AbortSignal),
+      }),
     );
   });
 
@@ -78,5 +83,13 @@ describe("Public Server API", () => {
       status: 503,
       response: { traceId: "trace-project-error" },
     });
+  });
+
+  it("SSR Backend Timeout???504濡?蹂??", async () => {
+    const timeout = Object.assign(new Error("timed out"), { name: "TimeoutError" });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(timeout));
+
+    await expect(fetchPublicPortfolio()).rejects.toMatchObject({ status: 504 });
+    await expect(fetchPublicProject("kyvc")).rejects.toMatchObject({ status: 504 });
   });
 });

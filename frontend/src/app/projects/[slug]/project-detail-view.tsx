@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { ProjectDetailModel } from "@/features/portfolio/project-detail";
 import { PUBLIC_COPY, type PublicViewModel } from "@/features/portfolio/public-portfolio";
 import { PortfolioFooter, SiteHeader } from "../../portfolio-chrome";
+import { PublicErrorState, resolveErrorSceneCode } from "../../public-error-state";
 import styles from "./project-detail.module.css";
 import ProjectDetailContent from "./project-detail-content";
 
@@ -37,14 +38,14 @@ function ProjectChrome({ portfolio, children }: { portfolio: PublicViewModel; ch
 }
 
 // Backend 장애와 404를 분리하는 Project Detail 안전 오류 상태
-export function ProjectErrorView({ portfolio, traceId }: { portfolio: PublicViewModel | null; traceId?: string }) {
-  const error = (
-    <main className="content-container" role="alert">
-      <p>프로젝트 정보를 불러오지 못했습니다.</p>
-      {traceId ? <p className="type-small">오류 추적 ID: {traceId}</p> : null}
-    </main>
-  );
-  return portfolio ? <ProjectChrome portfolio={portfolio}>{error}</ProjectChrome> : error;
+export function ProjectErrorView({
+  traceId,
+  error,
+}: {
+  traceId?: string;
+  error?: unknown;
+}) {
+  return <PublicErrorState code={resolveErrorSceneCode(error)} traceId={traceId} />;
 }
 
 // 공개 Chrome 안에서 공용 Project Detail 렌더러 구성
