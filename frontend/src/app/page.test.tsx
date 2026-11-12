@@ -213,6 +213,7 @@ describe("포트폴리오 메인", () => {
       dispatchEvent: vi.fn(),
     })));
     document.documentElement.dataset.theme = "dark";
+    document.documentElement.dataset.performance = "lite";
     window.localStorage.clear();
   });
 
@@ -382,7 +383,7 @@ describe("포트폴리오 메인", () => {
     expect(camera.translateY + camera.scale * anchor.y).toBeCloseTo(center.y);
   });
 
-  it("이름, 포지션, 한글 Navigation, Server Topology를 표시", () => {
+  it("이름, 포지션, 한글 Navigation, Server Topology를 표시", async () => {
     render(<Home />);
 
     expect(screen.getByRole("heading", { level: 1, name: "김현우" })).toBeInTheDocument();
@@ -411,7 +412,7 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".topology-card-frame")).toBeInTheDocument();
     expect(document.querySelector(".topology-map-svg")).toBeInTheDocument();
     expect(document.querySelectorAll(".topology-map-svg")).toHaveLength(1);
-    expect(document.querySelector(".topology-map-raster")).toBeInTheDocument();
+    expect(document.querySelector(".topology-map-dots")).toBeInTheDocument();
     expect(document.querySelectorAll(".topology-map-zoom")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-svg")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(0);
@@ -429,9 +430,9 @@ describe("포트폴리오 메인", () => {
     expect(document.querySelector(".topology-project-gallery-caption")).toHaveTextContent("특성화고 진로 특강");
     expect(document.querySelectorAll(".topology-project-gallery-caption")[1]).toHaveTextContent("KFIP Toss특별상 수상");
     expect(document.querySelectorAll(".topology-project-gallery-caption")[2]).toHaveTextContent("Hello New() World 해커톤 대상 수상");
-    expect(document.querySelector(".topology-map-raster")).toHaveAttribute(
+    expect(document.querySelector(".topology-map-dots")).toHaveAttribute(
       "href",
-      "/maps/lite/world-dark.webp",
+      "/maps/world-map-dots.svg#world-map-dots",
     );
     const koreaAnchor = screen.getByTestId("korea-anchor");
     const koreaMarker = screen.getByTestId("korea-marker");
@@ -711,7 +712,7 @@ describe("포트폴리오 메인", () => {
     });
     expect(document.querySelectorAll(".topology-map-svg")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-map-zoom")).toHaveLength(1);
-    expect(document.querySelectorAll(".topology-map-raster")).toHaveLength(1);
+    expect(document.querySelectorAll(".topology-map-dots")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-svg")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-zoom")).toHaveLength(1);
     expect(document.querySelectorAll(".topology-narrative-world-map-dots")).toHaveLength(0);
@@ -722,8 +723,8 @@ describe("포트폴리오 메인", () => {
     expect(focusMapPlane?.parentElement).toBe(stage);
     expect(galleryPlane?.parentElement).toBe(stage);
     expect(galleryPlane).toHaveAttribute("aria-hidden", "true");
-    expect(stage?.style.getPropertyValue("--world-map-dot-width")).toBe("1.25");
-    expect(stage?.style.getPropertyValue("--focus-map-dot-width")).toBe("1.25");
+    expect(stage?.style.getPropertyValue("--world-map-dot-width")).toBe("2.4");
+    expect(stage?.style.getPropertyValue("--focus-map-dot-width")).toBe("3");
     expect(stage?.style.getPropertyValue("--gallery-plane-left")).not.toBe("");
     expect(stage?.style.getPropertyValue("--gallery-origin-x")).not.toBe("");
     expect(stage?.style.getPropertyValue("--gallery-origin-y")).not.toBe("");
@@ -2130,6 +2131,7 @@ describe("포트폴리오 메인", () => {
       toJSON: () => ({}),
     });
     fireEvent.resize(window);
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
     fireEvent.pointerMove(card, { clientX: 300, clientY: 75, pointerType: "mouse" });
     fireEvent.pointerMove(hero, { clientX: 400, clientY: 0, pointerType: "mouse" });
 

@@ -1318,6 +1318,7 @@ export default function HeroSystemCard() {
         event.pointerType !== "mouse"
         || !finePointerQuery.matches
         || reducedMotionQuery.matches
+        || effectiveMode === "lite"
       ) {
         resetMarkerPointer();
         return;
@@ -1369,11 +1370,15 @@ export default function HeroSystemCard() {
       if (
         !bounds
         || event.pointerType !== "mouse"
+        || effectiveMode === "lite"
         || progressRef.current > HERO_SCROLL_TIMING.topologyExitEnd
         || mobilePortraitQuery.matches
         || !finePointerQuery.matches
         || reducedMotionQuery.matches
       ) {
+        if (effectiveMode === "lite") {
+          resetCard();
+        }
         return;
       }
 
