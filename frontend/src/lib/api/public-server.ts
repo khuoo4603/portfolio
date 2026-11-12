@@ -1,6 +1,8 @@
 import { getBackendBaseUrl } from "./backend-url";
 import type { ErrorResponse, PublicPortfolio, PublicProjectDetail } from "@/types/api";
 
+export const PUBLIC_SSR_TIMEOUT_MS = 6000;
+
 export class PublicApiError extends Error {
   readonly status: number;
   readonly response?: ErrorResponse;
@@ -32,27 +34,47 @@ async function errorResponse(response: Response) {
 
 // 서버 전용 Backend Target 기반 공개 Portfolio SSR 조회
 export async function fetchPublicPortfolio() {
-  const response = await fetch(`${getBackendBaseUrl()}/api/v1/public/portfolio`, {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) {
-    throw new PublicApiError(response.status, await errorResponse(response));
+  try {
+    const response = await fetch(`${getBackendBaseUrl()}/api/v1/public/portfolio`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(PUBLIC_SSR_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      throw new PublicApiError(response.status, await errorResponse(response));
+    }
+    return await response.json() as PublicPortfolio;
+  } catch (error) {
+    if (isTimeoutError(error)) {
+      throw new PublicApiError(504);
+    }
+    throw error;
   }
-  return await response.json() as PublicPortfolio;
 }
 
 // 공개 slug 기반 프로젝트 상세 SSR 조회
 export async function fetchPublicProject(slug: string) {
-  const response = await fetch(
-    `${getBackendBaseUrl()}/api/v1/public/projects/${encodeURIComponent(slug)}`,
-    {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    },
-  );
-  if (!response.ok) {
-    throw new PublicApiError(response.status, await errorResponse(response));
+  try {
+    const response = await fetch(
+      `${getBackendBaseUrl()}/api/v1/public/projects/${encodeURIComponent(slug)}`,
+      {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(PUBLIC_SSR_TIMEOUT_MS),
+      },
+    );
+    if (!response.ok) {
+      throw new PublicApiError(response.status, await errorResponse(response));
+    }
+    return await response.json() as PublicProjectDetail;
+  } catch (error) {
+    if (isTimeoutError(error)) {
+      throw new PublicApiError(504);
+    }
+    throw error;
   }
-  return await response.json() as PublicProjectDetail;
+}
+
+function isTimeoutError(error: unknown) {
+  return error instanceof Error && error.name === "TimeoutError";
 }
