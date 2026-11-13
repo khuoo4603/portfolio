@@ -6,6 +6,8 @@ import com.khuoo.portfolio.monitoring.dto.MonitoringSettingsUpdateRequest;
 import com.khuoo.portfolio.monitoring.dto.MonitoringTargetCreateRequest;
 import com.khuoo.portfolio.monitoring.dto.MonitoringTargetResponse;
 import com.khuoo.portfolio.monitoring.dto.MonitoringTargetUpdateRequest;
+import com.khuoo.portfolio.monitoring.dto.MonitoringTargetOrderRequest;
+import com.khuoo.portfolio.monitoring.dto.MonitoringTargetOrderResponse;
 import com.khuoo.portfolio.monitoring.service.AdminMonitoringService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -91,5 +94,12 @@ public class AdminMonitoringController {
             @Valid @RequestBody MonitoringTargetUpdateRequest request
     ) {
         return adminMonitoringService.updateTarget(targetId, request);
+    }
+
+    // 관리자 Monitoring 대상 표시 순서 일괄 저장
+    @Operation(summary = "Monitoring 대상 표시 순서 일괄 저장")
+    @PutMapping("/targets/order")
+    public MonitoringTargetOrderResponse reorderTargets(@Valid @RequestBody MonitoringTargetOrderRequest request) {
+        return adminMonitoringService.reorder(request);
     }
 }

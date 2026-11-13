@@ -5,6 +5,8 @@ import com.khuoo.portfolio.common.util.PortfolioConstants;
 import com.khuoo.portfolio.site.dto.AdminExternalLinkResponse;
 import com.khuoo.portfolio.site.dto.ExternalLinkCreateRequest;
 import com.khuoo.portfolio.site.dto.ExternalLinkUpdateRequest;
+import com.khuoo.portfolio.site.dto.ExternalLinkOrderRequest;
+import com.khuoo.portfolio.site.dto.ExternalLinkOrderResponse;
 import com.khuoo.portfolio.site.service.AdminExternalLinkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -35,6 +38,19 @@ import java.util.UUID;
 public class AdminExternalLinkController {
 
     private final AdminExternalLinkService adminExternalLinkService;
+
+    // 관리자 재인증 후 외부 링크 표시 순서 일괄 저장
+    @Operation(summary = "외부 링크 표시 순서 일괄 저장")
+    @PutMapping("/order")
+    public ExternalLinkOrderResponse reorder(
+            @Valid @RequestBody ExternalLinkOrderRequest request,
+            @AuthenticationPrincipal AccountPrincipal currentAdmin,
+            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
+            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+    ) {
+        return adminExternalLinkService.reorder(request, currentAdmin, challengeId, code);
+    }
 
     // 관리자 재인증 후 외부 링크 생성
     @Operation(summary = "포트폴리오 외부 링크 추가")

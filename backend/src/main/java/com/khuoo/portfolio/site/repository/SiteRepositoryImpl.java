@@ -7,6 +7,7 @@ import com.khuoo.portfolio.site.domain.PortfolioTechnology;
 import com.khuoo.portfolio.site.domain.ProfileEntry;
 import com.khuoo.portfolio.site.domain.ResumeFile;
 import com.khuoo.portfolio.site.domain.Technology;
+import com.khuoo.portfolio.common.util.PortfolioEnums.ProfileEntryType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,23 @@ public class SiteRepositoryImpl implements SiteRepository {
     @Override
     public Optional<ProfileEntry> findProfileEntry(Long entryId) {
         return Optional.ofNullable(entityManager.find(ProfileEntry.class, entryId));
+    }
+
+    // 프로필 그룹의 현재 순서 확인과 동시 변경 방지
+    @Override
+    public List<ProfileEntry> findProfileEntriesForUpdate(Collection<ProfileEntryType> entryTypes) {
+        if (entryTypes.isEmpty()) {
+            return List.of();
+        }
+        return entityManager.createQuery("""
+                        SELECT entry
+                        FROM ProfileEntry entry
+                        WHERE entry.entryType IN :entryTypes
+                        ORDER BY entry.displayOrder ASC, entry.id ASC
+                        """, ProfileEntry.class)
+                .setParameter("entryTypes", entryTypes)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultList();
     }
 
     // 신규 프로필 항목 저장과 DB 생성시각 재조회
@@ -141,6 +159,18 @@ public class SiteRepositoryImpl implements SiteRepository {
     @Override
     public Optional<ExternalLink> findExternalLink(Long linkId) {
         return Optional.ofNullable(entityManager.find(ExternalLink.class, linkId));
+    }
+
+    // 외부 링크 전체의 현재 순서 확인과 동시 변경 방지
+    @Override
+    public List<ExternalLink> findExternalLinksForUpdate() {
+        return entityManager.createQuery("""
+                        SELECT link
+                        FROM ExternalLink link
+                        ORDER BY link.displayOrder ASC, link.id ASC
+                        """, ExternalLink.class)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultList();
     }
 
     // 신규 외부 링크 저장과 DB 생성시각 재조회

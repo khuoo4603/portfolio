@@ -4,7 +4,6 @@ import com.khuoo.portfolio.common.util.PortfolioEnums.ProfileEntryType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 // 관리자 프로필 항목 생성 요청
@@ -35,10 +34,6 @@ public record ProfileEntryCreateRequest(
 
         @Schema(description = "주요 성과", nullable = true)
         String achievement,
-
-        @PositiveOrZero
-        @Schema(description = "표시 순서", defaultValue = "0")
-        Integer displayOrder,
 
         @Schema(description = "공개 활성 여부", defaultValue = "true")
         Boolean enabled

@@ -7,6 +7,7 @@ import com.khuoo.portfolio.site.domain.PortfolioTechnology;
 import com.khuoo.portfolio.site.domain.ProfileEntry;
 import com.khuoo.portfolio.site.domain.ResumeFile;
 import com.khuoo.portfolio.site.domain.Technology;
+import com.khuoo.portfolio.common.util.PortfolioEnums.ProfileEntryType;
 
 import java.util.Collection;
 import java.util.List;
@@ -20,6 +21,9 @@ public interface SiteRepository {
 
     // 프로필 식별자 조회
     Optional<ProfileEntry> findProfileEntry(Long entryId);
+
+    // 프로필 그룹 전체의 배타 잠금 조회
+    List<ProfileEntry> findProfileEntriesForUpdate(Collection<ProfileEntryType> entryTypes);
 
     // 신규 프로필 항목 저장
     ProfileEntry saveProfileEntry(ProfileEntry entry);
@@ -47,6 +51,9 @@ public interface SiteRepository {
 
     // 외부 링크 식별자 조회
     Optional<ExternalLink> findExternalLink(Long linkId);
+
+    // 외부 링크 전체의 배타 잠금 조회
+    List<ExternalLink> findExternalLinksForUpdate();
 
     // 신규 외부 링크 저장
     ExternalLink saveExternalLink(ExternalLink link);

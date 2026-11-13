@@ -19,6 +19,8 @@ import com.khuoo.portfolio.tool.dto.ToolLinkUpdateRequest;
 import com.khuoo.portfolio.tool.dto.ToolLinkUpdateImageMode;
 import com.khuoo.portfolio.tool.dto.ToolStatusRequest;
 import com.khuoo.portfolio.tool.dto.ToolStatusResponse;
+import com.khuoo.portfolio.tool.dto.ToolLinkOrderRequest;
+import com.khuoo.portfolio.tool.dto.ToolLinkOrderResponse;
 import com.khuoo.portfolio.tool.repository.ToolQueryRepository;
 import com.khuoo.portfolio.tool.repository.ToolRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 // 관리자 Tool Registry 조회·상태 변경과 Tool Link CRUD
 @Service
@@ -87,7 +94,7 @@ public class AdminToolService {
                 request.url(),
                 imageStorageKey,
                 request.category(),
-                request.displayOrder() == null ? 0 : request.displayOrder(),
+                toolRepository.findLinksForUpdate().stream().mapToInt(ToolLink::getDisplayOrder).max().orElse(0) + 1,
                 request.enabled() == null || request.enabled()
         );
         return AdminToolLinkResponse.from(toolRepository.saveLink(link));
@@ -108,7 +115,6 @@ public class AdminToolService {
                     request.description(),
                     request.url(),
                     request.category(),
-                    request.displayOrder(),
                     request.enabled()
             );
         }
@@ -124,9 +130,6 @@ public class AdminToolService {
         ToolLinkCategory category = PatchValues.present(request.category())
                 ? PatchValues.enumValue(request.category(), ToolLinkCategory.class)
                 : link.getCategory();
-        int displayOrder = PatchValues.present(request.displayOrder())
-                ? PatchValues.nonNegativeInt(request.displayOrder())
-                : link.getDisplayOrder();
         boolean enabled = PatchValues.present(request.enabled())
                 ? PatchValues.booleanValue(request.enabled())
                 : link.isEnabled();
@@ -144,9 +147,30 @@ public class AdminToolService {
             registerFileLifecycle(imageStorageKey, previousStorageKey, linkId);
         }
 
-        link.update(name, description, url, imageStorageKey, category, displayOrder, enabled, now());
+        link.update(name, description, url, imageStorageKey, category, link.getDisplayOrder(), enabled, now());
         toolRepository.flush();
         return AdminToolLinkResponse.from(link);
+    }
+
+    // Tool Link 전체 표시 순서 일괄 저장
+    @Transactional
+    public ToolLinkOrderResponse reorderLinks(ToolLinkOrderRequest request) {
+        List<ToolLink> links = toolRepository.findLinksForUpdate();
+        List<Long> currentIds = links.stream().map(ToolLink::getId).toList();
+        if (!isPermutation(currentIds, request.expectedIds())
+                || !isPermutation(currentIds, request.orderedIds())) {
+            throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
+        }
+        if (!Objects.equals(currentIds, request.expectedIds())) {
+            throw new ApiException(ErrorCode.ORDER_CONFLICT);
+        }
+        Map<Long, ToolLink> byId = links.stream().collect(Collectors.toMap(ToolLink::getId, Function.identity()));
+        OffsetDateTime changedAt = now();
+        for (int index = 0; index < request.orderedIds().size(); index++) {
+            byId.get(request.orderedIds().get(index)).changeDisplayOrder(index + 1, changedAt);
+        }
+        toolRepository.flush();
+        return new ToolLinkOrderResponse(request.orderedIds().stream().map(byId::get).map(AdminToolLinkResponse::from).toList());
     }
 
     // 대상 삭제 Commit 후 기존 Custom Image 정리
@@ -156,9 +180,26 @@ public class AdminToolService {
         String previousStorageKey = link.getImageStorageKey();
         toolRepository.deleteLink(link);
         toolRepository.flush();
+        normalizeLinks();
         if (previousStorageKey != null) {
             registerFileLifecycle(null, previousStorageKey, linkId);
         }
+    }
+
+    private void normalizeLinks() {
+        List<ToolLink> links = toolRepository.findLinksForUpdate();
+        OffsetDateTime changedAt = now();
+        for (int index = 0; index < links.size(); index++) {
+            links.get(index).changeDisplayOrder(index + 1, changedAt);
+        }
+        toolRepository.flush();
+    }
+
+    private boolean isPermutation(List<Long> currentIds, List<Long> requestedIds) {
+        return requestedIds != null
+                && requestedIds.size() == currentIds.size()
+                && Set.copyOf(requestedIds).size() == requestedIds.size()
+                && Set.copyOf(requestedIds).equals(Set.copyOf(currentIds));
     }
 
     private void validateImagePart(ToolLinkCreateImageMode imageMode, MultipartFile image) {

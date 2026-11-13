@@ -9,6 +9,8 @@ import com.khuoo.portfolio.project.dto.ProjectCreateResponse;
 import com.khuoo.portfolio.project.dto.ProjectStatusRequest;
 import com.khuoo.portfolio.project.dto.ProjectStatusResponse;
 import com.khuoo.portfolio.project.dto.ProjectSaveMetadata;
+import com.khuoo.portfolio.project.dto.ProjectOrderRequest;
+import com.khuoo.portfolio.project.dto.ProjectOrderResponse;
 import com.khuoo.portfolio.project.service.AdminProjectService;
 import com.khuoo.portfolio.project.service.ProjectEditorService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,6 +61,19 @@ public class AdminProjectController {
     @GetMapping
     public AdminProjectListResponse findAll() {
         return adminProjectService.findAll();
+    }
+
+    // 관리자 재인증 후 프로젝트 전체 표시 순서 일괄 저장
+    @Operation(summary = "프로젝트 표시 순서 일괄 저장")
+    @PutMapping("/order")
+    public ProjectOrderResponse reorder(
+            @Valid @RequestBody ProjectOrderRequest request,
+            @AuthenticationPrincipal AccountPrincipal currentAdmin,
+            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
+            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+    ) {
+        return adminProjectService.reorder(request, currentAdmin, challengeId, code);
     }
 
     // 관리자 재인증 후 프로젝트 생성

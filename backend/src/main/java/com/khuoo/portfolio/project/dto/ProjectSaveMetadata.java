@@ -84,11 +84,8 @@ public record ProjectSaveMetadata(
 
             @Positive
             @Schema(description = "참여 인원", nullable = true)
-            Short teamSize,
+            Short teamSize
 
-            @PositiveOrZero
-            @Schema(description = "메인 표시 순서")
-            int displayOrder
     ) {
     }
 

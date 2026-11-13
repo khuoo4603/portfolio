@@ -22,9 +22,6 @@ public record ToolLinkUpdateRequest(
         @Schema(description = "링크 분류", implementation = String.class)
         JsonNode category,
 
-        @Schema(description = "표시 순서", implementation = Integer.class)
-        JsonNode displayOrder,
-
         @Schema(description = "공개 활성 여부", implementation = Boolean.class)
         JsonNode enabled
 ) {

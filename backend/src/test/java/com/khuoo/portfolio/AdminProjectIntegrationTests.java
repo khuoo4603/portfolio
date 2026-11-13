@@ -21,6 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -105,7 +106,7 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
                         .andExpect(jsonPath("$.name").value("New Project"))
                         .andExpect(jsonPath("$.slug").value("new-project"))
                         .andExpect(jsonPath("$.enabled").value(false))
-                        .andExpect(jsonPath("$.displayOrder").value(0))
+                        .andExpect(jsonPath("$.displayOrder").value(1))
                         .andExpect(jsonPath("$.createdAt")
                                 .value(org.hamcrest.Matchers.endsWith("+09:00")))
                         .andReturn().getResponse().getContentAsString())
@@ -129,6 +130,32 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
     }
 
     // Draft 상세 NULL 기본값·없는 식별자·조회 권한 검증
+    // Project 전체 순서 저장과 현재 Snapshot 기준 검증
+    @Test
+    void projectOrderBatchPersistsSequenceAndRejectsStaleSnapshot() throws Exception {
+        Long firstId = project("first-order", false);
+        Long secondId = project("second-order", false);
+        jdbcTemplate.update("UPDATE projects SET display_order = ? WHERE id = ?", 1, firstId);
+        jdbcTemplate.update("UPDATE projects SET display_order = ? WHERE id = ?", 2, secondId);
+
+        ActionChallenge reorder = challenge("PROJECTS_REORDER", "PROJECT", null);
+        mockMvc.perform(put(PROJECTS_PATH + "/order").with(admin()).with(csrf()).headers(actionHeaders(reorder))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderedIds\":[" + secondId + "," + firstId + "],\"expectedIds\":[" + firstId + "," + secondId + "]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(secondId))
+                .andExpect(jsonPath("$.items[0].displayOrder").value(1));
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM projects WHERE id = ?", Integer.class, secondId)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM projects WHERE id = ?", Integer.class, firstId)).isEqualTo(2);
+
+        ActionChallenge stale = challenge("PROJECTS_REORDER", "PROJECT", null);
+        mockMvc.perform(put(PROJECTS_PATH + "/order").with(admin()).with(csrf()).headers(actionHeaders(stale))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderedIds\":[" + firstId + "," + secondId + "],\"expectedIds\":[" + firstId + "," + secondId + "]}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ORDER_CONFLICT"));
+    }
+
     @Test
     void draftDetailAllowsNullsAndRequiresAdmin() throws Exception {
         Long projectId = project("draft-project", false);

@@ -5,6 +5,7 @@ import com.khuoo.portfolio.project.domain.ProjectContent;
 import com.khuoo.portfolio.project.domain.ProjectMedia;
 import com.khuoo.portfolio.project.domain.ProjectTechnology;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,18 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     @Override
     public Optional<Project> findProject(Long projectId) {
         return Optional.ofNullable(entityManager.find(Project.class, projectId));
+    }
+
+    // 프로젝트 목록의 현재 순서 확인과 동시 변경 방지
+    @Override
+    public List<Project> findProjectsForUpdate() {
+        return entityManager.createQuery("""
+                        SELECT project
+                        FROM Project project
+                        ORDER BY project.displayOrder ASC, project.id ASC
+                        """, Project.class)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultList();
     }
 
     // 프로젝트 slug 조회

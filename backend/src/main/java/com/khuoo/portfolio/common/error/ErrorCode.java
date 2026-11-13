@@ -19,6 +19,7 @@ public enum ErrorCode {
     AUTH_CHALLENGE_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "인증번호 발송 횟수를 초과했습니다."),
     AUTH_MAIL_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "인증 이메일을 발송할 수 없습니다."),
     AUTH_ADMIN_ACTION_MISMATCH(HttpStatus.FORBIDDEN, "관리자 재인증 정보가 작업과 일치하지 않습니다."),
+    ORDER_CONFLICT(HttpStatus.CONFLICT, "다른 관리자 변경으로 정렬 대상이 달라졌습니다."),
     AUTH_PASSWORD_POLICY(HttpStatus.BAD_REQUEST, "새 비밀번호 정책을 확인하세요."),
     AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
     AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),

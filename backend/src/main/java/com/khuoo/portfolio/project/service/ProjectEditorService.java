@@ -150,7 +150,7 @@ public class ProjectEditorService {
                 fields.endedAt(),
                 fields.teamSize(),
                 thumbnailKey,
-                fields.displayOrder(),
+                project.getDisplayOrder(),
                 changedAt
         );
         project.markEdited(changedAt);

@@ -42,6 +42,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -217,6 +218,26 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
     }
 
     // Tool Link DEFAULT·UPLOAD 생성과 Multipart 조합·이미지 검증
+    // Tool Link 전체 순서 저장과 CSRF 검증
+    @Test
+    void linkOrderBatchRequiresCsrfAndPersistsSequence() throws Exception {
+        jdbcTemplate.update("DELETE FROM tool_links");
+        Long firstId = insertLink("First Order", "REFERENCE", 1, true);
+        Long secondId = insertLink("Second Order", "MY_SERVICES", 2, true);
+        String body = "{\"orderedIds\":[" + secondId + "," + firstId + "],\"expectedIds\":[" + firstId + "," + secondId + "]}";
+
+        mockMvc.perform(put(ADMIN_TOOLS_PATH + "/links/order").with(admin())
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put(ADMIN_TOOLS_PATH + "/links/order").with(admin()).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(secondId))
+                .andExpect(jsonPath("$.items[0].displayOrder").value(1));
+        assertThat(linkValue(secondId, "display_order")).isEqualTo(1);
+        assertThat(linkValue(firstId, "display_order")).isEqualTo(2);
+    }
+
     @Test
     void linkCreateSupportsDefaultAndUploadModes() throws Exception {
         jdbcTemplate.update("DELETE FROM tool_links");
@@ -226,7 +247,7 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
                         """, null, true)
                         .andExpect(status().isCreated())
                         .andExpect(jsonPath("$.imageUrl").value((Object) null))
-                        .andExpect(jsonPath("$.displayOrder").value(0))
+                        .andExpect(jsonPath("$.displayOrder").value(1))
                         .andExpect(jsonPath("$.enabled").value(true))
                         .andReturn().getResponse().getContentAsString())
                 .get("id").asLong();
@@ -234,7 +255,7 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
 
         String uploadedBody = linkChange(HttpMethod.POST, ADMIN_TOOLS_PATH + "/links", """
                         {"name":"Spring Docs","description":"공식 문서","url":"https://spring.io",
-                         "imageMode":"UPLOAD","category":"REFERENCE","displayOrder":10,"enabled":true}
+                         "imageMode":"UPLOAD","category":"REFERENCE","enabled":true}
                         """, image("spring.jpeg", "image/jpeg", JPEG), true)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Spring Docs"))
@@ -248,7 +269,7 @@ class ToolIntegrationTests extends SiteIntegrationTestSupport {
                 .containsEntry("description", "공식 문서")
                 .containsEntry("url", "https://spring.io")
                 .containsEntry("category", "REFERENCE")
-                .containsEntry("display_order", 10)
+                .containsEntry("display_order", 2)
                 .containsEntry("enabled", true);
         assertThat(storageKey).matches("tools/links/[0-9a-f-]{36}\\.jpg");
         assertThat(Files.readAllBytes(STORAGE_ROOT.resolve(storageKey))).isEqualTo(JPEG);
