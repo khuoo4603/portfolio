@@ -14,6 +14,9 @@ public interface ProjectRepository {
     // 프로젝트 식별자 조회
     Optional<Project> findProject(Long projectId);
 
+    // 프로젝트 목록 전체의 배타 잠금 조회
+    List<Project> findProjectsForUpdate();
+
     // 프로젝트 slug 조회
     Optional<Project> findBySlug(String slug);
 

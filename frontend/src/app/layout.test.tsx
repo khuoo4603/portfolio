@@ -14,10 +14,22 @@ const originalPublicSiteUrl = process.env.PUBLIC_SITE_URL;
 function getThemeScript() {
   const layout = RootLayout({ children: null, params: Promise.resolve({}) });
   const body = layout.props.children;
-  const script = body.props.children[0];
+  const script = body.props.children.find((child: { props?: { id?: string } }) => child?.props?.id === "theme-init");
 
   if (typeof script.props.dangerouslySetInnerHTML?.__html !== "string") {
     throw new Error("Theme initialization script is missing");
+  }
+
+  return script;
+}
+
+function getPerformanceScript() {
+  const layout = RootLayout({ children: null, params: Promise.resolve({}) });
+  const body = layout.props.children;
+  const script = body.props.children.find((child: { props?: { id?: string } }) => child?.props?.id === "performance-init");
+
+  if (typeof script?.props?.dangerouslySetInnerHTML?.__html !== "string") {
+    throw new Error("Performance initialization script is missing");
   }
 
   return script;
@@ -80,15 +92,40 @@ describe("Initial Theme", () => {
   });
 
   it("Root Layout Theme Script를 beforeInteractive로 설정", () => {
-    const layout = RootLayout({ children: null, params: Promise.resolve({}) });
-    const body = layout.props.children;
-    const script = body.props.children[0];
+    const script = getThemeScript();
 
     expect(script.props).toMatchObject({
       id: "theme-init",
       strategy: "beforeInteractive",
     });
     expect(typeof script.props.dangerouslySetInnerHTML?.__html).toBe("string");
+  });
+
+  it("SSR HTML을 Lite Performance Mode로 전달", () => {
+    const layout = RootLayout({ children: null, params: Promise.resolve({}) });
+
+    expect(layout.props["data-performance"]).toBe("lite");
+  });
+
+  it("Root Layout Performance Script를 beforeInteractive로 설정", () => {
+    const script = getPerformanceScript();
+
+    expect(script.props).toMatchObject({
+      id: "performance-init",
+      strategy: "beforeInteractive",
+    });
+    expect(script.props.dangerouslySetInnerHTML.__html).not.toContain("localStorage");
+  });
+
+  it("Performance Script는 기존 저장값을 무시하고 항상 Lite로 초기화", () => {
+    const legacyStorageKey = ["portfolio", "performance", "mode"].join("-");
+    window.localStorage.setItem(legacyStorageKey, "lite");
+    const getItem = vi.spyOn(Storage.prototype, "getItem");
+
+    new Function(getPerformanceScript().props.dangerouslySetInnerHTML.__html)();
+
+    expect(getItem).not.toHaveBeenCalled();
+    expect(document.documentElement.dataset.performance).toBe("lite");
   });
 
   it.each([

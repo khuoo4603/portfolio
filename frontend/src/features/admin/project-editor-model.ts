@@ -54,7 +54,6 @@ export function createProjectDraft(detail: ProjectDetail): ProjectEditorDraft {
       startedAt: detail.project.startedAt,
       endedAt: detail.project.endedAt,
       teamSize: detail.project.teamSize,
-      displayOrder: detail.project.displayOrder,
     },
     content: {
       results: detail.content.results.map((item) => ({ ...item })),
@@ -65,11 +64,11 @@ export function createProjectDraft(detail: ProjectDetail): ProjectEditorDraft {
       },
       engineering: detail.content.engineering.map((item) => ({ ...item })),
     },
-    technologies: detail.technologies.map((item) => ({
+    technologies: [...detail.technologies].sort((left, right) => left.displayOrder - right.displayOrder || left.technologyId - right.technologyId).map((item, index) => ({
       technologyId: item.technologyId,
       showOnCard: item.showOnCard,
       highlighted: item.highlighted,
-      displayOrder: item.displayOrder,
+      displayOrder: index,
     })),
     thumbnail: {
       mode: "KEEP",
@@ -83,11 +82,11 @@ export function createProjectDraft(detail: ProjectDetail): ProjectEditorDraft {
       file: null,
       previewUrl: null,
     },
-    media: detail.media.map(toEditorMedia),
+    media: [...detail.media].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id).map((item, index) => toEditorMedia(item, index)),
   };
 }
 
-function toEditorMedia(media: ProjectMedia): EditorMedia {
+function toEditorMedia(media: ProjectMedia, index: number): EditorMedia {
   return {
     key: `media-${media.id}`,
     id: media.id,
@@ -97,7 +96,7 @@ function toEditorMedia(media: ProjectMedia): EditorMedia {
     previewUrl: null,
     label: media.label,
     altText: media.altText,
-    displayOrder: media.displayOrder,
+    displayOrder: index,
     deleted: false,
   };
 }

@@ -208,11 +208,18 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
     if (!current) return current;
     const item = current.media.find((value) => value.key === key);
     if (!item) return current;
+    let nextMedia = current.media;
     if (item.id === null) {
       revokeUrl(item.previewUrl);
-      return { ...current, media: current.media.filter((value) => value.key !== key) };
+      nextMedia = current.media.filter((value) => value.key !== key);
+    } else {
+      nextMedia = current.media.map((value) => value.key === key ? { ...value, deleted: true } : value);
     }
-    return { ...current, media: current.media.map((value) => value.key === key ? { ...value, deleted: true } : value) };
+    const order = new Map(nextMedia.filter((value) => !value.deleted).map((value, index) => [value.key, index]));
+    return {
+      ...current,
+      media: nextMedia.map((value) => value.deleted ? value : { ...value, displayOrder: order.get(value.key) ?? value.displayOrder }),
+    };
   });
 
   const changeMedia = (key: string, patch: Partial<EditorMedia>) => setDraft((current) => current ? {
@@ -295,6 +302,7 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
       <ConfirmDialog
         open={leaveConfirmOpen}
         title="변경사항 폐기"
+        variant="admin"
         description="저장하지 않은 변경사항이 있습니다. 목록으로 이동할까요?"
         confirmLabel="계속 이동"
         onCancel={() => setLeaveConfirmOpen(false)}

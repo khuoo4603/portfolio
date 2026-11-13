@@ -83,4 +83,13 @@ public class MonitoringTarget {
         this.displayOrder = displayOrder;
         this.updatedAt = updatedAt;
     }
+
+    // Monitoring 대상 일괄 정렬을 위한 표시 순서 변경
+    public void changeDisplayOrder(int newDisplayOrder, OffsetDateTime changedAt) {
+        if (displayOrder == newDisplayOrder) {
+            return;
+        }
+        displayOrder = newDisplayOrder;
+        updatedAt = changedAt;
+    }
 }

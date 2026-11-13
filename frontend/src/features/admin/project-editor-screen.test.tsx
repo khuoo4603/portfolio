@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createAdminChallenge } from "./admin-action-api";
+import { createAdminChallenge, getAdminActionGrace } from "./admin-action-api";
 import { getAdminProject, saveProject } from "./admin-project-api";
 import { getAdminSite } from "./admin-site-api";
 import type { ProjectDetail, SiteData } from "./admin-types";
@@ -13,7 +13,7 @@ vi.mock("@/app/projects/[slug]/project-architecture", () => ({ default: () => <d
 vi.mock("@/app/projects/[slug]/project-media-carousel", () => ({ default: () => <div>Carousel Preview</div> }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
-  return { ...actual, createAdminChallenge: vi.fn() };
+  return { ...actual, createAdminChallenge: vi.fn(), getAdminActionGrace: vi.fn() };
 });
 vi.mock("./admin-project-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-project-api")>();
@@ -95,6 +95,7 @@ describe("Preview-first Project Editor", () => {
     vi.mocked(getAdminProject).mockReset().mockResolvedValue(detail);
     vi.mocked(getAdminSite).mockReset().mockResolvedValue(site);
     vi.mocked(saveProject).mockReset().mockResolvedValue(detail);
+    vi.mocked(getAdminActionGrace).mockReset().mockResolvedValue({ verified: false, expiresAt: null });
     vi.mocked(createAdminChallenge).mockReset().mockResolvedValue({ challengeId: "challenge-project", expiresAt: "2099-09-02T12:00:00+09:00" });
     createObjectUrl.mockReset();
     revokeObjectUrl.mockReset();
@@ -153,16 +154,22 @@ describe("Preview-first Project Editor", () => {
     const technologyPanel = screen.getByRole("region", { name: "기술 편집" });
     expect(within(technologyPanel).queryByText("Card 노출")).not.toBeInTheDocument();
     expect(within(technologyPanel).queryByRole("checkbox")).not.toBeInTheDocument();
-    expect(screen.getByText("기존 비활성 연결", { exact: false })).toBeInTheDocument();
     const select = screen.getByRole("combobox", { name: "프로젝트 기술 선택" });
     fireEvent.click(select);
     expect(screen.getByRole("option", { name: "React" })).toBeEnabled();
     expect(screen.getByRole("option", { name: "Legacy · 비활성" })).toBeDisabled();
     fireEvent.keyDown(select, { key: "Escape" });
-    const technologyTable = within(technologyPanel).getByRole("table");
-    expect(within(technologyTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["기술", "분류", "강조", "표시 순서", "작업"]);
-    expect(within(technologyTable).getByText("Java")).toBeInTheDocument();
-    expect(within(technologyTable).getByLabelText("Java 표시 순서")).toHaveValue(0);
+    const technologyList = within(technologyPanel).getByRole("list", { name: "표시 순서 관리" });
+    expect(within(technologyList).getByText("Java")).toBeInTheDocument();
+    expect(within(technologyList).queryByLabelText("Java 표시 순서")).not.toBeInTheDocument();
+    const technologyRow = within(technologyList).getByRole("listitem", { name: /Java/ });
+    expect(Array.from(technologyRow.querySelectorAll("button")).map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Java 순서 이동",
+      "Java 강조 해제",
+      "Java 위로",
+      "Java 아래로",
+      "Java 기술에서 제거",
+    ]);
 
     expect(within(technologyPanel).queryByText("Highlighted")).not.toBeInTheDocument();
     const highlighted = within(technologyPanel).getByRole("switch", { name: "Java 강조 해제" });
@@ -273,7 +280,7 @@ describe("Preview-first Project Editor", () => {
     expect(saveProject).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
-    expect(screen.getByRole("dialog", { name: "관리자 이메일 재인증" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "관리자 이메일 재인증" })).toBeInTheDocument();
     expect(screen.getByLabelText("인증번호 1번째 숫자")).toBeDisabled();
     expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({ operation: "PROJECT_UPDATE", targetType: "PROJECT", targetId: "12" }));
 

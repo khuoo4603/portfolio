@@ -4,6 +4,8 @@ import { X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 import styles from "./dialog-frame.module.css";
 
+export type DialogVariant = "default" | "admin";
+
 type DialogFrameProps = {
   open: boolean;
   title: string;
@@ -13,6 +15,7 @@ type DialogFrameProps = {
   footer?: React.ReactNode;
   secure?: boolean;
   compact?: boolean;
+  variant?: DialogVariant;
   closeOnBackdrop?: boolean;
   closeOnEscape?: boolean;
 };
@@ -29,6 +32,7 @@ export default function DialogFrame({
   footer,
   secure = false,
   compact = false,
+  variant = "default",
   closeOnBackdrop = true,
   closeOnEscape = true,
 }: DialogFrameProps) {
@@ -97,7 +101,7 @@ export default function DialogFrame({
     }}>
       <div
         ref={dialogRef}
-        className={`${styles.dialogFrame} ${compact ? styles.compactDialog : ""} ${secure ? styles.secureDialog : ""}`}
+        className={`${styles.dialogFrame} ${compact ? styles.compactDialog : ""} ${secure ? styles.secureDialog : ""} ${variant === "admin" ? styles.adminDialog : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

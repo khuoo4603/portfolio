@@ -39,9 +39,11 @@ type AccountFilters = {
 const EMPTY_FILTERS: AccountFilters = { keyword: "", role: "", enabled: "" };
 
 function AccountCreateDialog({
+  busy = false,
   onClose,
   onSubmit,
 }: {
+  busy?: boolean;
   onClose: () => void;
   onSubmit: (input: AccountInput) => void;
 }) {
@@ -78,13 +80,15 @@ function AccountCreateDialog({
   return (
     <DialogFrame
       open
+      variant="admin"
       title="계정 생성"
-      description="회원가입 없이 관리자만 새 계정을 등록할 수 있습니다."
-      onClose={onClose}
+      onClose={busy ? () => undefined : onClose}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
       footer={(
         <>
-          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
-          <Button type="button" onClick={() => (document.getElementById("account-create-form") as HTMLFormElement | null)?.requestSubmit()}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={onClose}>취소</Button>
+          <Button type="button" disabled={busy} onClick={() => (document.getElementById("account-create-form") as HTMLFormElement | null)?.requestSubmit()}>
             계정 생성
           </Button>
         </>
@@ -93,23 +97,23 @@ function AccountCreateDialog({
       <form id="account-create-form" className={styles.editorForm} onSubmit={handleSubmit} noValidate>
         <label className={styles.formField}>
           <span className="type-small">이메일</span>
-          <input className="type-body" type="email" value={email} onChange={(event) => setEmail(event.currentTarget.value)} autoComplete="off" />
+          <input className="type-body" type="email" value={email} disabled={busy} onChange={(event) => setEmail(event.currentTarget.value)} autoComplete="off" />
         </label>
         <label className={styles.formField}>
           <span className="type-small">이름</span>
-          <input className="type-body" type="text" value={name} onChange={(event) => setName(event.currentTarget.value)} autoComplete="off" />
+          <input className="type-body" type="text" value={name} disabled={busy} onChange={(event) => setName(event.currentTarget.value)} autoComplete="off" />
         </label>
         <label className={styles.formField}>
           <span className="type-small">초기 비밀번호</span>
-          <input className="type-body" type="password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} autoComplete="new-password" />
+          <input className="type-body" type="password" value={password} disabled={busy} onChange={(event) => setPassword(event.currentTarget.value)} autoComplete="new-password" />
         </label>
         <div className={styles.formColumns}>
           <label className={styles.formField}>
             <span className="type-small">권한</span>
-            <Select aria-label="권한" value={role} onValueChange={(value) => setRole(value as AccountRole)} options={[{ value: "USER", label: "USER" }, { value: "ADMIN", label: "ADMIN" }]} />
+            <Select aria-label="권한" value={role} disabled={busy} onValueChange={(value) => setRole(value as AccountRole)} options={[{ value: "USER", label: "USER" }, { value: "ADMIN", label: "ADMIN" }]} />
           </label>
           <label className={styles.checkboxField}>
-            <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} />
+            <input type="checkbox" checked={enabled} disabled={busy} onChange={(event) => setEnabled(event.currentTarget.checked)} />
             <span className="type-body">활성 계정</span>
           </label>
         </div>
@@ -121,10 +125,12 @@ function AccountCreateDialog({
 
 function PasswordDialog({
   account,
+  busy = false,
   onClose,
   onSubmit,
 }: {
   account: AccountItem;
+  busy?: boolean;
   onClose: () => void;
   onSubmit: (password: string) => void;
 }) {
@@ -147,13 +153,15 @@ function PasswordDialog({
   return (
     <DialogFrame
       open
+      variant="admin"
       title="비밀번호 초기화"
-      description={`${account.email} 계정의 새 비밀번호를 설정합니다.`}
-      onClose={onClose}
+      onClose={busy ? () => undefined : onClose}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
       footer={(
         <>
-          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
-          <Button type="button" onClick={() => (document.getElementById("password-reset-form") as HTMLFormElement | null)?.requestSubmit()}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={onClose}>취소</Button>
+          <Button type="button" disabled={busy} onClick={() => (document.getElementById("password-reset-form") as HTMLFormElement | null)?.requestSubmit()}>
             비밀번호 초기화
           </Button>
         </>
@@ -162,7 +170,7 @@ function PasswordDialog({
       <form id="password-reset-form" className={styles.editorForm} onSubmit={handleSubmit} noValidate>
         <label className={styles.formField}>
           <span className="type-small">새 비밀번호</span>
-          <input className="type-body" type="password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} autoComplete="new-password" />
+          <input className="type-body" type="password" value={password} disabled={busy} onChange={(event) => setPassword(event.currentTarget.value)} autoComplete="new-password" />
         </label>
         <p className={`${styles.fieldHint} type-small`}>앞뒤 공백 없는 8~64자이며 이메일과 다르게 입력합니다.</p>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
@@ -244,12 +252,14 @@ export default function AccountsScreen() {
   };
 
   const queueCreate = (input: AccountInput) => {
-    setCreateOpen(false);
     void adminAction.start({
       ...accountActionBindings.create(),
       actionLabel: `${input.email} 계정 생성`,
       mutation: (verification) => createAccount(input, verification),
-      onSuccess: () => completeMutation("계정을 생성했습니다."),
+      onSuccess: () => {
+        setCreateOpen(false);
+        completeMutation("계정을 생성했습니다.");
+      },
     });
   };
 
@@ -277,12 +287,14 @@ export default function AccountsScreen() {
       return;
     }
     const account = passwordAccount;
-    setPasswordAccount(null);
     void adminAction.start({
       ...accountActionBindings.password(account.id),
       actionLabel: `${account.email} 비밀번호 초기화`,
       mutation: (verification) => resetAccountPassword(account.id, newPassword, verification),
-      onSuccess: () => completeMutation("계정 비밀번호를 초기화했습니다."),
+      onSuccess: () => {
+        setPasswordAccount(null);
+        completeMutation("계정 비밀번호를 초기화했습니다.");
+      },
     });
   };
 
@@ -351,8 +363,8 @@ export default function AccountsScreen() {
       ) : null}
       </section>
 
-      {createOpen && <AccountCreateDialog onClose={() => setCreateOpen(false)} onSubmit={queueCreate} />}
-      {passwordAccount && <PasswordDialog account={passwordAccount} onClose={() => setPasswordAccount(null)} onSubmit={queuePassword} />}
+      {createOpen && <AccountCreateDialog busy={adminAction.busy} onClose={() => setCreateOpen(false)} onSubmit={queueCreate} />}
+      {passwordAccount && <PasswordDialog account={passwordAccount} busy={adminAction.busy} onClose={() => setPasswordAccount(null)} onSubmit={queuePassword} />}
       {adminAction.dialog && <AdminActionDialog {...adminAction.dialog} />}
     </>
   );

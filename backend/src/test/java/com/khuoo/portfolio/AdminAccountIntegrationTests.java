@@ -47,6 +47,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // 관리자 계정 조회·생성·변경과 인증 회귀 통합 검증
@@ -179,7 +180,8 @@ class AdminAccountIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(post(ACCOUNTS_PATH).cookie(adminSession).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(validBody))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AUTH_ADMIN_ACTION_REAUTH_REQUIRED"));
         assertThat(accountCount("new.user@example.com")).isZero();
 
         ActionChallenge wrongOperation = issueAction(adminSession, "ACCOUNT_ROLE_UPDATE", "ACCOUNT", null);
@@ -231,6 +233,68 @@ class AdminAccountIntegrationTests extends PostgresIntegrationTest {
         assertCreateValidation(adminSession, "valid@example.com", " leading-space", "USER");
         assertCreateValidation(adminSession, "same@example.com", "same@example.com", "USER");
         assertCreateValidation(adminSession, "valid@example.com", PASSWORD, "OWNER");
+    }
+
+    // 관리자 작업 재인증 유예의 세션 범위·고정 만료·상태 조회 검증
+    @Test
+    void adminActionGraceIsSessionBoundAndReadOnly() throws Exception {
+        insertAccount("admin@example.com", "관리자", PASSWORD, "ADMIN", true);
+        Cookie adminSession = completeAdminLogin("admin@example.com", PASSWORD);
+
+        mockMvc.perform(get("/api/v1/admin/auth/action-grace").cookie(adminSession))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.verified").value(false))
+                .andExpect(jsonPath("$.expiresAt").doesNotExist());
+
+        ActionChallenge challenge = issueAction(adminSession, "ACCOUNT_CREATE", "ACCOUNT", null);
+        createAccount(adminSession, challenge,
+                createBody("first@example.com", "첫 사용자", "initial-password", "USER", true))
+                .andExpect(status().isCreated());
+
+        MvcResult firstStatus = mockMvc.perform(get("/api/v1/admin/auth/action-grace").cookie(adminSession))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.verified").value(true))
+                .andExpect(jsonPath("$.expiresAt").isNotEmpty())
+                .andReturn();
+        String expiresAt = objectMapper.readTree(firstStatus.getResponse().getContentAsString())
+                .get("expiresAt").asText();
+
+        mockMvc.perform(post(ACCOUNTS_PATH).cookie(adminSession).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody("second@example.com", "두 번째 사용자", "initial-password", "USER", true)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/admin/auth/action-grace").cookie(adminSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.expiresAt").value(expiresAt));
+
+        ActionChallenge invalid = issueAction(adminSession, "ACCOUNT_CREATE", "ACCOUNT", null);
+        createAccount(adminSession, invalid.withCode(wrongCode(invalid.code())),
+                createBody("invalid@example.com", "잘못된 인증", "initial-password", "USER", true))
+                .andExpect(status().isForbidden());
+        assertThat(accountCount("invalid@example.com")).isZero();
+
+        Cookie otherSession = completeAdminLogin("admin@example.com", PASSWORD);
+        mockMvc.perform(post(ACCOUNTS_PATH).cookie(otherSession).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody("third@example.com", "세 번째 사용자", "initial-password", "USER", true)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AUTH_ADMIN_ACTION_REAUTH_REQUIRED"));
+
+        ActionChallenge partial = issueAction(adminSession, "ACCOUNT_CREATE", "ACCOUNT", null);
+        mockMvc.perform(post(ACCOUNTS_PATH).cookie(adminSession).with(csrf())
+                        .header(PortfolioConstants.Header.ADMIN_CHALLENGE_ID, partial.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody("partial@example.com", "부분 헤더", "initial-password", "USER", true)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_ERROR"));
+
+        mockMvc.perform(post("/api/v1/auth/logout").cookie(adminSession).with(csrf()))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/admin/auth/action-grace").cookie(adminSession))
+                .andExpect(status().isUnauthorized());
     }
 
     // 활성 상태 변경과 실제 변경 시 대상 Session 선택 폐기 검증

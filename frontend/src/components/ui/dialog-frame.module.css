@@ -31,6 +31,13 @@
 
 .compactDialog { width: min(calc(var(--space-160) * 3), 100%); }
 .secureDialog { border-color: var(--border-accent); }
+.adminDialog .dialogHeader { align-items: center; padding: var(--space-24) var(--space-64) var(--space-8); border-bottom: 0; }
+.adminDialog .dialogHeader > div { width: 100%; text-align: center; }
+.adminDialog .dialogHeader h2 { text-align: center; }
+.adminDialog .dialogHeader p { text-align: center; }
+.adminDialog .dialogCloseButton { position: absolute; top: var(--space-16); right: var(--space-16); }
+.adminDialog .dialogBody { padding-top: var(--space-12); }
+.adminDialog .dialogFooter { padding: var(--space-8) var(--space-24) var(--space-24); border-top: 0; background: var(--bg-surface); }
 
 .dialogHeader, .dialogBody, .dialogFooter { position: relative; z-index: 1; }
 .dialogHeader { grid-row: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-20); padding: var(--space-24); border-bottom: 1px solid var(--border-default); }
@@ -55,6 +62,9 @@
   .dialogFrame { width: 100%; max-height: calc(100dvh - var(--space-24)); border-radius: var(--radius-value-md) var(--radius-value-md) 0 0; border-bottom: 0; }
   .dialogHeader, .dialogBody { padding: var(--space-20); }
   .dialogFooter { padding: var(--space-12) var(--space-20) max(var(--space-16), env(safe-area-inset-bottom)); }
+  .adminDialog .dialogHeader { padding: var(--space-20) var(--space-52) var(--space-8); }
+  .adminDialog .dialogBody { padding-top: var(--space-12); }
+  .adminDialog .dialogFooter { padding: var(--space-12) var(--space-20) max(var(--space-16), env(safe-area-inset-bottom)); }
   .compactBackdrop { place-items: center; padding: var(--space-20); }
   .compactBackdrop .compactDialog { width: min(calc(var(--space-160) * 3), 100%); max-height: calc(100dvh - var(--space-40)); border: 1px solid var(--border-accent); border-radius: var(--radius-value-md); }
 }

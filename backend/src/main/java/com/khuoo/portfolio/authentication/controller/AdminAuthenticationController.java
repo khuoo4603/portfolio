@@ -1,17 +1,23 @@
 package com.khuoo.portfolio.authentication.controller;
 
 import com.khuoo.portfolio.authentication.dto.AdminActionChallengeRequest;
+import com.khuoo.portfolio.authentication.dto.AdminActionGraceResponse;
 import com.khuoo.portfolio.authentication.dto.ChallengeResponse;
 import com.khuoo.portfolio.authentication.security.AccountPrincipal;
+import com.khuoo.portfolio.authentication.service.AdminActionGraceService;
 import com.khuoo.portfolio.authentication.service.VerificationChallengeService;
 import com.khuoo.portfolio.common.error.ApiException;
 import com.khuoo.portfolio.common.error.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminAuthenticationController {
 
     private final VerificationChallengeService challengeService;
+    private final AdminActionGraceService graceService;
 
     // 현재 ADMIN과 operation·target이 바인딩된 Challenge 발급
     @Operation(summary = "관리자 변경 작업 재인증번호 발송")
@@ -45,5 +52,26 @@ public class AdminAuthenticationController {
             throw new ApiException(ErrorCode.AUTH_UNAUTHORIZED);
         }
         return challengeService.issueAdminAction(principal.id(), request);
+    }
+
+    // 현재 ADMIN 세션의 관리자 작업 재인증 유예 상태 조회
+    @Operation(summary = "관리자 작업 재인증 유예 상태 조회")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "유예 상태 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요"),
+            @ApiResponse(responseCode = "403", description = "ADMIN 권한 필요")
+    })
+    @GetMapping("/action-grace")
+    public ResponseEntity<AdminActionGraceResponse> actionGrace(
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        if (authentication == null
+                || !(authentication.getPrincipal() instanceof AccountPrincipal principal)) {
+            throw new ApiException(ErrorCode.AUTH_UNAUTHORIZED);
+        }
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(graceService.getStatus(request, principal));
     }
 }

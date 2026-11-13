@@ -44,7 +44,7 @@ export type MonitoringTarget = {
 
 export type MonitoringTargetCreateInput = Pick<
   MonitoringTarget,
-  "serviceKey" | "displayName" | "healthUrl" | "enabled" | "displayOrder"
+  "serviceKey" | "displayName" | "healthUrl" | "enabled"
 >;
 
 export type MonitoringTargetUpdateInput = Omit<MonitoringTargetCreateInput, "serviceKey">;
@@ -95,7 +95,7 @@ export type ProfileEntry = {
   updatedAt: string;
 };
 
-export type ProfileEntryInput = Omit<ProfileEntry, "id" | "createdAt" | "updatedAt">;
+export type ProfileEntryInput = Omit<ProfileEntry, "id" | "displayOrder" | "createdAt" | "updatedAt">;
 
 export type TechnologyCategory = "LANGUAGE" | "BACKEND" | "DATABASE" | "FRONTEND" | "INFRA" | "DEVOPS";
 
@@ -147,7 +147,7 @@ export type ProjectCreateResult = ProjectCreateInput & {
   createdAt: string;
 };
 
-export type ProjectFields = Omit<Project, "id" | "thumbnailUrl" | "enabled" | "updatedAt">;
+export type ProjectFields = Omit<Project, "id" | "thumbnailUrl" | "displayOrder" | "enabled" | "updatedAt">;
 
 export type ProjectResultItem = {
   title: string;
@@ -253,7 +253,7 @@ export type ExternalLink = {
   updatedAt: string;
 };
 
-export type ExternalLinkInput = Omit<ExternalLink, "id" | "createdAt" | "updatedAt">;
+export type ExternalLinkInput = Omit<ExternalLink, "id" | "displayOrder" | "createdAt" | "updatedAt">;
 
 export type ResumeInfo = {
   fileName: string;
@@ -313,7 +313,7 @@ export type ToolLink = {
   enabled: boolean;
 };
 
-export type ToolLinkFields = Omit<ToolLink, "id" | "imageUrl">;
+export type ToolLinkFields = Omit<ToolLink, "id" | "imageUrl" | "displayOrder">;
 
 export type ToolLinkCreateImageMode = "DEFAULT" | "UPLOAD";
 

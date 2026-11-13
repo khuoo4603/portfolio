@@ -1,3 +1,5 @@
+import liteLodGeometry from "./lite-map-lod-geometry.json";
+
 export const WORLD_MAP_SIZE = {
   width: 800,
   height: 400,
@@ -220,19 +222,29 @@ export function formatMapViewBox(viewBox: MapViewBox) {
 export const WORLD_MAP_GRID_HEIGHT = 280;
 export const WORLD_MAP_DOT_COUNT = 54643;
 export const WORLD_MAP_MOBILE_DOT_COUNT = 13629;
+export const WORLD_MAP_LITE_DOT_COUNT = 27678;
 
-export type MapDensity = "low" | "full";
+export type MapDensity = "full" | "mobile" | "lite";
 
 const WORLD_MAP_DOT_ASSETS: Record<MapDensity, { count: number; href: string }> = {
   full: {
     count: WORLD_MAP_DOT_COUNT,
     href: "/maps/world-map-dots.svg#world-map-dots",
   },
-  low: {
+  mobile: {
     count: WORLD_MAP_MOBILE_DOT_COUNT,
     href: "/maps/world-map-dots-mobile.svg#world-map-dots-mobile",
   },
+  lite: {
+    count: WORLD_MAP_LITE_DOT_COUNT,
+    href: "/maps/world-map-dots-lite.svg#world-map-dots-lite",
+  },
 };
+
+const LITE_CENTERED_WORLD_MAP = {
+  count: WORLD_MAP_LITE_DOT_COUNT,
+  href: "/maps/world-map-dots-lite-korea-centered.svg#world-map-dots-lite-korea-centered",
+} as const;
 
 export const EAST_ASIA_GRID_HEIGHT = 240;
 export const EAST_ASIA_GRID_WIDTH = Math.round(
@@ -241,20 +253,92 @@ export const EAST_ASIA_GRID_WIDTH = Math.round(
 
 export const EAST_ASIA_DOT_COUNT = 64775;
 export const EAST_ASIA_MOBILE_DOT_COUNT = 10977;
+export const EAST_ASIA_LITE_DOT_COUNT = 32490;
+
+export type MapTheme = "dark" | "light";
+export type LiteMapStage = "world" | "eastAsia" | "koreaMid";
+export type LiteLodGeometry = {
+  outputHeight: number;
+  outputWidth: number;
+  referenceZoomProgress: number;
+  sourceHeight: number;
+  sourceWidth: number;
+  sourceX: number;
+  sourceY: number;
+  targetScreenDotDiameter: number;
+  targetScreenDotSpacing: number;
+};
+
+export const LITE_MAP_GEOMETRY: Record<Exclude<LiteMapStage, "world">, LiteLodGeometry> = liteLodGeometry;
+
+const LITE_MAP_ASSETS: Record<LiteMapStage, Record<MapTheme, string>> = {
+  world: {
+    dark: "/maps/lite/world-dark.webp",
+    light: "/maps/lite/world-light.webp",
+  },
+  eastAsia: {
+    dark: "/maps/lite/east-asia-dark.webp",
+    light: "/maps/lite/east-asia-light.webp",
+  },
+  koreaMid: {
+    dark: "/maps/lite/korea-mid-dark.webp",
+    light: "/maps/lite/korea-mid-light.webp",
+  },
+};
+
+// Lite WebP LOD의 단계·테마별 정적 자산 경로 반환
+export function getLiteMapAsset(stage: LiteMapStage, theme: MapTheme) {
+  return LITE_MAP_ASSETS[stage][theme];
+}
+
+function LiteMapImage({
+  className,
+  height,
+  stage,
+  theme,
+  width,
+}: {
+  className: string;
+  height: number;
+  stage: LiteMapStage;
+  theme: MapTheme;
+  width: number;
+}) {
+  const bounds = stage === "world"
+    ? { sourceHeight: height, sourceWidth: width, sourceX: 0, sourceY: 0 }
+    : LITE_MAP_GEOMETRY[stage];
+
+  return (
+    <image
+      aria-hidden="true"
+      className={className}
+      href={getLiteMapAsset(stage, theme)}
+      height={bounds.sourceHeight}
+      preserveAspectRatio="xMidYMid meet"
+      width={bounds.sourceWidth}
+      x={bounds.sourceX}
+      y={bounds.sourceY}
+    />
+  );
+}
 
 const EAST_ASIA_DOT_ASSETS: Record<MapDensity, { count: number; href: string }> = {
   full: {
     count: EAST_ASIA_DOT_COUNT,
     href: "/maps/east-asia-map-dots.svg#east-asia-map-dots",
   },
-  low: {
+  mobile: {
     count: EAST_ASIA_MOBILE_DOT_COUNT,
     href: "/maps/east-asia-map-dots-mobile.svg#east-asia-map-dots-mobile",
+  },
+  lite: {
+    count: EAST_ASIA_LITE_DOT_COUNT,
+    href: "/maps/east-asia-map-dots-lite.svg#east-asia-map-dots-lite",
   },
 };
 
 // Aceternity 계열의 실제 대륙 Dot Field 지도
-export default function HeroWorldMap({ density }: { density: MapDensity }) {
+export default function HeroWorldMap({ density, theme = "dark" }: { density: MapDensity; theme?: MapTheme }) {
   const asset = WORLD_MAP_DOT_ASSETS[density];
 
   return (
@@ -267,19 +351,37 @@ export default function HeroWorldMap({ density }: { density: MapDensity }) {
       viewBox={`0 0 ${WORLD_MAP_SIZE.width} ${WORLD_MAP_SIZE.height}`}
     >
       <g className="topology-map-zoom">
-        <use
-          className="topology-map-dots"
-          data-dot-count={asset.count}
-          href={asset.href}
-        />
+        {density === "lite" ? (
+          <LiteMapImage
+            className="topology-map-raster"
+            height={WORLD_MAP_SIZE.height}
+            stage="world"
+            theme={theme}
+            width={WORLD_MAP_SIZE.width}
+          />
+        ) : (
+          <use
+            className="topology-map-dots"
+            data-dot-count={asset.count}
+            href={asset.href}
+          />
+        )}
       </g>
     </svg>
   );
 }
 
 // Hero Scroll Narrative Full Stage 전용 World Map
-export function HeroNarrativeWorldMap({ density, geometryReady }: { density: MapDensity; geometryReady: boolean }) {
-  const asset = WORLD_MAP_DOT_ASSETS[density];
+export function HeroNarrativeWorldMap({
+  density,
+  geometryReady,
+  theme,
+}: {
+  density: MapDensity;
+  geometryReady: boolean;
+  theme: MapTheme;
+}) {
+  const asset = density === "lite" ? LITE_CENTERED_WORLD_MAP : WORLD_MAP_DOT_ASSETS[density];
 
   return (
     <svg
@@ -291,7 +393,15 @@ export function HeroNarrativeWorldMap({ density, geometryReady }: { density: Map
       viewBox={`0 0 ${WORLD_MAP_SIZE.width} ${WORLD_MAP_SIZE.height}`}
     >
       <g className="topology-narrative-world-map-zoom">
-        {geometryReady ? (
+        {density === "lite" ? (
+          <LiteMapImage
+            className="topology-narrative-world-map-raster"
+            height={WORLD_MAP_SIZE.height}
+            stage="world"
+            theme={theme}
+            width={WORLD_MAP_SIZE.width}
+          />
+        ) : geometryReady ? (
           <use
             className="topology-narrative-world-map-dots"
             data-dot-count={asset.count}
@@ -304,7 +414,15 @@ export function HeroNarrativeWorldMap({ density, geometryReady }: { density: Map
 }
 
 // Korea Zoom 후반부 LOD 전환 전용 East Asia Regional Map
-export function HeroEastAsiaMap({ density, geometryReady }: { density: MapDensity; geometryReady: boolean }) {
+export function HeroEastAsiaMap({
+  density,
+  geometryReady,
+  theme,
+}: {
+  density: MapDensity;
+  geometryReady: boolean;
+  theme: MapTheme;
+}) {
   const asset = EAST_ASIA_DOT_ASSETS[density];
 
   return (
@@ -317,7 +435,24 @@ export function HeroEastAsiaMap({ density, geometryReady }: { density: MapDensit
       viewBox={formatMapViewBox(EAST_ASIA_VIEWBOX)}
     >
       <g className="topology-focus-map-zoom">
-        {geometryReady ? (
+        {density === "lite" ? (
+          <>
+            <LiteMapImage
+              className="topology-focus-map-east-asia-raster"
+              height={EAST_ASIA_MAP_SIZE.height}
+              stage="eastAsia"
+              theme={theme}
+              width={EAST_ASIA_MAP_SIZE.width}
+            />
+            <LiteMapImage
+              className="topology-focus-map-korea-mid-raster"
+              height={EAST_ASIA_MAP_SIZE.height}
+              stage="koreaMid"
+              theme={theme}
+              width={EAST_ASIA_MAP_SIZE.width}
+            />
+          </>
+        ) : geometryReady ? (
           <use
             className="topology-focus-map-dots"
             data-dot-count={asset.count}

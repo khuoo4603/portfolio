@@ -88,12 +88,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   if (projectResult.status === "rejected" || !portfolio) {
     let errorTraceId: string | undefined;
+    let errorReason: unknown;
     if (projectResult.status === "rejected") {
       errorTraceId = traceId(projectResult);
+      errorReason = projectResult.reason;
     } else if (portfolioResult.status === "rejected") {
       errorTraceId = traceId(portfolioResult);
+      errorReason = portfolioResult.reason;
     }
-    return <ProjectErrorView portfolio={portfolio} traceId={errorTraceId} />;
+    return <ProjectErrorView traceId={errorTraceId} error={errorReason} />;
   }
 
   return (

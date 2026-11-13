@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ImagePlus, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ImagePlus, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import Button, { buttonClassName } from "@/components/ui/button";
 import Select from "@/components/ui/select";
@@ -9,6 +9,7 @@ import type { Technology } from "./admin-types";
 import { StateSwitch } from "./admin-ui";
 import type { EditorMedia, ProjectEditorDraft } from "./project-editor-model";
 import { moveProjectItem } from "./project-editor-model";
+import SortableList from "./sortable-list";
 import styles from "./admin.module.css";
 
 export type ProjectEditorSection = "basic" | "results" | "overview" | "development" | "architecture" | "engineering" | "technologies" | "media";
@@ -72,7 +73,6 @@ function BasicPanel({ draft, setDraft }: Pick<PanelProps, "draft" | "setDraft">)
         <TextField label="프로젝트명" value={draft.project.name} maxLength={200} onChange={(name) => update({ name })} />
         <TextField label="URL 경로" value={draft.project.slug} maxLength={100} onChange={(slug) => update({ slug })} />
         <NumberField label="연도" value={draft.project.year} min={1900} max={2100} onChange={(year) => update({ year })} />
-        <NumberField label="표시 순서" value={draft.project.displayOrder} min={0} onChange={(displayOrder) => update({ displayOrder: displayOrder ?? 0 })} />
         <TextField label="한 줄 소개" value={draft.project.tagline} maxLength={300} onChange={(tagline) => update({ tagline: tagline || null })} wide />
         <TextAreaField label="카드 설명" value={draft.project.description} onChange={(description) => update({ description: description || null })} />
         <TextField label="카드 역할" value={draft.project.cardRole} maxLength={150} onChange={(cardRole) => update({ cardRole: cardRole || null })} />
@@ -237,64 +237,29 @@ function TechnologyPanel({ draft, setDraft, technologyMaster }: Pick<PanelProps,
         <label className={styles.formField}><span className="type-small">프로젝트 기술 선택</span><Select aria-label="프로젝트 기술 선택" value={selectedId} onValueChange={setSelectedId} options={[{ value: "", label: "기술 선택" }, ...technologyMaster.filter((item) => !selected.has(item.id)).map((item) => ({ value: String(item.id), label: `${item.name}${item.enabled ? "" : " · 비활성"}`, disabled: !item.enabled }))]} /></label>
         <Button variant="secondary" type="button" disabled={!selectedId} onClick={() => { const id = Number(selectedId); setItems([...draft.technologies, { technologyId: id, showOnCard: false, highlighted: false, displayOrder: draft.technologies.length }]); setSelectedId(""); }}><Plus aria-hidden="true" />추가</Button>
       </div>
-      <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.projectTechnologyTable}`}><thead><tr><th>기술</th><th>분류</th><th>강조</th><th>표시 순서</th><th>작업</th></tr></thead><tbody>{draft.technologies.map((item, index) => {
-        const technology = technologyMaster.find((value) => value.id === item.technologyId);
-        const technologyName = technology?.name ?? `Technology #${item.technologyId}`;
-        return (
-          <tr key={item.technologyId}>
-            <td className={styles.projectTechnologyPrimarySummary} data-label="기술"><strong className="type-body">{technologyName}</strong></td>
-            <td className={styles.projectTechnologyCategorySummary} data-label="분류"><span className="type-small">{technology?.category}{technology && !technology.enabled ? " · 기존 비활성 연결" : ""}</span></td>
-            <td className={styles.projectTechnologyHighlightSummary} data-label="강조"><StateSwitch
-                enabled={item.highlighted}
-                label={`${technologyName} ${item.highlighted ? "강조 해제" : "강조 설정"}`}
-                onClick={() => setItems(draft.technologies.map((value, itemIndex) => (
-                  itemIndex === index ? { ...value, highlighted: !value.highlighted } : value
-                )))}
-              /></td>
-            <td className={styles.projectTechnologyOrderSummary} data-label="표시 순서"><input className={`${styles.projectTechnologyOrderInput} type-body`} aria-label={`${technologyName} 표시 순서`} type="number" min={0} value={item.displayOrder} onChange={(event) => setItems(draft.technologies.map((value, itemIndex) => itemIndex === index ? { ...value, displayOrder: event.currentTarget.value === "" ? 0 : Number(event.currentTarget.value) } : value))} /></td>
-            <td className={styles.projectTechnologyActionsSummary} data-label="작업"><ItemActions index={index} length={draft.technologies.length} label={technologyName} onMove={(direction) => setItems(moveProjectItem(draft.technologies, index, direction).map((value, itemIndex) => ({ ...value, displayOrder: itemIndex })))} onDelete={() => setItems(draft.technologies.filter((_, itemIndex) => itemIndex !== index))} /></td>
-          </tr>
-        );
-      })}</tbody></table></div>
+      <SortableList
+        items={draft.technologies}
+        getKey={(item) => item.technologyId}
+        getTitle={(item) => technologyMaster.find((value) => value.id === item.technologyId)?.name ?? `Technology #${item.technologyId}`}
+        onChange={(items) => setItems(items.map((item, index) => ({ ...item, displayOrder: index })))}
+        renderActions={(item, index, controls) => {
+          const technologyName = technologyMaster.find((value) => value.id === item.technologyId)?.name ?? `Technology #${item.technologyId}`;
+          return <><StateSwitch enabled={item.highlighted} label={`${technologyName} ${item.highlighted ? "강조 해제" : "강조 설정"}`} onClick={() => setItems(draft.technologies.map((value) => value.technologyId === item.technologyId ? { ...value, highlighted: !value.highlighted } : value))} />{controls.moveUp}{controls.moveDown}<button className={styles.iconButton} type="button" aria-label={`${technologyName} 기술에서 제거`} onClick={() => setItems(draft.technologies.filter((_, itemIndex) => itemIndex !== index).map((value, itemIndex) => ({ ...value, displayOrder: itemIndex })))}><X aria-hidden="true" /></button></>;
+        }}
+      />
     </section>
   );
 }
 
-// 기존·신규 Project Media 단일 행 편집기
-function MediaRow({ item, index, length, onDelete, onRestore, onChange, onMove }: {
-  item: EditorMedia; index: number; length: number;
-  onDelete: () => void; onRestore: () => void; onChange: (patch: Partial<EditorMedia>) => void; onMove: (direction: -1 | 1) => void;
-}) {
-  const source = item.previewUrl || item.imageUrl;
-  return (
-    <article className={styles.mediaDraftRow} data-deleted={item.deleted ? "true" : "false"}>
-      <div className={styles.mediaDraftPreview}>
-        <AdminImagePreview
-          alt=""
-          fallback={<span className={`${styles.previewUnavailable} type-small`}>미리보기 없음</span>}
-          sizes="120px"
-          src={source || null}
-        />
-      </div>
-      <div className={styles.mediaDraftFields}>
-        <TextField label="Label" value={item.label} onChange={(label) => onChange({ label: label || null })} />
-        <TextField label="Alt Text" value={item.altText} onChange={(altText) => onChange({ altText: altText || null })} />
-        <NumberField label="Display Order" value={item.displayOrder} min={0} onChange={(displayOrder) => onChange({ displayOrder: displayOrder ?? 0 })} />
-      </div>
-      {item.deleted ? <Button variant="secondary" type="button" onClick={onRestore}><RotateCcw aria-hidden="true" />삭제 취소</Button> : <ItemActions index={index} length={length} label={`Carousel ${index + 1}`} onMove={onMove} onDelete={onDelete} />}
-    </article>
-  );
-}
-
 // Thumbnail과 Carousel 통합 Local Draft 패널
-function MediaPanel(props: Pick<PanelProps, "draft" | "onThumbnailFile" | "onThumbnailRemove" | "onAddMedia" | "onDeleteMedia" | "onChangeMedia" | "onMoveMedia" | "fileError">) {
-  const { draft, onThumbnailFile, onThumbnailRemove, onAddMedia, onDeleteMedia, onChangeMedia, onMoveMedia, fileError } = props;
+function MediaPanel(props: Pick<PanelProps, "draft" | "setDraft" | "onThumbnailFile" | "onThumbnailRemove" | "onAddMedia" | "onDeleteMedia" | "onChangeMedia" | "fileError">) {
+  const { draft, setDraft, onThumbnailFile, onThumbnailRemove, onAddMedia, onDeleteMedia, onChangeMedia, fileError } = props;
   const thumbnailSource = draft.thumbnail.previewUrl || (draft.thumbnail.mode === "KEEP" ? draft.thumbnail.imageUrl : null);
   return (
     <section className={styles.projectEditorPanel} aria-label="미디어 편집">
       <PanelHeading title="미디어" />
       <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Thumbnail</h3><p className="type-small">{getImageModeLabel(draft.thumbnail.mode)}</p></div><div className={styles.mediaGroupActions}><label className={buttonClassName({ variant: "secondary", className: "type-body" })}><ImagePlus aria-hidden="true" />파일 선택<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onThumbnailFile(file); event.currentTarget.value = ""; }} /></label><Button variant="secondary" type="button" onClick={onThumbnailRemove}>이미지 제거</Button></div></div><div className={styles.thumbnailDraftPreview}><AdminImagePreview alt="Thumbnail Preview" fallback={<span className="type-small">Thumbnail 없음</span>} sizes="420px" src={thumbnailSource} /></div></section>
-      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Carousel</h3><p className="type-small">{draft.media.filter((item) => !item.deleted).length}개 사용</p></div><label className={buttonClassName({ variant: "secondary", className: "type-body" })}><Plus aria-hidden="true" />이미지 추가<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onAddMedia(file); event.currentTarget.value = ""; }} /></label></div><div className={styles.projectItemList}>{draft.media.map((item, index) => <MediaRow key={item.key} item={item} index={index} length={draft.media.length} onDelete={() => onDeleteMedia(item.key)} onRestore={() => onChangeMedia(item.key, { deleted: false })} onChange={(patch) => onChangeMedia(item.key, patch)} onMove={(direction) => onMoveMedia(item.key, direction)} />)}</div></section>
+      <section className={styles.mediaGroup}><div className={styles.mediaGroupHeading}><div><h3 className="type-body">Carousel</h3><p className="type-small">{draft.media.filter((item) => !item.deleted).length}개 사용</p></div><label className={buttonClassName({ variant: "secondary", className: "type-body" })}><Plus aria-hidden="true" />이미지 추가<input className={styles.srOnly} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) onAddMedia(file); event.currentTarget.value = ""; }} /></label></div><SortableList layout="expanded" items={draft.media.filter((item) => !item.deleted)} getKey={(item) => item.key} getTitle={(item) => item.label || `Carousel ${draft.media.filter((value) => !value.deleted).indexOf(item) + 1}`} onChange={(items) => { const deleted = draft.media.filter((item) => item.deleted); setDraft((current) => ({ ...current, media: [...items.map((item, index) => ({ ...item, displayOrder: index })), ...deleted] })); }} renderExtra={(item) => <><div className={styles.mediaDraftPreview}><AdminImagePreview alt="" fallback={<span className={`${styles.previewUnavailable} type-small`}>미리보기 없음</span>} sizes="120px" src={item.previewUrl || item.imageUrl || null} /></div><div className={styles.mediaDraftFields}><TextField label="Label" value={item.label} onChange={(label) => onChangeMedia(item.key, { label: label || null })} /><TextField label="Alt Text" value={item.altText} onChange={(altText) => onChangeMedia(item.key, { altText: altText || null })} /></div><button className={styles.iconButton} type="button" aria-label={`${item.label || "Carousel"} 삭제`} onClick={() => onDeleteMedia(item.key)}><Trash2 aria-hidden="true" /></button></>} />{draft.media.filter((item) => item.deleted).map((item) => <div className={styles.deletedMediaRow} key={item.key}><span className="type-small">{item.label || "삭제 예정 이미지"}</span><Button variant="secondary" type="button" onClick={() => setDraft((current) => { const activeCount = current.media.filter((value) => !value.deleted).length; return { ...current, media: current.media.map((value) => value.key === item.key ? { ...value, deleted: false, displayOrder: activeCount } : value) }; })}><RotateCcw aria-hidden="true" />삭제 취소</Button></div>)}</section>
       {fileError ? <p className={`${styles.inlineError} type-small`} role="alert">{fileError}</p> : null}
     </section>
   );

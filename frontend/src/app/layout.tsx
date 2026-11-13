@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Instrument_Sans, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import Script from "next/script";
 import { getDefaultOgImageUrl, getPublicSiteOrigin } from "@/lib/metadata/public-metadata";
+import PerformanceRuntime from "@/lib/performance/performance-runtime";
 import "pretendard/dist/web/variable/pretendardvariable.css";
 import "../styles/globals.css";
 
@@ -41,6 +42,12 @@ const themeInitScript = `
 })();
 `;
 
+const performanceInitScript = `
+(() => {
+  document.documentElement.dataset.performance = "lite";
+})();
+`;
+
 // Main Public Metadata 구성
 export function generateMetadata(): Metadata {
   const image = getDefaultOgImageUrl(getPublicSiteOrigin());
@@ -61,13 +68,19 @@ export function generateMetadata(): Metadata {
 // 전체 페이지 Theme과 Font Foundation 적용
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" data-theme="dark" suppressHydrationWarning className="h-full antialiased">
+    <html lang="ko" data-theme="dark" data-performance="lite" suppressHydrationWarning className="h-full antialiased">
       <body className={`${instrumentSans.variable} ${spaceGrotesk.variable} ${jetBrainsMono.variable} min-h-full flex flex-col`}>
         <Script
           id="theme-init"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
         />
+        <Script
+          id="performance-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: performanceInitScript }}
+        />
+        <PerformanceRuntime />
         {children}
       </body>
     </html>

@@ -2,11 +2,12 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import type { SiteData } from "./admin-types";
-import { createAdminChallenge } from "./admin-action-api";
+import { createAdminChallenge, getAdminActionGrace } from "./admin-action-api";
 import {
   createProfileEntry,
   createTechnology,
   getAdminSite,
+  reorderProfileEntriesBatch,
   replacePortfolioTechnologies,
   replaceResume,
   updateProfileEntry,
@@ -22,7 +23,7 @@ function selectOption(label: string, option: string) {
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
-  return { ...actual, createAdminChallenge: vi.fn() };
+  return { ...actual, createAdminChallenge: vi.fn(), getAdminActionGrace: vi.fn() };
 });
 vi.mock("./admin-site-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-site-api")>();
@@ -37,6 +38,7 @@ vi.mock("./admin-site-api", async (importOriginal) => {
     updateTechnology: vi.fn(),
     deleteTechnology: vi.fn(),
     replacePortfolioTechnologies: vi.fn(),
+    reorderProfileEntriesBatch: vi.fn(),
     createExternalLink: vi.fn(),
     updateExternalLink: vi.fn(),
     deleteExternalLink: vi.fn(),
@@ -150,6 +152,7 @@ function submitOtp(code = "654321") {
 
 describe("Admin Site 실제 API 관리", () => {
   beforeEach(() => {
+    vi.mocked(getAdminActionGrace).mockReset().mockResolvedValue({ verified: false, expiresAt: null });
     vi.mocked(getAdminSite).mockReset().mockResolvedValue(siteData());
     vi.mocked(createAdminChallenge).mockReset().mockResolvedValue({ challengeId: "challenge-site", expiresAt: "2099-09-01T12:00:00+09:00" });
     vi.mocked(updatePortfolioContents).mockReset().mockResolvedValue({ items: [] });
@@ -157,6 +160,7 @@ describe("Admin Site 실제 API 관리", () => {
     vi.mocked(updateProfileEntry).mockReset().mockResolvedValue(siteData().profileEntries[0]);
     vi.mocked(createTechnology).mockReset().mockResolvedValue(siteData().technologyMaster[0]);
     vi.mocked(replacePortfolioTechnologies).mockReset().mockResolvedValue({ items: [] });
+    vi.mocked(reorderProfileEntriesBatch).mockReset().mockResolvedValue({ items: [] });
     vi.mocked(replaceResume).mockReset().mockResolvedValue({ fileName: "resume-new.pdf", updatedAt: UPDATED_AT });
   });
 
@@ -180,12 +184,13 @@ describe("Admin Site 실제 API 관리", () => {
     expect(screen.queryByRole("tab", { name: "프로젝트" })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "이력" }));
-    expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
+    expect(screen.getAllByText("소프트웨어융합전공").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "학력" })).toBeInTheDocument();
     const profileTable = screen.getByRole("table");
     expect(within(profileTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
-      "기간", "제목", "기관 또는 역할", "유형", "상태", "순서", "작업",
+      "기간", "제목", "기관 또는 역할", "유형", "상태", "작업",
     ]);
+    expect(within(profileTable).queryByRole("columnheader", { name: "순서" })).not.toBeInTheDocument();
     expect(within(profileTable).queryByRole("columnheader", { name: "유형 / 상태" })).not.toBeInTheDocument();
     expect(within(profileTable).getByText("학력").closest("td")).toHaveAttribute("data-label", "유형");
     expect(within(profileTable).getByRole("switch", { name: "소프트웨어융합전공 비노출 전환" }).closest("td")).toHaveAttribute("data-label", "상태");
@@ -220,6 +225,33 @@ describe("Admin Site 실제 API 관리", () => {
     expect(screen.queryByText(/파일 크기/)).not.toBeInTheDocument();
   });
 
+  it("이력 그룹 순서와 외부 링크 표시 순서를 서버 순서로 정렬", async () => {
+    const response = siteData();
+    response.profileEntries = [...response.profileEntries].reverse();
+    response.externalLinks = [
+      { ...response.externalLinks[0], id: 5, name: "Portfolio", displayOrder: 0 },
+      response.externalLinks[0],
+    ];
+    vi.mocked(getAdminSite).mockResolvedValueOnce(response);
+    render(<SiteScreen />);
+
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
+    let table = screen.getByRole("table");
+    let rows = within(table).getAllByRole("row").slice(1).map((row) => row.textContent ?? "");
+    expect(rows.findIndex((row) => row.includes("소프트웨어융합전공"))).toBeLessThan(rows.findIndex((row) => row.includes("플랫폼 개발")));
+    expect(rows.findIndex((row) => row.includes("플랫폼 개발"))).toBeLessThan(rows.findIndex((row) => row.includes("개발 커뮤니티 활동")));
+    fireEvent.click(screen.getByRole("button", { name: "활동" }));
+    rows = within(screen.getByRole("table")).getAllByRole("row").slice(1).map((row) => row.textContent ?? "");
+    expect(rows[0]).toContain("개발 커뮤니티 활동");
+
+    fireEvent.click(screen.getByRole("tab", { name: "외부 링크" }));
+    table = screen.getByRole("table");
+    expect(within(table).queryByRole("columnheader", { name: "순서" })).not.toBeInTheDocument();
+    expect(within(table).getAllByRole("row")[1]).toHaveTextContent("Portfolio");
+    expect(within(table).getAllByRole("row")[2]).toHaveTextContent("GitHub");
+  });
+
   it("단일 Site 조회 결과를 ALL과 5개 이력 유형으로 필터링하고 필터 상태에서 수정 가능", async () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");
@@ -230,8 +262,8 @@ describe("Admin Site 실제 API 관리", () => {
     expect(within(filterGroup).getAllByRole("button").map((button) => button.textContent)).toEqual([
       "전체", "학력", "경력", "활동", "수상", "자격·교육",
     ]);
-    expect(screen.getByText("소프트웨어융합전공")).toBeInTheDocument();
-    expect(screen.getByText("플랫폼 개발")).toBeInTheDocument();
+    expect(screen.getAllByText("소프트웨어융합전공").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("플랫폼 개발").length).toBeGreaterThan(0);
 
     const cases = [
       ["학력", "소프트웨어융합전공"],
@@ -242,7 +274,7 @@ describe("Admin Site 실제 API 관리", () => {
     ];
     for (const [label, title] of cases) {
       fireEvent.click(within(filterGroup).getByRole("button", { name: label }));
-      expect(screen.getByText(title)).toBeInTheDocument();
+      expect(screen.getAllByText(title).length).toBeGreaterThan(0);
       expect(screen.getAllByRole("row")).toHaveLength(2);
     }
 
@@ -293,25 +325,43 @@ describe("Admin Site 실제 API 관리", () => {
     ], { challengeId: "challenge-site", verificationCode: "654321" }));
   });
 
-  it("Profile Editor가 자격·교육과 enabled만 제공하고 featured 없이 Create Challenge를 실행", async () => {
+  it("Profile Editor가 유형별 필드와 라벨을 제공하고 숨겨진 입력값을 보존", async () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");
     fireEvent.click(screen.getByRole("tab", { name: "이력" }));
     fireEvent.click(screen.getByRole("button", { name: "항목 추가" }));
     const dialog = screen.getByRole("dialog");
 
-    fireEvent.click(within(dialog).getByRole("combobox", { name: "이력 유형" }));
-    expect(screen.getByRole("option", { name: "학력" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "자격·교육" })).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole("combobox", { name: "이력 유형" }));
-    expect(within(dialog).getByRole("heading", { name: "기본 정보" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("heading", { name: "기간" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("heading", { name: "상세 설명" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("heading", { name: "노출 설정" })).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("노출 ON")).toBeChecked();
-    expect(within(dialog).queryByLabelText("대표/강조")).not.toBeInTheDocument();
+    expect(within(dialog).getByLabelText("경력명")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("회사·기관")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("담당 역할")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("근무 기간")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("담당 업무")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("주요 성과")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("공개 여부")).toBeChecked();
+
+    fireEvent.change(within(dialog).getByLabelText("경력명"), { target: { value: "새 경력" } });
+    fireEvent.change(within(dialog).getByLabelText("담당 역할"), { target: { value: "담당 역할" } });
+    fireEvent.change(within(dialog).getByLabelText("주요 성과"), { target: { value: "주요 성과" } });
+    selectOption("이력 유형", "수상");
+    expect(within(dialog).getByLabelText("수상명")).toHaveValue("새 경력");
+    expect(within(dialog).getByLabelText("주최·주관 기관")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("수상 시기")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("수상 설명")).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText("담당 역할")).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText("주요 성과")).not.toBeInTheDocument();
+
+    selectOption("이력 유형", "경력");
+    expect(within(dialog).getByLabelText("담당 역할")).toHaveValue("담당 역할");
+    expect(within(dialog).getByLabelText("주요 성과")).toHaveValue("주요 성과");
+
     selectOption("이력 유형", "자격·교육");
-    fireEvent.change(within(dialog).getByLabelText("제목"), { target: { value: "새 자격·교육" } });
+    expect(within(dialog).getByLabelText("자격·교육명")).toHaveValue("새 경력");
+    expect(within(dialog).getByLabelText("발급·교육 기관")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("취득·교육 시기")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("상세 설명")).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText("담당 역할")).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText("주요 성과")).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "저장" }));
 
     await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
@@ -323,14 +373,93 @@ describe("Admin Site 실제 API 관리", () => {
     await waitFor(() => expect(createProfileEntry).toHaveBeenCalledWith({
       entryType: "CERTIFICATE",
       periodText: null,
-      title: "새 자격·교육",
+      title: "새 경력",
       organization: null,
-      role: null,
+      role: "담당 역할",
       description: null,
-      achievement: null,
-      displayOrder: 0,
+      achievement: "주요 성과",
       enabled: true,
     }, { challengeId: "challenge-site", verificationCode: "654321" }));
+  });
+
+  it("Profile 저장 인증 취소 시 편집 Draft를 유지", async () => {
+    render(<SiteScreen />);
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
+    fireEvent.click(screen.getByRole("button", { name: "항목 추가" }));
+
+    const editor = screen.getByRole("dialog", { name: "이력 추가" });
+    fireEvent.change(within(editor).getByLabelText("경력명"), { target: { value: "인증 취소 Draft" } });
+    fireEvent.click(within(editor).getByRole("button", { name: "저장" }));
+
+    const authDialog = await screen.findByRole("dialog", { name: "관리자 이메일 재인증" });
+    fireEvent.click(within(authDialog).getByRole("button", { name: "취소" }));
+
+    expect(screen.getByRole("dialog", { name: "이력 추가" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("인증 취소 Draft")).toBeInTheDocument();
+    expect(createProfileEntry).not.toHaveBeenCalled();
+  });
+
+  it("이력 전체 순서 관리 모달은 여러 그룹 변경을 Batch 한 번으로 저장", async () => {
+    render(<SiteScreen />);
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
+    const entriesSurface = screen.getByRole("region", { name: "이력" });
+
+    fireEvent.click(within(entriesSurface).getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    expect(within(dialog).getByRole("heading", { name: "학력" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "경력·활동" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "수상" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "자격·교육" })).toBeInTheDocument();
+    expect(within(dialog).getAllByRole("button", { name: "순서 저장" })).toHaveLength(1);
+    expect(within(dialog).getByRole("button", { name: "초기화" })).toBeDisabled();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "플랫폼 개발 아래로" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "순서 저장" }));
+
+    await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({
+      operation: "PROFILE_ENTRIES_REORDER",
+      targetType: "PROFILE_ENTRY",
+      targetId: null,
+    })));
+    submitOtp();
+    await waitFor(() => expect(reorderProfileEntriesBatch).toHaveBeenCalledWith({
+      groups: [{ group: "ACTIVITIES", orderedIds: [17, 16], expectedIds: [16, 17] }],
+    }, { challengeId: "challenge-site", verificationCode: "654321" }));
+  });
+
+  it("이력 순서 초기화는 서버 Snapshot만 복원하고 저장 API를 호출하지 않음", async () => {
+    render(<SiteScreen />);
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
+    const entriesSurface = screen.getByRole("region", { name: "이력" });
+    fireEvent.click(within(entriesSurface).getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    const activities = within(dialog).getByRole("region", { name: "경력·활동" });
+    fireEvent.click(within(activities).getByRole("button", { name: "플랫폼 개발 아래로" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "초기화" }));
+    expect(within(activities).getAllByRole("listitem")[0]).toHaveTextContent("플랫폼 개발");
+    expect(reorderProfileEntriesBatch).not.toHaveBeenCalled();
+    expect(getAdminSite).toHaveBeenCalledOnce();
+  });
+
+  it("외부 링크 순서 초기화는 서버 Snapshot만 복원하고 재조회하지 않음", async () => {
+    const response = siteData();
+    response.externalLinks = [
+      { ...response.externalLinks[0], id: 5, name: "Portfolio", displayOrder: 0 },
+      response.externalLinks[0],
+    ];
+    vi.mocked(getAdminSite).mockResolvedValueOnce(response);
+    render(<SiteScreen />);
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "외부 링크" }));
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Portfolio 아래로" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "초기화" }));
+    expect(within(dialog).getAllByRole("listitem")[0]).toHaveTextContent("Portfolio");
+    expect(getAdminSite).toHaveBeenCalledOnce();
   });
 
   it("Profile 노출 ON/OFF를 featured 없이 Update Challenge로 전달", async () => {
@@ -353,7 +482,6 @@ describe("Admin Site 실제 API 관리", () => {
       role: null,
       description: null,
       achievement: "재학",
-      displayOrder: 1,
       enabled: false,
     }, { challengeId: "challenge-site", verificationCode: "654321" }));
   });
@@ -390,13 +518,13 @@ describe("Admin Site 실제 API 관리", () => {
     fireEvent.click(screen.getByRole("button", { name: "보유 기술 스택" }));
     const section = screen.getByRole("region", { name: "보유 기술 스택" });
     expect(within(section).getByRole("group", { name: "기술 추가" })).toContainElement(screen.getByLabelText("보유 기술 선택"));
-    const list = within(section).getByRole("list", { name: "선택된 보유 기술" });
-    expect(within(list).getByRole("listitem")).toHaveTextContent("표시 순서 1");
+    const list = within(section).getByRole("list", { name: "표시 순서 관리" });
+    expect(within(list).getByRole("listitem")).toHaveTextContent("1PostgreSQL");
     selectOption("보유 기술 선택", "Next.js");
     fireEvent.click(screen.getByRole("button", { name: "추가" }));
     fireEvent.click(screen.getByRole("button", { name: "전체 기술 스택" }));
     fireEvent.click(screen.getByRole("button", { name: "보유 기술 스택" }));
-    expect(within(screen.getByRole("list", { name: "선택된 보유 기술" })).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(screen.getByRole("list", { name: "표시 순서 관리" })).getAllByRole("listitem")).toHaveLength(2);
     fireEvent.click(screen.getByRole("button", { name: "보유 기술 저장" }));
 
     await waitFor(() => expect(createAdminChallenge).toHaveBeenCalledWith(expect.objectContaining({

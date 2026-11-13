@@ -5,6 +5,7 @@ import com.khuoo.portfolio.tool.domain.ToolLink;
 import com.khuoo.portfolio.tool.domain.ToolQuiz;
 
 import java.util.Optional;
+import java.util.List;
 
 // Tool 단건 저장·변경 Repository 경계
 public interface ToolRepository {
@@ -14,6 +15,9 @@ public interface ToolRepository {
 
     // Tool Link 식별자 조회
     Optional<ToolLink> findLink(Long linkId);
+
+    // Tool Link 전체의 배타 잠금 조회
+    List<ToolLink> findLinksForUpdate();
 
     // 신규 Tool Link 저장
     ToolLink saveLink(ToolLink link);

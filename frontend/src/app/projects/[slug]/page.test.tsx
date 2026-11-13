@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PUBLIC_PORTFOLIO_FIXTURE } from "@/test/public-portfolio-fixture";
 import { KYVC_PROJECT_FIXTURE } from "@/test/public-project-fixture";
@@ -6,12 +6,16 @@ import { KYVC_PROJECT_FIXTURE } from "@/test/public-project-fixture";
 const routeMocks = vi.hoisted(() => ({
   fetchPortfolio: vi.fn(),
   fetchProject: vi.fn(),
+  refresh: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
 }));
 
-vi.mock("next/navigation", () => ({ notFound: routeMocks.notFound }));
+vi.mock("next/navigation", () => ({
+  notFound: routeMocks.notFound,
+  useRouter: () => ({ refresh: routeMocks.refresh }),
+}));
 vi.mock("@/lib/analytics/page-view-action", () => ({ recordPageView: vi.fn() }));
 vi.mock("@/lib/api/public-server", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api/public-server")>();
@@ -29,14 +33,17 @@ const originalPublicSiteUrl = process.env.PUBLIC_SITE_URL;
 
 describe("동적 Project Detail Route", () => {
   beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
     delete process.env.PUBLIC_SITE_URL;
     routeMocks.fetchPortfolio.mockReset().mockResolvedValue(PUBLIC_PORTFOLIO_FIXTURE);
     routeMocks.fetchProject.mockReset().mockResolvedValue(KYVC_PROJECT_FIXTURE);
     routeMocks.notFound.mockClear();
+    routeMocks.refresh.mockClear();
   });
 
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
     if (originalPublicSiteUrl === undefined) {
       delete process.env.PUBLIC_SITE_URL;
     } else {
@@ -81,9 +88,14 @@ describe("동적 Project Detail Route", () => {
     render(page);
 
     expect(routeMocks.notFound).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent("프로젝트 정보를 불러오지 못했습니다.");
+    expect(screen.getByRole("heading", { name: "503" })).toBeInTheDocument();
+    expect(screen.getByText("Service unavailable")).toBeInTheDocument();
+    expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("trace-project-503");
     expect(screen.getByRole("alert")).not.toHaveTextContent("127.0.0.1:8080");
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    expect(routeMocks.refresh).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: "홈으로 이동" })).toHaveAttribute("href", "/");
   });
 
   it("실제 Project Name·Summary와 Portfolio 소유자 기반 Metadata를 생성", async () => {

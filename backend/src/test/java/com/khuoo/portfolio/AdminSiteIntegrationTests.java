@@ -124,7 +124,7 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
                         {
                           "entryType":"EDUCATION","periodText":"2023 ~ 2026","title":"School",
                           "organization":"Org","description":"Description",
-                          "displayOrder":1,"enabled":true
+                          "enabled":true
                         }
                         """)
                 .andExpect(status().isCreated())
@@ -132,12 +132,12 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
 
         ActionChallenge patch = challenge("PROFILE_ENTRY_UPDATE", "PROFILE_ENTRY", entryId.toString());
         profileRequest(patch(SITE_PATH + "/profile-entries/" + entryId), patch,
-                "{\"periodText\":null,\"description\":null,\"displayOrder\":7,\"enabled\":false}")
+                "{\"periodText\":null,\"description\":null,\"enabled\":false}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.periodText").value((Object) null))
                 .andExpect(jsonPath("$.description").value((Object) null))
                 .andExpect(jsonPath("$.organization").value("Org"))
-                .andExpect(jsonPath("$.displayOrder").value(7))
+                .andExpect(jsonPath("$.displayOrder").value(1))
                 .andExpect(jsonPath("$.enabled").value(false))
                 .andExpect(jsonPath("$.featured").doesNotExist());
 
@@ -168,12 +168,12 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
             profileRequest(post(SITE_PATH + "/profile-entries"), challenge, """
                             {
                               "entryType":"%s","title":"%s item",
-                              "displayOrder":%d,"enabled":%s
+                              "enabled":%s
                             }
-                            """.formatted(entryType, entryType, index + 1, enabled))
+                            """.formatted(entryType, entryType, enabled))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.entryType").value(entryType))
-                    .andExpect(jsonPath("$.displayOrder").value(index + 1))
+                    .andExpect(jsonPath("$.displayOrder").value(index == 2 ? 2 : 1))
                     .andExpect(jsonPath("$.enabled").value(enabled))
                     .andExpect(jsonPath("$.featured").doesNotExist());
         }
@@ -182,10 +182,121 @@ class AdminSiteIntegrationTests extends SiteIntegrationTestSupport {
                 SELECT entry_type
                 FROM profile_entries
                 ORDER BY display_order
-                """, String.class)).containsExactly(entryTypes);
+                """, String.class)).containsExactlyInAnyOrder(entryTypes);
     }
 
     // Technology CRUD·UNIQUE·Mapping 검증·FK Cascade와 전체 교체 검증
+    // Profile와 외부 링크의 전체 순서 저장·스냅샷 충돌·중복 ID 검증
+    @Test
+    void profileAndExternalLinkOrderBatchValidatesSnapshotAndPersistsSequence() throws Exception {
+        Long firstProfileId = jdbcTemplate.queryForObject("""
+                INSERT INTO profile_entries (entry_type, title, display_order, enabled)
+                VALUES ('EDUCATION', 'First', 1, TRUE)
+                RETURNING id
+                """, Long.class);
+        Long secondProfileId = jdbcTemplate.queryForObject("""
+                INSERT INTO profile_entries (entry_type, title, display_order, enabled)
+                VALUES ('EDUCATION', 'Second', 2, TRUE)
+                RETURNING id
+                """, Long.class);
+
+        ActionChallenge profileOrder = challenge("PROFILE_ENTRIES_REORDER", "PROFILE_ENTRY", null);
+        profileRequest(put(SITE_PATH + "/profile-entries/order"), profileOrder,
+                "{\"group\":\"EDUCATION\",\"orderedIds\":[" + secondProfileId + "," + firstProfileId
+                        + "],\"expectedIds\":[" + firstProfileId + "," + secondProfileId + "]}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(secondProfileId))
+                .andExpect(jsonPath("$.items[0].displayOrder").value(1));
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM profile_entries WHERE id = ?", Integer.class, secondProfileId)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM profile_entries WHERE id = ?", Integer.class, firstProfileId)).isEqualTo(2);
+
+        ActionChallenge duplicateProfileOrder = challenge("PROFILE_ENTRIES_REORDER", "PROFILE_ENTRY", null);
+        profileRequest(put(SITE_PATH + "/profile-entries/order"), duplicateProfileOrder,
+                "{\"group\":\"EDUCATION\",\"orderedIds\":[" + secondProfileId + "," + secondProfileId
+                        + "],\"expectedIds\":[" + secondProfileId + "," + firstProfileId + "]}")
+                .andExpect(status().isBadRequest());
+
+        ActionChallenge conflictProfileOrder = challenge("PROFILE_ENTRIES_REORDER", "PROFILE_ENTRY", null);
+        profileRequest(put(SITE_PATH + "/profile-entries/order"), conflictProfileOrder,
+                "{\"group\":\"EDUCATION\",\"orderedIds\":[" + firstProfileId + "," + secondProfileId
+                        + "],\"expectedIds\":[" + firstProfileId + "," + secondProfileId + "]}")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ORDER_CONFLICT"));
+
+        Long firstLinkId = jdbcTemplate.queryForObject("""
+                INSERT INTO external_links (name, url, display_order, enabled)
+                VALUES ('First Link', 'https://first.example.com', 1, TRUE)
+                RETURNING id
+                """, Long.class);
+        Long secondLinkId = jdbcTemplate.queryForObject("""
+                INSERT INTO external_links (name, url, display_order, enabled)
+                VALUES ('Second Link', 'https://second.example.com', 2, TRUE)
+                RETURNING id
+                """, Long.class);
+        ActionChallenge linkOrder = challenge("EXTERNAL_LINKS_REORDER", "EXTERNAL_LINK", null);
+        linkRequest(put(SITE_PATH + "/external-links/order"), linkOrder,
+                "{\"orderedIds\":[" + secondLinkId + "," + firstLinkId + "],\"expectedIds\":[" + firstLinkId + "," + secondLinkId + "]}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(secondLinkId))
+                .andExpect(jsonPath("$.items[0].displayOrder").value(1));
+    }
+
+    // 이력 여러 그룹의 단일 저장과 전체 사전 검증·부분 적용 방지 검증
+    @Test
+    void profileOrderBatchPersistsChangedGroupsWithOneChallenge() throws Exception {
+        Long educationFirst = jdbcTemplate.queryForObject("""
+                INSERT INTO profile_entries (entry_type, title, display_order, enabled)
+                VALUES ('EDUCATION', 'Education First', 1, TRUE)
+                RETURNING id
+                """, Long.class);
+        Long educationSecond = jdbcTemplate.queryForObject("""
+                INSERT INTO profile_entries (entry_type, title, display_order, enabled)
+                VALUES ('EDUCATION', 'Education Second', 2, TRUE)
+                RETURNING id
+                """, Long.class);
+        Long awardFirst = jdbcTemplate.queryForObject("""
+                INSERT INTO profile_entries (entry_type, title, display_order, enabled)
+                VALUES ('AWARD', 'Award First', 1, TRUE)
+                RETURNING id
+                """, Long.class);
+        Long awardSecond = jdbcTemplate.queryForObject("""
+                INSERT INTO profile_entries (entry_type, title, display_order, enabled)
+                VALUES ('AWARD', 'Award Second', 2, TRUE)
+                RETURNING id
+                """, Long.class);
+
+        ActionChallenge batch = challenge("PROFILE_ENTRIES_REORDER", "PROFILE_ENTRY", null);
+        profileRequest(put(SITE_PATH + "/profile-entries/order/batch"), batch,
+                """
+                        {"groups":[
+                          {"group":"EDUCATION","orderedIds":[%d,%d],"expectedIds":[%d,%d]},
+                          {"group":"AWARD","orderedIds":[%d,%d],"expectedIds":[%d,%d]}
+                        ]}
+                        """.formatted(
+                        educationSecond, educationFirst, educationFirst, educationSecond,
+                        awardSecond, awardFirst, awardFirst, awardSecond))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray());
+
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM profile_entries WHERE id = ?", Integer.class, educationSecond)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM profile_entries WHERE id = ?", Integer.class, awardSecond)).isEqualTo(1);
+
+        ActionChallenge invalidBatch = challenge("PROFILE_ENTRIES_REORDER", "PROFILE_ENTRY", null);
+        profileRequest(put(SITE_PATH + "/profile-entries/order/batch"), invalidBatch,
+                """
+                        {"groups":[
+                          {"group":"EDUCATION","orderedIds":[%d,%d],"expectedIds":[%d,%d]},
+                          {"group":"AWARD","orderedIds":[%d,%d],"expectedIds":[%d,%d]}
+                        ]}
+                        """.formatted(
+                        educationFirst, educationSecond, educationSecond, educationFirst,
+                        awardFirst, awardFirst, awardSecond, awardFirst))
+                .andExpect(status().isBadRequest());
+
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM profile_entries WHERE id = ?", Integer.class, educationSecond)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM profile_entries WHERE id = ?", Integer.class, awardSecond)).isEqualTo(1);
+    }
+
     @Test
     void technologyCrudAndPortfolioMappingPreserveValidConfiguration() throws Exception {
         Long javaId = createTechnology("Java", "LANGUAGE", true);

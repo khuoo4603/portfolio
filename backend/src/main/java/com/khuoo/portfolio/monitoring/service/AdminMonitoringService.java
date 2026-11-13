@@ -12,6 +12,8 @@ import com.khuoo.portfolio.monitoring.dto.MonitoringSettingsUpdateRequest;
 import com.khuoo.portfolio.monitoring.dto.MonitoringTargetCreateRequest;
 import com.khuoo.portfolio.monitoring.dto.MonitoringTargetResponse;
 import com.khuoo.portfolio.monitoring.dto.MonitoringTargetUpdateRequest;
+import com.khuoo.portfolio.monitoring.dto.MonitoringTargetOrderRequest;
+import com.khuoo.portfolio.monitoring.dto.MonitoringTargetOrderResponse;
 import com.khuoo.portfolio.monitoring.repository.MonitoringSettingsQueryRepository;
 import com.khuoo.portfolio.monitoring.repository.MonitoringSettingsRepository;
 import com.khuoo.portfolio.monitoring.repository.MonitoringTargetQueryRepository;
@@ -22,6 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 // 관리자 Monitoring 설정과 대상 관리 서비스
 @Service
@@ -98,12 +106,16 @@ public class AdminMonitoringService {
             throw new ApiException(ErrorCode.MONITORING_TARGET_KEY_CONFLICT);
         }
         validateHealthUrl(request.enabled(), request.healthUrl());
+        int nextOrder = monitoringTargetRepository.findTargetsForUpdate().stream()
+                .mapToInt(MonitoringTarget::getDisplayOrder)
+                .max()
+                .orElse(0) + 1;
         MonitoringTarget target = MonitoringTarget.create(
                 request.serviceKey(),
                 request.displayName(),
                 request.healthUrl(),
                 request.enabled(),
-                request.displayOrder()
+                nextOrder
         );
         return MonitoringTargetResponse.from(monitoringTargetRepository.saveTarget(target));
     }
@@ -118,8 +130,7 @@ public class AdminMonitoringService {
         PatchValues.requireAny(
                 request.displayName(),
                 request.healthUrl(),
-                request.enabled(),
-                request.displayOrder()
+                request.enabled()
         );
         String displayName = PatchValues.present(request.displayName())
                 ? PatchValues.requiredString(request.displayName(), 100)
@@ -130,14 +141,32 @@ public class AdminMonitoringService {
         boolean enabled = PatchValues.present(request.enabled())
                 ? PatchValues.booleanValue(request.enabled())
                 : target.isEnabled();
-        int displayOrder = PatchValues.present(request.displayOrder())
-                ? PatchValues.nonNegativeInt(request.displayOrder())
-                : target.getDisplayOrder();
         validateHealthUrl(enabled, healthUrl);
 
-        target.update(displayName, healthUrl, enabled, displayOrder, now());
+        target.update(displayName, healthUrl, enabled, target.getDisplayOrder(), now());
         monitoringTargetRepository.flush();
         return MonitoringTargetResponse.from(target);
+    }
+
+    // Monitoring 대상 전체 표시 순서 일괄 저장
+    @Transactional
+    public MonitoringTargetOrderResponse reorder(MonitoringTargetOrderRequest request) {
+        List<MonitoringTarget> targets = monitoringTargetRepository.findTargetsForUpdate();
+        List<Long> currentIds = targets.stream().map(MonitoringTarget::getId).toList();
+        if (!isPermutation(currentIds, request.expectedIds())
+                || !isPermutation(currentIds, request.orderedIds())) {
+            throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
+        }
+        if (!Objects.equals(currentIds, request.expectedIds())) {
+            throw new ApiException(ErrorCode.ORDER_CONFLICT);
+        }
+        Map<Long, MonitoringTarget> byId = targets.stream().collect(Collectors.toMap(MonitoringTarget::getId, Function.identity()));
+        OffsetDateTime changedAt = now();
+        for (int index = 0; index < request.orderedIds().size(); index++) {
+            byId.get(request.orderedIds().get(index)).changeDisplayOrder(index + 1, changedAt);
+        }
+        monitoringTargetRepository.flush();
+        return new MonitoringTargetOrderResponse(request.orderedIds().stream().map(byId::get).map(MonitoringTargetResponse::from).toList());
     }
 
     private MonitoringSettings requireCurrentSettings() {
@@ -162,6 +191,13 @@ public class AdminMonitoringService {
         if (healthUrl != null) {
             webUrlValidator.validate(healthUrl);
         }
+    }
+
+    private boolean isPermutation(List<Long> currentIds, List<Long> requestedIds) {
+        return requestedIds != null
+                && requestedIds.size() == currentIds.size()
+                && Set.copyOf(requestedIds).size() == requestedIds.size()
+                && Set.copyOf(requestedIds).equals(Set.copyOf(currentIds));
     }
 
     private OffsetDateTime now() {

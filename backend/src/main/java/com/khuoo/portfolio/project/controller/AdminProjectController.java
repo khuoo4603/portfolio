@@ -9,6 +9,8 @@ import com.khuoo.portfolio.project.dto.ProjectCreateResponse;
 import com.khuoo.portfolio.project.dto.ProjectStatusRequest;
 import com.khuoo.portfolio.project.dto.ProjectStatusResponse;
 import com.khuoo.portfolio.project.dto.ProjectSaveMetadata;
+import com.khuoo.portfolio.project.dto.ProjectOrderRequest;
+import com.khuoo.portfolio.project.dto.ProjectOrderResponse;
 import com.khuoo.portfolio.project.service.AdminProjectService;
 import com.khuoo.portfolio.project.service.ProjectEditorService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,6 +63,19 @@ public class AdminProjectController {
         return adminProjectService.findAll();
     }
 
+    // 관리자 재인증 후 프로젝트 전체 표시 순서 일괄 저장
+    @Operation(summary = "프로젝트 표시 순서 일괄 저장")
+    @PutMapping("/order")
+    public ProjectOrderResponse reorder(
+            @Valid @RequestBody ProjectOrderRequest request,
+            @AuthenticationPrincipal AccountPrincipal currentAdmin,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
+            @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
+    ) {
+        return adminProjectService.reorder(request, currentAdmin, challengeId, code);
+    }
+
     // 관리자 재인증 후 프로젝트 생성
     @Operation(summary = "프로젝트 생성")
     @ApiResponses({
@@ -74,9 +89,9 @@ public class AdminProjectController {
     public ResponseEntity<ProjectCreateResponse> create(
             @Valid @RequestBody ProjectCreateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(adminProjectService.create(request, currentAdmin, challengeId, code));
@@ -112,9 +127,9 @@ public class AdminProjectController {
             @RequestPart(value = "architectureImage", required = false) MultipartFile architectureImage,
             @RequestPart(value = "mediaFiles", required = false) List<MultipartFile> mediaFiles,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return projectEditorService.save(
                 projectId,
@@ -142,9 +157,9 @@ public class AdminProjectController {
             @PathVariable Long projectId,
             @Valid @RequestBody ProjectStatusRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminProjectService.changeStatus(projectId, request, currentAdmin, challengeId, code);
     }
@@ -161,9 +176,9 @@ public class AdminProjectController {
     public ResponseEntity<Void> delete(
             @PathVariable Long projectId,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         adminProjectService.delete(projectId, currentAdmin, challengeId, code);
         return ResponseEntity.noContent().build();

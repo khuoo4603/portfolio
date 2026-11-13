@@ -79,6 +79,14 @@ export function updateMonitoringTarget(targetId: number, input: MonitoringTarget
   });
 }
 
+// Monitoring Target 전체 표시 순서 일괄 저장
+export function reorderMonitoringTargets(input: { orderedIds: number[]; expectedIds: number[] }) {
+  return apiRequest<{ items: MonitoringTarget[] }>("/admin/monitoring/targets/order", {
+    method: "PUT",
+    json: input,
+  });
+}
+
 // 기간·이메일·결과와 Backend Pagination 기반 로그인 기록 조회
 export function getLoginLogs(query: LoginLogQuery) {
   return apiRequest<LoginLogPage>("/admin/logs/logins", { query });

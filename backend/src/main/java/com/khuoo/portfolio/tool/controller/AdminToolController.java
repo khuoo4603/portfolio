@@ -6,6 +6,8 @@ import com.khuoo.portfolio.tool.dto.ToolLinkCreateRequest;
 import com.khuoo.portfolio.tool.dto.ToolLinkUpdateRequest;
 import com.khuoo.portfolio.tool.dto.ToolStatusRequest;
 import com.khuoo.portfolio.tool.dto.ToolStatusResponse;
+import com.khuoo.portfolio.tool.dto.ToolLinkOrderRequest;
+import com.khuoo.portfolio.tool.dto.ToolLinkOrderResponse;
 import com.khuoo.portfolio.tool.service.AdminToolService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -80,6 +83,13 @@ public class AdminToolController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(adminToolService.createLink(request, image));
+    }
+
+    // CSRF 보호 세션 기반 Tool Link 전체 표시 순서 일괄 저장
+    @Operation(summary = "Tool Link 표시 순서 일괄 저장")
+    @PutMapping("/links/order")
+    public ToolLinkOrderResponse reorderLinks(@Valid @RequestBody ToolLinkOrderRequest request) {
+        return adminToolService.reorderLinks(request);
     }
 
     // Multipart Metadata와 선택 이미지 기반 Tool Link 수정
