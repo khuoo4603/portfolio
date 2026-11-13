@@ -59,6 +59,7 @@ function AdminActionDialogContent({
   return (
     <DialogFrame
       open={open}
+      variant="admin"
       title="관리자 이메일 재인증"
       description="상태 변경 작업마다 새로운 인증번호 확인이 필요합니다."
       onClose={busy ? () => undefined : onCancel}

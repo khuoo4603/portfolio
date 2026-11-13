@@ -18,6 +18,14 @@ describe("공통 Dialog Frame", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("Admin variant는 중앙 제목과 Surface 기반 Footer를 사용", () => {
+    render(<DialogFrame open variant="admin" title="새 프로젝트" onClose={vi.fn()} footer={<button type="button">생성</button>}><input aria-label="Name" /></DialogFrame>);
+
+    const dialog = screen.getByRole("dialog", { name: "새 프로젝트" });
+    expect(dialog.className).toContain("adminDialog");
+    expect(within(dialog).queryByText("불필요한 설명")).not.toBeInTheDocument();
+  });
+
   it("Backdrop 정책과 닫기 후 Trigger Focus 복귀를 유지", async () => {
     const onClose = vi.fn();
     const trigger = document.createElement("button");

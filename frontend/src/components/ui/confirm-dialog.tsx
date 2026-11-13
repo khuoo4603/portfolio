@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Button from "./button";
-import DialogFrame from "./dialog-frame";
+import DialogFrame, { type DialogVariant } from "./dialog-frame";
 import styles from "./dialog-frame.module.css";
 
 type ConfirmDialogProps = {
@@ -14,12 +14,13 @@ type ConfirmDialogProps = {
   cancelLabel?: string;
   danger?: boolean;
   busy?: boolean;
+  variant?: DialogVariant;
   onConfirm: () => Promise<void> | void;
   onCancel: () => void;
 };
 
 // 반복 확인 작업의 동일한 취소·실행 순서 제공
-export default function ConfirmDialog({ open, title, description, detail, confirmLabel, cancelLabel = "취소", danger = false, busy = false, onConfirm, onCancel }: ConfirmDialogProps) {
+export default function ConfirmDialog({ open, title, description, detail, confirmLabel, cancelLabel = "취소", danger = false, busy = false, variant = "default", onConfirm, onCancel }: ConfirmDialogProps) {
   const inFlight = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const locked = busy || submitting;
@@ -37,7 +38,7 @@ export default function ConfirmDialog({ open, title, description, detail, confir
   };
 
   return (
-    <DialogFrame open={open} compact title={title} description={description} onClose={locked ? () => undefined : onCancel} closeOnBackdrop={!locked} closeOnEscape={!locked} footer={(
+    <DialogFrame open={open} compact variant={variant} title={title} description={description} onClose={locked ? () => undefined : onCancel} closeOnBackdrop={!locked} closeOnEscape={!locked} footer={(
       <>
         <Button variant="secondary" type="button" onClick={onCancel} disabled={locked}>{cancelLabel}</Button>
         <Button variant={danger ? "danger" : "primary"} type="button" busy={locked} onClick={() => void handleConfirm()}>{confirmLabel}</Button>

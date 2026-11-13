@@ -134,8 +134,8 @@ function LinkEditor({ state, onClose, onSubmit }: {
   return (
     <DialogFrame
       open={state !== null}
+      variant="admin"
       title={state?.item ? "Link 수정" : "Link 추가"}
-      description="Links Tool에서 공통으로 사용하는 링크 정보"
       onClose={closeEditor}
       footer={(
         <>

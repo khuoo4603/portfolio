@@ -41,8 +41,8 @@ function CreateProjectDialog({
   return (
     <DialogFrame
       open={open}
+      variant="admin"
       title="새 프로젝트"
-      description="Name과 Slug만으로 비공개 Draft를 생성합니다."
       onClose={onClose}
       footer={(
         <>
@@ -75,8 +75,9 @@ function DeleteProjectDialog({ project, onClose, onConfirm }: {
   return (
     <DialogFrame
       open={project !== null}
+      variant="admin"
       title="프로젝트 삭제"
-      description={project ? `${project.name} 프로젝트와 연결된 본문·기술·미디어를 삭제합니다.` : undefined}
+      description={project ? `${project.name} 프로젝트와 연결된 본문·기술·미디어를 삭제하며 복구할 수 없습니다.` : undefined}
       onClose={onClose}
       footer={(
         <>

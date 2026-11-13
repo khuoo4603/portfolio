@@ -295,6 +295,7 @@ export default function ProjectEditorScreen({ projectId }: { projectId: number }
       <ConfirmDialog
         open={leaveConfirmOpen}
         title="변경사항 폐기"
+        variant="admin"
         description="저장하지 않은 변경사항이 있습니다. 목록으로 이동할까요?"
         confirmLabel="계속 이동"
         onCancel={() => setLeaveConfirmOpen(false)}

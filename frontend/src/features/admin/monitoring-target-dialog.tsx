@@ -128,8 +128,8 @@ export default function MonitoringTargetDialog({
   return (
     <DialogFrame
       open
+      variant="admin"
       title={target ? "Target 수정" : "Target 추가"}
-      description="서비스 점검 대상의 연결 정보와 사용 상태를 관리합니다."
       onClose={onClose}
       footer={
         <>

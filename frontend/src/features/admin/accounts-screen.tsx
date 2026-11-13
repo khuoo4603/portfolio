@@ -78,8 +78,8 @@ function AccountCreateDialog({
   return (
     <DialogFrame
       open
+      variant="admin"
       title="계정 생성"
-      description="회원가입 없이 관리자만 새 계정을 등록할 수 있습니다."
       onClose={onClose}
       footer={(
         <>
@@ -147,8 +147,8 @@ function PasswordDialog({
   return (
     <DialogFrame
       open
+      variant="admin"
       title="비밀번호 초기화"
-      description={`${account.email} 계정의 새 비밀번호를 설정합니다.`}
       onClose={onClose}
       footer={(
         <>
