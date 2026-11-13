@@ -382,6 +382,24 @@ describe("Admin Site 실제 API 관리", () => {
     }, { challengeId: "challenge-site", verificationCode: "654321" }));
   });
 
+  it("Profile 저장 인증 취소 시 편집 Draft를 유지", async () => {
+    render(<SiteScreen />);
+    await screen.findByDisplayValue("김현우");
+    fireEvent.click(screen.getByRole("tab", { name: "이력" }));
+    fireEvent.click(screen.getByRole("button", { name: "항목 추가" }));
+
+    const editor = screen.getByRole("dialog", { name: "이력 추가" });
+    fireEvent.change(within(editor).getByLabelText("경력명"), { target: { value: "인증 취소 Draft" } });
+    fireEvent.click(within(editor).getByRole("button", { name: "저장" }));
+
+    const authDialog = await screen.findByRole("dialog", { name: "관리자 이메일 재인증" });
+    fireEvent.click(within(authDialog).getByRole("button", { name: "취소" }));
+
+    expect(screen.getByRole("dialog", { name: "이력 추가" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("인증 취소 Draft")).toBeInTheDocument();
+    expect(createProfileEntry).not.toHaveBeenCalled();
+  });
+
   it("이력 전체 순서 관리 모달은 여러 그룹 변경을 Batch 한 번으로 저장", async () => {
     render(<SiteScreen />);
     await screen.findByDisplayValue("김현우");

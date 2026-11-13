@@ -196,6 +196,26 @@ describe("Admin Accounts 실제 API 관리", () => {
     expect(screen.queryByDisplayValue("initial-password")).not.toBeInTheDocument();
   });
 
+  it("계정 생성 인증 취소 시 입력 Draft를 유지", async () => {
+    render(<AccountsScreen />);
+    await screen.findByText("admin@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "계정 생성" }));
+    const createDialog = screen.getByRole("dialog", { name: "계정 생성" });
+    fireEvent.change(within(createDialog).getByLabelText("이메일"), { target: { value: "draft@example.com" } });
+    fireEvent.change(within(createDialog).getByLabelText("이름"), { target: { value: "Draft 사용자" } });
+    fireEvent.change(within(createDialog).getByLabelText("초기 비밀번호"), { target: { value: "draft-password" } });
+    fireEvent.click(within(createDialog).getByRole("button", { name: "계정 생성" }));
+
+    const authDialog = await screen.findByRole("dialog", { name: "관리자 이메일 재인증" });
+    fireEvent.click(within(authDialog).getByRole("button", { name: "취소" }));
+
+    expect(screen.getByRole("dialog", { name: "계정 생성" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("draft@example.com")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Draft 사용자")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("draft-password")).toBeInTheDocument();
+    expect(createAccount).not.toHaveBeenCalled();
+  });
+
   it("상태와 권한 변경에 대상 accountId를 바인딩", async () => {
     render(<AccountsScreen />);
     await screen.findByText("admin@example.com");

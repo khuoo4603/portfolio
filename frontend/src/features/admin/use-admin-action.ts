@@ -36,6 +36,7 @@ export function useAdminAction() {
   const [startError, setStartError] = useState("");
   const [dialogError, setDialogError] = useState("");
   const [grace, setGrace] = useState<AdminActionGraceResponse | null>(null);
+  const [starting, setStarting] = useState(false);
   const startInFlight = useRef(false);
   const issueInFlight = useRef(false);
   const mutationInFlight = useRef(false);
@@ -119,6 +120,7 @@ export function useAdminAction() {
     }
 
     startInFlight.current = true;
+    setStarting(true);
     setStartError("");
     try {
       const currentGrace = await getAdminActionGrace();
@@ -145,6 +147,7 @@ export function useAdminAction() {
       }
     } finally {
       startInFlight.current = false;
+      setStarting(false);
     }
   }, [active, executeMutation, handleUnauthorized, issueChallenge]);
 
@@ -211,6 +214,7 @@ export function useAdminAction() {
     start,
     startError,
     issuing,
+    busy: starting || issuing || submitting || active !== null,
     grace,
     dialog: active ? {
       open: true as const,

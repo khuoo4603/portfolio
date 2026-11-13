@@ -29,12 +29,14 @@ const EMPTY_CREATE: ProjectCreateInput = { name: "", slug: "" };
 // Name·Slug 전용 최소 Project 생성 Dialog
 function CreateProjectDialog({
   open,
+  busy,
   input,
   onChange,
   onClose,
   onSubmit,
 }: {
   open: boolean;
+  busy: boolean;
   input: ProjectCreateInput;
   onChange: (input: ProjectCreateInput) => void;
   onClose: () => void;
@@ -46,22 +48,24 @@ function CreateProjectDialog({
       open={open}
       variant="admin"
       title="새 프로젝트"
-      onClose={onClose}
+      onClose={busy ? () => undefined : onClose}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
       footer={(
         <>
-          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
-          <Button type="button" disabled={!valid} onClick={onSubmit}>프로젝트 생성</Button>
+          <Button variant="secondary" type="button" disabled={busy} onClick={onClose}>취소</Button>
+          <Button type="button" disabled={!valid || busy} onClick={onSubmit}>프로젝트 생성</Button>
         </>
       )}
     >
       <div className={styles.projectCreateFields}>
         <label className={styles.formField}>
           <span className="type-small">Name</span>
-          <input className="type-body" value={input.name} maxLength={200} onChange={(event) => onChange({ ...input, name: event.currentTarget.value })} />
+          <input className="type-body" value={input.name} maxLength={200} disabled={busy} onChange={(event) => onChange({ ...input, name: event.currentTarget.value })} />
         </label>
         <label className={styles.formField}>
           <span className="type-small">Slug</span>
-          <input className="type-body" value={input.slug} maxLength={100} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" onChange={(event) => onChange({ ...input, slug: event.currentTarget.value })} />
+          <input className="type-body" value={input.slug} maxLength={100} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" disabled={busy} onChange={(event) => onChange({ ...input, slug: event.currentTarget.value })} />
           <small className="type-small">영문 소문자·숫자·하이픈</small>
         </label>
       </div>
@@ -179,12 +183,12 @@ export default function ProjectManagement() {
   // 최소 생성 입력 확정 후 공통 PROJECT_CREATE 재인증 시작
   const create = () => {
     const input = { name: createInput.name.trim(), slug: createInput.slug.trim() };
-    setCreateOpen(false);
     void adminAction.start({
       ...projectActionBindings.create(),
       actionLabel: `${input.name} 프로젝트 생성`,
       mutation: (verification) => createProject(input, verification),
       onSuccess: (created) => {
+        setCreateOpen(false);
         setCreateInput(EMPTY_CREATE);
         notify({ type: "success", title: "프로젝트 생성 완료", message: "프로젝트를 생성했습니다." });
         router.push(`/admin/projects/${created.id}/edit`);
@@ -283,10 +287,10 @@ export default function ProjectManagement() {
         )}
       </section>
 
-      {orderOpen && <OrderManagementDialog open dirty={orderChanged} busy={adminAction.issuing || adminAction.dialog !== null} onClose={closeOrder} onReset={() => setOrderDraft([...currentOrder])} onSave={saveOrder}>
+      {orderOpen && <OrderManagementDialog open dirty={orderChanged} busy={adminAction.busy} onClose={closeOrder} onReset={() => setOrderDraft([...currentOrder])} onSave={saveOrder}>
         <SortableList items={orderDraft} getKey={(project) => project.id} getTitle={(project) => project.name} onChange={setOrderDraft} emptyMessage="정렬할 프로젝트가 없습니다." />
       </OrderManagementDialog>}
-      <CreateProjectDialog open={createOpen} input={createInput} onChange={setCreateInput} onClose={() => setCreateOpen(false)} onSubmit={create} />
+      <CreateProjectDialog open={createOpen} busy={adminAction.busy} input={createInput} onChange={setCreateInput} onClose={() => setCreateOpen(false)} onSubmit={create} />
       <DeleteProjectDialog project={deleteCandidate} onClose={() => setDeleteCandidate(null)} onConfirm={remove} />
       {adminAction.dialog && <AdminActionDialog {...adminAction.dialog} />}
     </>

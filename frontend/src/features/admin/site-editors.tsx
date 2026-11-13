@@ -72,10 +72,12 @@ function EditorSection({ title, children }: { title: string; children: React.Rea
 // 학력·경력·활동·수상·자격·교육 Backend Model 기반 Editor
 export function ProfileEditor({
   state,
+  busy = false,
   onClose,
   onSubmit,
 }: {
   state: EditorState<ProfileEntry>;
+  busy?: boolean;
   onClose: () => void;
   onSubmit: (input: ProfileEntryInput, item?: ProfileEntry) => void;
 }) {
@@ -115,11 +117,13 @@ export function ProfileEditor({
       open={state !== null}
       variant="admin"
       title={item ? "이력 수정" : "이력 추가"}
-      onClose={onClose}
+      onClose={busy ? () => undefined : onClose}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
       footer={(
         <>
-          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
-          <Button type="button" onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
+          <Button variant="secondary" type="button" disabled={busy} onClick={onClose}>취소</Button>
+          <Button type="button" disabled={busy} onClick={() => (document.getElementById("profile-entry-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >
@@ -127,19 +131,19 @@ export function ProfileEditor({
         <EditorSection title="기본 정보">
           <label className={styles.formField}>
             <span className="type-small">유형</span>
-            <Select aria-label="이력 유형" value={entryType} onValueChange={(value) => setEntryType(value as ProfileEntryType)} options={[{ value: "EDUCATION", label: "학력" }, { value: "EXPERIENCE", label: "경력" }, { value: "ACTIVITY", label: "활동" }, { value: "AWARD", label: "수상" }, { value: "CERTIFICATE", label: "자격·교육" }]} />
+            <Select aria-label="이력 유형" value={entryType} disabled={busy} onValueChange={(value) => setEntryType(value as ProfileEntryType)} options={[{ value: "EDUCATION", label: "학력" }, { value: "EXPERIENCE", label: "경력" }, { value: "ACTIVITY", label: "활동" }, { value: "AWARD", label: "수상" }, { value: "CERTIFICATE", label: "자격·교육" }]} />
           </label>
-          <label className={styles.formField}><span className="type-small">{fields.title}</span><input className="type-body" value={title} onChange={(event) => setTitle(event.currentTarget.value)} required /></label>
-          <label className={styles.formField}><span className="type-small">{fields.organization}</span><input className="type-body" value={organization} onChange={(event) => setOrganization(event.currentTarget.value)} /></label>
-          {fields.role ? <label className={styles.formField}><span className="type-small">{fields.role}</span><input className="type-body" value={role} onChange={(event) => setRole(event.currentTarget.value)} /></label> : null}
+          <label className={styles.formField}><span className="type-small">{fields.title}</span><input className="type-body" value={title} disabled={busy} onChange={(event) => setTitle(event.currentTarget.value)} required /></label>
+          <label className={styles.formField}><span className="type-small">{fields.organization}</span><input className="type-body" value={organization} disabled={busy} onChange={(event) => setOrganization(event.currentTarget.value)} /></label>
+          {fields.role ? <label className={styles.formField}><span className="type-small">{fields.role}</span><input className="type-body" value={role} disabled={busy} onChange={(event) => setRole(event.currentTarget.value)} /></label> : null}
         </EditorSection>
-        <EditorSection title="기간"><label className={styles.formField}><span className="type-small">{fields.periodText}</span><input className="type-body" value={periodText} onChange={(event) => setPeriodText(event.currentTarget.value)} placeholder="화면 표시 문자열" /></label></EditorSection>
+        <EditorSection title="기간"><label className={styles.formField}><span className="type-small">{fields.periodText}</span><input className="type-body" value={periodText} disabled={busy} onChange={(event) => setPeriodText(event.currentTarget.value)} placeholder="화면 표시 문자열" /></label></EditorSection>
         <EditorSection title="상세 설명">
-          <label className={styles.formField}><span className="type-small">{fields.description}</span><textarea className="type-body" rows={4} value={description} onChange={(event) => setDescription(event.currentTarget.value)} /></label>
-          {fields.achievement ? <label className={styles.formField}><span className="type-small">{fields.achievement}</span><textarea className="type-body" rows={3} value={achievement} onChange={(event) => setAchievement(event.currentTarget.value)} /></label> : null}
+          <label className={styles.formField}><span className="type-small">{fields.description}</span><textarea className="type-body" rows={4} value={description} disabled={busy} onChange={(event) => setDescription(event.currentTarget.value)} /></label>
+          {fields.achievement ? <label className={styles.formField}><span className="type-small">{fields.achievement}</span><textarea className="type-body" rows={3} value={achievement} disabled={busy} onChange={(event) => setAchievement(event.currentTarget.value)} /></label> : null}
         </EditorSection>
         <EditorSection title="노출 설정">
-          <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">공개 여부</span></label>
+          <label className={styles.checkboxField}><input type="checkbox" checked={enabled} disabled={busy} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">공개 여부</span></label>
         </EditorSection>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
       </form>
@@ -150,10 +154,12 @@ export function ProfileEditor({
 // 6개 기술 분류와 iconUrl 기반 기술 사전 Editor
 export function TechnologyEditor({
   state,
+  busy = false,
   onClose,
   onSubmit,
 }: {
   state: EditorState<Technology>;
+  busy?: boolean;
   onClose: () => void;
   onSubmit: (input: TechnologyInput, item?: Technology) => void;
 }) {
@@ -178,21 +184,23 @@ export function TechnologyEditor({
       open={state !== null}
       variant="admin"
       title={item ? "기술 수정" : "기술 추가"}
-      onClose={onClose}
+      onClose={busy ? () => undefined : onClose}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
       footer={(
         <>
-          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
-          <Button type="button" onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
+          <Button variant="secondary" type="button" disabled={busy} onClick={onClose}>취소</Button>
+          <Button type="button" disabled={busy} onClick={() => (document.getElementById("technology-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >
       <form id="technology-form" className={styles.editorForm} onSubmit={handleSubmit}>
         <EditorSection title="기본 정보">
-          <label className={styles.formField}><span className="type-small">기술명</span><input className="type-body" value={name} onChange={(event) => setName(event.currentTarget.value)} required /></label>
-          <label className={styles.formField}><span className="type-small">분류</span><Select aria-label="기술 분류" value={category} onValueChange={(value) => setCategory(value as TechnologyCategory)} options={[{ value: "LANGUAGE", label: "LANGUAGE" }, { value: "BACKEND", label: "BACKEND" }, { value: "DATABASE", label: "DATABASE" }, { value: "FRONTEND", label: "FRONTEND" }, { value: "INFRA", label: "INFRA" }, { value: "DEVOPS", label: "DEVOPS" }]} /></label>
-          <label className={`${styles.formField} ${styles.wideField}`}><span className="type-small">Icon URL</span><input className="type-body" value={iconUrl} onChange={(event) => setIconUrl(event.currentTarget.value)} placeholder="/icons/tech/example.svg" /></label>
+          <label className={styles.formField}><span className="type-small">기술명</span><input className="type-body" value={name} disabled={busy} onChange={(event) => setName(event.currentTarget.value)} required /></label>
+          <label className={styles.formField}><span className="type-small">분류</span><Select aria-label="기술 분류" value={category} disabled={busy} onValueChange={(value) => setCategory(value as TechnologyCategory)} options={[{ value: "LANGUAGE", label: "LANGUAGE" }, { value: "BACKEND", label: "BACKEND" }, { value: "DATABASE", label: "DATABASE" }, { value: "FRONTEND", label: "FRONTEND" }, { value: "INFRA", label: "INFRA" }, { value: "DEVOPS", label: "DEVOPS" }]} /></label>
+          <label className={`${styles.formField} ${styles.wideField}`}><span className="type-small">Icon URL</span><input className="type-body" value={iconUrl} disabled={busy} onChange={(event) => setIconUrl(event.currentTarget.value)} placeholder="/icons/tech/example.svg" /></label>
         </EditorSection>
-        <EditorSection title="노출 설정"><label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">신규 연결 가능</span></label></EditorSection>
+        <EditorSection title="노출 설정"><label className={styles.checkboxField}><input type="checkbox" checked={enabled} disabled={busy} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">신규 연결 가능</span></label></EditorSection>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
       </form>
     </DialogFrame>
@@ -202,10 +210,12 @@ export function TechnologyEditor({
 // http/https 공개 URL만 허용하는 외부 링크 Editor
 export function ExternalLinkEditor({
   state,
+  busy = false,
   onClose,
   onSubmit,
 }: {
   state: EditorState<ExternalLink>;
+  busy?: boolean;
   onClose: () => void;
   onSubmit: (input: ExternalLinkInput, item?: ExternalLink) => void;
 }) {
@@ -240,17 +250,19 @@ export function ExternalLinkEditor({
       open={state !== null}
       variant="admin"
       title={item ? "외부 링크 수정" : "외부 링크 추가"}
-      onClose={onClose}
+      onClose={busy ? () => undefined : onClose}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
       footer={(
         <>
-          <Button variant="secondary" type="button" onClick={onClose}>취소</Button>
-          <Button type="button" onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
+          <Button variant="secondary" type="button" disabled={busy} onClick={onClose}>취소</Button>
+          <Button type="button" disabled={busy} onClick={() => (document.getElementById("external-link-form") as HTMLFormElement | null)?.requestSubmit()}>저장</Button>
         </>
       )}
     >
       <form id="external-link-form" className={styles.editorForm} onSubmit={handleSubmit}>
-        <EditorSection title="기본 정보"><label className={styles.formField}><span className="type-small">이름</span><input className="type-body" value={name} onChange={(event) => setName(event.currentTarget.value)} required /></label><label className={`${styles.formField} ${styles.wideField}`}><span className="type-small">URL</span><input className="type-body" type="url" value={url} onChange={(event) => setUrl(event.currentTarget.value)} placeholder="https://" required /></label></EditorSection>
-        <EditorSection title="노출 설정"><label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">공개 여부</span></label></EditorSection>
+        <EditorSection title="기본 정보"><label className={styles.formField}><span className="type-small">이름</span><input className="type-body" value={name} disabled={busy} onChange={(event) => setName(event.currentTarget.value)} required /></label><label className={`${styles.formField} ${styles.wideField}`}><span className="type-small">URL</span><input className="type-body" type="url" value={url} disabled={busy} onChange={(event) => setUrl(event.currentTarget.value)} placeholder="https://" required /></label></EditorSection>
+        <EditorSection title="노출 설정"><label className={styles.checkboxField}><input type="checkbox" checked={enabled} disabled={busy} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">공개 여부</span></label></EditorSection>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
       </form>
     </DialogFrame>

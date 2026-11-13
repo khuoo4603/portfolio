@@ -338,14 +338,16 @@ export default function SiteScreen() {
   };
 
   const saveProfile = (input: ProfileEntryInput, item?: ProfileEntry) => {
-    setProfileEditor(null);
     void adminAction.start({
       ...(item ? siteActionBindings.profileEntryUpdate(item.id) : siteActionBindings.profileEntryCreate()),
       actionLabel: item ? `${item.title} 항목 수정` : `${input.title} 항목 추가`,
       mutation: (verification) => item
         ? updateProfileEntry(item.id, input, verification)
         : createProfileEntry(input, verification),
-      onSuccess: () => completeMutation(item ? "프로필 항목을 수정했습니다." : "프로필 항목을 추가했습니다."),
+      onSuccess: () => {
+        setProfileEditor(null);
+        completeMutation(item ? "프로필 항목을 수정했습니다." : "프로필 항목을 추가했습니다.");
+      },
     });
   };
 
@@ -378,14 +380,16 @@ export default function SiteScreen() {
   };
 
   const saveTechnology = (input: TechnologyInput, item?: Technology) => {
-    setTechnologyEditor(null);
     void adminAction.start({
       ...(item ? siteActionBindings.technologyUpdate(item.id) : siteActionBindings.technologyCreate()),
       actionLabel: item ? `${item.name} 기술 수정` : `${input.name} 기술 추가`,
       mutation: (verification) => item
         ? updateTechnology(item.id, input, verification)
         : createTechnology(input, verification),
-      onSuccess: () => completeMutation(item ? "기술을 수정했습니다." : "기술을 추가했습니다."),
+      onSuccess: () => {
+        setTechnologyEditor(null);
+        completeMutation(item ? "기술을 수정했습니다." : "기술을 추가했습니다.");
+      },
     });
   };
 
@@ -417,14 +421,16 @@ export default function SiteScreen() {
   };
 
   const saveLink = (input: ExternalLinkInput, item?: ExternalLink) => {
-    setLinkEditor(null);
     void adminAction.start({
       ...(item ? siteActionBindings.externalLinkUpdate(item.id) : siteActionBindings.externalLinkCreate()),
       actionLabel: item ? `${item.name} 외부 링크 수정` : `${input.name} 외부 링크 추가`,
       mutation: (verification) => item
         ? updateExternalLink(item.id, input, verification)
         : createExternalLink(input, verification),
-      onSuccess: () => completeMutation(item ? "외부 링크를 수정했습니다." : "외부 링크를 추가했습니다."),
+      onSuccess: () => {
+        setLinkEditor(null);
+        completeMutation(item ? "외부 링크를 수정했습니다." : "외부 링크를 추가했습니다.");
+      },
     });
   };
 
@@ -511,18 +517,18 @@ export default function SiteScreen() {
           </div>
 
           <div className={styles.siteTabPanel} role="tabpanel">
-            {tab === "content" && <ContentPanel contents={data.portfolioContents} title="기본 콘텐츠" busy={adminAction.issuing} onSubmit={saveContents} />}
-            {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} busy={adminAction.issuing || adminAction.dialog !== null} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} onSaveOrder={saveProfileOrder} />}
+            {tab === "content" && <ContentPanel contents={data.portfolioContents} title="기본 콘텐츠" busy={adminAction.busy} onSubmit={saveContents} />}
+            {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} busy={adminAction.busy} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} onSaveOrder={saveProfileOrder} />}
             {tab === "technology" && <TechnologiesPanel items={data.technologyMaster} portfolioItems={data.portfolioTechnologies} draft={portfolioDraft} setDraft={setPortfolioDraft} onCreate={() => setTechnologyEditor({})} onEdit={(item) => setTechnologyEditor({ item })} onDelete={deleteTechnologyItem} onToggle={toggleTechnology} onSavePortfolio={savePortfolioTechnologies} />}
-            {tab === "links" && <ExternalLinksPanel items={data.externalLinks} busy={adminAction.issuing || adminAction.dialog !== null} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} onSaveOrder={saveLinkOrder} />}
+            {tab === "links" && <ExternalLinksPanel items={data.externalLinks} busy={adminAction.busy} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} onSaveOrder={saveLinkOrder} />}
             {tab === "resume" && <ResumePanel data={data} file={resumeFile} error={fileError} onSelect={selectResume} onSubmit={saveResume} />}
           </div>
         </section>
       ) : null}
 
-      {profileEditor && <ProfileEditor key={profileEditor.item?.id ?? "new"} state={profileEditor} onClose={() => setProfileEditor(null)} onSubmit={saveProfile} />}
-      {technologyEditor && <TechnologyEditor key={technologyEditor.item?.id ?? "new"} state={technologyEditor} onClose={() => setTechnologyEditor(null)} onSubmit={saveTechnology} />}
-      {linkEditor && <ExternalLinkEditor key={linkEditor.item?.id ?? "new"} state={linkEditor} onClose={() => setLinkEditor(null)} onSubmit={saveLink} />}
+      {profileEditor && <ProfileEditor key={profileEditor.item?.id ?? "new"} state={profileEditor} busy={adminAction.busy} onClose={() => setProfileEditor(null)} onSubmit={saveProfile} />}
+      {technologyEditor && <TechnologyEditor key={technologyEditor.item?.id ?? "new"} state={technologyEditor} busy={adminAction.busy} onClose={() => setTechnologyEditor(null)} onSubmit={saveTechnology} />}
+      {linkEditor && <ExternalLinkEditor key={linkEditor.item?.id ?? "new"} state={linkEditor} busy={adminAction.busy} onClose={() => setLinkEditor(null)} onSubmit={saveLink} />}
       {adminAction.dialog && <AdminActionDialog {...adminAction.dialog} />}
     </>
   );

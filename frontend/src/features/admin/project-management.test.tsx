@@ -150,6 +150,26 @@ describe("Project 목록 관리", () => {
     expect(navigation.push).toHaveBeenCalledWith("/admin/projects/31/edit");
   });
 
+  it("프로젝트 생성 인증 취소 시 Name·Slug Draft를 유지", async () => {
+    render(<NotificationProvider><ProjectManagement /></NotificationProvider>);
+    await screen.findByRole("row", { name: /Project One/ });
+
+    fireEvent.click(screen.getByRole("button", { name: "새 프로젝트" }));
+    const createDialog = screen.getByRole("dialog", { name: "새 프로젝트" });
+    const fields = within(createDialog).getAllByRole("textbox");
+    fireEvent.change(fields[0], { target: { value: "Draft Project" } });
+    fireEvent.change(fields[1], { target: { value: "draft-project" } });
+    fireEvent.click(within(createDialog).getByRole("button", { name: "프로젝트 생성" }));
+
+    const authDialog = await screen.findByRole("dialog", { name: "관리자 이메일 재인증" });
+    fireEvent.click(within(authDialog).getByRole("button", { name: "취소" }));
+
+    expect(screen.getByRole("dialog", { name: "새 프로젝트" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Draft Project")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("draft-project")).toBeInTheDocument();
+    expect(createProject).not.toHaveBeenCalled();
+  });
+
   it("빈 목록에서도 관리 Surface 안에서 새 프로젝트를 시작할 수 있다", async () => {
     vi.mocked(getAdminProjects).mockResolvedValueOnce({ items: [] });
     render(<ProjectManagement />);
