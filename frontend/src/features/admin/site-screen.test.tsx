@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import type { SiteData } from "./admin-types";
-import { createAdminChallenge } from "./admin-action-api";
+import { createAdminChallenge, getAdminActionGrace } from "./admin-action-api";
 import {
   createProfileEntry,
   createTechnology,
@@ -23,7 +23,7 @@ function selectOption(label: string, option: string) {
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
-  return { ...actual, createAdminChallenge: vi.fn() };
+  return { ...actual, createAdminChallenge: vi.fn(), getAdminActionGrace: vi.fn() };
 });
 vi.mock("./admin-site-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-site-api")>();
@@ -152,6 +152,7 @@ function submitOtp(code = "654321") {
 
 describe("Admin Site 실제 API 관리", () => {
   beforeEach(() => {
+    vi.mocked(getAdminActionGrace).mockReset().mockResolvedValue({ verified: false, expiresAt: null });
     vi.mocked(getAdminSite).mockReset().mockResolvedValue(siteData());
     vi.mocked(createAdminChallenge).mockReset().mockResolvedValue({ challengeId: "challenge-site", expiresAt: "2099-09-01T12:00:00+09:00" });
     vi.mocked(updatePortfolioContents).mockReset().mockResolvedValue({ items: [] });

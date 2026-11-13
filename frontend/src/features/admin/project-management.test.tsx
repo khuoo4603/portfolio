@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotificationProvider } from "@/components/ui/notification/notification-provider";
-import { createAdminChallenge } from "./admin-action-api";
+import { createAdminChallenge, getAdminActionGrace } from "./admin-action-api";
 import {
   createProject,
   deleteProject,
@@ -16,7 +16,7 @@ const navigation = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
-  return { ...actual, createAdminChallenge: vi.fn() };
+  return { ...actual, createAdminChallenge: vi.fn(), getAdminActionGrace: vi.fn() };
 });
 vi.mock("./admin-project-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-project-api")>();
@@ -63,6 +63,7 @@ describe("Project 목록 관리", () => {
     vi.mocked(createProject).mockReset().mockResolvedValue({ id: 31, name: "New Project", slug: "new-project", enabled: false, displayOrder: 2, createdAt: UPDATED_AT });
     vi.mocked(updateProjectStatus).mockReset().mockResolvedValue({ id: 12, enabled: false, updatedAt: UPDATED_AT });
     vi.mocked(deleteProject).mockReset().mockResolvedValue(undefined);
+    vi.mocked(getAdminActionGrace).mockReset().mockResolvedValue({ verified: false, expiresAt: null });
     vi.mocked(createAdminChallenge).mockReset().mockResolvedValue({ challengeId: "challenge-project", expiresAt: "2099-09-02T12:00:00+09:00" });
   });
 

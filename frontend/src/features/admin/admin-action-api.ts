@@ -47,6 +47,11 @@ export type AdminActionVerification = {
   verificationCode: string;
 };
 
+export type AdminActionGraceResponse = {
+  verified: boolean;
+  expiresAt: string | null;
+};
+
 // 현재 ADMIN과 단일 변경 작업을 바인딩한 ADMIN_ACTION Challenge 발급
 export function createAdminChallenge(binding: AdminActionBinding) {
   const { operation, targetType, targetId } = binding;
@@ -56,10 +61,18 @@ export function createAdminChallenge(binding: AdminActionBinding) {
   });
 }
 
+// 현재 ADMIN Session의 관리자 작업 OTP 유예 상태 조회
+export function getAdminActionGrace() {
+  return apiRequest<AdminActionGraceResponse>("/admin/auth/action-grace");
+}
+
 // 관리자 Mutation에만 전달하는 재인증 Header 조합
-export function adminActionHeaders(verification: AdminActionVerification) {
+export function adminActionHeaders(verification?: AdminActionVerification): Record<string, string> {
+  if (!verification) {
+    return {};
+  }
   return {
     "X-Admin-Challenge-Id": verification.challengeId,
     "X-Admin-Verification-Code": verification.verificationCode,
-  } satisfies Record<string, string>;
+  };
 }

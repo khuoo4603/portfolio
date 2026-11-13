@@ -61,7 +61,7 @@ function AdminActionDialogContent({
       open={open}
       variant="admin"
       title="관리자 이메일 재인증"
-      description="상태 변경 작업마다 새로운 인증번호 확인이 필요합니다."
+      description="재인증이 필요한 Critical 작업에서 이메일 인증번호를 확인합니다."
       onClose={busy ? () => undefined : onCancel}
       closeOnBackdrop={!busy}
       closeOnEscape={!busy}

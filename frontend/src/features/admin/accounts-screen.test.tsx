@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import { NotificationProvider } from "@/components/ui/notification/notification-provider";
 import type { AccountItem } from "./admin-types";
-import { createAdminChallenge } from "./admin-action-api";
+import { createAdminChallenge, getAdminActionGrace } from "./admin-action-api";
 import {
   createAccount,
   getAdminAccounts,
@@ -16,7 +16,7 @@ import AccountsScreen from "./accounts-screen";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
-  return { ...actual, createAdminChallenge: vi.fn() };
+  return { ...actual, createAdminChallenge: vi.fn(), getAdminActionGrace: vi.fn() };
 });
 vi.mock("./admin-account-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-account-api")>();
@@ -62,6 +62,7 @@ function selectOption(label: string, option: string) {
 describe("Admin Accounts 실제 API 관리", () => {
   beforeEach(() => {
     vi.mocked(getAdminAccounts).mockReset().mockResolvedValue({ items: [account] });
+    vi.mocked(getAdminActionGrace).mockReset().mockResolvedValue({ verified: false, expiresAt: null });
     vi.mocked(createAdminChallenge).mockReset().mockResolvedValue({ challengeId: "challenge-account", expiresAt: "2099-09-01T12:00:00+09:00" });
     vi.mocked(createAccount).mockReset().mockResolvedValue({ id: 10, email: "user@example.com", name: "사용자", role: "USER", enabled: true, createdAt: "2026-09-01T12:00:00+09:00" });
     vi.mocked(updateAccountStatus).mockReset().mockResolvedValue(undefined);

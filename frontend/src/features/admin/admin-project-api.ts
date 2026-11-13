@@ -40,7 +40,7 @@ export function getAdminProject(id: number) {
 }
 
 // Name·Slug만 전달하는 최소 Draft 생성
-export function createProject(input: ProjectCreateInput, verification: AdminActionVerification) {
+export function createProject(input: ProjectCreateInput, verification?: AdminActionVerification) {
   return apiRequest<ProjectCreateResult>("/admin/projects", {
     method: "POST",
     headers: adminActionHeaders(verification),
@@ -52,7 +52,7 @@ export function createProject(input: ProjectCreateInput, verification: AdminActi
 export function updateProjectStatus(
   id: number,
   enabled: boolean,
-  verification: AdminActionVerification,
+  verification?: AdminActionVerification,
 ) {
   return apiRequest<{ id: number; enabled: boolean; updatedAt: string }>(
     `/admin/projects/${id}/status`,
@@ -65,7 +65,7 @@ export function updateProjectStatus(
 }
 
 // Project와 하위 데이터 삭제
-export function deleteProject(id: number, verification: AdminActionVerification) {
+export function deleteProject(id: number, verification?: AdminActionVerification) {
   return apiRequest(`/admin/projects/${id}`, {
     method: "DELETE",
     headers: adminActionHeaders(verification),
@@ -73,7 +73,7 @@ export function deleteProject(id: number, verification: AdminActionVerification)
 }
 
 // 프로젝트 전체 표시 순서 일괄 저장
-export function reorderProjects(input: { orderedIds: number[]; expectedIds: number[] }, verification: AdminActionVerification) {
+export function reorderProjects(input: { orderedIds: number[]; expectedIds: number[] }, verification?: AdminActionVerification) {
   return apiRequest<{ items: ProjectSummary[] }>("/admin/projects/order", {
     method: "PUT",
     headers: adminActionHeaders(verification),
@@ -85,7 +85,7 @@ export function reorderProjects(input: { orderedIds: number[]; expectedIds: numb
 export function saveProject(
   id: number,
   input: ProjectSaveInput,
-  verification: AdminActionVerification,
+  verification?: AdminActionVerification,
 ) {
   const formData = new FormData();
   formData.append("metadata", new Blob([JSON.stringify(input.metadata)], { type: "application/json" }));

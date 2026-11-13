@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiRequest } from "@/lib/api/client";
-import { adminActionHeaders, createAdminChallenge } from "./admin-action-api";
+import { adminActionHeaders, createAdminChallenge, getAdminActionGrace } from "./admin-action-api";
 
 vi.mock("@/lib/api/client", () => ({ apiRequest: vi.fn() }));
 
@@ -49,5 +49,17 @@ describe("ADMIN_ACTION API 계약", () => {
       "X-Admin-Challenge-Id": "challenge-7",
       "X-Admin-Verification-Code": "654321",
     });
+  });
+
+  it("A2 관리자 작업 유예 상태 Endpoint를 조회", async () => {
+    vi.mocked(apiRequest).mockResolvedValue({ verified: true, expiresAt: "2026-11-13T19:30:00+09:00" });
+
+    await getAdminActionGrace();
+
+    expect(apiRequest).toHaveBeenCalledWith("/admin/auth/action-grace");
+  });
+
+  it("유예 상태에서는 관리자 OTP Header를 생략", () => {
+    expect(adminActionHeaders()).toEqual({});
   });
 });
