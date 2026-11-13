@@ -12,7 +12,6 @@ import styles from "./admin.module.css";
 
 type MonitoringTargetDialogProps = {
   target: MonitoringTarget | null;
-  targetCount: number;
   initialEnabled?: boolean;
   onClose: () => void;
   onSaved: () => Promise<boolean>;
@@ -23,35 +22,31 @@ type TargetDraft = {
   displayName: string;
   healthUrl: string;
   enabled: boolean;
-  displayOrder: string;
 };
 
 // Target 응답을 수정 가능한 Form 상태로 변환
-function toDraft(target: MonitoringTarget | null, targetCount: number, initialEnabled: boolean): TargetDraft {
+function toDraft(target: MonitoringTarget | null, initialEnabled: boolean): TargetDraft {
   return target ? {
     serviceKey: target.serviceKey,
     displayName: target.displayName,
     healthUrl: target.healthUrl ?? "",
     enabled: initialEnabled,
-    displayOrder: String(target.displayOrder),
   } : {
     serviceKey: "",
     displayName: "",
     healthUrl: "",
     enabled: initialEnabled,
-    displayOrder: String(targetCount),
   };
 }
 
 // Target Dialog의 생성·수정 Form
 export default function MonitoringTargetDialog({
   target,
-  targetCount,
   initialEnabled = target?.enabled ?? false,
   onClose,
   onSaved,
 }: MonitoringTargetDialogProps) {
-  const [draft, setDraft] = useState(() => toDraft(target, targetCount, initialEnabled));
+  const [draft, setDraft] = useState(() => toDraft(target, initialEnabled));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { notify } = useNotification();
   const [saving, setSaving] = useState(false);
@@ -67,7 +62,6 @@ export default function MonitoringTargetDialog({
     const serviceKey = draft.serviceKey.trim();
     const displayName = draft.displayName.trim();
     const healthUrl = draft.healthUrl.trim();
-    const displayOrder = Number(draft.displayOrder);
 
     if (!target && !serviceKey) {
       nextErrors.serviceKey = "Service Key를 입력하세요.";
@@ -78,9 +72,6 @@ export default function MonitoringTargetDialog({
     if (draft.enabled && !healthUrl) {
       nextErrors.healthUrl = "활성 Target에는 Health URL이 필요합니다.";
     }
-    if (!draft.displayOrder.trim() || !Number.isInteger(displayOrder) || displayOrder < 0) {
-      nextErrors.displayOrder = "0 이상의 정수를 입력하세요.";
-    }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
@@ -90,7 +81,6 @@ export default function MonitoringTargetDialog({
       displayName,
       healthUrl: healthUrl || null,
       enabled: draft.enabled,
-      displayOrder,
     };
 
     setSaving(true);
@@ -177,24 +167,6 @@ export default function MonitoringTargetDialog({
             />
             <p className={`${styles.fieldHint} type-small`}>비활성 Target은 비워 두면 URL 미설정으로 저장합니다.</p>
             {errors.healthUrl && <p className={`${styles.inlineError} type-small`}>{errors.healthUrl}</p>}
-          </label>
-          <label className={styles.formField}>
-            <span>표시 순서</span>
-            <div className={styles.unitField}>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                inputMode="numeric"
-                value={draft.displayOrder}
-                aria-label="표시 순서"
-                aria-invalid={Boolean(errors.displayOrder)}
-                disabled={saving}
-                onChange={(event) => setDraft((current) => ({ ...current, displayOrder: event.target.value }))}
-              />
-              <span>순서</span>
-            </div>
-            {errors.displayOrder && <p className={`${styles.inlineError} type-small`}>{errors.displayOrder}</p>}
           </label>
           <div className={styles.targetDialogSwitchField}>
             <span>사용 상태</span>

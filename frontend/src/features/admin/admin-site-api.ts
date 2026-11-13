@@ -37,6 +37,7 @@ export const siteActionBindings = {
   profileEntryCreate: () => singletonBinding("PROFILE_ENTRY_CREATE", "PROFILE_ENTRY"),
   profileEntryUpdate: (id: number) => entityBinding("PROFILE_ENTRY_UPDATE", "PROFILE_ENTRY", id),
   profileEntryDelete: (id: number) => entityBinding("PROFILE_ENTRY_DELETE", "PROFILE_ENTRY", id),
+  profileEntriesReorder: () => singletonBinding("PROFILE_ENTRIES_REORDER", "PROFILE_ENTRY"),
   technologyCreate: () => singletonBinding("TECHNOLOGY_CREATE", "TECHNOLOGY"),
   technologyUpdate: (id: number) => entityBinding("TECHNOLOGY_UPDATE", "TECHNOLOGY", id),
   technologyDelete: (id: number) => entityBinding("TECHNOLOGY_DELETE", "TECHNOLOGY", id),
@@ -44,6 +45,7 @@ export const siteActionBindings = {
   externalLinkCreate: () => singletonBinding("EXTERNAL_LINK_CREATE", "EXTERNAL_LINK"),
   externalLinkUpdate: (id: number) => entityBinding("EXTERNAL_LINK_UPDATE", "EXTERNAL_LINK", id),
   externalLinkDelete: (id: number) => entityBinding("EXTERNAL_LINK_DELETE", "EXTERNAL_LINK", id),
+  externalLinksReorder: () => singletonBinding("EXTERNAL_LINKS_REORDER", "EXTERNAL_LINK"),
   resumeReplace: () => singletonBinding("RESUME_REPLACE", "RESUME"),
 };
 
@@ -82,6 +84,24 @@ export function deleteProfileEntry(id: number, verification: AdminActionVerifica
   return apiRequest(`/admin/site/profile-entries/${id}`, {
     method: "DELETE",
     headers: adminActionHeaders(verification),
+  });
+}
+
+// 프로필 그룹 표시 순서 일괄 저장
+export function reorderProfileEntries(input: { group: "EDUCATION" | "ACTIVITIES" | "AWARD" | "CERTIFICATE"; orderedIds: number[]; expectedIds: number[] }, verification: AdminActionVerification) {
+  return apiRequest<{ items: ProfileEntry[] }>("/admin/site/profile-entries/order", {
+    method: "PUT",
+    headers: adminActionHeaders(verification),
+    json: input,
+  });
+}
+
+// 프로필에서 변경된 여러 그룹의 표시 순서 일괄 저장
+export function reorderProfileEntriesBatch(input: { groups: Array<{ group: "EDUCATION" | "ACTIVITIES" | "AWARD" | "CERTIFICATE"; orderedIds: number[]; expectedIds: number[] }> }, verification: AdminActionVerification) {
+  return apiRequest<{ items: ProfileEntry[] }>("/admin/site/profile-entries/order/batch", {
+    method: "PUT",
+    headers: adminActionHeaders(verification),
+    json: input,
   });
 }
 
@@ -139,6 +159,15 @@ export function deleteExternalLink(id: number, verification: AdminActionVerifica
   return apiRequest(`/admin/site/external-links/${id}`, {
     method: "DELETE",
     headers: adminActionHeaders(verification),
+  });
+}
+
+// 외부 링크 전체 표시 순서 일괄 저장
+export function reorderExternalLinks(input: { orderedIds: number[]; expectedIds: number[] }, verification: AdminActionVerification) {
+  return apiRequest<{ items: ExternalLink[] }>("/admin/site/external-links/order", {
+    method: "PUT",
+    headers: adminActionHeaders(verification),
+    json: input,
   });
 }
 

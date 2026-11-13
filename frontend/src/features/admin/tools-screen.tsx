@@ -22,6 +22,7 @@ import {
   createToolLink,
   deleteToolLink,
   getAdminTools,
+  reorderToolLinks,
   updateToolLink,
   updateToolLinkEnabled,
   updateToolStatus,
@@ -35,6 +36,8 @@ import {
   StateSwitch,
 } from "./admin-ui";
 import styles from "./admin.module.css";
+import OrderManagementDialog from "./order-management-dialog";
+import SortableList from "./sortable-list";
 
 type LinkEditorState = { item?: ToolLink } | null;
 type LinkFilter = "ALL" | ToolLinkCategory;
@@ -47,6 +50,32 @@ const LINK_FILTERS: ReadonlyArray<{ value: LinkFilter; label: string }> = [
   { value: "MY_SERVICES", label: "My Services" },
 ];
 
+type ToolLinkOrderDrafts = Record<ToolLinkCategory, ToolLink[]>;
+const TOOL_LINK_ORDER_GROUPS = LINK_FILTERS.filter((item): item is { value: ToolLinkCategory; label: string } => item.value !== "ALL");
+
+// Tool Link Draft의 현재 배열 순서를 분류별로 보존
+function groupToolLinkOrder(items: ToolLink[]): ToolLinkOrderDrafts {
+  return {
+    REFERENCE: items.filter((item) => item.category === "REFERENCE"),
+    MY_SERVICES: items.filter((item) => item.category === "MY_SERVICES"),
+  };
+}
+
+// Tool Link의 서버 순서를 분류별 Draft로 변환
+function makeToolLinkOrderDrafts(items: ToolLink[]): ToolLinkOrderDrafts {
+  const sorted = [...items].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id);
+  return groupToolLinkOrder(sorted);
+}
+
+// 그룹별 Draft를 기존 전역 순서의 분류 위치에 다시 주입
+function mergeToolLinkOrder(baseOrder: ToolLink[], drafts: ToolLinkOrderDrafts) {
+  const queues: ToolLinkOrderDrafts = {
+    REFERENCE: [...drafts.REFERENCE],
+    MY_SERVICES: [...drafts.MY_SERVICES],
+  };
+  return baseOrder.map((item) => queues[item.category].shift() ?? item);
+}
+
 function LinkEditor({ state, onClose, onSubmit }: {
   state: LinkEditorState;
   onClose: () => void;
@@ -56,7 +85,6 @@ function LinkEditor({ state, onClose, onSubmit }: {
   const [description, setDescription] = useState(state?.item?.description ?? "");
   const [url, setUrl] = useState(state?.item?.url ?? "");
   const [category, setCategory] = useState<ToolLinkCategory>(state?.item?.category ?? "REFERENCE");
-  const [displayOrder, setDisplayOrder] = useState(state?.item?.displayOrder ?? 0);
   const [enabled, setEnabled] = useState(state?.item?.enabled ?? true);
   const [imageMode, setImageMode] = useState<ToolLinkUpdateImageMode>(state?.item ? "KEEP" : "DEFAULT");
   const [image, setImage] = useState<File | null>(null);
@@ -122,7 +150,6 @@ function LinkEditor({ state, onClose, onSubmit }: {
       description: description.trim() || null,
       url: url.trim(),
       category,
-      displayOrder,
       enabled,
     };
     const metadata = state?.item
@@ -171,7 +198,6 @@ function LinkEditor({ state, onClose, onSubmit }: {
         </div>
         <div className={styles.formColumns}>
           <label className={styles.formField}><span className="type-small">분류</span><Select aria-label="링크 분류" value={category} onValueChange={(value) => setCategory(value as ToolLinkCategory)} options={[{ value: "REFERENCE", label: "REFERENCE" }, { value: "MY_SERVICES", label: "MY_SERVICES" }]} /></label>
-          <label className={styles.formField}><span className="type-small">표시 순서</span><input className="type-body" type="number" min="0" value={displayOrder} onChange={(event) => setDisplayOrder(Number(event.currentTarget.value))} /></label>
         </div>
         <label className={styles.checkboxField}><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.currentTarget.checked)} /><span className="type-body">노출 ON</span></label>
         <p className={`${styles.inlineError} type-small`} role="alert">{error}</p>
@@ -187,6 +213,9 @@ export default function ToolsScreen() {
   const [error, setError] = useState("");
   const [editor, setEditor] = useState<LinkEditorState>(null);
   const [linkFilter, setLinkFilter] = useState<LinkFilter>("ALL");
+  const [orderDraft, setOrderDraft] = useState<ToolLink[]>([]);
+  const [orderOpen, setOrderOpen] = useState(false);
+  const orderOpenRef = useRef(false);
   const [mutating, setMutating] = useState(false);
   const requestSequence = useRef(0);
 
@@ -198,7 +227,12 @@ export default function ToolsScreen() {
     }
     try {
       const response = await getAdminTools();
-      if (requestSequence.current === requestId) setData(response);
+      if (requestSequence.current === requestId) {
+        setData(response);
+        if (!orderOpenRef.current) {
+          setOrderDraft([...response.links].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id));
+        }
+      }
     } catch (caught) {
       if (requestSequence.current === requestId) {
         if (silent) {
@@ -276,7 +310,35 @@ export default function ToolsScreen() {
     );
   };
 
-  const filteredLinks = data?.links.filter((link) => linkFilter === "ALL" || link.category === linkFilter) ?? [];
+  const currentOrder = [...(data?.links ?? [])].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id);
+  const orderDraftGroups = groupToolLinkOrder(orderDraft);
+  const currentOrderGroups = makeToolLinkOrderDrafts(currentOrder);
+  const orderChanged = TOOL_LINK_ORDER_GROUPS.some((group) => JSON.stringify(orderDraftGroups[group.value].map((link) => link.id)) !== JSON.stringify(currentOrderGroups[group.value].map((link) => link.id)));
+
+  const openOrder = () => {
+    setOrderDraft([...currentOrder]);
+    orderOpenRef.current = true;
+    setOrderOpen(true);
+  };
+
+  const closeOrder = () => {
+    orderOpenRef.current = false;
+    setOrderOpen(false);
+  };
+
+  const updateOrderGroup = (category: ToolLinkCategory, items: ToolLink[]) => {
+    setOrderDraft((current) => mergeToolLinkOrder(currentOrder, { ...groupToolLinkOrder(current), [category]: items }));
+  };
+
+  // CSRF 보호 세션 기반 Tool Link 순서 저장
+  const saveOrder = () => {
+    void runMutation(
+      () => reorderToolLinks({ orderedIds: orderDraft.map((link) => link.id), expectedIds: currentOrder.map((link) => link.id) }),
+      "Tool Link 표시 순서를 저장했습니다.",
+    );
+  };
+
+  const filteredLinks = currentOrder.filter((link) => linkFilter === "ALL" || link.category === linkFilter);
 
   return (
     <>
@@ -295,13 +357,13 @@ export default function ToolsScreen() {
             )}
           </section>
           <section className={`${styles.managementSurface} ${styles.operationalSection}`} aria-label="Links 데이터 관리">
-            <div className={styles.managementSurfaceHeader}><div><h2 id="tool-links-title" className="type-title">Links 데이터</h2></div><Button variant="secondary" type="button" onClick={() => setEditor({})}><Plus aria-hidden="true" />Link 추가</Button></div>
+            <div className={styles.managementSurfaceHeader}><div><h2 id="tool-links-title" className="type-title">Links 데이터</h2></div><div className={styles.sectionActions}><Button variant="secondary" type="button" disabled={data.links.length === 0} onClick={openOrder}>순서 관리</Button><Button variant="secondary" type="button" onClick={() => setEditor({})}><Plus aria-hidden="true" />Link 추가</Button></div></div>
             <SegmentedControl className={`${styles.linkFilters} ${styles.toolLinksFilter}`} label="Link 분류" options={LINK_FILTERS} value={linkFilter} onChange={setLinkFilter} />
             {data.links.length === 0 ? <EmptyState title="등록 Link 없음" description="Links Tool에 표시할 링크가 없습니다." /> : (
-              <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.toolLinksTable}`}><thead><tr><th>Link</th><th>분류</th><th>대표 이미지</th><th>순서</th><th>상태</th><th>작업</th></tr></thead><tbody>
+              <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.toolLinksTable}`}><thead><tr><th>Link</th><th>분류</th><th>대표 이미지</th><th>상태</th><th>작업</th></tr></thead><tbody>
                 {filteredLinks.map((link) => <tr key={link.id}>
                   <td data-label="Link"><div className={styles.linkIdentity}><ExternalLinkIcon aria-hidden="true" /><div><strong>{link.name}</strong><span>{link.description || "설명 없음"}</span><code>{link.url}</code></div></div></td>
-                  <td data-label="분류"><code>{link.category}</code></td><td data-label="대표 이미지"><code>{link.imageUrl || "기본 Preview"}</code></td><td data-label="순서">{link.displayOrder}</td>
+                  <td data-label="분류"><code>{link.category}</code></td><td data-label="대표 이미지"><code>{link.imageUrl || "기본 Preview"}</code></td>
                   <td data-label="상태"><StateSwitch enabled={link.enabled} disabled={mutating} onClick={() => changeLinkStatus(link)} label={`${link.name} Link ${link.enabled ? "비노출" : "노출"} 전환`} /></td>
                   <td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => setEditor({ item: link })} aria-label={`${link.name} Link 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => deleteLink(link)} aria-label={`${link.name} Link 삭제`}><Trash2 aria-hidden="true" /></button></div></td>
                 </tr>)}
@@ -310,6 +372,22 @@ export default function ToolsScreen() {
           </section>
         </div>
       ) : null}
+      {orderOpen && <OrderManagementDialog open dirty={orderChanged} busy={mutating} onClose={closeOrder} onReset={() => setOrderDraft([...currentOrder])} onSave={saveOrder}>
+        <div className={styles.orderManager} aria-label="Links 표시 순서 관리">
+          {TOOL_LINK_ORDER_GROUPS.map((group) => (
+            <section className={styles.orderManagerGroup} key={group.value} aria-labelledby={`tool-link-order-${group.value}`}>
+              <div className={styles.orderManagerHeading}><h4 id={`tool-link-order-${group.value}`} className="type-body">{group.label}</h4></div>
+              <SortableList
+                items={orderDraftGroups[group.value]}
+                getKey={(link) => link.id}
+                getTitle={(link) => link.name}
+                onChange={(items) => updateOrderGroup(group.value, items)}
+                emptyMessage="이 분류에 등록된 Link가 없습니다."
+              />
+            </section>
+          ))}
+        </div>
+      </OrderManagementDialog>}
       {editor && <LinkEditor key={editor.item?.id ?? "new"} state={editor} onClose={() => setEditor(null)} onSubmit={saveLink} />}
     </>
   );

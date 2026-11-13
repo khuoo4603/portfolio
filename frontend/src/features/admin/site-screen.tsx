@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  ChevronDown,
-  ChevronUp,
   Edit3,
   FileText,
   Link as LinkIcon,
@@ -42,6 +40,8 @@ import {
   getAdminSite,
   replacePortfolioTechnologies,
   replaceResume,
+  reorderExternalLinks,
+  reorderProfileEntriesBatch,
   siteActionBindings,
   updateExternalLink,
   updatePortfolioContents,
@@ -59,12 +59,22 @@ import {
   formatFileSize,
 } from "./admin-ui";
 import { ExternalLinkEditor, ProfileEditor, TechnologyEditor } from "./site-editors";
+import OrderManagementDialog from "./order-management-dialog";
+import SortableList from "./sortable-list";
 import { useAdminAction } from "./use-admin-action";
 import styles from "./admin.module.css";
 
 type SiteTab = "content" | "entries" | "technology" | "links" | "resume";
 type ProfileFilter = "ALL" | ProfileEntryType;
 type TechnologyView = "all" | "owned";
+type ProfileOrderGroup = "EDUCATION" | "ACTIVITIES" | "AWARD" | "CERTIFICATE";
+
+const PROFILE_ORDER_GROUPS: ReadonlyArray<{ value: ProfileOrderGroup; label: string; types: ProfileEntryType[] }> = [
+  { value: "EDUCATION", label: "학력", types: ["EDUCATION"] },
+  { value: "ACTIVITIES", label: "경력·활동", types: ["EXPERIENCE", "ACTIVITY"] },
+  { value: "AWARD", label: "수상", types: ["AWARD"] },
+  { value: "CERTIFICATE", label: "자격·교육", types: ["CERTIFICATE"] },
+];
 
 type ContentDefinition = {
   category: PortfolioContentCategory;
@@ -163,7 +173,6 @@ function profileInput(item: ProfileEntry, override: Partial<ProfileEntryInput> =
     role: item.role,
     description: item.description,
     achievement: item.achievement,
-    displayOrder: item.displayOrder,
     enabled: item.enabled,
     ...override,
   };
@@ -183,7 +192,6 @@ function externalLinkInput(item: ExternalLink, override: Partial<ExternalLinkInp
   return {
     name: item.name,
     url: item.url,
-    displayOrder: item.displayOrder,
     enabled: item.enabled,
     ...override,
   };
@@ -359,6 +367,16 @@ export default function SiteScreen() {
     });
   };
 
+  // 프로필에서 변경된 여러 그룹의 Draft와 서버 Snapshot을 한 번에 저장
+  const saveProfileOrder = (groups: Array<{ group: ProfileOrderGroup; orderedIds: number[]; expectedIds: number[] }>) => {
+    void adminAction.start({
+      ...siteActionBindings.profileEntriesReorder(),
+      actionLabel: "이력 표시 순서 저장",
+      mutation: (verification) => reorderProfileEntriesBatch({ groups }, verification),
+      onSuccess: () => completeMutation("프로필 표시 순서를 저장했습니다."),
+    });
+  };
+
   const saveTechnology = (input: TechnologyInput, item?: Technology) => {
     setTechnologyEditor(null);
     void adminAction.start({
@@ -428,6 +446,16 @@ export default function SiteScreen() {
     });
   };
 
+  // 외부 링크 Draft와 서버 Snapshot을 한 번에 저장
+  const saveLinkOrder = (orderedIds: number[], expectedIds: number[]) => {
+    void adminAction.start({
+      ...siteActionBindings.externalLinksReorder(),
+      actionLabel: "외부 링크 순서 저장",
+      mutation: (verification) => reorderExternalLinks({ orderedIds, expectedIds }, verification),
+      onSuccess: () => completeMutation("외부 링크 표시 순서를 저장했습니다."),
+    });
+  };
+
   const selectResume = (file?: File) => {
     if (!file) {
       setResumeFile(null);
@@ -484,9 +512,9 @@ export default function SiteScreen() {
 
           <div className={styles.siteTabPanel} role="tabpanel">
             {tab === "content" && <ContentPanel contents={data.portfolioContents} title="기본 콘텐츠" busy={adminAction.issuing} onSubmit={saveContents} />}
-            {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} />}
+            {tab === "entries" && <ProfileEntriesPanel items={data.profileEntries} busy={adminAction.issuing || adminAction.dialog !== null} onCreate={() => setProfileEditor({})} onEdit={(item) => setProfileEditor({ item })} onDelete={deleteProfile} onToggle={toggleProfile} onSaveOrder={saveProfileOrder} />}
             {tab === "technology" && <TechnologiesPanel items={data.technologyMaster} portfolioItems={data.portfolioTechnologies} draft={portfolioDraft} setDraft={setPortfolioDraft} onCreate={() => setTechnologyEditor({})} onEdit={(item) => setTechnologyEditor({ item })} onDelete={deleteTechnologyItem} onToggle={toggleTechnology} onSavePortfolio={savePortfolioTechnologies} />}
-            {tab === "links" && <ExternalLinksPanel items={data.externalLinks} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} />}
+            {tab === "links" && <ExternalLinksPanel items={data.externalLinks} busy={adminAction.issuing || adminAction.dialog !== null} onCreate={() => setLinkEditor({})} onEdit={(item) => setLinkEditor({ item })} onDelete={deleteLink} onToggle={toggleLink} onSaveOrder={saveLinkOrder} />}
             {tab === "resume" && <ResumePanel data={data} file={resumeFile} error={fileError} onSelect={selectResume} onSubmit={saveResume} />}
           </div>
         </section>
@@ -500,16 +528,18 @@ export default function SiteScreen() {
   );
 }
 
-function ProfileEntriesPanel({ items, onCreate, onEdit, onDelete, onToggle }: { items: ProfileEntry[]; onCreate: () => void; onEdit: (item: ProfileEntry) => void; onDelete: (item: ProfileEntry) => void; onToggle: (item: ProfileEntry) => void }) {
+function ProfileEntriesPanel({ items, busy, onCreate, onEdit, onDelete, onToggle, onSaveOrder }: { items: ProfileEntry[]; busy: boolean; onCreate: () => void; onEdit: (item: ProfileEntry) => void; onDelete: (item: ProfileEntry) => void; onToggle: (item: ProfileEntry) => void; onSaveOrder: (groups: Array<{ group: ProfileOrderGroup; orderedIds: number[]; expectedIds: number[] }>) => void }) {
   const [filter, setFilter] = useState<ProfileFilter>("ALL");
-  const filteredItems = filter === "ALL" ? items : items.filter((item) => item.entryType === filter);
+  const [orderOpen, setOrderOpen] = useState(false);
+  const sortedItems = sortProfileEntries(items);
+  const filteredItems = filter === "ALL" ? sortedItems : sortedItems.filter((item) => item.entryType === filter);
 
   return (
     <section className={styles.operationalSection} aria-labelledby="profile-entries-title">
-      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">이력</h2></div><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</Button></div>
+      <div className={styles.sectionHeading}><div><h2 id="profile-entries-title" className="type-title">이력</h2></div><div className={styles.sectionActions}><Button variant="secondary" type="button" disabled={items.length === 0} onClick={() => setOrderOpen(true)}>순서 관리</Button><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />항목 추가</Button></div></div>
       <SegmentedControl className={`${styles.linkFilters} ${styles.profileFilters}`} label="이력 유형" options={PROFILE_FILTERS} value={filter} onChange={setFilter} />
       {items.length === 0 ? <EmptyState title="등록 항목 없음" description="등록된 프로필 반복 항목이 없습니다." /> : (
-        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteProfileTable}`}><thead><tr><th>기간</th><th>제목</th><th>기관 또는 역할</th><th>유형</th><th>상태</th><th>순서</th><th>작업</th></tr></thead><tbody>
+        filteredItems.length === 0 ? <EmptyState title="해당 이력 없음" description="선택한 유형에 등록된 이력이 없습니다." /> : <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteProfileTable}`}><thead><tr><th>기간</th><th>제목</th><th>기관 또는 역할</th><th>유형</th><th>상태</th><th>작업</th></tr></thead><tbody>
           {filteredItems.map((item) => (
             <tr key={item.id}>
               <td data-label="기간"><span>{item.periodText || ""}</span></td>
@@ -517,13 +547,65 @@ function ProfileEntriesPanel({ items, onCreate, onEdit, onDelete, onToggle }: { 
               <td data-label="기관 또는 역할"><span>{item.organization || item.role || ""}</span></td>
               <td data-label="유형"><span className="type-small">{PROFILE_FILTERS.find((filterOption) => filterOption.value === item.entryType)?.label}</span></td>
               <td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.title} ${item.enabled ? "비노출" : "노출"} 전환`} /></td>
-              <td data-label="순서">{item.displayOrder}</td>
               <td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.title} 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.title} 삭제`}><Trash2 aria-hidden="true" /></button></div></td>
             </tr>
           ))}
         </tbody></table></div>
       )}
+      {orderOpen && <ProfileOrderManager items={items} busy={busy} onClose={() => setOrderOpen(false)} onSave={onSaveOrder} />}
     </section>
+  );
+}
+
+// Profile 표의 고정 그룹·서버 순서·ID 기준 정렬
+function sortProfileEntries(items: ProfileEntry[]) {
+  return [...items].sort((left, right) => {
+    const leftGroup = PROFILE_ORDER_GROUPS.findIndex((group) => group.types.includes(left.entryType));
+    const rightGroup = PROFILE_ORDER_GROUPS.findIndex((group) => group.types.includes(right.entryType));
+    return leftGroup - rightGroup || left.displayOrder - right.displayOrder || left.id - right.id;
+  });
+}
+
+function makeProfileOrderDrafts(items: ProfileEntry[]) {
+  return Object.fromEntries(PROFILE_ORDER_GROUPS.map((group) => [
+    group.value,
+    items
+      .filter((item) => group.types.includes(item.entryType))
+      .sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id),
+  ])) as Record<ProfileOrderGroup, ProfileEntry[]>;
+}
+
+// 프로필 유형 그룹별 표시 순서 Draft와 저장 상태 관리
+function ProfileOrderManager({ items, busy, onClose, onSave }: { items: ProfileEntry[]; busy: boolean; onClose: () => void; onSave: (groups: Array<{ group: ProfileOrderGroup; orderedIds: number[]; expectedIds: number[] }>) => void }) {
+  const [drafts, setDrafts] = useState(() => makeProfileOrderDrafts(items));
+  const currentDrafts = makeProfileOrderDrafts(items);
+  const changedGroups = PROFILE_ORDER_GROUPS.filter((group) => JSON.stringify(drafts[group.value].map((item) => item.id)) !== JSON.stringify(currentDrafts[group.value].map((item) => item.id)));
+  const save = () => onSave(changedGroups.map((group) => ({
+    group: group.value,
+    orderedIds: drafts[group.value].map((item) => item.id),
+    expectedIds: currentDrafts[group.value].map((item) => item.id),
+  })));
+
+  return (
+    <OrderManagementDialog open dirty={changedGroups.length > 0} busy={busy} onClose={onClose} onReset={() => setDrafts(makeProfileOrderDrafts(items))} onSave={save}>
+      <div className={styles.orderManager} aria-label="이력 표시 순서 관리">
+      {PROFILE_ORDER_GROUPS.map((group) => {
+        const draft = drafts[group.value];
+        return (
+          <section className={styles.orderManagerGroup} key={group.value} aria-labelledby={`profile-order-${group.value}`}>
+            <div className={styles.orderManagerHeading}><h4 id={`profile-order-${group.value}`} className="type-body">{group.label}</h4></div>
+            <SortableList
+              items={draft}
+              getKey={(item) => item.id}
+              getTitle={(item) => item.title}
+              onChange={(next) => setDrafts((currentDrafts) => ({ ...currentDrafts, [group.value]: next }))}
+              emptyMessage="해당 그룹에 등록된 이력이 없습니다."
+            />
+          </section>
+        );
+      })}
+      </div>
+    </OrderManagementDialog>
   );
 }
 
@@ -535,16 +617,6 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, onCreate, o
   const portfolioChanged = JSON.stringify(draft) !== JSON.stringify(normalizedCurrent);
 
   const normalizeOrder = (next: PortfolioTechnology[]) => next.map((item, index) => ({ ...item, displayOrder: index + 1 }));
-  const move = (index: number, direction: -1 | 1) => {
-    const target = index + direction;
-    if (target < 0 || target >= draft.length) {
-      return;
-    }
-    const next = [...draft];
-    [next[index], next[target]] = [next[target], next[index]];
-    setDraft(normalizeOrder(next));
-  };
-
   const add = () => {
     const technologyId = Number(selectedTechnologyId);
     if (!technologyId) {
@@ -577,10 +649,13 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, onCreate, o
           <Button variant="secondary" type="button" disabled={!selectedTechnologyId} onClick={add}><Plus aria-hidden="true" />추가</Button>
         </div>
         {draft.length === 0 ? <EmptyState title="보유 기술 없음" description="포트폴리오에 노출할 기술을 추가해 주세요." /> : (
-          <ol className={styles.portfolioTechnologyList} aria-label="선택된 보유 기술">{draft.map((mapping, index) => {
-            const technology = items.find((item) => item.id === mapping.technologyId);
-            return <li key={mapping.technologyId} className={styles.portfolioTechnologyRow}><div className={styles.portfolioTechnologyIdentity}><strong className="type-body">{technology?.name ?? `기술 #${mapping.technologyId}`}</strong><span className="type-small">표시 순서 {mapping.displayOrder}</span></div><div className={styles.portfolioTechnologyActions}><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 위로`} disabled={index === 0} onClick={() => move(index, -1)}><ChevronUp aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 아래로`} disabled={index === draft.length - 1} onClick={() => move(index, 1)}><ChevronDown aria-hidden="true" /></button><button className={styles.iconButton} type="button" aria-label={`${technology?.name ?? mapping.technologyId} 보유 기술에서 제거`} onClick={() => setDraft((current) => normalizeOrder(current.filter((item) => item.technologyId !== mapping.technologyId)))}><X aria-hidden="true" /></button></div></li>;
-          })}</ol>
+          <SortableList
+            items={draft}
+            getKey={(item) => item.technologyId}
+            getTitle={(item) => items.find((value) => value.id === item.technologyId)?.name ?? `기술 #${item.technologyId}`}
+            onChange={(next) => setDraft(normalizeOrder(next))}
+            renderActions={(item, _index, controls) => <>{controls.moveUp}{controls.moveDown}<button className={styles.iconButton} type="button" aria-label={`${items.find((value) => value.id === item.technologyId)?.name ?? item.technologyId} 보유 기술에서 제거`} onClick={() => setDraft((current) => normalizeOrder(current.filter((value) => value.technologyId !== item.technologyId)))}><X aria-hidden="true" /></button></>}
+          />
         )}
         <div className={styles.portfolioTechnologyFooter}><p className="type-small">변경된 전체 구성을 한 번에 저장합니다.</p><Button type="button" disabled={!portfolioChanged} onClick={() => onSavePortfolio(draft)}>보유 기술 저장</Button></div>
       </>}
@@ -588,18 +663,34 @@ function TechnologiesPanel({ items, portfolioItems, draft, setDraft, onCreate, o
   );
 }
 
-function ExternalLinksPanel({ items, onCreate, onEdit, onDelete, onToggle }: { items: ExternalLink[]; onCreate: () => void; onEdit: (item: ExternalLink) => void; onDelete: (item: ExternalLink) => void; onToggle: (item: ExternalLink) => void }) {
+function ExternalLinksPanel({ items, busy, onCreate, onEdit, onDelete, onToggle, onSaveOrder }: { items: ExternalLink[]; busy: boolean; onCreate: () => void; onEdit: (item: ExternalLink) => void; onDelete: (item: ExternalLink) => void; onToggle: (item: ExternalLink) => void; onSaveOrder: (orderedIds: number[], expectedIds: number[]) => void }) {
+  const [orderOpen, setOrderOpen] = useState(false);
+  const sortedItems = [...items].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id);
   return (
     <section className={styles.operationalSection} aria-labelledby="external-links-title">
-      <div className={styles.sectionHeading}><div><h2 id="external-links-title" className="type-title">외부 링크</h2></div><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />링크 추가</Button></div>
+      <div className={styles.sectionHeading}><div><h2 id="external-links-title" className="type-title">외부 링크</h2></div><div className={styles.sectionActions}><Button variant="secondary" type="button" disabled={items.length === 0} onClick={() => setOrderOpen(true)}>순서 관리</Button><Button variant="secondary" type="button" onClick={onCreate}><Plus aria-hidden="true" />링크 추가</Button></div></div>
       {items.length === 0 ? <EmptyState title="외부 링크 없음" description="공개 영역에 연결할 외부 링크가 없습니다." /> : (
-        <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteExternalLinksTable}`}><thead><tr><th>이름 / URL</th><th>순서</th><th>상태</th><th>작업</th></tr></thead><tbody>
-          {items.map((item) => (
-            <tr key={item.id}><td data-label="이름 / URL"><div className={styles.linkIdentity}><LinkIcon aria-hidden="true" /><div><strong>{item.name}</strong><code>{item.url}</code></div></div></td><td data-label="순서">{item.displayOrder}</td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 링크 ${item.enabled ? "비노출" : "노출"} 전환`} /></td><td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.name} 링크 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.name} 링크 삭제`}><Trash2 aria-hidden="true" /></button></div></td></tr>
+        <div className={styles.dataTableWrap}><table className={`${styles.dataTable} ${styles.siteExternalLinksTable}`}><thead><tr><th>이름 / URL</th><th>상태</th><th>작업</th></tr></thead><tbody>
+          {sortedItems.map((item) => (
+            <tr key={item.id}><td data-label="이름 / URL"><div className={styles.linkIdentity}><LinkIcon aria-hidden="true" /><div><strong>{item.name}</strong><code>{item.url}</code></div></div></td><td data-label="상태"><StateSwitch enabled={item.enabled} onClick={() => onToggle(item)} label={`${item.name} 링크 ${item.enabled ? "비노출" : "노출"} 전환`} /></td><td data-label="작업"><div className={styles.tableRowActions}><button className={styles.iconButton} type="button" onClick={() => onEdit(item)} aria-label={`${item.name} 링크 수정`}><Edit3 aria-hidden="true" /></button><button className={styles.iconButton} type="button" onClick={() => onDelete(item)} aria-label={`${item.name} 링크 삭제`}><Trash2 aria-hidden="true" /></button></div></td></tr>
           ))}
         </tbody></table></div>
       )}
+      {orderOpen && <ExternalLinkOrderManager items={items} busy={busy} onClose={() => setOrderOpen(false)} onSave={onSaveOrder} />}
     </section>
+  );
+}
+
+// 외부 링크 전체 표시 순서 Draft와 저장 상태 관리
+function ExternalLinkOrderManager({ items, busy, onClose, onSave }: { items: ExternalLink[]; busy: boolean; onClose: () => void; onSave: (orderedIds: number[], expectedIds: number[]) => void }) {
+  const current = [...items].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id);
+  const [draft, setDraft] = useState(current);
+
+  const changed = JSON.stringify(draft.map((item) => item.id)) !== JSON.stringify(current.map((item) => item.id));
+  return (
+    <OrderManagementDialog open dirty={changed} busy={busy} onClose={onClose} onReset={() => setDraft(current)} onSave={() => onSave(draft.map((item) => item.id), current.map((item) => item.id))}>
+      <SortableList items={draft} getKey={(item) => item.id} getTitle={(item) => item.name} onChange={setDraft} emptyMessage="등록된 외부 링크가 없습니다." />
+    </OrderManagementDialog>
   );
 }
 

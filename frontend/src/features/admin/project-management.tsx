@@ -14,12 +14,15 @@ import {
   deleteProject,
   getAdminProjects,
   projectActionBindings,
+  reorderProjects,
   updateProjectStatus,
 } from "./admin-project-api";
 import { EmptyState, PageError, PageHeader, PageLoading, StateSwitch, formatDateTime } from "./admin-ui";
 import DialogFrame from "@/components/ui/dialog-frame";
 import { useAdminAction } from "./use-admin-action";
 import styles from "./admin.module.css";
+import OrderManagementDialog from "./order-management-dialog";
+import SortableList from "./sortable-list";
 
 const EMPTY_CREATE: ProjectCreateInput = { name: "", slug: "" };
 
@@ -104,6 +107,9 @@ export default function ProjectManagement() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createInput, setCreateInput] = useState<ProjectCreateInput>(EMPTY_CREATE);
   const [deleteCandidate, setDeleteCandidate] = useState<ProjectSummary | null>(null);
+  const [orderDraft, setOrderDraft] = useState<ProjectSummary[]>([]);
+  const [orderOpen, setOrderOpen] = useState(false);
+  const orderOpenRef = useRef(false);
   const requestSequence = useRef(0);
 
   const loadProjects = useCallback(async (silent = false) => {
@@ -114,6 +120,9 @@ export default function ProjectManagement() {
       const response = await getAdminProjects();
       if (requestSequence.current === requestId) {
         setProjects(response.items);
+        if (!orderOpenRef.current) {
+          setOrderDraft([...response.items].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id));
+        }
       }
     } catch (caught) {
       if (requestSequence.current === requestId) {
@@ -127,6 +136,34 @@ export default function ProjectManagement() {
       if (requestSequence.current === requestId && !silent) setLoading(false);
     }
   }, [notify]);
+
+  // 프로젝트 목록 정렬 Draft와 서버 기준 순서 비교
+  const currentOrder = [...projects].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id);
+  const orderChanged = JSON.stringify(orderDraft.map((project) => project.id)) !== JSON.stringify(currentOrder.map((project) => project.id));
+
+  const openOrder = () => {
+    setOrderDraft([...currentOrder]);
+    orderOpenRef.current = true;
+    setOrderOpen(true);
+  };
+
+  const closeOrder = () => {
+    orderOpenRef.current = false;
+    setOrderOpen(false);
+  };
+
+  // PROJECTS_REORDER 1회 인증 기반 목록 순서 저장
+  const saveOrder = () => {
+    void adminAction.start({
+      ...projectActionBindings.reorder(),
+      actionLabel: "프로젝트 표시 순서 저장",
+      mutation: (verification) => reorderProjects({ orderedIds: orderDraft.map((project) => project.id), expectedIds: currentOrder.map((project) => project.id) }, verification),
+      onSuccess: () => {
+        notify({ type: "success", title: "프로젝트 순서 저장 완료", message: "프로젝트 표시 순서를 저장했습니다." });
+        void loadProjects(true);
+      },
+    });
+  };
 
   useEffect(() => {
     let active = true;
@@ -189,7 +226,7 @@ export default function ProjectManagement() {
       <PageHeader
         title="Projects"
         description="프로젝트 Draft, 공개 상태와 표시 순서를 관리합니다."
-        action={<Button type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />새 프로젝트</Button>}
+        action={<div className={styles.pageActionGroup}><Button variant="secondary" type="button" disabled={projects.length === 0} onClick={openOrder}>순서 관리</Button><Button type="button" onClick={() => setCreateOpen(true)}><Plus aria-hidden="true" />새 프로젝트</Button></div>}
       />
       {adminAction.startError && <p className={`${styles.inlineError} type-small`} role="alert">{adminAction.startError}</p>}
 
@@ -203,11 +240,11 @@ export default function ProjectManagement() {
             <table className={`${styles.dataTable} ${styles.projectTable}`}>
               <thead>
                 <tr>
-                  <th>프로젝트</th><th>연도</th><th>순서</th><th>상태</th><th>수정일</th><th>작업</th>
+                  <th>프로젝트</th><th>연도</th><th>상태</th><th>수정일</th><th>작업</th>
                 </tr>
               </thead>
               <tbody>
-                {projects.map((project) => (
+                {currentOrder.map((project) => (
                   <tr key={project.id}>
                     <td className={styles.projectIdentitySummary} data-label="프로젝트">
                       <div className={styles.projectIdentityCell}>
@@ -221,7 +258,6 @@ export default function ProjectManagement() {
                       </div>
                     </td>
                     <td className={styles.projectYearSummary} data-label="연도">{project.year ?? "—"}</td>
-                    <td className={styles.projectOrderSummary} data-label="순서">{project.displayOrder}</td>
                     <td className={styles.projectStatusSummary} data-label="상태">
                       <div className={styles.projectStatusCell}>
                         <StateSwitch
@@ -247,6 +283,9 @@ export default function ProjectManagement() {
         )}
       </section>
 
+      {orderOpen && <OrderManagementDialog open dirty={orderChanged} busy={adminAction.issuing || adminAction.dialog !== null} onClose={closeOrder} onReset={() => setOrderDraft([...currentOrder])} onSave={saveOrder}>
+        <SortableList items={orderDraft} getKey={(project) => project.id} getTitle={(project) => project.name} onChange={setOrderDraft} emptyMessage="정렬할 프로젝트가 없습니다." />
+      </OrderManagementDialog>}
       <CreateProjectDialog open={createOpen} input={createInput} onChange={setCreateInput} onClose={() => setCreateOpen(false)} onSubmit={create} />
       <DeleteProjectDialog project={deleteCandidate} onClose={() => setDeleteCandidate(null)} onConfirm={remove} />
       {adminAction.dialog && <AdminActionDialog {...adminAction.dialog} />}

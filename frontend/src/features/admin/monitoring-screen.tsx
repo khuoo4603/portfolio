@@ -6,10 +6,12 @@ import Button from "@/components/ui/button";
 import { useNotification } from "@/components/ui/notification/notification-provider";
 import { ApiError, formatApiError } from "@/lib/api/client";
 import type { AdminMonitoringData, MonitoringSettings, MonitoringSettingsInput, MonitoringTarget, MonitoringTargetUpdateInput } from "./admin-types";
-import { getAdminMonitoring, updateMonitoringSettings, updateMonitoringTarget } from "./admin-read-api";
+import { getAdminMonitoring, reorderMonitoringTargets, updateMonitoringSettings, updateMonitoringTarget } from "./admin-read-api";
 import { PageError, PageHeader, PageLoading, StateSwitch } from "./admin-ui";
 import MonitoringTargetDialog from "./monitoring-target-dialog";
+import OrderManagementDialog from "./order-management-dialog";
 import styles from "./admin.module.css";
+import SortableList from "./sortable-list";
 
 type SettingsDraft = Record<Exclude<keyof MonitoringSettingsInput, "enabled">, string>;
 
@@ -59,6 +61,10 @@ export default function MonitoringScreen() {
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [targetBusyId, setTargetBusyId] = useState<number | null>(null);
   const [targetDialog, setTargetDialog] = useState<TargetDialogState | null>(null);
+  const [orderDraft, setOrderDraft] = useState<MonitoringTarget[]>([]);
+  const [orderOpen, setOrderOpen] = useState(false);
+  const orderOpenRef = useRef(false);
+  const [orderSaving, setOrderSaving] = useState(false);
   const requestSequence = useRef(0);
 
   // 최신 요청만 반영하는 Monitoring 데이터 조회
@@ -75,6 +81,9 @@ export default function MonitoringScreen() {
       }
       setData(response);
       setSettingsDraft(toSettingsDraft(response.settings));
+      if (!orderOpenRef.current) {
+        setOrderDraft([...response.targets].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id));
+      }
       return true;
     } catch (caught) {
       if (requestSequence.current === requestId) {
@@ -166,7 +175,6 @@ export default function MonitoringScreen() {
       displayName: target.displayName,
       healthUrl: target.healthUrl,
       enabled: nextEnabled,
-      displayOrder: target.displayOrder,
     };
     setTargetBusyId(target.id);
     try {
@@ -180,6 +188,36 @@ export default function MonitoringScreen() {
       notify({ type: "error", title: "Target 상태 변경 실패", message: formatApiError(caught) });
     } finally {
       setTargetBusyId(null);
+    }
+  };
+
+  const currentOrder = [...(data?.targets ?? [])].sort((left, right) => left.displayOrder - right.displayOrder || left.id - right.id);
+  const orderChanged = JSON.stringify(orderDraft.map((target) => target.id)) !== JSON.stringify(currentOrder.map((target) => target.id));
+
+  const openOrder = () => {
+    setOrderDraft([...currentOrder]);
+    orderOpenRef.current = true;
+    setOrderOpen(true);
+  };
+
+  const closeOrder = () => {
+    orderOpenRef.current = false;
+    setOrderOpen(false);
+  };
+
+  // Monitoring Target 순서 변경을 저장하고 최신 서버 상태로 복귀
+  const saveTargetOrder = async () => {
+    if (orderSaving) return;
+    setOrderSaving(true);
+    try {
+      await reorderMonitoringTargets({ orderedIds: orderDraft.map((target) => target.id), expectedIds: currentOrder.map((target) => target.id) });
+      if (await loadMonitoring()) {
+        notify({ type: "success", title: "Target 순서 저장 완료", message: "Monitoring Target 표시 순서를 저장했습니다." });
+      }
+    } catch (caught) {
+      notify({ type: "error", title: "Target 순서 저장 실패", message: formatApiError(caught) });
+    } finally {
+      setOrderSaving(false);
     }
   };
 
@@ -230,12 +268,12 @@ export default function MonitoringScreen() {
               <div>
                 <h2 id="monitoring-targets-title" className="type-title">Target</h2>
               </div>
-              <Button variant="secondary" type="button" onClick={() => setTargetDialog({ target: null })}><Plus aria-hidden="true" />Target 추가</Button>
+              <div className={styles.sectionActions}><Button variant="secondary" type="button" disabled={data.targets.length === 0} onClick={openOrder}>순서 관리</Button><Button variant="secondary" type="button" onClick={() => setTargetDialog({ target: null })}><Plus aria-hidden="true" />Target 추가</Button></div>
             </div>
             <div className={styles.dataTableWrap}>
               <table className={`${styles.dataTable} ${styles.monitoringTargetsTable}`}>
-                <thead><tr><th>Target</th><th>Health URL</th><th>순서</th><th>상태</th><th>작업</th></tr></thead>
-                <tbody>{data.targets.map((target) => {
+                <thead><tr><th>Target</th><th>Health URL</th><th>상태</th><th>작업</th></tr></thead>
+                <tbody>{currentOrder.map((target) => {
                 const busy = targetBusyId === target.id;
                 return (
                   <tr key={target.id}>
@@ -243,7 +281,6 @@ export default function MonitoringScreen() {
                       <strong className="type-body">{target.displayName}</strong>
                     </div></td>
                     <td className={styles.monitoringHealthUrlSummary} data-label="Health URL"><span className={`${styles.monitoringTargetUrl} type-small`}>{target.healthUrl ?? "URL 미설정"}</span></td>
-                    <td className={styles.monitoringOrderSummary} data-label="순서">{target.displayOrder}</td>
                     <td className={styles.monitoringStatusSummary} data-label="상태"><StateSwitch
                       enabled={target.enabled}
                       disabled={busy}
@@ -259,11 +296,13 @@ export default function MonitoringScreen() {
           </section>
         </div>
       ) : null}
+      {orderOpen && <OrderManagementDialog open dirty={orderChanged} busy={orderSaving} onClose={closeOrder} onReset={() => setOrderDraft([...currentOrder])} onSave={() => void saveTargetOrder()}>
+        <SortableList items={orderDraft} getKey={(target) => target.id} getTitle={(target) => target.displayName} onChange={setOrderDraft} emptyMessage="등록된 Monitoring Target이 없습니다." />
+      </OrderManagementDialog>}
       {targetDialog && (
         <MonitoringTargetDialog
           key={`${targetDialog.target?.id ?? "create"}-${targetDialog.initialEnabled ?? false}`}
           target={targetDialog.target}
-          targetCount={data?.targets.length ?? 0}
           initialEnabled={targetDialog.initialEnabled}
           onClose={() => setTargetDialog(null)}
           onSaved={loadMonitoring}

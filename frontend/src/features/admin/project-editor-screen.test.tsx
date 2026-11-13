@@ -153,16 +153,22 @@ describe("Preview-first Project Editor", () => {
     const technologyPanel = screen.getByRole("region", { name: "기술 편집" });
     expect(within(technologyPanel).queryByText("Card 노출")).not.toBeInTheDocument();
     expect(within(technologyPanel).queryByRole("checkbox")).not.toBeInTheDocument();
-    expect(screen.getByText("기존 비활성 연결", { exact: false })).toBeInTheDocument();
     const select = screen.getByRole("combobox", { name: "프로젝트 기술 선택" });
     fireEvent.click(select);
     expect(screen.getByRole("option", { name: "React" })).toBeEnabled();
     expect(screen.getByRole("option", { name: "Legacy · 비활성" })).toBeDisabled();
     fireEvent.keyDown(select, { key: "Escape" });
-    const technologyTable = within(technologyPanel).getByRole("table");
-    expect(within(technologyTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["기술", "분류", "강조", "표시 순서", "작업"]);
-    expect(within(technologyTable).getByText("Java")).toBeInTheDocument();
-    expect(within(technologyTable).getByLabelText("Java 표시 순서")).toHaveValue(0);
+    const technologyList = within(technologyPanel).getByRole("list", { name: "표시 순서 관리" });
+    expect(within(technologyList).getByText("Java")).toBeInTheDocument();
+    expect(within(technologyList).queryByLabelText("Java 표시 순서")).not.toBeInTheDocument();
+    const technologyRow = within(technologyList).getByRole("listitem", { name: /Java/ });
+    expect(Array.from(technologyRow.querySelectorAll("button")).map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Java 순서 이동",
+      "Java 강조 해제",
+      "Java 위로",
+      "Java 아래로",
+      "Java 기술에서 제거",
+    ]);
 
     expect(within(technologyPanel).queryByText("Highlighted")).not.toBeInTheDocument();
     const highlighted = within(technologyPanel).getByRole("switch", { name: "Java 강조 해제" });

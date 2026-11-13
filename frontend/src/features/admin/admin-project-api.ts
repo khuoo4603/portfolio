@@ -26,6 +26,7 @@ export const projectActionBindings = {
   update: (id: number) => projectBinding("PROJECT_UPDATE", id),
   status: (id: number) => projectBinding("PROJECT_STATUS_UPDATE", id),
   delete: (id: number) => projectBinding("PROJECT_DELETE", id),
+  reorder: () => projectBinding("PROJECTS_REORDER", null),
 };
 
 // 관리자 Project 전체 목록 조회
@@ -68,6 +69,15 @@ export function deleteProject(id: number, verification: AdminActionVerification)
   return apiRequest(`/admin/projects/${id}`, {
     method: "DELETE",
     headers: adminActionHeaders(verification),
+  });
+}
+
+// 프로젝트 전체 표시 순서 일괄 저장
+export function reorderProjects(input: { orderedIds: number[]; expectedIds: number[] }, verification: AdminActionVerification) {
+  return apiRequest<{ items: ProjectSummary[] }>("/admin/projects/order", {
+    method: "PUT",
+    headers: adminActionHeaders(verification),
+    json: input,
   });
 }
 

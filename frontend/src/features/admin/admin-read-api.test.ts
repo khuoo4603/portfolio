@@ -41,7 +41,6 @@ describe("Admin Dashboard·Logs 조회 API", () => {
       displayName: "New Service",
       healthUrl: "http://monitor-service:8080/ready",
       enabled: true,
-      displayOrder: 7,
     };
 
     getAdminMonitoring();
@@ -51,7 +50,6 @@ describe("Admin Dashboard·Logs 조회 API", () => {
       displayName: "Updated Service",
       healthUrl: null,
       enabled: false,
-      displayOrder: 8,
     });
 
     expect(apiRequest).toHaveBeenNthCalledWith(1, "/admin/monitoring");
@@ -63,7 +61,6 @@ describe("Admin Dashboard·Logs 조회 API", () => {
         displayName: "Updated Service",
         healthUrl: null,
         enabled: false,
-        displayOrder: 8,
       },
     });
   });
