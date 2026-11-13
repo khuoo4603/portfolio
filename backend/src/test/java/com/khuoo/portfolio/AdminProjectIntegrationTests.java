@@ -88,7 +88,7 @@ class AdminProjectIntegrationTests extends SiteIntegrationTestSupport {
                 .andExpect(status().isForbidden());
         mockMvc.perform(post(PROJECTS_PATH).with(admin()).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden());
 
         ActionChallenge wrongOperation = challenge("PROJECT_DELETE", "PROJECT", null);
         create(body, wrongOperation).andExpect(status().isForbidden());
