@@ -43,7 +43,7 @@ export function getAdminAccounts(query: AccountQuery) {
 }
 
 // 계정 생성·상태·권한·비밀번호 Mutation
-export function createAccount(input: AccountInput, verification: AdminActionVerification) {
+export function createAccount(input: AccountInput, verification?: AdminActionVerification) {
   return apiRequest<AccountCreateResult>("/admin/accounts", {
     method: "POST",
     headers: adminActionHeaders(verification),
@@ -51,7 +51,7 @@ export function createAccount(input: AccountInput, verification: AdminActionVeri
   });
 }
 
-export function updateAccountStatus(id: number, enabled: boolean, verification: AdminActionVerification) {
+export function updateAccountStatus(id: number, enabled: boolean, verification?: AdminActionVerification) {
   return apiRequest(`/admin/accounts/${id}/status`, {
     method: "PATCH",
     headers: adminActionHeaders(verification),
@@ -59,7 +59,7 @@ export function updateAccountStatus(id: number, enabled: boolean, verification: 
   });
 }
 
-export function updateAccountRole(id: number, role: AccountRole, verification: AdminActionVerification) {
+export function updateAccountRole(id: number, role: AccountRole, verification?: AdminActionVerification) {
   return apiRequest(`/admin/accounts/${id}/role`, {
     method: "PATCH",
     headers: adminActionHeaders(verification),
@@ -67,7 +67,7 @@ export function updateAccountRole(id: number, role: AccountRole, verification: A
   });
 }
 
-export function resetAccountPassword(id: number, newPassword: string, verification: AdminActionVerification) {
+export function resetAccountPassword(id: number, newPassword: string, verification?: AdminActionVerification) {
   return apiRequest(`/admin/accounts/${id}/password`, {
     method: "PATCH",
     headers: adminActionHeaders(verification),

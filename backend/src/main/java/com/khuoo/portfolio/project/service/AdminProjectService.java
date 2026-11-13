@@ -24,6 +24,8 @@ import com.khuoo.portfolio.project.dto.ProjectMediaResponse;
 import com.khuoo.portfolio.project.dto.ProjectMediaUrl;
 import com.khuoo.portfolio.project.dto.ProjectStatusRequest;
 import com.khuoo.portfolio.project.dto.ProjectStatusResponse;
+import com.khuoo.portfolio.project.dto.ProjectOrderRequest;
+import com.khuoo.portfolio.project.dto.ProjectOrderResponse;
 import com.khuoo.portfolio.project.repository.ProjectQueryRepository;
 import com.khuoo.portfolio.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 // 관리자 프로젝트 기본정보와 상세 구성 관리
 @Service
@@ -85,6 +91,10 @@ public class AdminProjectService {
                 null
         );
 
+        int nextOrder = projectRepository.findProjectsForUpdate().stream()
+                .mapToInt(Project::getDisplayOrder)
+                .max()
+                .orElse(0) + 1;
         Project project = Project.create(
                 request.slug(),
                 request.name(),
@@ -98,10 +108,44 @@ public class AdminProjectService {
                 null,
                 null,
                 null,
-                0,
+                nextOrder,
                 false
         );
         return ProjectCreateResponse.from(projectRepository.saveProject(project));
+    }
+
+    // 관리자 재인증 후 프로젝트 전체 표시 순서 일괄 저장
+    @Transactional(noRollbackFor = ApiException.class)
+    public ProjectOrderResponse reorder(
+            ProjectOrderRequest request,
+            AccountPrincipal currentAdmin,
+            UUID challengeId,
+            String code
+    ) {
+        adminActionVerifier.verifyAndConsume(
+                currentAdmin,
+                challengeId,
+                code,
+                AdminActionOperation.PROJECTS_REORDER,
+                AdminActionTarget.PROJECT,
+                null
+        );
+        List<Project> projects = projectRepository.findProjectsForUpdate();
+        List<Long> currentIds = projects.stream().map(Project::getId).toList();
+        if (!isPermutation(currentIds, request.expectedIds())
+                || !isPermutation(currentIds, request.orderedIds())) {
+            throw new ApiException(ErrorCode.COMMON_VALIDATION_ERROR);
+        }
+        if (!Objects.equals(currentIds, request.expectedIds())) {
+            throw new ApiException(ErrorCode.ORDER_CONFLICT);
+        }
+        Map<Long, Project> byId = projects.stream().collect(Collectors.toMap(Project::getId, Function.identity()));
+        OffsetDateTime changedAt = now();
+        for (int index = 0; index < request.orderedIds().size(); index++) {
+            byId.get(request.orderedIds().get(index)).changeDisplayOrder(index + 1, changedAt);
+        }
+        projectRepository.flush();
+        return new ProjectOrderResponse(request.orderedIds().stream().map(byId::get).map(AdminProjectSummaryResponse::from).toList());
     }
 
     // 비공개 상태를 포함한 관리자 프로젝트 편집 상세 조회
@@ -173,7 +217,24 @@ public class AdminProjectService {
         );
         projectRepository.deleteProject(project);
         projectRepository.flush();
+        normalizeProjects();
         registerDeleteCleanup(projectId, storageKeys);
+    }
+
+    private void normalizeProjects() {
+        List<Project> projects = projectRepository.findProjectsForUpdate();
+        OffsetDateTime changedAt = now();
+        for (int index = 0; index < projects.size(); index++) {
+            projects.get(index).changeDisplayOrder(index + 1, changedAt);
+        }
+        projectRepository.flush();
+    }
+
+    private boolean isPermutation(List<Long> currentIds, List<Long> requestedIds) {
+        return requestedIds != null
+                && requestedIds.size() == currentIds.size()
+                && Set.copyOf(requestedIds).size() == requestedIds.size()
+                && Set.copyOf(requestedIds).equals(Set.copyOf(currentIds));
     }
 
     // 공개 카드·상세 필수값과 고정 6개 Section 계약 검증

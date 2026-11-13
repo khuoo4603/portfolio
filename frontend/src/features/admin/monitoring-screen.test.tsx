@@ -69,13 +69,42 @@ describe("Monitoring 독립 관리 화면", () => {
     expect(screen.getByRole("heading", { name: "Target" })).toBeInTheDocument();
     expect(screen.getByText("URL 미설정")).toBeInTheDocument();
     const targetsTable = screen.getByRole("table");
-    expect(within(targetsTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Target", "Health URL", "순서", "상태", "작업"]);
-    expect(within(targetsTable).getByText("0")).toBeInTheDocument();
+    expect(within(targetsTable).getAllByRole("columnheader").map((header) => header.textContent)).toEqual(["Target", "Health URL", "상태", "작업"]);
+    expect(within(targetsTable).queryByRole("columnheader", { name: "순서" })).not.toBeInTheDocument();
+    expect(within(targetsTable).queryByText("0")).not.toBeInTheDocument();
     expect(within(targetsTable).getByRole("button", { name: "Portfolio API Target 수정" })).toBeInTheDocument();
     expect(within(targetsTable).queryByText("PORTFOLIO_BACKEND")).not.toBeInTheDocument();
     expect(screen.queryByText("점검 주기와 요청 정책을 관리합니다.")).not.toBeInTheDocument();
     expect(screen.queryByText("등록된 전체 서비스 점검 대상을 관리합니다.")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Monitoring 설정" })).not.toBeInTheDocument();
+  });
+
+  it("Target 표를 유지하고 순서 관리 모달을 별도로 연다", async () => {
+    render(<MonitoringScreen />);
+    const table = await screen.findByRole("table");
+
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    expect(within(dialog).getByText("Portfolio API")).toBeInTheDocument();
+    expect(within(dialog).queryByText("LEGACY_SERVICE")).not.toBeInTheDocument();
+    expect(within(dialog).getAllByRole("button", { name: "순서 저장" })).toHaveLength(1);
+    expect(within(dialog).getByRole("button", { name: "초기화" })).toBeDisabled();
+    expect(within(table).getByText("Portfolio API")).toBeInTheDocument();
+  });
+
+  it("Target 표를 서버 표시 순서로 정렬하고 초기화는 재조회 없이 Draft 복원", async () => {
+    vi.mocked(getAdminMonitoring).mockResolvedValueOnce({ ...monitoringData(), targets: [...monitoringData().targets].reverse() });
+    render(<MonitoringScreen />);
+
+    const table = await screen.findByRole("table");
+    expect(within(table).getAllByRole("row")[1]).toHaveTextContent("Portfolio API");
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Portfolio API 아래로" }));
+    expect(within(dialog).getAllByRole("listitem")[0]).toHaveTextContent("Legacy Service");
+    fireEvent.click(within(dialog).getByRole("button", { name: "초기화" }));
+    expect(within(dialog).getAllByRole("listitem")[0]).toHaveTextContent("Portfolio API");
+    expect(getAdminMonitoring).toHaveBeenCalledOnce();
   });
 
   it("첫 조회 오류를 표시하고 재시도로 Monitoring 데이터를 다시 조회", async () => {
@@ -91,7 +120,7 @@ describe("Monitoring 독립 관리 화면", () => {
 
     expect(await screen.findByText("Monitoring 정보를 불러올 수 없습니다. (추적 ID: trace-monitoring)")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
-    expect(await screen.findByText("Portfolio API")).toBeInTheDocument();
+    expect((await screen.findAllByText("Portfolio API")).length).toBeGreaterThan(0);
   });
 
   it("GET settings.enabled와 무관하게 전역 Switch 없이 5개 설정 필드를 표시", async () => {
@@ -148,7 +177,6 @@ describe("Monitoring 독립 관리 화면", () => {
       displayName: "Portfolio API",
       healthUrl: "http://portfolio-backend:8080/actuator/health/readiness/very-long-path",
       enabled: false,
-      displayOrder: 0,
     }));
   });
 
@@ -168,7 +196,7 @@ describe("Monitoring 독립 관리 화면", () => {
     vi.mocked(createMonitoringTarget).mockResolvedValue(monitoringData().targets[1]);
     render(<MonitoringScreen />);
 
-    await screen.findByText("Portfolio API");
+    await screen.findAllByText("Portfolio API");
     fireEvent.click(screen.getByRole("button", { name: "Target 추가" }));
     fireEvent.change(screen.getByLabelText("Service Key"), { target: { value: "NEW_SERVICE" } });
     fireEvent.change(screen.getByLabelText("표시명"), { target: { value: "New Service" } });
@@ -178,7 +206,6 @@ describe("Monitoring 독립 관리 화면", () => {
       displayName: "New Service",
       healthUrl: null,
       enabled: false,
-      displayOrder: 2,
     }));
   });
 
@@ -186,7 +213,7 @@ describe("Monitoring 독립 관리 화면", () => {
     vi.mocked(updateMonitoringTarget).mockResolvedValue(monitoringData().targets[0]);
     render(<MonitoringScreen />);
 
-    await screen.findByText("Portfolio API");
+    await screen.findAllByText("Portfolio API");
     fireEvent.click(screen.getByRole("button", { name: "Portfolio API Target 수정" }));
     expect(screen.queryByRole("textbox", { name: "Service Key" })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("표시명"), { target: { value: "Portfolio Runtime API" } });
@@ -195,7 +222,6 @@ describe("Monitoring 독립 관리 화면", () => {
       displayName: "Portfolio Runtime API",
       healthUrl: "http://portfolio-backend:8080/actuator/health/readiness/very-long-path",
       enabled: true,
-      displayOrder: 0,
     }));
   });
 
@@ -208,7 +234,7 @@ describe("Monitoring 독립 관리 화면", () => {
     }));
     render(<NotificationProvider><MonitoringScreen /></NotificationProvider>);
 
-    await screen.findByText("Portfolio API");
+    await screen.findAllByText("Portfolio API");
     fireEvent.click(screen.getByRole("button", { name: "Target 추가" }));
     fireEvent.change(screen.getByLabelText("Service Key"), { target: { value: "NEW_SERVICE" } });
     fireEvent.change(screen.getByLabelText("표시명"), { target: { value: "New Service" } });
@@ -258,7 +284,7 @@ describe("Monitoring 독립 관리 화면", () => {
     }));
     render(<NotificationProvider><MonitoringScreen /></NotificationProvider>);
 
-    await screen.findByText("Portfolio API");
+    await screen.findAllByText("Portfolio API");
     fireEvent.click(screen.getByRole("button", { name: "Target 추가" }));
     fireEvent.change(screen.getByLabelText("Service Key"), { target: { value: "NEW_SERVICE" } });
     fireEvent.change(screen.getByLabelText("표시명"), { target: { value: "New Service" } });

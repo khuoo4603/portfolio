@@ -15,9 +15,7 @@ public record MonitoringTargetUpdateRequest(
         JsonNode healthUrl,
 
         @Schema(description = "Monitoring 활성 여부", implementation = Boolean.class)
-        JsonNode enabled,
+        JsonNode enabled
 
-        @Schema(description = "표시 순서", implementation = Integer.class)
-        JsonNode displayOrder
 ) {
 }

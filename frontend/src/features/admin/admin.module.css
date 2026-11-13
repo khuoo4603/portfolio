@@ -292,6 +292,14 @@
   flex: 0 0 auto;
 }
 
+.pageActionGroup,
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
 .textButton,
 .iconButton,
 .lineTabs button,
@@ -1333,13 +1341,6 @@
 .editorFormSection {
   display: grid;
   gap: var(--space-16);
-  padding-top: var(--space-20);
-  border-top: 1px solid var(--border-default);
-}
-
-.editorFormSection:first-child {
-  padding-top: 0;
-  border-top: 0;
 }
 
 .editorFormSection h3 {
@@ -2419,6 +2420,157 @@
   justify-content: flex-end;
 }
 
+/* 관리자 일괄 정렬 목록의 행·드롭 대상·조작 영역 */
+.sortableList {
+  display: grid;
+  gap: var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sortableRow {
+  display: grid;
+  grid-template-columns: auto 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 46px;
+  padding: var(--space-6) var(--space-12);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.sortableRowExpanded {
+  grid-template-columns: auto 2rem minmax(0, 1fr) minmax(0, 2fr) auto;
+  align-items: start;
+}
+
+.sortableRowDropTarget {
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-surface));
+}
+
+.sortableHandle,
+.sortableIndex {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+}
+
+.sortableHandle {
+  padding: 0;
+  border: 0;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+
+.sortableHandle:active {
+  cursor: grabbing;
+}
+
+.sortableHandle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sortableIndex {
+  border-radius: var(--radius-small);
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  font-size: var(--font-size-small);
+}
+
+.sortableIdentity {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.sortableIdentity strong {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sortableExpandedContent {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.sortableActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.sortableActions > * {
+  flex: 0 0 auto;
+}
+
+.orderManager {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.orderManagerGroup {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.orderManagerHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.orderDialogContent {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.orderDialogScroll {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: var(--space-4);
+}
+
+@media (max-width: 767px) {
+  .sortableRowExpanded {
+    grid-template-columns: auto 2rem minmax(0, 1fr);
+  }
+
+  .sortableRowExpanded .sortableExpandedContent,
+  .sortableRowExpanded .sortableActions {
+    grid-column: 3 / -1;
+  }
+
+  .sortableRowExpanded .sortableExpandedContent {
+    grid-row: 2;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+  }
+
+  .sortableRowExpanded .sortableActions {
+    grid-row: 3;
+    justify-content: flex-end;
+  }
+
+  .sortableRowExpanded .mediaDraftPreview {
+    width: 72px;
+  }
+}
+
 .technologyPicker {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -2873,11 +3025,11 @@
   }
 
   .projectTable tr {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
-      "identity identity identity"
-      "year order status"
-      "updated updated updated";
+      "identity identity"
+      "year status"
+      "updated updated";
   }
 
   .projectIdentitySummary {
@@ -2892,7 +3044,6 @@
   }
 
   .projectYearSummary { grid-area: year; }
-  .projectOrderSummary { grid-area: order; }
   .projectStatusSummary { grid-area: status; }
   .projectUpdatedSummary { grid-area: updated; }
   .projectActionsSummary { position: absolute; }
@@ -2918,12 +3069,11 @@
     grid-template-areas:
       "identity identity"
       "url url"
-      "order status";
+      "status status";
   }
 
   .monitoringTargetSummary { grid-area: identity; }
   .monitoringHealthUrlSummary { grid-area: url; }
-  .monitoringOrderSummary { grid-area: order; }
   .monitoringStatusSummary { grid-area: status; }
   .monitoringActionsSummary { position: absolute; }
 
@@ -2974,7 +3124,7 @@
     grid-template-areas:
       "title title title"
       "period type status"
-      "organization organization order";
+      "organization organization organization";
   }
 
   .siteProfileTable td:nth-child(1) { grid-area: period; }
@@ -2982,7 +3132,6 @@
   .siteProfileTable td:nth-child(3) { grid-area: organization; }
   .siteProfileTable td:nth-child(4) { grid-area: type; }
   .siteProfileTable td:nth-child(5) { grid-area: status; }
-  .siteProfileTable td:nth-child(6) { grid-area: order; }
 
   .siteProfileTable td:nth-child(1) > span {
     white-space: nowrap;
@@ -3004,25 +3153,23 @@
   .siteExternalLinksTable tr {
     grid-template-areas:
       "identity identity"
-      "order status";
+      "status status";
   }
 
   .siteExternalLinksTable td:nth-child(1) { grid-area: identity; }
-  .siteExternalLinksTable td:nth-child(2) { grid-area: order; }
-  .siteExternalLinksTable td:nth-child(3) { grid-area: status; }
+  .siteExternalLinksTable td:nth-child(2) { grid-area: status; }
   .toolLinksTable tr {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-template-areas:
       "identity identity identity"
-      "category order status"
+      "category category status"
       "image image image";
   }
 
   .toolLinksTable td:nth-child(1) { grid-area: identity; }
   .toolLinksTable td:nth-child(2) { grid-area: category; }
   .toolLinksTable td:nth-child(3) { grid-area: image; }
-  .toolLinksTable td:nth-child(4) { grid-area: order; }
-  .toolLinksTable td:nth-child(5) { grid-area: status; }
+  .toolLinksTable td:nth-child(4) { grid-area: status; }
   .loginLogTable tr {
     grid-template-areas:
       "identity identity"

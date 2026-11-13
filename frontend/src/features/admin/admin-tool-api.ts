@@ -67,3 +67,11 @@ export function deleteToolLink(id: number) {
     method: "DELETE",
   });
 }
+
+// Tool Link 전체 표시 순서 일괄 저장
+export function reorderToolLinks(input: { orderedIds: number[]; expectedIds: number[] }) {
+  return apiRequest<{ items: ToolLink[] }>("/admin/tools/links/order", {
+    method: "PUT",
+    json: input,
+  });
+}

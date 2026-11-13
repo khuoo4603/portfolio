@@ -49,9 +49,9 @@ public class AdminTechnologyController {
     public ResponseEntity<TechnologyMasterResponse> create(
             @Valid @RequestBody TechnologyCreateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(adminTechnologyService.create(request, currentAdmin, challengeId, code));
@@ -72,9 +72,9 @@ public class AdminTechnologyController {
             @PathVariable Long technologyId,
             @Valid @RequestBody TechnologyUpdateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminTechnologyService.update(technologyId, request, currentAdmin, challengeId, code);
     }
@@ -91,9 +91,9 @@ public class AdminTechnologyController {
     public ResponseEntity<Void> delete(
             @PathVariable Long technologyId,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         adminTechnologyService.delete(technologyId, currentAdmin, challengeId, code);
         return ResponseEntity.noContent().build();

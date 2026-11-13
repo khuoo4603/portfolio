@@ -15,6 +15,7 @@ public final class PortfolioConstants {
         public static final int EMAIL_FAILURE_LIMIT = 5;
         public static final int IP_FAILURE_LIMIT = 20;
         public static final Duration CHALLENGE_VALIDITY = Duration.ofMinutes(5);
+        public static final Duration ADMIN_ACTION_GRACE_PERIOD = Duration.ofMinutes(30);
         public static final Duration CHALLENGE_RESEND_DELAY = Duration.ofSeconds(60);
         public static final Duration CHALLENGE_SEND_WINDOW = Duration.ofHours(1);
         public static final int CHALLENGE_FAILURE_LIMIT = 5;
@@ -27,6 +28,8 @@ public final class PortfolioConstants {
                 "portfolio.authentication.rememberMe";
         public static final String AUTHENTICATED_AT_SESSION_ATTRIBUTE =
                 "portfolio.authentication.authenticatedAt";
+        public static final String ADMIN_ACTION_VERIFIED_UNTIL_SESSION_ATTRIBUTE =
+                "portfolio.authentication.adminActionVerifiedUntil";
 
         private Authentication() {
         }

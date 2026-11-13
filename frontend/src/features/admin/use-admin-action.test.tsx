@@ -1,7 +1,7 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
-import { createAdminChallenge } from "./admin-action-api";
+import { createAdminChallenge, getAdminActionGrace } from "./admin-action-api";
 import { useAdminAction } from "./use-admin-action";
 
 const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
@@ -9,7 +9,7 @@ const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
-  return { ...actual, createAdminChallenge: vi.fn() };
+  return { ...actual, createAdminChallenge: vi.fn(), getAdminActionGrace: vi.fn() };
 });
 
 const binding = {
@@ -20,6 +20,10 @@ const binding = {
 };
 
 describe("공통 ADMIN_ACTION 실행 Hook", () => {
+  beforeEach(() => {
+    vi.mocked(getAdminActionGrace).mockResolvedValue({ verified: false, expiresAt: null });
+  });
+
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
@@ -52,6 +56,74 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
     });
     expect(onSuccess).toHaveBeenCalledWith({ id: 7 });
     expect(result.current.dialog).toBeNull();
+  });
+
+  it("유효한 서버 유예가 있으면 Dialog 없이 OTP Header 없는 Mutation 실행", async () => {
+    vi.mocked(getAdminActionGrace).mockResolvedValue({
+      verified: true,
+      expiresAt: "2026-11-13T19:30:00+09:00",
+    });
+    const mutation = vi.fn().mockResolvedValue({ id: 7 });
+    const onSuccess = vi.fn();
+    const { result } = renderHook(() => useAdminAction());
+
+    await act(() => result.current.start({ ...binding, mutation, onSuccess }));
+
+    expect(createAdminChallenge).not.toHaveBeenCalled();
+    expect(mutation).toHaveBeenCalledWith(undefined);
+    expect(onSuccess).toHaveBeenCalledWith({ id: 7 });
+    expect(result.current.dialog).toBeNull();
+  });
+
+  it("유예 확인 후 Backend가 재인증을 요구하면 원 작업을 한 번만 Dialog로 재시도", async () => {
+    vi.mocked(getAdminActionGrace).mockResolvedValue({
+      verified: true,
+      expiresAt: "2026-11-13T19:30:00+09:00",
+    });
+    vi.mocked(createAdminChallenge).mockResolvedValue({
+      challengeId: "challenge-race",
+      expiresAt: "2026-11-13T14:05:00+09:00",
+    });
+    const mutation = vi.fn()
+      .mockRejectedValueOnce(new ApiError(403, {
+        code: "AUTH_ADMIN_ACTION_REAUTH_REQUIRED",
+        message: "관리자 변경 작업 재인증이 필요합니다.",
+        traceId: "trace-reauth",
+        fieldErrors: [],
+      }))
+      .mockResolvedValueOnce({ id: 7 });
+    const { result } = renderHook(() => useAdminAction());
+
+    await act(() => result.current.start({ ...binding, mutation }));
+
+    expect(mutation).toHaveBeenNthCalledWith(1, undefined);
+    expect(result.current.dialog).toMatchObject({ phase: "READY", challengeId: "challenge-race" });
+
+    await act(() => result.current.dialog?.onConfirm("654321"));
+
+    expect(mutation).toHaveBeenNthCalledWith(2, {
+      challengeId: "challenge-race",
+      verificationCode: "654321",
+    });
+    expect(mutation).toHaveBeenCalledTimes(2);
+  });
+
+  it("유예 조회의 일반 오류는 재인증으로 오인하지 않고 작업을 실행하지 않음", async () => {
+    vi.mocked(getAdminActionGrace).mockRejectedValue(new ApiError(503, {
+      code: "COMMON_INTERNAL_ERROR",
+      message: "요청 처리 중 오류가 발생했습니다.",
+      traceId: "trace-grace",
+      fieldErrors: [],
+    }));
+    const mutation = vi.fn();
+    const { result } = renderHook(() => useAdminAction());
+
+    await act(() => result.current.start({ ...binding, mutation }));
+
+    expect(createAdminChallenge).not.toHaveBeenCalled();
+    expect(mutation).not.toHaveBeenCalled();
+    expect(result.current.dialog).toBeNull();
+    expect(result.current.startError).toContain("trace-grace");
   });
 
   it("재발급은 같은 바인딩으로 새 Challenge를 만들고 현재 ID를 교체", async () => {
@@ -169,9 +241,10 @@ describe("공통 ADMIN_ACTION 실행 Hook", () => {
     const { result } = renderHook(() => useAdminAction());
 
     let first!: Promise<void>;
-    act(() => {
+    await act(async () => {
       first = result.current.start({ ...binding, mutation: vi.fn() });
       void result.current.start({ ...binding, mutation: vi.fn() });
+      await Promise.resolve();
     });
 
     expect(createAdminChallenge).toHaveBeenCalledTimes(1);

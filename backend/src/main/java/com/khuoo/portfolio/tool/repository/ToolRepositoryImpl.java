@@ -4,11 +4,13 @@ import com.khuoo.portfolio.tool.domain.Tool;
 import com.khuoo.portfolio.tool.domain.ToolLink;
 import com.khuoo.portfolio.tool.domain.ToolQuiz;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.List;
 
 // JPA 기반 Tool 단건 저장·변경 구현
 @Repository
@@ -28,6 +30,18 @@ public class ToolRepositoryImpl implements ToolRepository {
     @Override
     public Optional<ToolLink> findLink(Long linkId) {
         return Optional.ofNullable(entityManager.find(ToolLink.class, linkId));
+    }
+
+    // Tool Link의 현재 순서 확인과 동시 변경 방지
+    @Override
+    public List<ToolLink> findLinksForUpdate() {
+        return entityManager.createQuery("""
+                        SELECT link
+                        FROM ToolLink link
+                        ORDER BY link.displayOrder ASC, link.id ASC
+                        """, ToolLink.class)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultList();
     }
 
     // 신규 Tool Link 저장과 DB 생성시각 재조회

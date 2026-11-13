@@ -11,9 +11,6 @@ public record ExternalLinkUpdateRequest(
         @Schema(description = "HTTP 또는 HTTPS 외부 URL", implementation = String.class)
         JsonNode url,
 
-        @Schema(description = "표시 순서", implementation = Integer.class)
-        JsonNode displayOrder,
-
         @Schema(description = "공개 활성 여부", implementation = Boolean.class)
         JsonNode enabled
 ) {

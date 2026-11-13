@@ -6,6 +6,7 @@ import {
   createToolLink,
   deleteToolLink,
   getAdminTools,
+  reorderToolLinks,
   updateToolLink,
   updateToolLinkEnabled,
   updateToolStatus,
@@ -28,6 +29,7 @@ vi.mock("./admin-tool-api", async (importOriginal) => {
     updateToolLink: vi.fn(),
     updateToolLinkEnabled: vi.fn(),
     deleteToolLink: vi.fn(),
+    reorderToolLinks: vi.fn(),
   };
 });
 
@@ -60,6 +62,16 @@ const toolsData = {
   ],
 };
 
+const groupedToolsData = {
+  ...toolsData,
+  links: [
+    { ...toolsData.links[0], id: 17, name: "React Bits", displayOrder: 1 },
+    { ...toolsData.links[1], id: 18, name: "KVyC", displayOrder: 2 },
+    { ...toolsData.links[0], id: 19, name: "Aceternity UI", displayOrder: 3 },
+    { ...toolsData.links[1], id: 20, name: "SKHUTrack", displayOrder: 4 },
+  ],
+};
+
 const createObjectURL = vi.fn<(file: Blob) => string>();
 const revokeObjectURL = vi.fn<(url: string) => void>();
 
@@ -76,6 +88,7 @@ describe("Admin Tools 실제 API 관리", () => {
     vi.mocked(updateToolLink).mockReset().mockResolvedValue(toolsData.links[0]);
     vi.mocked(updateToolLinkEnabled).mockReset().mockResolvedValue(toolsData.links[0]);
     vi.mocked(deleteToolLink).mockReset().mockResolvedValue(undefined);
+    vi.mocked(reorderToolLinks).mockReset().mockResolvedValue({ items: [] });
     createObjectURL.mockReset()
       .mockReturnValueOnce("blob:preview-1")
       .mockReturnValueOnce("blob:preview-2")
@@ -109,6 +122,115 @@ describe("Admin Tools 실제 API 관리", () => {
     expect(within(dialog).getByRole("button", { name: /기본 Preview/ })).toHaveAttribute("aria-pressed", "true");
     expect(within(dialog).getByLabelText("이미지 첨부")).toHaveAttribute("type", "file");
     expect(within(dialog).queryByLabelText(/^대표 이미지 URL/)).not.toBeInTheDocument();
+  });
+
+  it("Links 표를 유지하고 순서 관리 모달에서 이름만 표시", async () => {
+    render(<ToolsScreen />);
+    const table = await screen.findByRole("table");
+
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    expect(within(dialog).getByText("Spring Docs")).toBeInTheDocument();
+    expect(within(dialog).queryByText("REFERENCE")).not.toBeInTheDocument();
+    expect(within(dialog).getAllByRole("button", { name: "순서 저장" })).toHaveLength(1);
+    expect(within(table).queryByRole("columnheader", { name: "순서" })).not.toBeInTheDocument();
+    expect(within(table).getByText("Spring Docs")).toBeInTheDocument();
+  });
+
+  it("정렬 모달에서 Reference와 My Services를 독립 그룹으로 표시", async () => {
+    vi.mocked(getAdminTools).mockResolvedValueOnce(groupedToolsData);
+    render(<ToolsScreen />);
+
+    await screen.findByText("React Bits");
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    const reference = within(dialog).getByRole("region", { name: "Reference" });
+    const myServices = within(dialog).getByRole("region", { name: "My Services" });
+
+    expect(within(reference).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(myServices).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(reference).getByText("React Bits")).toBeInTheDocument();
+    expect(within(reference).getByText("Aceternity UI")).toBeInTheDocument();
+    expect(within(myServices).getByText("KVyC")).toBeInTheDocument();
+    expect(within(myServices).getByText("SKHUTrack")).toBeInTheDocument();
+    expect(within(reference).getByLabelText("1번째")).toBeInTheDocument();
+    expect(within(reference).getByLabelText("2번째")).toBeInTheDocument();
+    expect(within(myServices).getByLabelText("1번째")).toBeInTheDocument();
+    expect(within(myServices).getByLabelText("2번째")).toBeInTheDocument();
+    expect(within(dialog).queryByText("REFERENCE")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("MY_SERVICES")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("https://spring.io")).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("switch")).not.toBeInTheDocument();
+    expect(within(dialog).getAllByRole("button", { name: "순서 저장" })).toHaveLength(1);
+    expect(within(dialog).getByRole("button", { name: "순서 저장" })).toBeDisabled();
+  });
+
+  it("그룹별 Draft를 독립 변경하고 저장 시 기존 전역 카테고리 위치를 보존", async () => {
+    vi.mocked(getAdminTools).mockResolvedValueOnce(groupedToolsData);
+    render(<ToolsScreen />);
+
+    await screen.findByText("React Bits");
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    const reference = within(dialog).getByRole("region", { name: "Reference" });
+    const myServices = within(dialog).getByRole("region", { name: "My Services" });
+    fireEvent.click(within(reference).getByRole("button", { name: "Aceternity UI 위로" }));
+    fireEvent.click(within(myServices).getByRole("button", { name: "SKHUTrack 위로" }));
+
+    expect(within(reference).getAllByRole("listitem")[0]).toHaveTextContent("Aceternity UI");
+    expect(within(myServices).getAllByRole("listitem")[0]).toHaveTextContent("SKHUTrack");
+    fireEvent.click(within(dialog).getByRole("button", { name: "순서 저장" }));
+    await waitFor(() => expect(reorderToolLinks).toHaveBeenCalledWith({
+      orderedIds: [19, 20, 17, 18],
+      expectedIds: [17, 18, 19, 20],
+    }));
+    expect(reorderToolLinks).toHaveBeenCalledTimes(1);
+  });
+
+  it("초기화 시 두 그룹 Draft를 서버 순서로 복원하고 저장을 비활성화", async () => {
+    vi.mocked(getAdminTools).mockResolvedValueOnce(groupedToolsData);
+    render(<ToolsScreen />);
+
+    await screen.findByText("React Bits");
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    const reference = within(dialog).getByRole("region", { name: "Reference" });
+    const myServices = within(dialog).getByRole("region", { name: "My Services" });
+    fireEvent.click(within(reference).getByRole("button", { name: "Aceternity UI 위로" }));
+    fireEvent.click(within(myServices).getByRole("button", { name: "SKHUTrack 위로" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "초기화" }));
+
+    expect(within(reference).getAllByRole("listitem")[0]).toHaveTextContent("React Bits");
+    expect(within(myServices).getAllByRole("listitem")[0]).toHaveTextContent("KVyC");
+    expect(within(dialog).getByRole("button", { name: "초기화" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "순서 저장" })).toBeDisabled();
+    expect(reorderToolLinks).not.toHaveBeenCalled();
+  });
+
+  it("Links 표를 서버 표시 순서로 정렬하고 초기화 후 재오픈하면 stale Draft를 사용하지 않음", async () => {
+    vi.mocked(getAdminTools).mockResolvedValueOnce(groupedToolsData);
+    render(<ToolsScreen />);
+
+    const table = await screen.findByRole("table");
+    expect(within(table).getAllByRole("row")[1]).toHaveTextContent("React Bits");
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    let dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    let reference = within(dialog).getByRole("region", { name: "Reference" });
+    fireEvent.click(within(reference).getByRole("button", { name: "React Bits 아래로" }));
+    expect(within(reference).getAllByRole("listitem")[0]).toHaveTextContent("Aceternity UI");
+
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    fireEvent.click(within(dialog).getByRole("button", { name: "대화상자 닫기" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "표시 순서 관리" })).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    reference = within(dialog).getByRole("region", { name: "Reference" });
+    expect(within(reference).getAllByRole("listitem")[0]).toHaveTextContent("React Bits");
+    fireEvent.click(within(reference).getByRole("button", { name: "React Bits 아래로" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "초기화" }));
+    expect(within(reference).getAllByRole("listitem")[0]).toHaveTextContent("React Bits");
+    expect(getAdminTools).toHaveBeenCalledOnce();
+    confirmSpy.mockRestore();
   });
 
   it("Tool 상태를 OTP 없이 enabled JSON 전용 API로 변경", async () => {
@@ -200,18 +322,20 @@ describe("Admin Tools 실제 API 관리", () => {
     render(<ToolsScreen />);
     await screen.findByText("QUIZ");
     expect(getAdminTools).toHaveBeenCalledOnce();
-    expect(screen.getByText("Spring Docs")).toBeInTheDocument();
-    expect(screen.getByText("My Service")).toBeInTheDocument();
+    const linksRegion = screen.getByRole("region", { name: "Links 데이터 관리" });
+    const linksTable = within(linksRegion).getByRole("table");
+    expect(within(linksTable).getByText("Spring Docs")).toBeInTheDocument();
+    expect(within(linksTable).getByText("My Service")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Reference" }));
-    expect(screen.getByText("Spring Docs")).toBeInTheDocument();
-    expect(screen.queryByText("My Service")).not.toBeInTheDocument();
+    expect(within(linksTable).getByText("Spring Docs")).toBeInTheDocument();
+    expect(within(linksTable).queryByText("My Service")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "My Services" }));
-    expect(screen.queryByText("Spring Docs")).not.toBeInTheDocument();
-    expect(screen.getByText("My Service")).toBeInTheDocument();
+    expect(within(linksTable).queryByText("Spring Docs")).not.toBeInTheDocument();
+    expect(within(linksTable).getByText("My Service")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "전체" }));
-    expect(screen.getByText("Spring Docs")).toBeInTheDocument();
-    expect(screen.getByText("My Service")).toBeInTheDocument();
+    expect(within(linksTable).getByText("Spring Docs")).toBeInTheDocument();
+    expect(within(linksTable).getByText("My Service")).toBeInTheDocument();
     expect(getAdminTools).toHaveBeenCalledOnce();
   });
 

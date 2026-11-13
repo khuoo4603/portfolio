@@ -18,7 +18,6 @@ const createMetadata: ToolLinkCreateMetadata = {
   url: "https://spring.io",
   imageMode: "UPLOAD",
   category: "REFERENCE",
-  displayOrder: 1,
   enabled: true,
 };
 

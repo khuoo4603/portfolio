@@ -32,15 +32,16 @@ class PortfolioEnumsTest {
                 + PortfolioEnums.ErrorService.values().length;
 
         assertThat(enumGroupCount).isEqualTo(15);
-        assertThat(totalCodeCount).isEqualTo(85);
+        assertThat(totalCodeCount).isEqualTo(88);
         assertThat(PortfolioEnums.AccountRole.values())
                 .containsExactly(PortfolioEnums.AccountRole.ADMIN, PortfolioEnums.AccountRole.USER);
-        assertThat(PortfolioEnums.AdminActionOperation.values()).hasSize(20);
+        assertThat(PortfolioEnums.AdminActionOperation.values()).hasSize(23);
         assertThat(PortfolioEnums.AdminActionOperation.values()).containsExactly(
                 PortfolioEnums.AdminActionOperation.PORTFOLIO_CONTENT_UPDATE,
                 PortfolioEnums.AdminActionOperation.PROFILE_ENTRY_CREATE,
                 PortfolioEnums.AdminActionOperation.PROFILE_ENTRY_UPDATE,
                 PortfolioEnums.AdminActionOperation.PROFILE_ENTRY_DELETE,
+                PortfolioEnums.AdminActionOperation.PROFILE_ENTRIES_REORDER,
                 PortfolioEnums.AdminActionOperation.RESUME_REPLACE,
                 PortfolioEnums.AdminActionOperation.TECHNOLOGY_CREATE,
                 PortfolioEnums.AdminActionOperation.TECHNOLOGY_UPDATE,
@@ -53,6 +54,8 @@ class PortfolioEnumsTest {
                 PortfolioEnums.AdminActionOperation.EXTERNAL_LINK_CREATE,
                 PortfolioEnums.AdminActionOperation.EXTERNAL_LINK_UPDATE,
                 PortfolioEnums.AdminActionOperation.EXTERNAL_LINK_DELETE,
+                PortfolioEnums.AdminActionOperation.EXTERNAL_LINKS_REORDER,
+                PortfolioEnums.AdminActionOperation.PROJECTS_REORDER,
                 PortfolioEnums.AdminActionOperation.ACCOUNT_CREATE,
                 PortfolioEnums.AdminActionOperation.ACCOUNT_STATUS_UPDATE,
                 PortfolioEnums.AdminActionOperation.ACCOUNT_ROLE_UPDATE,

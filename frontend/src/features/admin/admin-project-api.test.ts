@@ -33,7 +33,6 @@ const saveInput: ProjectSaveInput = {
       startedAt: null,
       endedAt: null,
       teamSize: null,
-      displayOrder: 1,
     },
     content: {
       results: [{ title: "Result", description: "Description" }],

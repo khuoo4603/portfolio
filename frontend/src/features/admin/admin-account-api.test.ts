@@ -47,6 +47,19 @@ describe("Admin Account API 계약", () => {
     expect(apiRequest).toHaveBeenCalledWith("/admin/accounts", { method: "POST", headers, json: input });
   });
 
+  it("유효한 유예 작업의 계정 생성은 OTP Header 없이 요청", () => {
+    const input: AccountInput = {
+      email: "grace@example.com",
+      name: "유예 사용자",
+      password: "initial-password",
+      role: "USER",
+      enabled: true,
+    };
+    createAccount(input);
+
+    expect(apiRequest).toHaveBeenCalledWith("/admin/accounts", { method: "POST", headers: {}, json: input });
+  });
+
   it("상태·권한·비밀번호 변경 Endpoint와 Request Body를 정확히 사용", () => {
     updateAccountStatus(9, false, verification);
     updateAccountRole(9, "ADMIN", verification);

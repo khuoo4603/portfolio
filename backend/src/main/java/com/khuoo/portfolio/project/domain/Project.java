@@ -199,6 +199,15 @@ public class Project {
         updatedAt = changedAt;
     }
 
+    // 프로젝트 목록 일괄 정렬을 위한 표시 순서 변경
+    public void changeDisplayOrder(int newDisplayOrder, OffsetDateTime changedAt) {
+        if (displayOrder == newDisplayOrder) {
+            return;
+        }
+        displayOrder = newDisplayOrder;
+        updatedAt = changedAt;
+    }
+
     // 통합 Editor 저장 시 프로젝트 전체 수정 시각 갱신
     public void markEdited(OffsetDateTime changedAt) {
         updatedAt = changedAt;

@@ -11,6 +11,7 @@ import {
   getAdminSite,
   replacePortfolioTechnologies,
   replaceResume,
+  reorderProfileEntriesBatch,
   siteActionBindings,
   updateExternalLink,
   updatePortfolioContents,
@@ -33,7 +34,6 @@ const profile: ProfileEntryInput = {
   role: null,
   description: null,
   achievement: "재학",
-  displayOrder: 1,
   enabled: true,
 };
 const technology: TechnologyInput = {
@@ -45,7 +45,6 @@ const technology: TechnologyInput = {
 const link: ExternalLinkInput = {
   name: "GitHub",
   url: "https://github.com/example",
-  displayOrder: 1,
   enabled: true,
 };
 
@@ -90,6 +89,20 @@ describe("Admin Site API 계약", () => {
     expect(apiRequest).toHaveBeenNthCalledWith(1, "/admin/site/profile-entries", { method: "POST", headers, json: profile });
     expect(apiRequest).toHaveBeenNthCalledWith(2, "/admin/site/profile-entries/15", { method: "PATCH", headers, json: profile });
     expect(apiRequest).toHaveBeenNthCalledWith(3, "/admin/site/profile-entries/15", { method: "DELETE", headers });
+  });
+
+  it("프로필 여러 그룹 순서를 하나의 Batch 요청으로 전달", () => {
+    const groups = [{
+      group: "EDUCATION" as const,
+      orderedIds: [2, 1],
+      expectedIds: [1, 2],
+    }];
+    reorderProfileEntriesBatch({ groups }, verification);
+    expect(apiRequest).toHaveBeenCalledWith("/admin/site/profile-entries/order/batch", {
+      method: "PUT",
+      headers,
+      json: { groups },
+    });
   });
 
   it("Technology Master CRUD와 메인 구성 PUT을 분리", () => {

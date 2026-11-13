@@ -9,12 +9,15 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,6 +37,18 @@ class MonitoringAdminIntegrationTests extends PostgresIntegrationTest {
     @BeforeEach
     void setUp() {
         jdbcTemplate.update("DELETE FROM monitoring_targets WHERE service_key LIKE 'TEST_%'");
+        jdbcTemplate.update("""
+                UPDATE monitoring_targets
+                SET display_order = CASE service_key
+                    WHEN 'PORTFOLIO_FRONTEND' THEN 1
+                    WHEN 'PORTFOLIO_BACKEND' THEN 2
+                    WHEN 'KYVC_FRONTEND' THEN 3
+                    WHEN 'KYVC_BACKEND' THEN 4
+                    WHEN 'KYVC_CORE' THEN 5
+                    WHEN 'SHKUTRACK' THEN 6
+                    ELSE display_order
+                END
+                """);
         jdbcTemplate.update("""
                 UPDATE monitoring_settings
                 SET enabled = TRUE,
@@ -121,8 +136,7 @@ class MonitoringAdminIntegrationTests extends PostgresIntegrationTest {
                   "serviceKey":"TEST_INTERNAL_SERVICE",
                   "displayName":"Internal Service",
                   "healthUrl":"http://192.168.219.110:8080/status",
-                  "enabled":true,
-                  "displayOrder":7
+                  "enabled":true
                 }
                 """;
 
@@ -133,12 +147,12 @@ class MonitoringAdminIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.healthUrl").value("http://192.168.219.110:8080/status"));
         mockMvc.perform(post(MONITORING_PATH + "/targets").with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"serviceKey\":\"TEST_DOCKER_SERVICE\",\"displayName\":\"Docker Service\",\"healthUrl\":\"http://monitor-service:8080/ready\",\"enabled\":true,\"displayOrder\":8}"))
+                        .content("{\"serviceKey\":\"TEST_DOCKER_SERVICE\",\"displayName\":\"Docker Service\",\"healthUrl\":\"http://monitor-service:8080/ready\",\"enabled\":true}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.healthUrl").value("http://monitor-service:8080/ready"));
         mockMvc.perform(post(MONITORING_PATH + "/targets").with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"serviceKey\":\"TEST_HTTPS_SERVICE\",\"displayName\":\"HTTPS Service\",\"healthUrl\":\"https://example.com/api/status\",\"enabled\":true,\"displayOrder\":9}"))
+                        .content("{\"serviceKey\":\"TEST_HTTPS_SERVICE\",\"displayName\":\"HTTPS Service\",\"healthUrl\":\"https://example.com/api/status\",\"enabled\":true}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.healthUrl").value("https://example.com/api/status"));
         mockMvc.perform(post(MONITORING_PATH + "/targets").with(user("admin").roles("ADMIN")).with(csrf())
@@ -149,27 +163,23 @@ class MonitoringAdminIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(status().isForbidden());
         mockMvc.perform(post(MONITORING_PATH + "/targets").with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"serviceKey\":\"TEST_NULL_URL\",\"displayName\":\"No URL\",\"healthUrl\":null,\"enabled\":true,\"displayOrder\":8}"))
+                        .content("{\"serviceKey\":\"TEST_NULL_URL\",\"displayName\":\"No URL\",\"healthUrl\":null,\"enabled\":true}"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(post(MONITORING_PATH + "/targets").with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"serviceKey\":\"TEST_FTP\",\"displayName\":\"FTP\",\"healthUrl\":\"ftp://example.com/status\",\"enabled\":true,\"displayOrder\":8}"))
+                        .content("{\"serviceKey\":\"TEST_FTP\",\"displayName\":\"FTP\",\"healthUrl\":\"ftp://example.com/status\",\"enabled\":true}"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(post(MONITORING_PATH + "/targets").with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"serviceKey\":\"invalid key\",\"displayName\":\"Invalid Key\",\"healthUrl\":\"http://example.com/status\",\"enabled\":true,\"displayOrder\":8}"))
+                        .content("{\"serviceKey\":\"invalid key\",\"displayName\":\"Invalid Key\",\"healthUrl\":\"http://example.com/status\",\"enabled\":true}"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(post(MONITORING_PATH + "/targets").with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"serviceKey\":\"TEST_BLANK_NAME\",\"displayName\":\" \",\"healthUrl\":\"http://example.com/status\",\"enabled\":true,\"displayOrder\":8}"))
+                        .content("{\"serviceKey\":\"TEST_BLANK_NAME\",\"displayName\":\" \",\"healthUrl\":\"http://example.com/status\",\"enabled\":true}"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(post(MONITORING_PATH + "/targets").with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"serviceKey\":\"TEST_NEGATIVE_ORDER\",\"displayName\":\"Negative Order\",\"healthUrl\":\"http://example.com/status\",\"enabled\":true,\"displayOrder\":-1}"))
-                .andExpect(status().isBadRequest());
-        mockMvc.perform(post(MONITORING_PATH + "/targets").with(user("admin").roles("ADMIN")).with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"serviceKey\":\"TEST_DISABLED\",\"displayName\":\"Disabled\",\"healthUrl\":null,\"enabled\":false,\"displayOrder\":8}"))
+                        .content("{\"serviceKey\":\"TEST_DISABLED\",\"displayName\":\"Disabled\",\"healthUrl\":null,\"enabled\":false}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.healthUrl").doesNotExist())
                 .andExpect(jsonPath("$.enabled").value(false));
@@ -187,8 +197,7 @@ class MonitoringAdminIntegrationTests extends PostgresIntegrationTest {
                 {
                   "displayName":"Portfolio Web",
                   "healthUrl":null,
-                  "enabled":false,
-                  "displayOrder":0
+                  "enabled":false
                 }
                 """;
 
@@ -200,7 +209,7 @@ class MonitoringAdminIntegrationTests extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.displayName").value("Portfolio Web"))
                 .andExpect(jsonPath("$.healthUrl").doesNotExist())
                 .andExpect(jsonPath("$.enabled").value(false))
-                .andExpect(jsonPath("$.displayOrder").value(0));
+                .andExpect(jsonPath("$.displayOrder").value(1));
         mockMvc.perform(patch(MONITORING_PATH + "/targets/" + targetId)
                         .with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"serviceKey\":\"TEST_CHANGED\"}"))
@@ -213,5 +222,35 @@ class MonitoringAdminIntegrationTests extends PostgresIntegrationTest {
                         .with(user("admin").roles("ADMIN")).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":true,\"healthUrl\":null}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    // Monitoring Target 전체 순서 저장·CSRF·Snapshot 충돌 검증
+    @Test
+    void targetOrderBatchRequiresCsrfAndPersistsSequence() throws Exception {
+        List<Long> ids = jdbcTemplate.queryForList(
+                "SELECT id FROM monitoring_targets ORDER BY display_order, id", Long.class
+        );
+        Long firstId = ids.get(0);
+        Long secondId = ids.get(1);
+        List<Long> reordered = List.of(secondId, firstId, ids.get(2), ids.get(3), ids.get(4), ids.get(5));
+        String expectedJson = ids.toString();
+        String orderedJson = reordered.toString();
+        String body = "{\"orderedIds\":" + orderedJson + ",\"expectedIds\":" + expectedJson + "}";
+
+        mockMvc.perform(put(MONITORING_PATH + "/targets/order")
+                        .with(user("admin").roles("ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put(MONITORING_PATH + "/targets/order")
+                        .with(user("admin").roles("ADMIN")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(secondId))
+                .andExpect(jsonPath("$.items[0].displayOrder").value(1));
+
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM monitoring_targets WHERE id = ?", Integer.class, secondId)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT display_order FROM monitoring_targets WHERE id = ?", Integer.class, firstId)).isEqualTo(2);
     }
 }

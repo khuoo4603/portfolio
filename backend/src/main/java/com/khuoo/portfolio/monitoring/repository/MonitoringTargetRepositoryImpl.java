@@ -2,10 +2,12 @@ package com.khuoo.portfolio.monitoring.repository;
 
 import com.khuoo.portfolio.monitoring.domain.MonitoringTarget;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 // JPA 기반 Monitoring 대상 단건 변경 Repository 구현
@@ -20,6 +22,18 @@ public class MonitoringTargetRepositoryImpl implements MonitoringTargetRepositor
     @Override
     public Optional<MonitoringTarget> findTarget(Long targetId) {
         return Optional.ofNullable(entityManager.find(MonitoringTarget.class, targetId));
+    }
+
+    // Monitoring 대상의 현재 순서 확인과 동시 변경 방지
+    @Override
+    public List<MonitoringTarget> findTargetsForUpdate() {
+        return entityManager.createQuery("""
+                        SELECT target
+                        FROM MonitoringTarget target
+                        ORDER BY target.displayOrder ASC, target.id ASC
+                        """, MonitoringTarget.class)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultList();
     }
 
     // Service Key 중복 여부 조회

@@ -5,6 +5,10 @@ import com.khuoo.portfolio.common.util.PortfolioConstants;
 import com.khuoo.portfolio.site.dto.AdminProfileEntryResponse;
 import com.khuoo.portfolio.site.dto.ProfileEntryCreateRequest;
 import com.khuoo.portfolio.site.dto.ProfileEntryUpdateRequest;
+import com.khuoo.portfolio.site.dto.ProfileEntryOrderBatchRequest;
+import com.khuoo.portfolio.site.dto.ProfileEntryOrderBatchResponse;
+import com.khuoo.portfolio.site.dto.ProfileEntryOrderRequest;
+import com.khuoo.portfolio.site.dto.ProfileEntryOrderResponse;
 import com.khuoo.portfolio.site.service.AdminProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -36,6 +41,32 @@ public class AdminProfileController {
 
     private final AdminProfileService adminProfileService;
 
+    // 관리자 재인증 후 여러 프로필 그룹의 표시 순서 일괄 저장
+    @Operation(summary = "프로필 표시 순서 Batch 저장")
+    @PutMapping("/order/batch")
+    public ProfileEntryOrderBatchResponse reorderBatch(
+            @Valid @RequestBody ProfileEntryOrderBatchRequest request,
+            @AuthenticationPrincipal AccountPrincipal currentAdmin,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
+            @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
+    ) {
+        return adminProfileService.reorderBatch(request, currentAdmin, challengeId, code);
+    }
+
+    // 관리자 재인증 후 프로필 그룹 표시 순서 일괄 저장
+    @Operation(summary = "프로필 표시 순서 일괄 저장")
+    @PutMapping("/order")
+    public ProfileEntryOrderResponse reorder(
+            @Valid @RequestBody ProfileEntryOrderRequest request,
+            @AuthenticationPrincipal AccountPrincipal currentAdmin,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
+            @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
+    ) {
+        return adminProfileService.reorder(request, currentAdmin, challengeId, code);
+    }
+
     // 관리자 재인증 후 프로필 항목 생성
     @Operation(summary = "프로필 항목 추가")
     @ApiResponses({
@@ -48,9 +79,9 @@ public class AdminProfileController {
     public ResponseEntity<AdminProfileEntryResponse> create(
             @Valid @RequestBody ProfileEntryCreateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(adminProfileService.create(request, currentAdmin, challengeId, code));
@@ -70,9 +101,9 @@ public class AdminProfileController {
             @PathVariable Long entryId,
             @Valid @RequestBody ProfileEntryUpdateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminProfileService.update(entryId, request, currentAdmin, challengeId, code);
     }
@@ -89,9 +120,9 @@ public class AdminProfileController {
     public ResponseEntity<Void> delete(
             @PathVariable Long entryId,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         adminProfileService.delete(entryId, currentAdmin, challengeId, code);
         return ResponseEntity.noContent().build();

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotificationProvider } from "@/components/ui/notification/notification-provider";
-import { createAdminChallenge } from "./admin-action-api";
+import { createAdminChallenge, getAdminActionGrace } from "./admin-action-api";
 import {
   createProject,
   deleteProject,
@@ -16,7 +16,7 @@ const navigation = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
 vi.mock("./admin-action-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-action-api")>();
-  return { ...actual, createAdminChallenge: vi.fn() };
+  return { ...actual, createAdminChallenge: vi.fn(), getAdminActionGrace: vi.fn() };
 });
 vi.mock("./admin-project-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./admin-project-api")>();
@@ -41,6 +41,14 @@ const projects: ProjectSummary[] = [{
   updatedAt: UPDATED_AT,
 }];
 
+const secondProject: ProjectSummary = {
+  ...projects[0],
+  id: 13,
+  slug: "project-two",
+  name: "Project Two",
+  displayOrder: 0,
+};
+
 function submitOtp(code = "654321") {
   fireEvent.paste(screen.getByLabelText("인증번호 1번째 숫자"), {
     clipboardData: { getData: () => code },
@@ -55,6 +63,7 @@ describe("Project 목록 관리", () => {
     vi.mocked(createProject).mockReset().mockResolvedValue({ id: 31, name: "New Project", slug: "new-project", enabled: false, displayOrder: 2, createdAt: UPDATED_AT });
     vi.mocked(updateProjectStatus).mockReset().mockResolvedValue({ id: 12, enabled: false, updatedAt: UPDATED_AT });
     vi.mocked(deleteProject).mockReset().mockResolvedValue(undefined);
+    vi.mocked(getAdminActionGrace).mockReset().mockResolvedValue({ verified: false, expiresAt: null });
     vi.mocked(createAdminChallenge).mockReset().mockResolvedValue({ challengeId: "challenge-project", expiresAt: "2099-09-02T12:00:00+09:00" });
   });
 
@@ -70,9 +79,11 @@ describe("Project 목록 관리", () => {
     expect(screen.getByRole("button", { name: "새 프로젝트" })).toBeInTheDocument();
     expect(within(surface).queryByRole("button", { name: "새 프로젝트" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "프로젝트 목록" })).not.toBeInTheDocument();
-    for (const heading of ["프로젝트", "연도", "순서", "상태", "수정일", "작업"]) {
+    for (const heading of ["프로젝트", "연도", "상태", "수정일", "작업"]) {
       expect(within(table).getByRole("columnheader", { name: heading })).toBeInTheDocument();
     }
+    expect(within(table).queryByRole("columnheader", { name: "순서" })).not.toBeInTheDocument();
+    expect(within(table).queryByText("순서")).not.toBeInTheDocument();
     expect(within(table).getByText("Project One")).toBeInTheDocument();
     expect(within(table).getByText("/projects/project-one")).toBeInTheDocument();
     expect(within(table).getByRole("switch", { name: "Project One 프로젝트 비공개 전환" })).toHaveAttribute("aria-checked", "true");
@@ -81,9 +92,41 @@ describe("Project 목록 관리", () => {
     expect(navigation.push).toHaveBeenCalledWith("/admin/projects/12/edit");
   });
 
+  it("기존 프로젝트 표를 유지하고 순서 관리만 별도 모달에서 표시", async () => {
+    render(<NotificationProvider><ProjectManagement /></NotificationProvider>);
+    const table = await screen.findByRole("table");
+
+    expect(screen.getByRole("button", { name: "순서 관리" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "표시 순서 관리" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    expect(within(dialog).getByText("Project One")).toBeInTheDocument();
+    expect(within(dialog).getAllByRole("button", { name: "순서 저장" })).toHaveLength(1);
+    expect(within(table).getByText("Project One")).toBeInTheDocument();
+  });
+
+  it("프로젝트 표를 서버 표시 순서로 정렬하고 초기화는 재조회 없이 Draft 복원", async () => {
+    vi.mocked(getAdminProjects).mockResolvedValueOnce({ items: [projects[0], secondProject] });
+    render(<NotificationProvider><ProjectManagement /></NotificationProvider>);
+
+    const table = await screen.findByRole("table");
+    const rows = within(table).getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Project Two");
+    expect(rows[2]).toHaveTextContent("Project One");
+
+    fireEvent.click(screen.getByRole("button", { name: "순서 관리" }));
+    const dialog = screen.getByRole("dialog", { name: "표시 순서 관리" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Project Two 아래로" }));
+    expect(within(dialog).getAllByRole("listitem")[0]).toHaveTextContent("Project One");
+    fireEvent.click(within(dialog).getByRole("button", { name: "초기화" }));
+    expect(within(dialog).getAllByRole("listitem")[0]).toHaveTextContent("Project Two");
+    expect(getAdminProjects).toHaveBeenCalledOnce();
+  });
+
   it("Name·Slug만 입력하고 PROJECT_CREATE 후 Editor로 이동", async () => {
     render(<NotificationProvider><ProjectManagement /></NotificationProvider>);
-    await screen.findByText("Project One");
+    await screen.findByRole("row", { name: /Project One/ });
 
     fireEvent.click(screen.getByRole("button", { name: "새 프로젝트" }));
     const dialog = screen.getByRole("dialog", { name: "새 프로젝트" });
@@ -105,6 +148,26 @@ describe("Project 목록 관리", () => {
     ));
     expect(await screen.findByRole("status")).toHaveTextContent("프로젝트 생성 완료");
     expect(navigation.push).toHaveBeenCalledWith("/admin/projects/31/edit");
+  });
+
+  it("프로젝트 생성 인증 취소 시 Name·Slug Draft를 유지", async () => {
+    render(<NotificationProvider><ProjectManagement /></NotificationProvider>);
+    await screen.findByRole("row", { name: /Project One/ });
+
+    fireEvent.click(screen.getByRole("button", { name: "새 프로젝트" }));
+    const createDialog = screen.getByRole("dialog", { name: "새 프로젝트" });
+    const fields = within(createDialog).getAllByRole("textbox");
+    fireEvent.change(fields[0], { target: { value: "Draft Project" } });
+    fireEvent.change(fields[1], { target: { value: "draft-project" } });
+    fireEvent.click(within(createDialog).getByRole("button", { name: "프로젝트 생성" }));
+
+    const authDialog = await screen.findByRole("dialog", { name: "관리자 이메일 재인증" });
+    fireEvent.click(within(authDialog).getByRole("button", { name: "취소" }));
+
+    expect(screen.getByRole("dialog", { name: "새 프로젝트" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Draft Project")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("draft-project")).toBeInTheDocument();
+    expect(createProject).not.toHaveBeenCalled();
   });
 
   it("빈 목록에서도 관리 Surface 안에서 새 프로젝트를 시작할 수 있다", async () => {
