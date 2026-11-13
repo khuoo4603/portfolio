@@ -60,9 +60,9 @@ public class AdminSiteController {
     public PortfolioContentUpdateResponse updateContents(
             @Valid @RequestBody PortfolioContentUpdateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminSiteService.updateContents(request, currentAdmin, challengeId, code);
     }
@@ -80,9 +80,9 @@ public class AdminSiteController {
     public PortfolioTechnologyReplaceResponse replacePortfolioTechnologies(
             @Valid @RequestBody PortfolioTechnologyReplaceRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminSiteService.replacePortfolioTechnologies(request, currentAdmin, challengeId, code);
     }

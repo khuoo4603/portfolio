@@ -45,9 +45,9 @@ public class AdminExternalLinkController {
     public ExternalLinkOrderResponse reorder(
             @Valid @RequestBody ExternalLinkOrderRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminExternalLinkService.reorder(request, currentAdmin, challengeId, code);
     }
@@ -64,9 +64,9 @@ public class AdminExternalLinkController {
     public ResponseEntity<AdminExternalLinkResponse> create(
             @Valid @RequestBody ExternalLinkCreateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(adminExternalLinkService.create(request, currentAdmin, challengeId, code));
@@ -86,9 +86,9 @@ public class AdminExternalLinkController {
             @PathVariable Long linkId,
             @Valid @RequestBody ExternalLinkUpdateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminExternalLinkService.update(linkId, request, currentAdmin, challengeId, code);
     }
@@ -105,9 +105,9 @@ public class AdminExternalLinkController {
     public ResponseEntity<Void> delete(
             @PathVariable Long linkId,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         adminExternalLinkService.delete(linkId, currentAdmin, challengeId, code);
         return ResponseEntity.noContent().build();

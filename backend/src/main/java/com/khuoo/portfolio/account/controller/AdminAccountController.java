@@ -73,9 +73,9 @@ public class AdminAccountController {
     public ResponseEntity<AccountCreateResponse> create(
             @Valid @RequestBody AccountCreateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(accountService.create(request, currentAdmin, challengeId, code));
@@ -96,9 +96,9 @@ public class AdminAccountController {
             @PathVariable Long accountId,
             @Valid @RequestBody AccountStatusRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return accountService.changeStatus(accountId, request, currentAdmin, challengeId, code);
     }
@@ -118,9 +118,9 @@ public class AdminAccountController {
             @PathVariable Long accountId,
             @Valid @RequestBody AccountRoleRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return accountService.changeRole(accountId, request, currentAdmin, challengeId, code);
     }
@@ -139,9 +139,9 @@ public class AdminAccountController {
             @PathVariable Long accountId,
             @Valid @RequestBody AccountPasswordResetRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         accountService.resetPassword(accountId, request, currentAdmin, challengeId, code);
         return ResponseEntity.noContent().build();

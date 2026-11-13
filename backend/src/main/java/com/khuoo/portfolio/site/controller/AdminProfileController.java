@@ -47,9 +47,9 @@ public class AdminProfileController {
     public ProfileEntryOrderBatchResponse reorderBatch(
             @Valid @RequestBody ProfileEntryOrderBatchRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminProfileService.reorderBatch(request, currentAdmin, challengeId, code);
     }
@@ -60,9 +60,9 @@ public class AdminProfileController {
     public ProfileEntryOrderResponse reorder(
             @Valid @RequestBody ProfileEntryOrderRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminProfileService.reorder(request, currentAdmin, challengeId, code);
     }
@@ -79,9 +79,9 @@ public class AdminProfileController {
     public ResponseEntity<AdminProfileEntryResponse> create(
             @Valid @RequestBody ProfileEntryCreateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(adminProfileService.create(request, currentAdmin, challengeId, code));
@@ -101,9 +101,9 @@ public class AdminProfileController {
             @PathVariable Long entryId,
             @Valid @RequestBody ProfileEntryUpdateRequest request,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         return adminProfileService.update(entryId, request, currentAdmin, challengeId, code);
     }
@@ -120,9 +120,9 @@ public class AdminProfileController {
     public ResponseEntity<Void> delete(
             @PathVariable Long entryId,
             @AuthenticationPrincipal AccountPrincipal currentAdmin,
-            @RequestHeader(PortfolioConstants.Header.ADMIN_CHALLENGE_ID) UUID challengeId,
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_CHALLENGE_ID, required = false) UUID challengeId,
             @Pattern(regexp = "\\d{6}", message = "인증번호는 숫자 6자리여야 합니다.")
-            @RequestHeader(PortfolioConstants.Header.ADMIN_VERIFICATION_CODE) String code
+            @RequestHeader(value = PortfolioConstants.Header.ADMIN_VERIFICATION_CODE, required = false) String code
     ) {
         adminProfileService.delete(entryId, currentAdmin, challengeId, code);
         return ResponseEntity.noContent().build();
